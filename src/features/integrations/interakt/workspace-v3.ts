@@ -149,11 +149,12 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
 
   const rows = (data ?? []).map((row: any) => {
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
+    const setuAssignee = clean(row.setu_assigned_name || row.setu_assigned_email) || 'Unassigned';
     return {
       ...row,
       computed_score: row.qualification_score ?? assessment.score,
       computed_band: assessment.bandLabel,
-      computed_source: assessment.source.label,
+      computed_source: `${assessment.source.label} · Assigned to ${setuAssignee}`,
       missing_fields: assessment.leadBlockers,
       lead_blockers: assessment.leadBlockers,
       later_enrichment: assessment.laterEnrichment,
