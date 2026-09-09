@@ -49,7 +49,7 @@ export default async function Page({params,searchParams}:{params:{leadId:string}
   <div className="mx-auto mb-3 flex w-full max-w-[1180px] justify-end px-1">
    {isStark&&communications?<StarkCommunicationsLauncher leadId={data.lead.id} companyName={data.lead.company_name||data.lead.contact_name||'Lead'} contactName={data.lead.contact_name||'Customer'} email={data.lead.email} whatsappNumber={data.lead.whatsapp_number||data.lead.phone} items={communications.items as any} linkedInterakt={communications.linkedInterakt} whatsappReplyWindowOpen={communications.whatsappReplyWindowOpen}/>:null}
   </div>
-  <LeadGuruTools><ResearchDrawerLauncher leadId={data.lead.id} leadType={data.lead.lead_type}/><OutreachGeneratorLauncher leadId={data.lead.id} email={data.lead.email} phone={data.lead.phone} whatsappNumber={data.lead.whatsapp_number}/><ReplyAnalyzerLauncher leadId={data.lead.id}/>{String(data.lead.lead_type??'').toLowerCase()==='supplier'?<SupplierRfqAssistantLauncher leadId={data.lead.id}/>:<QuoteAssistantLauncher leadId={data.lead.id}/>}</LeadGuruTools>
+  <LeadGuruTools><ResearchDrawerLauncher leadId={data.lead.id} leadType={data.lead.lead_type}/><OutreachGeneratorLauncher leadId={data.lead.id} email={data.lead.email} phone={data.lead.phone} whatsappNumber={data.lead.whatsapp_number}/><ReplyAnalyzerLauncher leadId={data.lead.id}/>{String(data.lead.lead_type ?? '').toLowerCase() === 'supplier'?<SupplierRfqAssistantLauncher leadId={data.lead.id}/>:<QuoteAssistantLauncher leadId={data.lead.id}/>}</LeadGuruTools>
   <LeadCommandCenterPremium data={data} canReassignOwner={workspace.canAccessAdmin} teamMembers={teamMembers} backHref={leadsBackHref(searchParams?.mode)}/>
  </>;
 }
