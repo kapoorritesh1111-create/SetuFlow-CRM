@@ -23,6 +23,9 @@
       }
     ],
     "paths": {
+      "@/features/integrations/interakt/workspace-v2": [
+        "./src/features/integrations/interakt/workspace-v3.ts"
+      ],
       "@/*": [
         "./src/*"
       ]
