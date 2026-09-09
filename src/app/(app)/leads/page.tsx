@@ -111,6 +111,7 @@ export default async function LeadsPage({
   const quickLeadType: 'buyer' | 'supplier' = requestedLeadType || modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer');
   const isStarkPackmate = workspace.organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' || String(workspace.organization.slug ?? '').toLowerCase() === 'starkpackmate';
   const canAccessStarkInbound = workspace.canAccessAdmin || workspace.currentRoles.some((role) => String(role).toLowerCase() === 'sales');
+  const canManageStarkInboundAssignments = workspace.currentRoles.some((role) => ['owner', 'manager', 'admin'].includes(String(role).toLowerCase()));
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -159,7 +160,10 @@ export default async function LeadsPage({
               </div>
               <p className="mt-1 text-xs text-slate-600">Review WhatsApp/Instagram contacts with Setu Guru before they enter the qualified Lead Queue.</p>
             </div>
-            <Link href="/leads/inbound" className="shrink-0 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Open Inbound →</Link>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {canManageStarkInboundAssignments ? <Link href="/leads/inbound/assignments" className="rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-50">Manage assignments</Link> : null}
+              <Link href="/leads/inbound" className="rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Open Inbound →</Link>
+            </div>
           </div>
         ) : null}
         <LeadEventFilterNarrower
