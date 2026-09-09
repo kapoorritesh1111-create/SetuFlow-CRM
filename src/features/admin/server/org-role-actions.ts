@@ -27,7 +27,8 @@ async function requireOrgRoleAdmin() {
   if (!workspace.organization || !workspace.membership) throw new Error('Workspace membership required.');
   const roles = workspace.currentRoles.map((role) => String(role).trim().toLowerCase());
   if (!roles.some((role) => role === 'owner' || role === 'admin')) throw new Error('Owner or Admin access required.');
-  return { workspace, supabase: await createClient() };
+  const supabase = await createClient();
+  return { workspace, db: supabase as any };
 }
 
 function refreshRoleSurfaces() {
@@ -37,12 +38,12 @@ function refreshRoleSurfaces() {
 }
 
 export async function createOrganizationRole(formData: FormData) {
-  const { workspace, supabase } = await requireOrgRoleAdmin();
+  const { workspace, db } = await requireOrgRoleAdmin();
   const name = normalizeRoleName(formData.get('name'));
   const description = cleanDescription(formData.get('description'));
   if (!name) throw new Error('Role name is required.');
 
-  const { data: existing } = await supabase
+  const { data: existing } = await db
     .from('roles')
     .select('id')
     .eq('organization_id', workspace.organization!.id)
@@ -50,7 +51,7 @@ export async function createOrganizationRole(formData: FormData) {
     .maybeSingle();
   if (existing) throw new Error('That organization role already exists.');
 
-  const { error } = await supabase.from('roles').insert({
+  const { error } = await db.from('roles').insert({
     organization_id: workspace.organization!.id,
     name,
     description,
@@ -60,11 +61,11 @@ export async function createOrganizationRole(formData: FormData) {
 }
 
 export async function updateOrganizationRole(formData: FormData) {
-  const { workspace, supabase } = await requireOrgRoleAdmin();
+  const { workspace, db } = await requireOrgRoleAdmin();
   const id = String(formData.get('id') ?? '').trim();
   if (!id) throw new Error('Role id is required.');
 
-  const { data: role, error: roleError } = await supabase
+  const { data: role, error: roleError } = await db
     .from('roles')
     .select('id, name, organization_id')
     .eq('id', id)
@@ -77,7 +78,7 @@ export async function updateOrganizationRole(formData: FormData) {
   const nextName = IMMUTABLE_ROLE_NAMES.has(currentName) ? currentName : requestedName;
   if (!nextName) throw new Error('Role name is required.');
 
-  const { error } = await supabase
+  const { error } = await db
     .from('roles')
     .update({ name: nextName, description: cleanDescription(formData.get('description')) })
     .eq('id', id)
@@ -87,11 +88,11 @@ export async function updateOrganizationRole(formData: FormData) {
 }
 
 export async function deleteOrganizationRole(formData: FormData) {
-  const { workspace, supabase } = await requireOrgRoleAdmin();
+  const { workspace, db } = await requireOrgRoleAdmin();
   const id = String(formData.get('id') ?? '').trim();
   if (!id) throw new Error('Role id is required.');
 
-  const { data: role, error: roleError } = await supabase
+  const { data: role, error: roleError } = await db
     .from('roles')
     .select('id, name, organization_id')
     .eq('id', id)
@@ -100,19 +101,19 @@ export async function deleteOrganizationRole(formData: FormData) {
   if (roleError || !role) throw new Error('Organization role not found.');
 
   const roleName = String(role.name ?? '').toLowerCase();
-  if (roleName === 'owner' || roleName === 'admin' || roleName === 'sales') {
+  if (IMMUTABLE_ROLE_NAMES.has(roleName)) {
     throw new Error('Core access roles cannot be deleted.');
   }
 
   const [{ count: memberAssignments }, { count: invitationAssignments }] = await Promise.all([
-    supabase.from('user_roles').select('id', { count: 'exact', head: true }).eq('role_id', id),
-    supabase.from('organization_invitations').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization!.id).eq('role_id', id),
+    db.from('user_roles').select('id', { count: 'exact', head: true }).eq('role_id', id),
+    db.from('organization_invitations').select('id', { count: 'exact', head: true }).eq('organization_id', workspace.organization!.id).eq('role_id', id),
   ]);
   if ((memberAssignments ?? 0) > 0 || (invitationAssignments ?? 0) > 0) {
     throw new Error('Remove this role from members and invitations before deleting it.');
   }
 
-  const { error } = await supabase.from('roles').delete().eq('id', id).eq('organization_id', workspace.organization!.id);
+  const { error } = await db.from('roles').delete().eq('id', id).eq('organization_id', workspace.organization!.id);
   if (error) throw new Error(`Unable to delete role: ${error.message}`);
   refreshRoleSurfaces();
 }
