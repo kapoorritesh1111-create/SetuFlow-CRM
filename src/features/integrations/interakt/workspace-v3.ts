@@ -8,7 +8,7 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 export {
   createStarkInteraktLeadOverride,
   evaluateStarkInteraktPage,
-} from '@/features/integrations/interakt/workspace-v2';
+} from './workspace-v2';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
