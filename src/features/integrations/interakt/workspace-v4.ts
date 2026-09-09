@@ -120,8 +120,10 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
   const source = clean(input.source) || 'all';
   const owner = canSeeAll ? safeSearch(input.owner) : '';
   const sort = clean(input.sort) || 'recent';
+  const isReviewMode = pageSize <= 20;
+  const rpcName = isReviewMode ? 'stark_inbound_review_page' : 'stark_inbound_workspace_page';
 
-  const { data, error } = await db.rpc('stark_inbound_workspace_page', {
+  const { data, error } = await db.rpc(rpcName, {
     p_organization_id: organizationId,
     p_assigned_user_id: scopedUserId,
     p_q: q || null,
@@ -154,24 +156,32 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
   });
 
   const stats = payload.stats ?? {};
-  const filteredCount = Number(stats.filteredCount ?? 0);
+  const pageNeedsReply = rows.filter((row) => row.needs_reply === true).length;
+  const pageNeedsInfo = rows.filter((row) => row.intake_status === 'needs_info').length;
+  const pageReady = rows.filter((row) => row.intake_status === 'ready_to_qualify').length;
+  const pageEvaluated = rows.filter((row) => row.guru_evaluation_status === 'evaluated').length;
+  const pagePending = rows.filter((row) => ['pending', 'partial_history'].includes(String(row.guru_evaluation_status ?? ''))).length;
+  const pageNewEvidence = rows.filter((row) => row.guru_evaluation_status === 'new_evidence').length;
+  const pageInquiries = rows.filter((row) => Boolean(row.last_inbound_at)).length;
+
+  const filteredCount = isReviewMode ? rows.length : Number(stats.filteredCount ?? 0);
 
   return {
     rows,
     count: filteredCount,
     page,
     pageSize,
-    totalPages: Math.max(1, Math.ceil(filteredCount / pageSize)),
+    totalPages: isReviewMode ? 1 : Math.max(1, Math.ceil(filteredCount / pageSize)),
     kpis: {
-      active: Number(stats.active ?? 0),
-      needsReply: Number(stats.needsReply ?? 0),
-      needsInfo: Number(stats.needsInfo ?? 0),
-      ready: Number(stats.ready ?? 0),
-      evaluated: Number(stats.evaluated ?? 0),
-      pending: Number(stats.pending ?? 0),
-      newEvidence: Number(stats.newEvidence ?? 0),
-      inquiries: Number(stats.inquiries ?? 0),
-      browsingHidden: Number(stats.browsingHidden ?? 0),
+      active: isReviewMode ? rows.length : Number(stats.active ?? 0),
+      needsReply: isReviewMode ? pageNeedsReply : Number(stats.needsReply ?? 0),
+      needsInfo: isReviewMode ? pageNeedsInfo : Number(stats.needsInfo ?? 0),
+      ready: isReviewMode ? pageReady : Number(stats.ready ?? 0),
+      evaluated: isReviewMode ? pageEvaluated : Number(stats.evaluated ?? 0),
+      pending: isReviewMode ? pagePending : Number(stats.pending ?? 0),
+      newEvidence: isReviewMode ? pageNewEvidence : Number(stats.newEvidence ?? 0),
+      inquiries: isReviewMode ? pageInquiries : Number(stats.inquiries ?? 0),
+      browsingHidden: isReviewMode ? 0 : Number(stats.browsingHidden ?? 0),
     },
   };
 }
