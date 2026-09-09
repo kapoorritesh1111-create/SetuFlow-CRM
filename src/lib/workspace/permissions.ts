@@ -17,7 +17,7 @@ export type WorkspaceCapability =
 const CAPABILITY_ROLES: Record<WorkspaceCapability, readonly WorkspaceRole[]> = {
   'catalog.manage': ['owner', 'admin', 'manager'],
   'settings.manage': ['owner', 'admin', 'manager'],
-  'lead.manage': ['owner', 'admin', 'manager', 'sales', 'operations', 'sourcing', 'procurement', 'contributor', 'ordering'],
+  'lead.manage': ['owner', 'admin', 'manager', 'sales', 'field_sales', 'operations', 'sourcing', 'procurement', 'contributor', 'ordering'],
   'quote.send': ['owner', 'admin', 'manager', 'sales'],
   'compliance.review': ['owner', 'admin', 'manager', 'operations'],
   'reporting.view': ['owner', 'admin', 'manager', 'sales', 'operations', 'contributor', 'viewer'],
