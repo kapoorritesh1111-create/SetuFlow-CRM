@@ -3,6 +3,7 @@ export const WORKSPACE_ROLE_NAMES = [
   'admin',
   'manager',
   'sales',
+  'field_sales',
   'design',
   'operations',
   'ordering',
@@ -18,6 +19,8 @@ export const WORKSPACE_ROLE_ALIASES: Record<string, WorkspaceRole> = {
   ops: 'operations',
   dispatch: 'operations',
   prepress: 'design',
+  'field sales': 'field_sales',
+  'field-sales': 'field_sales',
 };
 
 export const WORKSPACE_ROLE_HIERARCHY: readonly WorkspaceRole[] = [
@@ -25,6 +28,7 @@ export const WORKSPACE_ROLE_HIERARCHY: readonly WorkspaceRole[] = [
   'admin',
   'manager',
   'sales',
+  'field_sales',
   'design',
   'operations',
   'ordering',
