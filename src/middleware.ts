@@ -57,10 +57,34 @@ function isTrialPreviewReadRoute(request: NextRequest) {
   return false;
 }
 
+function isRouterPrefetch(request: NextRequest) {
+  if (request.method !== 'GET') return false;
+  const nextRouterPrefetch = request.headers.get('next-router-prefetch');
+  const middlewarePrefetch = request.headers.get('x-middleware-prefetch');
+  const purpose = request.headers.get('purpose')?.toLowerCase();
+  const secPurpose = request.headers.get('sec-purpose')?.toLowerCase();
+  return nextRouterPrefetch === '1'
+    || middlewarePrefetch === '1'
+    || purpose === 'prefetch'
+    || secPurpose === 'prefetch';
+}
+
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  if (pathname === '/leads/inbound' && isRouterPrefetch(request)) {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Cache-Control': 'private, no-store',
+        'X-Setu-Prefetch-Blocked': '1',
+      },
+    });
+  }
+
   if (isTrialPreviewReadRoute(request)) return NextResponse.next();
 
-  const capability = getPremiumCapabilityForPathname(request.nextUrl.pathname);
+  const capability = getPremiumCapabilityForPathname(pathname);
   if (!capability) return NextResponse.next();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -111,6 +135,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/leads/inbound',
     '/api/quotes/:path*',
     '/api/orders/:path*',
     '/api/products/:path*',
