@@ -90,6 +90,14 @@ function scoreClass(score: number) {
   return 'border-blue-200 bg-blue-50 text-blue-700';
 }
 
+function isCtwa(row: any) {
+  return String(row?.acquisition_type ?? '').trim().toLowerCase() === 'ctwa';
+}
+
+function CtwaHotLeadBadge({ compact = false }: { compact?: boolean }) {
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-full border border-orange-300 bg-orange-100 font-black text-orange-800 shadow-sm ${compact ? 'px-2 py-0.5 text-[9px]' : 'px-2.5 py-1 text-[10px]'}`}>🔥 CTWA Hot Lead</span>;
+}
+
 function guruLabel(status: string | null | undefined) {
   if (status === 'evaluated') return { label: 'Guru evaluated', className: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: '✓' };
   if (status === 'new_evidence') return { label: 'New evidence', className: 'text-violet-700 bg-violet-50 border-violet-200', icon: '●' };
@@ -189,6 +197,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   const laterEnrichment = (selected.later_enrichment ?? []) as string[];
   const whatsappReplyWindowOpen = withinWhatsAppReplyWindow(selected.last_inbound_at);
   const customerName = selected.person_name || selected.contact_name || 'Customer';
+  const selectedIsCtwa = isCtwa(selected);
   const summaryRows: Array<[string, unknown, boolean]> = [
     ['Company', selected.company_name, true],
     ['Brand', selected.brand_name, false],
@@ -219,24 +228,28 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
             const active = row.id === selected.id;
             const guru = guruLabel(row.guru_evaluation_status);
             const historyPending = !row.first_inquiry_at && !row.last_inbound_at;
-            return <Link prefetch={false} key={row.id} href={paramsHref(searchParams, { review: row.id })} className={`block px-4 py-3.5 transition ${active ? 'bg-blue-50 ring-1 ring-inset ring-blue-200' : 'hover:bg-slate-50'}`}>
+            const ctwa = isCtwa(row);
+            const queueClass = active
+              ? (ctwa ? 'bg-orange-50 ring-1 ring-inset ring-orange-300' : 'bg-blue-50 ring-1 ring-inset ring-blue-200')
+              : (ctwa ? 'bg-orange-50/55 hover:bg-orange-100/70' : 'hover:bg-slate-50');
+            return <Link prefetch={false} key={row.id} href={paramsHref(searchParams, { review: row.id })} className={`block px-4 py-3.5 transition ${queueClass}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0"><p className="truncate text-sm font-bold text-slate-950">{row.person_name || row.contact_name || row.company_name || 'Unnamed contact'}</p><p className="mt-0.5 truncate text-[11px] text-slate-500">{row.company_name || row.brand_name || (historyPending ? 'Historical conversation not backfilled yet' : 'Company not confirmed')}</p></div>
                 <div className="shrink-0 text-right"><p className="text-[10px] font-semibold text-slate-500">{timeAgo(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p><span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${scoreClass(Number(row.computed_score ?? 0))}`}>{row.computed_score ?? 0}</span></div>
               </div>
               <p className="mt-2 truncate text-xs font-medium text-slate-700">{row.pouch_type || row.packaging_type || (historyPending ? 'Contact synced · history pending' : 'Requirement not captured')}{row.quantity_text ? ` · ${row.quantity_text}` : ''}</p>
-              <div className="mt-2 flex items-center justify-between gap-2"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold ${guru.className}`}>{guru.icon} {guru.label}</span>{row.needs_reply ? <span className="text-[9px] font-black uppercase text-rose-600">Needs reply</span> : null}</div>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div className="flex flex-wrap items-center gap-1.5">{ctwa ? <CtwaHotLeadBadge compact /> : null}<span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold ${guru.className}`}>{guru.icon} {guru.label}</span></div>{row.needs_reply ? <span className="text-[9px] font-black uppercase text-rose-600">Needs reply</span> : null}</div>
             </Link>;
           })}
         </div>
         <Pagination page={workspaceData.page} totalPages={workspaceData.totalPages} count={workspaceData.count} pageSize={workspaceData.pageSize} searchParams={searchParams} />
       </aside>
 
-      <main className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <header className="sticky top-0 z-10 rounded-t-2xl border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur">
+      <main className={`min-w-0 rounded-2xl border bg-white shadow-sm ${selectedIsCtwa ? 'border-orange-200 ring-1 ring-orange-100' : 'border-slate-200'}`}>
+        <header className={`sticky top-0 z-10 rounded-t-2xl border-b px-5 py-4 backdrop-blur ${selectedIsCtwa ? 'border-orange-100 bg-orange-50/95' : 'border-slate-100 bg-white/95'}`}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">{selected.person_name || selected.contact_name || 'Unnamed contact'}</h2><span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100 · {selected.computed_band}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${currentGuru.className}`}>{currentGuru.icon} {currentGuru.label}</span></div>
+              <div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">{selected.person_name || selected.contact_name || 'Unnamed contact'}</h2>{selectedIsCtwa ? <CtwaHotLeadBadge /> : null}<span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100 · {selected.computed_band}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${currentGuru.className}`}>{currentGuru.icon} {currentGuru.label}</span></div>
               <p className="mt-1 text-xs text-slate-500">{selected.computed_source}{selected.company_name ? ` · ${selected.company_name}` : ''}{selected.first_inquiry_at ? ` · First inquiry ${formatDateTime(selected.first_inquiry_at)}` : ' · Historical chat backfill pending'}</p>
               {selected.interakt_assignee_name ? <p className="mt-1 text-[11px] text-slate-500">Assigned in Interakt to <strong className="text-slate-700">{selected.interakt_assignee_name}</strong></p> : null}
             </div>
@@ -276,8 +289,9 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
       </main>
 
       <aside className="sticky top-3 space-y-3">
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className={`rounded-2xl border p-4 shadow-sm ${selectedIsCtwa ? 'border-orange-200 bg-orange-50/70' : 'border-slate-200 bg-white'}`}>
           <div className="flex items-center justify-between"><h3 className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">Lead summary</h3><span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100</span></div>
+          {selectedIsCtwa ? <div className="mt-3"><CtwaHotLeadBadge /></div> : null}
           <div className="mt-3 space-y-2 text-xs">{summaryRows.map(([label, value, required]) => { const display = summaryValue(value, required); return <div key={label} className="flex items-start justify-between gap-3"><span className="text-slate-500">{label}</span><span className={`max-w-[170px] text-right font-semibold ${display.className}`}>{display.text}</span></div>; })}</div>
           {selected.quantity_text ? <p className="mt-3 rounded-lg bg-blue-50 px-2.5 py-2 text-[10px] leading-4 text-blue-700">Quantity is sales context, not a gate. Small runs can be samples/prototypes; Sales decides whether to proceed.</p> : null}
           <details className="mt-3 border-t border-slate-100 pt-3"><summary className="cursor-pointer text-[11px] font-bold text-blue-600">Edit qualification details</summary><form action={saveStarkInteraktQualification} className="mt-3 space-y-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="reviewed" />{[['companyName','Company',selected.company_name],['brandName','Brand',selected.brand_name],['packagingType','Packaging',selected.packaging_type],['pouchType','Pouch type',selected.pouch_type],['quantityText','Quantity / requirement size',selected.quantity_text],['dimensionsPrint','Dimensions / print',selected.dimensions_print],['deliveryLocation','Delivery location',selected.delivery_location],['buyingTimeline','Buying timeline',selected.buying_timeline],['industry','Industry',selected.industry]].map(([name,label,value]) => <label key={name} className="block text-[9px] font-bold uppercase text-slate-500">{label}<input name={name} defaultValue={value || ''} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs normal-case text-slate-800" /></label>)}<input type="hidden" name="personName" value={selected.person_name || selected.contact_name || ''} /><textarea name="qualificationNotes" defaultValue={selected.qualification_notes || ''} placeholder="Qualification notes" rows={3} className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Save details" pendingLabel="Saving…" className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white" /></form></details>
@@ -378,19 +392,20 @@ function ListView({ rows, workspaceData, searchParams, canWorkInbound }: { rows:
         <tbody className="divide-y divide-slate-100">
           {rows.map((row) => {
             const guru = guruLabel(row.guru_evaluation_status);
-            return <tr key={row.id} className="group hover:bg-blue-50/30">
+            const ctwa = isCtwa(row);
+            return <tr key={row.id} className={`group transition ${ctwa ? 'bg-orange-50/55 hover:bg-orange-100/70' : 'hover:bg-blue-50/30'}`}>
               {show('contact') ? <td className="px-4 py-3"><p className="whitespace-nowrap text-xs font-black text-slate-900">{row.person_name || row.contact_name || 'Unnamed contact'}</p>{row.email ? <p className="mt-0.5 text-[9px] text-slate-400">{row.email}</p> : null}</td> : null}
               {show('phone') ? <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-700">{row.full_phone_number || '—'}</td> : null}
               {show('company') ? <td className="max-w-[220px] px-4 py-3"><p className="truncate text-xs font-semibold text-slate-700">{row.company_name || row.brand_name || 'Not confirmed'}</p></td> : null}
               {show('requirement') ? <td className="max-w-[250px] px-4 py-3"><p className="truncate text-xs font-semibold text-slate-700">{row.pouch_type || row.packaging_type || 'Not captured'}</p>{row.industry ? <p className="mt-0.5 truncate text-[9px] text-slate-400">{row.industry}</p> : null}</td> : null}
               {show('quantity') ? <td className="whitespace-nowrap px-4 py-3 text-xs font-semibold text-slate-700">{row.quantity_text || '—'}</td> : null}
-              {show('source') ? <td className="px-4 py-3"><p className="whitespace-nowrap text-xs font-semibold text-slate-700">{row.computed_source}</p>{row.acquisition_type === 'ctwa' ? <span className="mt-1 inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[9px] font-bold text-violet-700">CTWA</span> : null}</td> : null}
+              {show('source') ? <td className="px-4 py-3"><p className="whitespace-nowrap text-xs font-semibold text-slate-700">{row.computed_source}</p>{ctwa ? <div className="mt-1"><CtwaHotLeadBadge compact /></div> : null}</td> : null}
               {show('owner') ? <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-700">{row.interakt_assignee_name || 'Unassigned'}</td> : null}
               {show('guru') ? <td className="px-4 py-3"><span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-[9px] font-bold ${guru.className}`}>{guru.icon} {guru.label}</span></td> : null}
-              {show('score') ? <td className="px-4 py-3"><span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-black ${scoreClass(Number(row.computed_score ?? 0))}`}>{row.computed_score ?? 0}</span></td> : null}
+              {show('score') ? <td className="px-4 py-3"><div className="flex flex-col items-start gap-1"><span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-black ${scoreClass(Number(row.computed_score ?? 0))}`}>{row.computed_score ?? 0}</span>{ctwa ? <span className="text-[9px] font-black text-orange-700">+15 CTWA intent</span> : null}</div></td> : null}
               {show('last_activity') ? <td className="whitespace-nowrap px-4 py-3"><p className="text-xs font-semibold text-slate-700">{timeAgo(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p><p className="mt-0.5 text-[9px] text-slate-400">{formatDateTime(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p></td> : null}
               {show('needs_reply') ? <td className="px-4 py-3">{row.needs_reply ? <span className="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-black text-rose-700">Needs reply</span> : <span className="text-[9px] font-bold text-slate-400">Up to date</span>}</td> : null}
-              <td className="px-4 py-3 text-right"><Link prefetch={false} href={paramsHref(searchParams, { view: 'review', review: row.id })} className="inline-flex rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[10px] font-black text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white">Review</Link></td>
+              <td className="px-4 py-3 text-right"><Link prefetch={false} href={paramsHref(searchParams, { view: 'review', review: row.id })} className={`inline-flex rounded-lg border bg-white px-3 py-1.5 text-[10px] font-black transition ${ctwa ? 'border-orange-300 text-orange-800 group-hover:bg-orange-600 group-hover:text-white' : 'border-blue-200 text-blue-700 group-hover:bg-blue-600 group-hover:text-white'}`}>Review</Link></td>
             </tr>;
           })}
         </tbody>
