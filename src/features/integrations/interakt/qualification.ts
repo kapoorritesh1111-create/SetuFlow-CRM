@@ -133,7 +133,10 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
   const scoreParts: string[] = [];
   let score = 0;
 
-  if (source.kind === 'ctwa') { score += 12; scoreParts.push('+12 CTWA acquisition'); }
+  // CTWA is a WhatsApp inquiry plus a confirmed paid-ad intent signal. Keep the normal
+  // WhatsApp source weight and add the requested +15 CTWA boost so otherwise-identical
+  // evidence scores exactly 15 points higher, while the final score remains capped at 100.
+  if (source.kind === 'ctwa') { score += 23; scoreParts.push('+8 WhatsApp inbound', '+15 CTWA intent boost'); }
   else if (source.kind === 'whatsapp') { score += 8; scoreParts.push('+8 WhatsApp inbound'); }
   else if (source.kind === 'instagram') { score += 6; scoreParts.push('+6 Instagram inbound'); }
   else { score += 2; scoreParts.push('+2 source captured'); }
