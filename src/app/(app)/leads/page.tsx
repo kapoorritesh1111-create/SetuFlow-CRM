@@ -113,7 +113,6 @@ export default async function LeadsPage({
   const normalizedRoles = workspace.currentRoles.map((role) => String(role).toLowerCase());
   const canAccessStarkInbound = workspace.canAccessAdmin || normalizedRoles.includes('sales');
   const canManageStarkInboundAssignments = normalizedRoles.some((role) => ['owner', 'manager', 'admin'].includes(role));
-  const canImportStarkLeads = isStarkPackmate && normalizedRoles.some((role) => ['owner', 'manager', 'admin', 'field_sales'].includes(role));
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
@@ -151,18 +150,6 @@ export default async function LeadsPage({
         {guidedTrialCoach ? (
           <div className="rounded-panel border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-900 shadow-sm">
             Trade Show Trial mode: this list shows captured booth leads. You can add follow-up tasks, but quotes and orders stay preview-only until upgrade.
-          </div>
-        ) : null}
-        {canImportStarkLeads ? (
-          <div className="flex items-center justify-between gap-4 rounded-panel border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white px-4 py-3 shadow-sm">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-white">Capture</span>
-                <p className="text-sm font-bold text-slate-900">Import external / Field Sales leads</p>
-              </div>
-              <p className="mt-1 text-xs text-slate-600">Upload a prospect list, preview validation and duplicates, then assign records into the CRM without mixing them into Interakt inbound.</p>
-            </div>
-            <Link href="/leads/import" className="shrink-0 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-black text-white hover:bg-emerald-800">Import Leads →</Link>
           </div>
         ) : null}
         {isStarkPackmate && canAccessStarkInbound ? (
