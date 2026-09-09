@@ -8,6 +8,13 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const ALLOWED_ROLES = new Set(['owner', 'manager', 'admin', 'field_sales']);
 
+type ImportAssignee = {
+  userId: string;
+  name: string;
+  email: string;
+  roles: string[];
+};
+
 export default async function StarkLeadImportPage() {
   const workspace = await getWorkspaceAccess();
   if (!workspace.organization || !workspace.membership || !workspace.user) {
@@ -32,7 +39,7 @@ export default async function StarkLeadImportPage() {
     .eq('is_active', true)
     .order('created_at', { ascending: true });
 
-  const assignees = (members ?? []).map((member: any) => {
+  const assignees: ImportAssignee[] = (members ?? []).map((member: any): ImportAssignee => {
     const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
     return {
       userId: String(member.user_id),
@@ -40,7 +47,7 @@ export default async function StarkLeadImportPage() {
       email: String(profile?.email ?? '').trim(),
       roles: (member.user_roles ?? []).map((item: any) => String(item?.roles?.name ?? '').trim().toLowerCase()).filter(Boolean),
     };
-  }).filter((member) => member.userId && (member.roles.some((role) => ['field_sales', 'sales'].includes(role)) || member.userId === workspace.user!.id));
+  }).filter((member: ImportAssignee) => member.userId && (member.roles.some((role: string) => ['field_sales', 'sales'].includes(role)) || member.userId === workspace.user!.id));
 
   return <div className="space-y-4 pb-10">
     <div className="flex items-center justify-between gap-3">
