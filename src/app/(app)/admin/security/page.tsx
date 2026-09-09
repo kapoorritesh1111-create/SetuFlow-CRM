@@ -1,6 +1,7 @@
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminPageHero, AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import { KitNextStep } from '@/features/admin/components/admin-ui-kit';
+import { OrgRoleCrudPanel } from '@/features/admin/components/org-role-crud-panel';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -18,10 +19,10 @@ export default async function Page() {
   ]);
   const roles = (rolesResult.data ?? []) as any[];
   const members = (membersResult.data ?? []) as any[];
-    const hasThreshold = organization.approval_threshold_pct != null;
+  const hasThreshold = organization.approval_threshold_pct != null;
   const gapItems = [
     ...(!hasThreshold ? [{ icon: '🔒', text: 'Approval threshold not set', href: '/admin/security' }] : []),
     ...(roles.length === 0 ? [{ icon: '👥', text: 'No roles configured', href: '/admin/security' }] : []),
   ];
-  return <AdminSettingsShell active="security" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Security & Roles" gapItems={gapItems}><AdminPageHero title="Security / Roles" description="Review roles, role permissions, and member assignment coverage in the admin lane." badge={organization.name} stats={[{ label: 'Roles', value: roles.length, tone: roles.length ? 'success' : 'warning' }, { label: 'Members', value: members.length, tone: 'info' }, { label: 'Active', value: members.filter((item) => item.is_active).length, tone: 'success' }] as any} /><SecurityAdminWorkspace roles={roles} members={members} approvalThresholdPct={Number(organization.approval_threshold_pct ?? 15)} /><KitNextStep icon="📋" label="Roles configured — review audit log" description="Verify admin actions and track changes" href="/admin/audit" /></AdminSettingsShell>;
+  return <AdminSettingsShell active="security" organizationName={organization.name} missingCount={gapItems.length} sectionTitle="Security & Roles" gapItems={gapItems}><AdminPageHero title="Security / Roles" description="Review roles, role permissions, and member assignment coverage in the admin lane." badge={organization.name} stats={[{ label: 'Roles', value: roles.length, tone: roles.length ? 'success' : 'warning' }, { label: 'Members', value: members.length, tone: 'info' }, { label: 'Active', value: members.filter((item) => item.is_active).length, tone: 'success' }] as any} /><OrgRoleCrudPanel roles={roles} /><SecurityAdminWorkspace roles={roles} members={members} approvalThresholdPct={Number(organization.approval_threshold_pct ?? 15)} /><KitNextStep icon="📋" label="Roles configured — review audit log" description="Verify admin actions and track changes" href="/admin/audit" /></AdminSettingsShell>;
 }
