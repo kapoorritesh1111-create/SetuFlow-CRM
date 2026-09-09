@@ -189,9 +189,9 @@ export async function POST(request: Request) {
 
   const summary = { found: rows.length, ready: inserts.length, duplicates: duplicates.length, corrections: errors.length };
   if (body?.action !== 'commit') {
-    return NextResponse.json({ imported: 0, ...summary, errors, duplicates, previewRows });
+    return NextResponse.json({ imported: 0, ...summary, errors, duplicateRows: duplicates, previewRows });
   }
-  if (!inserts.length) return NextResponse.json({ imported: 0, ...summary, errors, duplicates, previewRows }, { status: 400 });
+  if (!inserts.length) return NextResponse.json({ imported: 0, ...summary, errors, duplicateRows: duplicates, previewRows }, { status: 400 });
 
   const startedAt = new Date().toISOString();
   const { data: importRun, error: runError } = await db.from('import_runs').insert({
@@ -215,7 +215,7 @@ export async function POST(request: Request) {
   const { data: inserted, error } = await db.from('leads').insert(insertsWithRun).select('id');
   if (error) {
     await db.from('import_runs').update({ status: 'failed', completed_at: new Date().toISOString(), summary_payload: { source: 'capture_lead_import', preview: summary, error: error.message } }).eq('id', importRun.id);
-    return NextResponse.json({ error: error.message, ...summary, errors, duplicates, previewRows }, { status: 500 });
+    return NextResponse.json({ error: error.message, ...summary, errors, duplicateRows: duplicates, previewRows }, { status: 500 });
   }
 
   const imported = inserted?.length ?? insertsWithRun.length;
@@ -226,5 +226,5 @@ export async function POST(request: Request) {
     summary_payload: { source: 'capture_lead_import', preview: summary, imported },
   }).eq('id', importRun.id);
 
-  return NextResponse.json({ imported, importRunId: importRun.id, ...summary, errors, duplicates, previewRows });
+  return NextResponse.json({ imported, importRunId: importRun.id, ...summary, errors, duplicateRows: duplicates, previewRows });
 }
