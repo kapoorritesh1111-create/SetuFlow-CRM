@@ -95,13 +95,13 @@ function inferSource(contact: NormalizedInteraktContact, evidence?: InteraktInqu
   const acquisition = lower(evidence?.acquisitionType);
   const platform = lower(evidence?.adPlatform);
   if (acquisition === 'ctwa') {
-    return { kind: 'ctwa', label: platform ? `WhatsApp · CTWA · ${platform === 'instagram' ? 'Instagram' : 'Facebook'}` : 'WhatsApp · CTWA', confidence: 'high', reason: 'Meta Click-to-WhatsApp attribution was captured from the inbound evidence.' };
+    return { kind: 'ctwa', label: platform ? `🔥 CTWA Hot Lead · WhatsApp · ${platform === 'instagram' ? 'Instagram' : 'Facebook'}` : '🔥 CTWA Hot Lead · WhatsApp', confidence: 'high', reason: 'Meta Click-to-WhatsApp attribution was captured from the inbound evidence.' };
   }
   if (lower(evidence?.channelSource) === 'instagram') return { kind: 'instagram', label: 'Instagram', confidence: 'high', reason: 'Inbound evidence identifies Instagram as the channel.' };
 
   const tags = contact.tags.map((tag) => lower(tag));
   const values = stringEvidence(contact);
-  if (tags.some((tag) => tag === 'ctwa' || tag.includes('click to whatsapp') || tag.includes('click-to-whatsapp'))) return { kind: 'ctwa', label: 'WhatsApp · CTWA', confidence: 'high', reason: 'Interakt supplied a CTWA tag.' };
+  if (tags.some((tag) => tag === 'ctwa' || tag.includes('click to whatsapp') || tag.includes('click-to-whatsapp'))) return { kind: 'ctwa', label: '🔥 CTWA Hot Lead · WhatsApp', confidence: 'high', reason: 'Interakt supplied a CTWA tag.' };
   if (values.some((value) => value.includes('instagram'))) return { kind: 'instagram', label: 'Instagram', confidence: 'high', reason: 'The Interakt payload contains an Instagram source/channel value.' };
   if (values.some((value) => value.includes('whatsapp'))) return { kind: 'whatsapp', label: 'WhatsApp', confidence: 'high', reason: 'The Interakt payload contains a WhatsApp source/channel value.' };
   if (contact.fullPhoneNumber && lower(contact.sourceCreatedVia) === 'messagepersister') return { kind: 'whatsapp', label: 'WhatsApp', confidence: 'medium', reason: 'Interakt created the phone contact through its message persistence flow.' };
@@ -179,6 +179,9 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
 
   const readyForLead = leadBlockers.length === 0 && hasIntentEvidence;
   const band = bandForScore(finalScore, readyForLead);
+  const displayBand = source.kind === 'ctwa'
+    ? { ...band, bandLabel: `🔥 CTWA Hot Lead · ${band.bandLabel}` }
+    : band;
   const inquiryReceivedAt = evidence?.firstInquiryAt ?? null;
   const nextStep = leadBlockers.length
     ? `Capture the sales handoff essentials: ${leadBlockers.join(', ')}.`
@@ -193,7 +196,7 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
     inquiryReceivedAt,
     inquiryTimingLabel: inquiryReceivedAt ? 'Exact inbound timestamp captured from Interakt.' : 'Exact inquiry time not captured yet.',
     score: finalScore,
-    ...band,
+    ...displayBand,
     scoreReason: scoreParts.join(' · '),
     nextStep,
     missingFields: leadBlockers,
