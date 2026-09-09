@@ -1,5 +1,7 @@
 'use server';
 
+import { unstable_cache } from 'next/cache';
+
 import { assessInteraktContact } from '@/features/integrations/interakt/qualification';
 import type { InteraktInquiryEvidence, NormalizedInteraktContact } from '@/features/integrations/interakt/types';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
@@ -100,11 +102,44 @@ function evidenceFromRow(row: any): InteraktInquiryEvidence {
   };
 }
 
+const readInboundRpcCached = unstable_cache(
+  async (
+    rpcName: string,
+    organizationId: string,
+    scopedUserId: string | null,
+    q: string | null,
+    status: string,
+    guru: string,
+    source: string,
+    owner: string | null,
+    sort: string,
+    pageSize: number,
+    offset: number,
+  ) => {
+    const db: any = createAdminSupabaseClient();
+    if (!db) throw new Error('Database admin client unavailable.');
+    const { data, error } = await db.rpc(rpcName, {
+      p_organization_id: organizationId,
+      p_assigned_user_id: scopedUserId,
+      p_q: q,
+      p_status: status,
+      p_guru: guru,
+      p_source: source,
+      p_owner: owner,
+      p_sort: sort,
+      p_limit: pageSize,
+      p_offset: offset,
+    });
+    if (error) throw new Error(String(error.message ?? 'unknown database error'));
+    return data ?? {};
+  },
+  ['stark-inbound-workspace-read'],
+  { revalidate: 5 },
+);
+
 export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) {
   const workspace = await requireStark();
   const organizationId = workspace.organization.id;
-  const db: any = createAdminSupabaseClient();
-  if (!db) throw new Error('Database admin client unavailable.');
 
   const roles = workspace.currentRoles.map((role) => String(role).toLowerCase());
   const canSeeAll = Boolean(workspace.canAccessAdmin) || roles.some((role) => MANAGEMENT_ROLES.has(role));
@@ -123,21 +158,23 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
   const isReviewMode = pageSize <= 20;
   const rpcName = isReviewMode ? 'stark_inbound_review_page' : 'stark_inbound_workspace_page';
 
-  const { data, error } = await db.rpc(rpcName, {
-    p_organization_id: organizationId,
-    p_assigned_user_id: scopedUserId,
-    p_q: q || null,
-    p_status: status,
-    p_guru: guru,
-    p_source: source,
-    p_owner: owner || null,
-    p_sort: sort,
-    p_limit: pageSize,
-    p_offset: (page - 1) * pageSize,
-  });
-
-  if (error) {
-    throw new Error(`Unable to load inbound workspace: ${String(error.message ?? 'unknown database error')}`);
+  let data: any;
+  try {
+    data = await readInboundRpcCached(
+      rpcName,
+      organizationId,
+      scopedUserId,
+      q || null,
+      status,
+      guru,
+      source,
+      owner || null,
+      sort,
+      pageSize,
+      (page - 1) * pageSize,
+    );
+  } catch (error: any) {
+    throw new Error(`Unable to load inbound workspace: ${String(error?.message ?? 'unknown database error')}`);
   }
 
   const payload = (data ?? {}) as { rows?: any[]; stats?: Record<string, number> };
