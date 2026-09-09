@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getIcpProfile, type IcpProfile } from '@/lib/setu-guru/icp';
 
 export type FitScoreResult = {
-  score: number; // 0-100
+  score: number;
   matchedCountry: boolean;
   matchedProduct: boolean;
   matchedBuyerType: boolean;
@@ -25,58 +25,124 @@ export type EntityResearchResult = {
   rfqReadiness?: 'ready' | 'needs_input' | 'unknown';
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const ageDays = (value?: string | null) => (value ? Math.floor((Date.now() - Date.parse(value)) / DAY_MS) : null);
-
 function normalize(value?: string | null) {
   return (value ?? '').trim().toLowerCase();
 }
 
-function overlaps(a: string[], b: string[]) {
-  const setB = new Set(b.map(normalize));
-  return a.some((item) => setB.has(normalize(item)));
+function textMatches(haystack: string, candidates: string[]) {
+  const normalized = normalize(haystack);
+  return candidates.some((candidate) => {
+    const needle = normalize(candidate);
+    return Boolean(needle) && (normalized.includes(needle) || needle.includes(normalized));
+  });
+}
+
+function verticalList(icp: IcpProfile, key: string) {
+  const raw = (icp.vertical_profile ?? {})[key];
+  return Array.isArray(raw) ? raw.map(String).filter(Boolean) : [];
+}
+
+function scoreWeight(icp: IcpProfile, key: string, fallback: number) {
+  const scoring = (icp.vertical_profile ?? {}).scoring;
+  if (!scoring || typeof scoring !== 'object' || Array.isArray(scoring)) return fallback;
+  const value = Number((scoring as Record<string, unknown>)[key]);
+  return Number.isFinite(value) ? value : fallback;
 }
 
 export function scoreFitAgainstIcp(
-  lead: { country?: string | null; products_or_needs?: string | null; lead_type?: string | null; main_product_category?: string | null },
+  lead: {
+    country?: string | null;
+    products_or_needs?: string | null;
+    lead_type?: string | null;
+    main_product_category?: string | null;
+    job_title?: string | null;
+    notes?: string | null;
+    source_type?: string | null;
+    source_label?: string | null;
+    contact_name?: string | null;
+    company_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    industry_metadata?: Record<string, unknown> | null;
+  },
   icp: IcpProfile | null,
 ): FitScoreResult | null {
   if (!icp) return null;
 
   const reasons: string[] = [];
-  let score = 40; // baseline: CRM record exists, no ICP contradiction yet
+  let score = 0;
+  const profile = icp.vertical_profile ?? {};
+  const productWeight = scoreWeight(icp, 'product_fit', 25);
+  const industryWeight = scoreWeight(icp, 'industry_fit', 15);
+  const authorityWeight = scoreWeight(icp, 'buyer_authority', 15);
+  const buyingWeight = scoreWeight(icp, 'buying_signal', 20);
+  const geographyWeight = scoreWeight(icp, 'geography', 10);
+  const engagementWeight = scoreWeight(icp, 'engagement', 10);
+  const qualityWeight = scoreWeight(icp, 'data_quality', 5);
 
-  const matchedCountry = Boolean(icp.target_countries.length) && overlaps([lead.country ?? ''], icp.target_countries);
+  const matchedCountry = Boolean(icp.target_countries.length) && textMatches(lead.country ?? '', icp.target_countries);
   if (matchedCountry) {
-    score += 25;
-    reasons.push(`Located in a target market (${lead.country}).`);
+    score += geographyWeight;
+    reasons.push(`Target geography: ${lead.country}.`);
   }
 
-  const leadProductTerms = [lead.products_or_needs ?? '', lead.main_product_category ?? '']
-    .join(' ')
-    .split(/[,/;]+/)
-    .map((term) => term.trim())
-    .filter(Boolean);
-  const matchedProduct = Boolean(icp.products.length) && leadProductTerms.some((term) =>
-    icp.products.some((product) => normalize(term).includes(normalize(product)) || normalize(product).includes(normalize(term))),
-  );
+  const productText = [lead.products_or_needs, lead.main_product_category, lead.notes].filter(Boolean).join(' ');
+  const productTargets = [...icp.products, ...verticalList(icp, 'priority_products')];
+  const matchedProduct = Boolean(productTargets.length) && textMatches(productText, productTargets);
   if (matchedProduct) {
-    score += 20;
-    reasons.push('Product interest overlaps with your ICP product list.');
+    score += productWeight;
+    reasons.push('Packaging need matches Stark Packmate’s priority products.');
   }
 
-  const matchedBuyerType = Boolean(icp.buyer_types.length) && overlaps([lead.lead_type ?? ''], icp.buyer_types);
+  const authorityTargets = [...icp.buyer_types, ...verticalList(icp, 'priority_roles')];
+  const authorityText = [lead.lead_type, lead.job_title].filter(Boolean).join(' ');
+  const matchedBuyerType = textMatches(authorityText, authorityTargets);
   if (matchedBuyerType) {
-    score += 15;
-    reasons.push('Buyer type matches a target buyer type in your ICP.');
+    score += authorityWeight;
+    reasons.push(lead.job_title ? `Decision-maker role: ${lead.job_title}.` : 'Buyer type matches the ICP.');
   }
 
-  if (!matchedCountry && icp.target_countries.length) {
-    reasons.push('Outside your configured target countries.');
+  const industryTargets = verticalList(icp, 'target_industries');
+  const metadataText = lead.industry_metadata ? JSON.stringify(lead.industry_metadata) : '';
+  const industryText = [lead.notes, metadataText, lead.company_name].filter(Boolean).join(' ');
+  const matchedIndustry = Boolean(industryTargets.length) && textMatches(industryText, industryTargets);
+  if (matchedIndustry) {
+    score += industryWeight;
+    reasons.push('Industry evidence matches Stark Packmate’s target sectors.');
   }
-  if (!matchedProduct && icp.products.length) {
-    reasons.push('No clear overlap with your configured product list yet.');
+
+  const commercialText = [lead.products_or_needs, lead.notes].filter(Boolean).join(' ').toLowerCase();
+  const buyingSignals: Array<[RegExp, string]> = [
+    [/\b\d+\s*(?:k|thousand|lakh|lac|million)?\s*(?:pcs|pieces|units)\b/i, 'quantity'],
+    [/\b\d+\s*sku(?:s)?\b/i, 'SKU count'],
+    [/\b(?:pack size|\d+\s*(?:gm|g|kg|ml|ltr|litre|liter))\b/i, 'pack size'],
+    [/\b(?:artwork|design)\b/i, 'artwork/design'],
+    [/\bmoq\b/i, 'MOQ'],
+    [/\b(?:price|pricing|quote)\b/i, 'pricing/quote'],
+    [/\b(?:sample|sampling)\b/i, 'sample'],
+    [/\bmeeting\b/i, 'meeting'],
+  ];
+  const foundSignals = buyingSignals.filter(([pattern]) => pattern.test(commercialText)).map(([, label]) => label);
+  if (foundSignals.length) {
+    const signalFraction = Math.min(1, 0.55 + Math.min(3, foundSignals.length - 1) * 0.15);
+    score += Math.round(buyingWeight * signalFraction);
+    reasons.push(`Buying evidence: ${foundSignals.slice(0, 4).join(', ')}.`);
   }
+
+  const sourceText = `${lead.source_type ?? ''} ${lead.source_label ?? ''} ${lead.notes ?? ''}`;
+  const highIntentSources = verticalList(icp, 'high_intent_sources');
+  const highIntent = textMatches(sourceText, highIntentSources) || /\bctwa\b/i.test(sourceText);
+  if (highIntent) {
+    score += engagementWeight;
+    reasons.push(/\bctwa\b/i.test(sourceText) ? 'High-intent CTWA/Meta acquisition.' : 'High-intent sales engagement source.');
+  }
+
+  const qualityFields = [lead.company_name, lead.contact_name, lead.phone || lead.email, lead.products_or_needs, lead.country];
+  const qualityRatio = qualityFields.filter(Boolean).length / qualityFields.length;
+  score += Math.round(qualityWeight * qualityRatio);
+
+  if (!matchedCountry && icp.target_countries.length) reasons.push('Target country is not confirmed yet.');
+  if (!matchedProduct && productTargets.length) reasons.push('Packaging requirement needs more detail before product fit can be confirmed.');
 
   return {
     score: Math.max(0, Math.min(100, score)),
@@ -87,6 +153,13 @@ export function scoreFitAgainstIcp(
   };
 }
 
+function fitBand(score: number) {
+  if (score >= 80) return 'ideal ICP';
+  if (score >= 65) return 'strong fit';
+  if (score >= 45) return 'potential fit';
+  return 'low-evidence fit';
+}
+
 export async function generateBuyerResearch(orgId: string, leadId: string): Promise<EntityResearchResult | null> {
   const supabase = await createClient();
   const client = supabase as any;
@@ -94,7 +167,7 @@ export async function generateBuyerResearch(orgId: string, leadId: string): Prom
   const [{ data: lead, error: leadError }, icp] = await Promise.all([
     client
       .from('leads')
-      .select('id,company_name,contact_name,country,lead_type,products_or_needs,main_product_category,last_contacted_at,intro_sent,trade_event_id,created_at')
+      .select('id,company_name,contact_name,job_title,email,phone,country,lead_type,products_or_needs,main_product_category,notes,source_type,source_label,industry_metadata,last_contacted_at,intro_sent,trade_event_id,created_at')
       .eq('organization_id', orgId)
       .eq('id', leadId)
       .maybeSingle(),
@@ -118,46 +191,48 @@ export async function generateBuyerResearch(orgId: string, leadId: string): Prom
 
   const missingInformation: string[] = [];
   if (!lead.country) missingInformation.push('Country');
-  if (!lead.products_or_needs) missingInformation.push('Product interest or needs');
+  if (!lead.products_or_needs) missingInformation.push('Packaging requirement');
   if (!lead.contact_name) missingInformation.push('Contact name');
+  if (!lead.job_title) missingInformation.push('Buyer role / designation');
 
   const summaryParts: string[] = [];
   if (fitScore) {
-    summaryParts.push(
-      fitScore.score >= 65
-        ? `This buyer looks like a strong fit (fit score ${fitScore.score}/100).`
-        : fitScore.score >= 40
-          ? `This buyer is a moderate fit (fit score ${fitScore.score}/100).`
-          : `This buyer does not clearly match your configured ICP yet (fit score ${fitScore.score}/100).`,
-    );
+    summaryParts.push(`This buyer is a ${fitBand(fitScore.score)} (fit score ${fitScore.score}/100).`);
     if (fitScore.reasons.length) summaryParts.push(fitScore.reasons.join(' '));
   } else {
     summaryParts.push('Set up your ICP profile so Setu Guru can score how well this buyer fits your target market.');
   }
-  if (lead.trade_event_id) summaryParts.push('This lead was captured from a trade event.');
-  if (hasQuote) summaryParts.push('A quote already exists for this buyer.');
-  if (hasCatalogOpen) summaryParts.push('The buyer has opened a shared catalog.');
+  if (lead.trade_event_id) summaryParts.push('Captured from a trade event.');
+  if (hasQuote) summaryParts.push('A quote already exists.');
+  if (hasCatalogOpen) summaryParts.push('The buyer opened a shared catalog.');
 
-  const recommendedProducts = icp && fitScore?.matchedProduct ? icp.products.slice(0, 5) : [];
+  const recommendedProducts = icp && fitScore?.matchedProduct
+    ? icp.products.filter((product) => textMatches(`${lead.products_or_needs ?? ''} ${lead.notes ?? ''}`, [product])).slice(0, 5)
+    : [];
 
-  let recommendedNextAction = 'Open the buyer lead and confirm the next CRM step.';
-  let suggestedFollowUpTiming: string | null = null;
-  if (!lead.last_contacted_at && !lead.intro_sent) {
-    recommendedNextAction = 'Prepare the first approved outreach message.';
-    suggestedFollowUpTiming = 'Today';
+  let recommendedNextAction = 'Confirm the packaging requirement, quantity and artwork status.';
+  let suggestedFollowUpTiming: string | null = 'Today';
+  const commercialText = `${lead.products_or_needs ?? ''} ${lead.notes ?? ''}`.toLowerCase();
+  if (/\b(?:sample|sampling)\b/.test(commercialText)) {
+    recommendedNextAction = 'Follow up on the sample outcome and confirm changes needed before commercial approval.';
+    suggestedFollowUpTiming = 'Within 2 business days';
+  } else if (/\b(?:quote shared|quote sent|prices shared|price shared)\b/.test(commercialText) || hasQuote) {
+    recommendedNextAction = 'Follow up on pricing/quote and confirm decision timing, quantity and any objections.';
+    suggestedFollowUpTiming = 'Within 2–3 days';
+  } else if (/\b(?:artwork|design)\b/.test(commercialText)) {
+    recommendedNextAction = 'Get or review the artwork, then confirm MOQ, structure and pricing.';
+    suggestedFollowUpTiming = 'Within 1–2 days';
   } else if (hasCatalogOpen && !lastInbound) {
-    recommendedNextAction = 'Follow up after the catalog was opened with no reply yet.';
+    recommendedNextAction = 'Follow up after the catalog was opened and ask which packaging format they want priced.';
     suggestedFollowUpTiming = 'Within 2 days';
-  } else if (hasQuote) {
-    recommendedNextAction = 'Check in on the open quote and offer to answer questions.';
-    suggestedFollowUpTiming = 'Within 3 days of the quote being sent';
+  } else if (!lead.last_contacted_at && !lead.intro_sent) {
+    recommendedNextAction = 'Prepare the first approved outreach focused on their packaging need.';
+    suggestedFollowUpTiming = 'Today';
   }
 
-  const suggestedAngle = icp?.outreach_style
-    ? icp.outreach_style
-    : recommendedProducts.length
-      ? `Lead with ${recommendedProducts[0]} and reference why it matches their market.`
-      : null;
+  const suggestedAngle = recommendedProducts.length
+    ? `Lead with ${recommendedProducts[0]} and move quickly to quantity, artwork, MOQ and price.`
+    : icp?.outreach_style ?? null;
 
   return {
     entityId: lead.id,
@@ -198,66 +273,21 @@ export async function generateSupplierResearch(orgId: string, leadId: string): P
 
   const label = lead.company_name || lead.contact_name || 'This supplier';
   const fitScore = scoreFitAgainstIcp(lead, icp);
-
   const requiredDocs = icp?.required_documents ?? [];
   const existingDocs = documents ?? [];
   const now = Date.now();
   const expiredDocs = existingDocs.filter((doc: any) => doc.expires_at && Date.parse(doc.expires_at) < now);
   const missingDocuments = requiredDocs.length && existingDocs.length === 0 ? requiredDocs : expiredDocs.map(() => 'Expired document on file');
-  const complianceStatus: EntityResearchResult['complianceStatus'] = requiredDocs.length === 0
-    ? 'unknown'
-    : missingDocuments.length
-      ? 'gaps_found'
-      : 'ok';
-
-  const openRfq = (rfqs ?? []).find((rfq: any) => !['completed', 'closed', 'approved'].includes(String(rfq.status ?? '').toLowerCase()));
-  const rfqReadiness: EntityResearchResult['rfqReadiness'] = complianceStatus === 'gaps_found'
-    ? 'needs_input'
-    : (rfqs ?? []).length
-      ? 'ready'
-      : 'unknown';
-
+  const complianceStatus: EntityResearchResult['complianceStatus'] = requiredDocs.length === 0 ? 'unknown' : missingDocuments.length ? 'gaps_found' : 'ok';
+  const openRfq = (rfqs ?? []).find((rfq: any) => !['completed','closed','approved'].includes(String(rfq.status ?? '').toLowerCase()));
+  const rfqReadiness: EntityResearchResult['rfqReadiness'] = complianceStatus === 'gaps_found' ? 'needs_input' : (rfqs ?? []).length ? 'ready' : 'unknown';
   const missingInformation: string[] = [];
   if (!lead.country) missingInformation.push('Country');
   if (!lead.products_or_needs) missingInformation.push('Capability or product category');
-
-  const summaryParts: string[] = [];
-  if (fitScore) {
-    summaryParts.push(
-      fitScore.score >= 65
-        ? `This supplier looks like a strong sourcing fit (fit score ${fitScore.score}/100).`
-        : `This supplier is a partial sourcing fit (fit score ${fitScore.score}/100).`,
-    );
-    if (fitScore.reasons.length) summaryParts.push(fitScore.reasons.join(' '));
-  } else {
-    summaryParts.push('Set up your ICP profile so Setu Guru can score supplier fit against your sourcing needs.');
-  }
-  if (complianceStatus === 'gaps_found') {
-    summaryParts.push('Required compliance documents are missing or expired.');
-  } else if (complianceStatus === 'ok') {
-    summaryParts.push('Required documents are on file.');
-  }
+  const summaryParts = [fitScore ? `This supplier has a sourcing fit score of ${fitScore.score}/100. ${fitScore.reasons.join(' ')}` : 'Set up your ICP profile so Setu Guru can score supplier fit.'];
+  if (complianceStatus === 'gaps_found') summaryParts.push('Required compliance documents are missing or expired.');
   if (openRfq) summaryParts.push('An RFQ with this supplier is still open.');
+  const recommendedNextAction = complianceStatus === 'gaps_found' ? 'Request the missing or expired compliance documents before moving forward.' : openRfq ? 'Review the open RFQ response and confirm next steps.' : 'Confirm supplier capability details and consider creating an RFQ.';
 
-  const recommendedNextAction = complianceStatus === 'gaps_found'
-    ? 'Request the missing or expired compliance documents before moving forward.'
-    : openRfq
-      ? 'Review the open RFQ response and confirm next steps.'
-      : 'Confirm supplier capability details and consider creating an RFQ.';
-
-  return {
-    entityId: lead.id,
-    entityType: 'supplier',
-    label,
-    fitSummary: summaryParts.join(' '),
-    fitScore,
-    recommendedProducts: [],
-    suggestedAngle: null,
-    missingInformation,
-    recommendedNextAction,
-    suggestedFollowUpTiming: openRfq ? 'As soon as possible' : null,
-    complianceStatus,
-    missingDocuments,
-    rfqReadiness,
-  };
+  return { entityId: lead.id, entityType: 'supplier', label, fitSummary: summaryParts.join(' '), fitScore, recommendedProducts: [], suggestedAngle: null, missingInformation, recommendedNextAction, suggestedFollowUpTiming: openRfq ? 'As soon as possible' : null, complianceStatus, missingDocuments, rfqReadiness };
 }
