@@ -30,6 +30,7 @@ export type AdminNavKey =
   | 'pricing-engine'
   | 'document-templates'
   | 'integrations'
+  | 'mail'
   | 'rate-limits'
   | 'guru-config'
   | 'api-keys'
@@ -100,6 +101,7 @@ const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boole
     label: 'Connections',
     items: [
       { key: 'integrations', href: '/admin/integrations', icon: 'plug', label: 'Integrations & API', sublabel: 'Providers, health + API keys', statusDot: 'ok' },
+      { key: 'mail', href: '/admin/mail', icon: 'mail', label: 'Setu Mail', sublabel: 'Domains, mailboxes + delivery', statusDot: 'ok' },
     ],
   },
   {
