@@ -39,6 +39,7 @@ export async function GET() {
     supabase.from('organization_members').select('id,user_id,display_name,is_active').eq('organization_id', organizationId).eq('is_active', true).order('display_name'),
   ]);
 
+  const senderConfigured = Boolean(String(process.env.SETU_MAIL_FROM_EMAIL ?? process.env.SETU_NOTIFICATION_FROM_EMAIL ?? '').trim());
   return NextResponse.json({
     organization: { id: organizationId, name: organization.name, slug: organization.slug },
     domains: domainsResult.data ?? [],
@@ -47,6 +48,9 @@ export async function GET() {
     entitlement: entitlementResult.data ?? null,
     members: membersResult.data ?? [],
     providerConfigured: Boolean(process.env.RESEND_API_KEY),
+    webhookConfigured: Boolean(process.env.RESEND_WEBHOOK_SECRET),
+    senderConfigured,
+    webhookPath: '/api/mail/webhooks/resend',
   });
 }
 
