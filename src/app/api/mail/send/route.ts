@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
     if (threadError || !thread) return NextResponse.json({ error: 'Unable to create the mail conversation.' }, { status: 500 });
     threadId = thread.id;
   }
+  const activeThreadId = threadId;
 
   const outboundAttachments: Array<{ filename: string; content: string }> = [];
   let attachmentBytes = 0;
@@ -157,7 +158,7 @@ export async function POST(request: NextRequest) {
   const resendHeaders: Record<string, string> = {
     'X-Setu-Organization': organizationId,
     'X-Setu-Mailbox': mailbox.id,
-    'X-Setu-Thread': threadId,
+    'X-Setu-Thread': activeThreadId,
   };
   if (parent?.message_id_header) resendHeaders['In-Reply-To'] = parent.message_id_header;
   if (references.length) resendHeaders.References = references.join(' ');
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
   const commonRecord = {
     organization_id: organizationId,
     mailbox_id: mailbox.id,
-    thread_id: threadId,
+    thread_id: activeThreadId,
     direction: 'outbound',
     from_address: mailbox.address,
     to_addresses: to,
@@ -234,9 +235,9 @@ export async function POST(request: NextRequest) {
   }
 
   await Promise.all([
-    supabase.from('mail_threads').update({ last_message_at: now, participants: Array.from(new Set([mailbox.address, ...allRecipients])), updated_at: now }).eq('id', threadId),
+    supabase.from('mail_threads').update({ last_message_at: now, participants: Array.from(new Set([mailbox.address, ...allRecipients])), updated_at: now }).eq('id', activeThreadId),
     supabase.from('mail_entitlements').update({ current_period_messages: Number(entitlement.current_period_messages ?? 0) + 1, updated_at: now }).eq('organization_id', organizationId),
   ]);
 
-  return NextResponse.json({ ok: true, id: message.id, threadId, providerMessageId: provider.id ?? null });
+  return NextResponse.json({ ok: true, id: message.id, threadId: activeThreadId, providerMessageId: provider.id ?? null });
 }
