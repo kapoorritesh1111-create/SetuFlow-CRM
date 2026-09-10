@@ -18,17 +18,18 @@ async function requireMailAdmin() {
   if (!workspace.organization || !workspace.membership || !workspace.canAccessAdmin) {
     return { error: NextResponse.json({ error: 'Owner or admin access is required.' }, { status: 403 }) };
   }
+  const organization = workspace.organization;
   const supabase = (await createClient()) as any;
-  const { data: grant } = await supabase.from('org_module_grants').select('enabled').eq('organization_id', workspace.organization.id).eq('module_key', 'setu_mail').maybeSingle();
+  const { data: grant } = await supabase.from('org_module_grants').select('enabled').eq('organization_id', organization.id).eq('module_key', 'setu_mail').maybeSingle();
   if (!grant?.enabled) return { error: NextResponse.json({ error: 'Setu Mail is not enabled for this organization.' }, { status: 403 }) };
-  return { workspace, supabase };
+  return { workspace, organization, supabase };
 }
 
 export async function GET() {
   const access = await requireMailAdmin();
   if ('error' in access) return access.error;
-  const { workspace, supabase } = access;
-  const organizationId = workspace.organization.id;
+  const { organization, supabase } = access;
+  const organizationId = organization.id;
 
   const [domainsResult, mailboxesResult, aliasesResult, entitlementResult, membersResult] = await Promise.all([
     supabase.from('mail_domains').select('*').eq('organization_id', organizationId).order('created_at', { ascending: true }),
@@ -39,7 +40,7 @@ export async function GET() {
   ]);
 
   return NextResponse.json({
-    organization: { id: organizationId, name: workspace.organization.name, slug: workspace.organization.slug },
+    organization: { id: organizationId, name: organization.name, slug: organization.slug },
     domains: domainsResult.data ?? [],
     mailboxes: mailboxesResult.data ?? [],
     aliases: aliasesResult.data ?? [],
@@ -52,8 +53,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const access = await requireMailAdmin();
   if ('error' in access) return access.error;
-  const { workspace, supabase } = access;
-  const organizationId = workspace.organization.id;
+  const { organization, supabase } = access;
+  const organizationId = organization.id;
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const action = String(body?.action ?? '').trim();
 
