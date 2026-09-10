@@ -180,6 +180,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
       showWorkspaceModeSwitch: false,
     };
   }
+  if (pathname.startsWith('/mail')) return { title: 'Setu Mail', description: 'Business email built into your Trade OS. Send normal email, keep conversations together, and use optional CRM-aware guidance when it helps.', sectionLabel: 'Work', showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/trade-events')) return { title: 'Trade events', description: 'Trade show command center. Capture leads on the floor, review entries, and track conversion to pipeline.', showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/design-queue')) return { title: 'Design Queue', description: 'Packaging jobs across active quotes still needing artwork attention.', sectionLabel: 'Production', showWorkspaceModeSwitch: false };
   if (pathname.startsWith('/dispatch-board')) return { title: 'Dispatch Board', description: 'Accepted packaging jobs ready for production and dispatch.', sectionLabel: 'Production', showWorkspaceModeSwitch: false };
