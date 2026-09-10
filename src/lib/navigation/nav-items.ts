@@ -111,6 +111,7 @@ export const standaloneMobileNavItems: MobileNavItem[] = [
   { href: '/quotes', label: 'Quotes', icon: 'quote', match: ['/quotes', '/mobile/quote'] },
   { href: '/orders', label: 'Orders', icon: 'orders', match: ['/orders', '/mobile/orders'] },
   { href: '/tasks', label: 'Tasks', icon: 'clipboard', match: ['/tasks'] },
+  { href: '/mail', label: 'Mail', icon: 'mail', match: ['/mail'] },
 ];
 
 /**
@@ -118,6 +119,7 @@ export const standaloneMobileNavItems: MobileNavItem[] = [
  * tab so the primary bar stays focused on the four daily commercial surfaces.
  */
 export const mobileMoreNavItems: MobileNavItem[] = [
+  { href: '/mail', label: 'Mail', icon: 'mail', match: ['/mail'] },
   { href: '/tasks', label: 'Tasks', icon: 'clipboard', match: ['/tasks'] },
   { href: '/trade-events', label: 'Events', icon: 'calendar', match: ['/trade-events'] },
 ];
