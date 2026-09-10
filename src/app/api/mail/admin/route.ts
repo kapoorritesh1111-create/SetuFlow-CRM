@@ -12,6 +12,16 @@ function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+const READY_CAPABILITIES = new Set(['enabled', 'verified', 'active', 'ready']);
+function normalizeCapability(value: unknown, fallbackStatus: unknown) {
+  const explicit = String(value ?? '').trim().toLowerCase();
+  if (explicit) return explicit;
+  return String(fallbackStatus ?? '').trim().toLowerCase() === 'verified' ? 'verified' : 'pending';
+}
+function capabilityReady(value: unknown) {
+  return READY_CAPABILITIES.has(String(value ?? '').trim().toLowerCase());
+}
+
 async function requireMailAdmin() {
   const workspace = await getWorkspaceAccess();
   if (!workspace.user) return { error: NextResponse.json({ error: 'Authentication required.' }, { status: 401 }) };
@@ -82,14 +92,17 @@ export async function POST(request: NextRequest) {
     if (!providerResponse.ok) return NextResponse.json({ error: provider?.message || 'Unable to register the domain with Resend.' }, { status: 502 });
 
     const records = Array.isArray(provider?.records) ? provider.records : [];
+    const status = provider?.status ?? 'pending';
+    const sendingStatus = normalizeCapability(provider?.capabilities?.sending, status);
+    const receivingStatus = normalizeCapability(provider?.capabilities?.receiving, status);
     const { data, error } = await supabase.from('mail_domains').insert({
       organization_id: organizationId,
       domain,
       provider_domain_id: provider?.id ?? null,
-      status: provider?.status ?? 'pending',
+      status,
       region: provider?.region ?? null,
-      sending_status: provider?.status === 'verified' ? 'verified' : 'pending',
-      receiving_status: 'pending',
+      sending_status: sendingStatus,
+      receiving_status: receivingStatus,
       dns_records: records,
       last_checked_at: new Date().toISOString(),
     }).select('*').single();
@@ -108,7 +121,12 @@ export async function POST(request: NextRequest) {
     if (!providerResponse.ok) return NextResponse.json({ error: provider?.message || 'Unable to refresh domain status.' }, { status: 502 });
     const records = Array.isArray(provider?.records) ? provider.records : domainRow.dns_records;
     const status = provider?.status ?? domainRow.status;
-    const { data } = await supabase.from('mail_domains').update({ status, sending_status: status === 'verified' ? 'verified' : 'pending', dns_records: records, last_checked_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id).select('*').single();
+    const sendingStatus = normalizeCapability(provider?.capabilities?.sending, status);
+    const receivingStatus = normalizeCapability(provider?.capabilities?.receiving, status);
+    const checkedAt = new Date().toISOString();
+    const { data } = await supabase.from('mail_domains').update({ status, sending_status: sendingStatus, receiving_status: receivingStatus, dns_records: records, last_checked_at: checkedAt, updated_at: checkedAt }).eq('id', id).select('*').single();
+    const inboundEnabled = capabilityReady(receivingStatus) && Boolean(process.env.RESEND_WEBHOOK_SECRET);
+    await supabase.from('mail_mailboxes').update({ inbound_enabled: inboundEnabled, updated_at: checkedAt }).eq('organization_id', organizationId).ilike('address', `%@${domainRow.domain}`);
     return NextResponse.json({ ok: true, domain: data });
   }
 
@@ -118,14 +136,35 @@ export async function POST(request: NextRequest) {
     const displayName = String(body?.displayName ?? '').trim() || null;
     if (!userId || !isEmail(address)) return NextResponse.json({ error: 'Select a user and enter a valid mailbox address.' }, { status: 400 });
     const addressDomain = address.split('@')[1];
-    const { data: domainRow } = await supabase.from('mail_domains').select('id,status').eq('organization_id', organizationId).eq('domain', addressDomain).maybeSingle();
+    const { data: domainRow } = await supabase.from('mail_domains').select('id,status,sending_status,receiving_status').eq('organization_id', organizationId).eq('domain', addressDomain).maybeSingle();
     if (!domainRow) return NextResponse.json({ error: 'Add the mailbox domain to Setu Mail first.' }, { status: 409 });
+    if (!capabilityReady(domainRow.sending_status) || !capabilityReady(domainRow.receiving_status)) return NextResponse.json({ error: 'Verify both sending and receiving for this domain before creating mailboxes.' }, { status: 409 });
     const { count } = await supabase.from('mail_mailboxes').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('status', 'active');
     if (Number(count ?? 0) >= Number(entitlement.mailbox_limit ?? 5)) return NextResponse.json({ error: 'Your Setu Mail plan has reached its mailbox limit.' }, { status: 409 });
     const { data: member } = await supabase.from('organization_members').select('user_id').eq('organization_id', organizationId).eq('user_id', userId).eq('is_active', true).maybeSingle();
     if (!member) return NextResponse.json({ error: 'The selected user is not an active organization member.' }, { status: 400 });
-    const { data, error } = await supabase.from('mail_mailboxes').insert({ organization_id: organizationId, user_id: userId, address, display_name: displayName, status: 'active', inbound_enabled: false }).select('*').single();
+    const inboundEnabled = Boolean(process.env.RESEND_WEBHOOK_SECRET);
+    const { data, error } = await supabase.from('mail_mailboxes').insert({ organization_id: organizationId, user_id: userId, address, display_name: displayName, status: 'active', inbound_enabled: inboundEnabled }).select('*').single();
     if (error) return NextResponse.json({ error: error.message || 'Unable to create mailbox.' }, { status: 409 });
+    return NextResponse.json({ ok: true, mailbox: data });
+  }
+
+  if (action === 'set_mailbox_status') {
+    const id = String(body?.id ?? '').trim();
+    const status = String(body?.status ?? '').trim().toLowerCase();
+    if (!id || !['active', 'disabled'].includes(status)) return NextResponse.json({ error: 'Choose a valid mailbox status.' }, { status: 400 });
+    const { data: existing } = await supabase.from('mail_mailboxes').select('id,address,status').eq('id', id).eq('organization_id', organizationId).maybeSingle();
+    if (!existing) return NextResponse.json({ error: 'Mailbox not found.' }, { status: 404 });
+    if (status === 'active' && existing.status !== 'active') {
+      const { count } = await supabase.from('mail_mailboxes').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('status', 'active');
+      if (Number(count ?? 0) >= Number(entitlement.mailbox_limit ?? 5)) return NextResponse.json({ error: 'Your Setu Mail plan has reached its mailbox limit.' }, { status: 409 });
+      const addressDomain = String(existing.address).split('@')[1]?.toLowerCase();
+      const { data: domainRow } = await supabase.from('mail_domains').select('sending_status,receiving_status').eq('organization_id', organizationId).eq('domain', addressDomain).maybeSingle();
+      if (!domainRow || !capabilityReady(domainRow.sending_status) || !capabilityReady(domainRow.receiving_status)) return NextResponse.json({ error: 'Verify both sending and receiving for this domain before activating the mailbox.' }, { status: 409 });
+    }
+    const inboundEnabled = status === 'active' && Boolean(process.env.RESEND_WEBHOOK_SECRET);
+    const { data, error } = await supabase.from('mail_mailboxes').update({ status, inbound_enabled: inboundEnabled, updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', organizationId).select('*').single();
+    if (error) return NextResponse.json({ error: 'Unable to update mailbox status.' }, { status: 500 });
     return NextResponse.json({ ok: true, mailbox: data });
   }
 
@@ -134,10 +173,22 @@ export async function POST(request: NextRequest) {
     const address = String(body?.address ?? '').trim().toLowerCase();
     const aliasType = String(body?.aliasType ?? 'alias').trim().toLowerCase();
     if (!mailboxId || !isEmail(address)) return NextResponse.json({ error: 'Select a mailbox and enter a valid alias.' }, { status: 400 });
-    const { data: mailbox } = await supabase.from('mail_mailboxes').select('id').eq('id', mailboxId).eq('organization_id', organizationId).maybeSingle();
-    if (!mailbox) return NextResponse.json({ error: 'Mailbox not found.' }, { status: 404 });
+    const { data: mailbox } = await supabase.from('mail_mailboxes').select('id,address,status').eq('id', mailboxId).eq('organization_id', organizationId).maybeSingle();
+    if (!mailbox || mailbox.status !== 'active') return NextResponse.json({ error: 'Choose an active destination mailbox.' }, { status: 404 });
+    const aliasDomain = address.split('@')[1]?.toLowerCase();
+    const mailboxDomain = String(mailbox.address).split('@')[1]?.toLowerCase();
+    if (aliasDomain !== mailboxDomain) return NextResponse.json({ error: 'Shared addresses must use the same verified domain as the destination mailbox.' }, { status: 400 });
     const { data, error } = await supabase.from('mail_aliases').insert({ organization_id: organizationId, mailbox_id: mailboxId, address, alias_type: aliasType, is_active: true }).select('*').single();
     if (error) return NextResponse.json({ error: error.message || 'Unable to create alias.' }, { status: 409 });
+    return NextResponse.json({ ok: true, alias: data });
+  }
+
+  if (action === 'set_alias_status') {
+    const id = String(body?.id ?? '').trim();
+    const isActive = body?.isActive === true;
+    if (!id) return NextResponse.json({ error: 'Alias id is required.' }, { status: 400 });
+    const { data, error } = await supabase.from('mail_aliases').update({ is_active: isActive, updated_at: new Date().toISOString() }).eq('id', id).eq('organization_id', organizationId).select('*').maybeSingle();
+    if (error || !data) return NextResponse.json({ error: 'Unable to update shared address.' }, { status: 500 });
     return NextResponse.json({ ok: true, alias: data });
   }
 
