@@ -8,6 +8,10 @@ export const dynamic = 'force-dynamic';
 const ATTACHMENT_BUCKET = 'setu-mail-attachments';
 const MAX_RECIPIENTS = 50;
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const MAILBOX_BURST_WINDOW_MS = 10 * 60 * 1000;
+const MAILBOX_BURST_LIMIT = 30;
+const ORG_HOURLY_WINDOW_MS = 60 * 60 * 1000;
+const ORG_HOURLY_LIMIT = 300;
 
 function isEmail(value: string) {
   return /^[^\s@\r\n]+@[^\s@\r\n]+\.[^\s@\r\n]+$/.test(value);
@@ -79,6 +83,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'This organization has reached its Setu Mail monthly message allowance.' }, { status: 429 });
   }
   if (!mailbox) return NextResponse.json({ error: 'No active Setu Mail mailbox is configured for this user.' }, { status: 409 });
+  if (!admin) return NextResponse.json({ error: 'Setu Mail safety service is unavailable.' }, { status: 503 });
+
+  const nowMs = Date.now();
+  const mailboxWindowStart = new Date(nowMs - MAILBOX_BURST_WINDOW_MS).toISOString();
+  const orgWindowStart = new Date(nowMs - ORG_HOURLY_WINDOW_MS).toISOString();
+  const [mailboxRate, orgRate] = await Promise.all([
+    admin.from('mail_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('mailbox_id', mailbox.id)
+      .eq('direction', 'outbound')
+      .gte('sent_at', mailboxWindowStart),
+    admin.from('mail_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('direction', 'outbound')
+      .gte('sent_at', orgWindowStart),
+  ]);
+  if (mailboxRate.error || orgRate.error) return NextResponse.json({ error: 'Setu Mail safety check could not be completed.' }, { status: 503 });
+  if (Number(mailboxRate.count ?? 0) >= MAILBOX_BURST_LIMIT) {
+    return NextResponse.json(
+      { error: 'This mailbox is sending unusually quickly. Try again shortly.' },
+      { status: 429, headers: { 'Retry-After': '600' } },
+    );
+  }
+  if (Number(orgRate.count ?? 0) >= ORG_HOURLY_LIMIT) {
+    return NextResponse.json(
+      { error: 'This organization has reached the Setu Mail hourly safety limit. Try again later.' },
+      { status: 429, headers: { 'Retry-After': '3600' } },
+    );
+  }
 
   const { data: signature } = body?.includeSignature === false
     ? { data: null }
@@ -123,7 +157,6 @@ export async function POST(request: NextRequest) {
   const outboundAttachments: Array<{ filename: string; content: string }> = [];
   let attachmentBytes = 0;
   if (attachmentIds.length) {
-    if (!admin) return NextResponse.json({ error: 'Attachment storage is not configured.' }, { status: 503 });
     const { data: attachmentRows, error: attachmentError } = await admin
       .from('mail_attachments')
       .select('id,filename,size_bytes,storage_path,message_id')
@@ -230,7 +263,7 @@ export async function POST(request: NextRequest) {
 
   if (saveError || !message) return NextResponse.json({ error: 'Email sent, but Setu Mail could not save the sent copy.' }, { status: 500 });
 
-  if (attachmentIds.length && admin) {
+  if (attachmentIds.length) {
     await admin.from('mail_attachments').update({ message_id: message.id }).in('id', attachmentIds).eq('mailbox_id', mailbox.id);
   }
 
