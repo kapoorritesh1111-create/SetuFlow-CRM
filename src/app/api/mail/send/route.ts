@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     if (threadError || !thread) return NextResponse.json({ error: 'Unable to create the mail conversation.' }, { status: 500 });
     threadId = thread.id;
   }
-  const activeThreadId = threadId;
+  const activeThreadId = String(threadId);
 
   const outboundAttachments: Array<{ filename: string; content: string }> = [];
   let attachmentBytes = 0;
