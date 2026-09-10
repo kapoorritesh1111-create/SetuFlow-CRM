@@ -1,4 +1,4 @@
-export const MODULE_KEYS = ['full_crm', 'trade_show', 'orders_compliance', 'setu_guru', 'analytics', 'vcard', 'supplier_procurement'] as const;
+export const MODULE_KEYS = ['full_crm', 'trade_show', 'orders_compliance', 'setu_guru', 'analytics', 'vcard', 'supplier_procurement', 'setu_mail'] as const;
 
 export type ModuleKey = (typeof MODULE_KEYS)[number];
 
@@ -62,9 +62,16 @@ export const MODULE_DEFINITIONS: readonly ModuleDefinition[] = [
       '/orders/supplier-links',
     ],
   },
+  {
+    key: 'setu_mail',
+    title: 'Setu Mail',
+    subtitle: 'Business email for the trade team with custom-domain mailboxes, mobile access, and CRM-aware communication.',
+    routes: ['/mail', '/admin/mail'],
+  },
 ];
 
-const DEFAULT_ENABLED_MODULES = new Set<ModuleKey>(MODULE_KEYS);
+// Setu Mail is intentionally excluded: it is a paid add-on and must be explicitly granted.
+const DEFAULT_ENABLED_MODULES = new Set<ModuleKey>(MODULE_KEYS.filter((key) => key !== 'setu_mail'));
 
 export function normalizeModuleKey(value: unknown): ModuleKey | null {
   return MODULE_KEYS.find((key) => key === value) ?? null;
