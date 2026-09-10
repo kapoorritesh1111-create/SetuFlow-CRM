@@ -1,202 +1,95 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, FileText, Inbox, Mail, MoreHorizontal, Paperclip, PenLine, Reply, Search, Send, Star, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Archive, ArrowLeft, Download, FileText, Inbox, Mail, MoreHorizontal, Paperclip, PenLine, Reply, Search, Send, Star, Trash2, X } from 'lucide-react';
 
 type MailMessage = {
-  id: string;
-  direction: 'inbound' | 'outbound';
-  status: string;
-  from_address: string;
-  to_addresses: string[];
-  subject: string;
-  text_body: string | null;
-  is_read: boolean;
-  created_at: string;
+  id: string; thread_id: string | null; direction: 'inbound' | 'outbound'; status: string; folder: string;
+  from_address: string; to_addresses: string[]; cc_addresses: string[]; bcc_addresses: string[];
+  subject: string; text_body: string | null; is_read: boolean; is_starred: boolean; created_at: string;
 };
-
 type Mailbox = { id: string; address: string; display_name: string | null };
-type MailPayload = { mailbox: Mailbox | null; messages: MailMessage[]; providerReady: boolean; inboundReady: boolean };
-
-type Folder = 'inbox' | 'sent' | 'drafts';
+type Attachment = { id: string; message_id: string | null; filename: string; content_type: string | null; size_bytes: number | null; created_at: string };
+type MailPayload = { mailbox: Mailbox | null; messages: MailMessage[]; attachments: Attachment[]; providerReady: boolean; inboundReady: boolean };
+type Folder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'archive' | 'trash';
 
 function formatTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  const today = new Date();
-  return date.toDateString() === today.toDateString()
+  return date.toDateString() === new Date().toDateString()
     ? date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
     : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
+function addresses(value: string) { return value.split(',').map((v) => v.trim()).filter(Boolean); }
+function fileSize(value: number | null) { const n = Number(value ?? 0); return n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`; }
 
 export function MobileSetuMailWorkspace({ userName, userEmail, organizationName }: { userName: string; userEmail: string; organizationName: string }) {
-  const [data, setData] = useState<MailPayload>({ mailbox: null, messages: [], providerReady: false, inboundReady: false });
-  const [folder, setFolder] = useState<Folder>('inbox');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [composeOpen, setComposeOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [to, setTo] = useState('');
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
-  const [sending, setSending] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [data, setData] = useState<MailPayload>({ mailbox: null, messages: [], attachments: [], providerReady: false, inboundReady: false });
+  const [folder, setFolder] = useState<Folder>('inbox'); const [selectedId, setSelectedId] = useState<string | null>(null); const [composeOpen, setComposeOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false); const [foldersOpen, setFoldersOpen] = useState(false); const [search, setSearch] = useState('');
+  const [to, setTo] = useState(''); const [cc, setCc] = useState(''); const [bcc, setBcc] = useState(''); const [showCc, setShowCc] = useState(false); const [subject, setSubject] = useState(''); const [body, setBody] = useState('');
+  const [draftId, setDraftId] = useState<string | null>(null); const [parentMessageId, setParentMessageId] = useState<string | null>(null); const [threadId, setThreadId] = useState<string | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]); const [sending, setSending] = useState(false); const [notice, setNotice] = useState<string | null>(null);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function refresh() {
-    try {
-      const response = await fetch('/api/mail', { cache: 'no-store' });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error || 'Unable to load mail.');
-      setData(payload);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Unable to load mail.');
-    }
+    try { const response = await fetch('/api/mail', { cache: 'no-store' }); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || 'Unable to load mail.'); setData(payload); }
+    catch (error) { setNotice(error instanceof Error ? error.message : 'Unable to load mail.'); }
   }
-
   useEffect(() => { void refresh(); }, []);
 
-  const messages = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return data.messages.filter((message) => {
-      if (folder === 'inbox' && message.direction !== 'inbound') return false;
-      if (folder === 'sent' && message.direction !== 'outbound') return false;
-      if (folder === 'drafts') return false;
-      if (!term) return true;
-      return [message.subject, message.from_address, ...(message.to_addresses ?? []), message.text_body ?? ''].join(' ').toLowerCase().includes(term);
-    });
-  }, [data.messages, folder, search]);
+  function resetCompose() { setTo(''); setCc(''); setBcc(''); setShowCc(false); setSubject(''); setBody(''); setDraftId(null); setParentMessageId(null); setThreadId(null); setPendingAttachments([]); }
+  function newCompose() { resetCompose(); setComposeOpen(true); }
 
-  const selected = data.messages.find((message) => message.id === selectedId) ?? null;
-  const unread = data.messages.filter((message) => message.direction === 'inbound' && !message.is_read).length;
-
-  function openReply(message: MailMessage) {
-    setTo(message.direction === 'inbound' ? message.from_address : message.to_addresses?.[0] || '');
-    setSubject(message.subject.startsWith('Re:') ? message.subject : `Re: ${message.subject}`);
-    setBody('');
-    setComposeOpen(true);
+  async function saveDraft(silent = false) {
+    if (!composeOpen || (!to.trim() && !cc.trim() && !bcc.trim() && !subject.trim() && !body.trim())) return draftId;
+    try {
+      const response = await fetch('/api/mail/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId, to: addresses(to), cc: addresses(cc), bcc: addresses(bcc), subject, text: body, threadId }) });
+      const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || 'Unable to save draft.'); const id = payload?.draft?.id ?? draftId; setDraftId(id ?? null); if (!silent) setNotice('Draft saved.'); return id ?? null;
+    } catch (error) { if (!silent) setNotice(error instanceof Error ? error.message : 'Unable to save draft.'); return draftId; }
   }
+  useEffect(() => {
+    if (!composeOpen) return; if (autosaveTimer.current) clearTimeout(autosaveTimer.current); autosaveTimer.current = setTimeout(() => { void saveDraft(true); }, 1000);
+    return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
+  }, [composeOpen, to, cc, bcc, subject, body]);
+
+  function openReply(message: MailMessage) { resetCompose(); setTo(message.direction === 'inbound' ? message.from_address : message.to_addresses?.[0] || ''); setSubject(/^re:/i.test(message.subject) ? message.subject : `Re: ${message.subject}`); setParentMessageId(message.id); setThreadId(message.thread_id); setComposeOpen(true); }
+  function openForward(message: MailMessage) { resetCompose(); setSubject(/^fwd:/i.test(message.subject) ? message.subject : `Fwd: ${message.subject}`); setBody(`\n\n---------- Forwarded message ----------\n${message.text_body || ''}`); setComposeOpen(true); }
+  function openDraft(message: MailMessage) { setDraftId(message.id); setTo((message.to_addresses ?? []).join(', ')); setCc((message.cc_addresses ?? []).join(', ')); setBcc((message.bcc_addresses ?? []).join(', ')); setShowCc(Boolean(message.cc_addresses?.length || message.bcc_addresses?.length)); setSubject(message.subject || ''); setBody(message.text_body || ''); setThreadId(message.thread_id); setParentMessageId(null); setPendingAttachments(data.attachments.filter((a) => a.message_id === message.id)); setComposeOpen(true); }
+
+  async function uploadAttachment(file: File) {
+    const id = await saveDraft(true); const form = new FormData(); form.append('file', file); if (id) form.append('messageId', id);
+    const response = await fetch('/api/mail/attachments', { method: 'POST', body: form }); const payload = await response.json(); if (!response.ok || !payload?.attachment) { setNotice(payload?.error || 'Unable to attach file.'); return; }
+    setPendingAttachments((items) => [...items, payload.attachment]);
+  }
+  async function downloadAttachment(id: string) { const response = await fetch(`/api/mail/attachments?id=${encodeURIComponent(id)}`); const payload = await response.json(); if (!response.ok || !payload?.url) { setNotice(payload?.error || 'Unable to download attachment.'); return; } window.open(payload.url, '_blank', 'noopener,noreferrer'); }
+  async function removeAttachment(id: string) { const response = await fetch('/api/mail/attachments', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); if (response.ok) setPendingAttachments((items) => items.filter((a) => a.id !== id)); else { const p = await response.json().catch(() => ({})); setNotice(p?.error || 'Unable to remove attachment.'); } }
 
   async function sendMessage() {
-    if (!to.trim() || !subject.trim() || !body.trim()) {
-      setNotice('Add a recipient, subject, and message before sending.');
-      return;
-    }
-    setSending(true);
-    setNotice(null);
-    try {
-      const response = await fetch('/api/mail/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: to.trim(), subject: subject.trim(), text: body.trim() }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error || 'Email could not be sent.');
-      setComposeOpen(false);
-      setTo(''); setSubject(''); setBody('');
-      setFolder('sent');
-      setSelectedId(null);
-      setNotice('Email sent.');
-      await refresh();
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Email could not be sent.');
-    } finally {
-      setSending(false);
-    }
+    if (!to.trim() || !subject.trim() || !body.trim()) { setNotice('Add a recipient, subject, and message before sending.'); return; }
+    setSending(true); setNotice(null);
+    try { const response = await fetch('/api/mail/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: addresses(to), cc: addresses(cc), bcc: addresses(bcc), subject: subject.trim(), text: body.trim(), draftId, parentMessageId, threadId, attachmentIds: pendingAttachments.map((a) => a.id) }) }); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || 'Email could not be sent.'); setComposeOpen(false); resetCompose(); setFolder('sent'); setSelectedId(null); setNotice('Email sent.'); await refresh(); }
+    catch (error) { setNotice(error instanceof Error ? error.message : 'Email could not be sent.'); } finally { setSending(false); }
   }
+  async function discardDraft() { if (draftId) await fetch('/api/mail/drafts', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId }) }); setComposeOpen(false); resetCompose(); await refresh(); }
 
-  if (selected) {
-    return (
-      <div className="min-h-[calc(100vh-8rem)] bg-white pb-24 md:hidden">
-        <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-          <div className="flex h-14 items-center gap-2 px-3">
-            <button onClick={() => setSelectedId(null)} className="rounded-full p-2 text-slate-700 hover:bg-slate-100" aria-label="Back to inbox"><ArrowLeft size={20}/></button>
-            <div className="min-w-0 flex-1 truncate text-sm font-black text-slate-900">{selected.subject || '(no subject)'}</div>
-            <button className="rounded-full p-2 text-slate-500"><Star size={19}/></button>
-            <button className="rounded-full p-2 text-slate-500"><MoreHorizontal size={20}/></button>
-          </div>
-        </div>
-        <div className="px-4 py-5">
-          <h1 className="text-[22px] font-black leading-tight text-slate-950">{selected.subject || '(no subject)'}</h1>
-          <div className="mt-5 flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-xs font-black text-slate-700">{(selected.direction === 'inbound' ? selected.from_address : userName).slice(0, 2).toUpperCase()}</div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-black text-slate-900">{selected.direction === 'inbound' ? selected.from_address : userName}</div>
-              <div className="mt-0.5 truncate text-xs text-slate-400">{selected.direction === 'inbound' ? `to ${data.mailbox?.address || userEmail}` : `to ${selected.to_addresses?.join(', ')}`}</div>
-            </div>
-            <div className="text-[11px] font-semibold text-slate-400">{formatTime(selected.created_at)}</div>
-          </div>
-          <div className="mt-7 whitespace-pre-wrap text-[15px] leading-7 text-slate-700">{selected.text_body || ''}</div>
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-800"><Paperclip size={16}/>Attachments</div>
-            <div className="mt-2 text-xs text-slate-400">Attachments will appear here when inbound attachment storage is enabled.</div>
-          </div>
-          <div className="mt-8 grid grid-cols-2 gap-2">
-            <button onClick={() => openReply(selected)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-black text-slate-700"><Reply size={16}/>Reply</button>
-            <button onClick={() => { setTo(selected.to_addresses?.[0] || ''); setSubject(`Fwd: ${selected.subject}`); setBody(`\n\n---------- Forwarded message ----------\n${selected.text_body || ''}`); setComposeOpen(true); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-black text-slate-700"><Send size={16}/>Forward</button>
-          </div>
-          <div className="mt-6 rounded-2xl border border-violet-100 bg-violet-50 p-4">
-            <div className="font-black text-violet-900">✦ Setu Guru</div>
-            <p className="mt-2 text-sm leading-5 text-violet-800">CRM linking stays optional. Guru can suggest a lead, quote, order, or follow-up when business intent is detected.</p>
-          </div>
-        </div>
-        {composeOpen ? renderCompose() : null}
-      </div>
-    );
-  }
+  async function messageAction(message: MailMessage, action: 'read' | 'star' | 'archive' | 'trash', value: boolean) { const response = await fetch(`/api/mail/messages/${message.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [action]: value }) }); if (!response.ok) { const p = await response.json().catch(() => ({})); setNotice(p?.error || 'Unable to update message.'); return; } await refresh(); }
+  async function selectMessage(message: MailMessage) { if (message.status === 'draft') { openDraft(message); return; } setSelectedId(message.id); if (!message.is_read) await messageAction(message, 'read', true); }
+
+  const messages = useMemo(() => data.messages.filter((message) => {
+    if (folder === 'inbox' && message.folder !== 'inbox') return false; if (folder === 'sent' && message.folder !== 'sent') return false; if (folder === 'drafts' && message.folder !== 'drafts') return false; if (folder === 'archive' && message.folder !== 'archive') return false; if (folder === 'trash' && message.folder !== 'trash') return false; if (folder === 'starred' && (!message.is_starred || message.folder === 'trash')) return false;
+    const term = search.trim().toLowerCase(); return !term || [message.subject, message.from_address, ...(message.to_addresses ?? []), message.text_body ?? ''].join(' ').toLowerCase().includes(term);
+  }), [data.messages, folder, search]);
+  const selected = data.messages.find((message) => message.id === selectedId && message.status !== 'draft') ?? null;
+  const unread = data.messages.filter((message) => message.folder === 'inbox' && !message.is_read).length;
+  const selectedAttachments = selected ? data.attachments.filter((a) => a.message_id === selected.id) : [];
+  const mailboxAddress = data.mailbox?.address || userEmail;
 
   function renderCompose() {
-    return (
-      <div className="fixed inset-0 z-[500] bg-white md:hidden">
-        <div className="flex h-14 items-center border-b border-slate-200 px-3">
-          <button onClick={() => setComposeOpen(false)} className="rounded-full p-2 text-slate-700" aria-label="Close compose"><X size={20}/></button>
-          <div className="ml-1 flex-1 text-base font-black text-slate-900">New Message</div>
-          <button onClick={() => void sendMessage()} disabled={sending} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">{sending ? 'Sending…' : 'Send'}</button>
-        </div>
-        <div className="divide-y divide-slate-100">
-          <div className="flex items-center gap-3 px-4 py-3 text-sm"><span className="w-14 text-slate-400">From</span><span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{data.mailbox?.address || userEmail}</span></div>
-          <div className="flex items-center gap-3 px-4 py-3 text-sm"><span className="w-14 text-slate-400">To</span><input autoFocus value={to} onChange={(e) => setTo(e.target.value)} placeholder="Anyone@example.com" className="min-w-0 flex-1 outline-none"/></div>
-          <div className="flex items-center gap-3 px-4 py-3 text-sm"><span className="w-14 text-slate-400">Subject</span><input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="min-w-0 flex-1 outline-none"/></div>
-        </div>
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write your message…" className="h-[calc(100vh-220px)] w-full resize-none px-4 py-4 text-[15px] leading-6 outline-none"/>
-        <div className="fixed inset-x-0 bottom-0 flex h-14 items-center gap-4 border-t border-slate-200 bg-white px-4" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}><Paperclip size={19} className="text-slate-500"/><span className="text-xs font-semibold text-slate-400">Attachments coming in the inbound MVP step</span></div>
-      </div>
-    );
+    return <div className="fixed inset-0 z-[500] bg-white md:hidden"><div className="flex h-14 items-center border-b px-3"><button onClick={()=>{void saveDraft(true);setComposeOpen(false);}} className="rounded-full p-2"><X size={20}/></button><div className="ml-1 flex-1 text-base font-black">{draftId?'Draft':'New Message'}</div><button onClick={()=>void discardDraft()} className="mr-1 rounded-full p-2 text-slate-500"><Trash2 size={18}/></button><button onClick={()=>void sendMessage()} disabled={sending} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">{sending?'Sending…':'Send'}</button></div><div className="divide-y"><div className="flex items-center gap-3 px-4 py-3 text-sm"><span className="w-14 text-slate-400">From</span><span className="min-w-0 flex-1 truncate font-semibold">{mailboxAddress}</span></div><div className="flex items-center gap-3 px-4 py-3 text-sm"><span className="w-14 text-slate-400">To</span><input autoFocus value={to} onChange={(e)=>setTo(e.target.value)} placeholder="anyone@example.com" className="min-w-0 flex-1 outline-none"/><button onClick={()=>setShowCc((v)=>!v)} className="text-xs font-black text-blue-600">Cc/Bcc</button></div>{showCc?<><div className="flex items-center gap-3 px-4 py-3 text-sm"><span className="w-14 text-slate-400">Cc</span><input value={cc} onChange={(e)=>setCc(e.target.value)} className="min-w-0 flex-1 outline-none"/></div><div className="flex items-center gap-3 px-4 py-3 text-sm"><span className="w-14 text-slate-400">Bcc</span><input value={bcc} onChange={(e)=>setBcc(e.target.value)} className="min-w-0 flex-1 outline-none"/></div></>:null}<div className="flex items-center gap-3 px-4 py-3 text-sm"><span className="w-14 text-slate-400">Subject</span><input value={subject} onChange={(e)=>setSubject(e.target.value)} className="min-w-0 flex-1 outline-none"/></div></div><textarea value={body} onChange={(e)=>setBody(e.target.value)} placeholder="Write your message…" className="h-[calc(100vh-290px)] w-full resize-none px-4 py-4 text-[15px] leading-6 outline-none"/>{pendingAttachments.length?<div className="fixed inset-x-0 bottom-14 flex gap-2 overflow-x-auto border-t bg-white px-3 py-2">{pendingAttachments.map((a)=><span key={a.id} className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold">{a.filename}<button onClick={()=>void removeAttachment(a.id)}><X size={13}/></button></span>)}</div>:null}<div className="fixed inset-x-0 bottom-0 flex h-14 items-center border-t bg-white px-4" style={{paddingBottom:'env(safe-area-inset-bottom)'}}><label className="cursor-pointer rounded-full p-2"><Paperclip size={19}/><input type="file" className="hidden" onChange={(e)=>{const f=e.target.files?.[0];if(f)void uploadAttachment(f);e.currentTarget.value='';}}/></label><span className="ml-2 text-xs font-semibold text-slate-400">Autosaved</span></div></div>;
   }
 
-  return (
-    <div className="min-h-[calc(100vh-8rem)] bg-white pb-24 md:hidden">
-      <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="flex items-center gap-3 px-4 pb-2 pt-3">
-          <div className="min-w-0 flex-1"><div className="text-[22px] font-black text-slate-950">Setu Mail</div><div className="truncate text-xs text-slate-400">{organizationName} · {data.mailbox?.address || userEmail}</div></div>
-          <button onClick={() => setSearchOpen((value) => !value)} className="rounded-full p-2 text-slate-600"><Search size={20}/></button>
-          <button className="rounded-full p-2 text-slate-600"><MoreHorizontal size={20}/></button>
-        </div>
-        <div className="px-4 pb-3"><button onClick={() => setComposeOpen(true)} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-black text-white"><PenLine size={16}/>Compose</button></div>
-        {searchOpen ? <div className="px-4 pb-3"><label className="flex h-10 items-center gap-2 rounded-xl bg-slate-100 px-3"><Search size={16} className="text-slate-400"/><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search mail" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/></label></div> : null}
-        <div className="grid grid-cols-3 px-3">
-          {([
-            ['inbox', 'Inbox', unread],
-            ['sent', 'Sent', 0],
-            ['drafts', 'Drafts', 0],
-          ] as const).map(([key, label, count]) => (
-            <button key={key} onClick={() => { setFolder(key); setSelectedId(null); }} className={`relative flex h-11 items-center justify-center gap-1.5 text-sm font-black ${folder === key ? 'text-blue-600' : 'text-slate-400'}`}>
-              {key === 'inbox' ? <Inbox size={16}/> : key === 'sent' ? <Send size={16}/> : <FileText size={16}/>} {label}{count ? <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">{count}</span> : null}
-              <span className={`absolute inset-x-2 bottom-0 h-0.5 rounded-full ${folder === key ? 'bg-blue-600' : 'bg-transparent'}`} />
-            </button>
-          ))}
-        </div>
-      </div>
+  if (selected) return <div className="min-h-[calc(100vh-8rem)] bg-white pb-24 md:hidden"><div className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur"><div className="flex h-14 items-center gap-1 px-3"><button onClick={()=>setSelectedId(null)} className="rounded-full p-2"><ArrowLeft size={20}/></button><div className="min-w-0 flex-1 truncate text-sm font-black">{selected.subject||'(no subject)'}</div><button onClick={()=>void messageAction(selected,'star',!selected.is_starred)} className="rounded-full p-2"><Star size={19} className={selected.is_starred?'fill-current text-amber-500':'text-slate-500'}/></button><button onClick={()=>void messageAction(selected,'archive',selected.folder!=='archive')} className="rounded-full p-2 text-slate-500"><Archive size={19}/></button><button onClick={()=>void messageAction(selected,'trash',selected.folder!=='trash')} className="rounded-full p-2 text-slate-500"><Trash2 size={19}/></button></div></div><div className="px-4 py-5"><h1 className="text-[22px] font-black leading-tight">{selected.subject||'(no subject)'}</h1><div className="mt-5 flex items-start gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-xs font-black">{(selected.direction==='inbound'?selected.from_address:userName).slice(0,2).toUpperCase()}</div><div className="min-w-0 flex-1"><div className="truncate text-sm font-black">{selected.direction==='inbound'?selected.from_address:userName}</div><div className="truncate text-xs text-slate-400">to {selected.direction==='inbound'?mailboxAddress:selected.to_addresses.join(', ')}</div>{selected.cc_addresses?.length?<div className="truncate text-xs text-slate-400">cc {selected.cc_addresses.join(', ')}</div>:null}</div><div className="text-[11px] text-slate-400">{formatTime(selected.created_at)}</div></div><div className="mt-7 whitespace-pre-wrap text-[15px] leading-7 text-slate-700">{selected.text_body||''}</div>{selectedAttachments.length?<div className="mt-7 space-y-2">{selectedAttachments.map((a)=><button key={a.id} onClick={()=>void downloadAttachment(a.id)} className="flex w-full items-center gap-2 rounded-xl border bg-slate-50 px-3 py-3 text-left text-sm font-bold"><Paperclip size={16}/><span className="min-w-0 flex-1 truncate">{a.filename}</span><span className="text-xs text-slate-400">{fileSize(a.size_bytes)}</span><Download size={15}/></button>)}</div>:null}<div className="mt-8 grid grid-cols-2 gap-2"><button onClick={()=>openReply(selected)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-black"><Reply size={16}/>Reply</button><button onClick={()=>openForward(selected)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border text-sm font-black"><Send size={16}/>Forward</button></div><div className="mt-6 rounded-2xl border border-violet-100 bg-violet-50 p-4"><div className="font-black text-violet-900">✦ Setu Guru</div><p className="mt-2 text-sm text-violet-800">CRM linking stays optional. Guru can suggest the next trade action without changing normal email behavior.</p></div></div>{composeOpen?renderCompose():null}</div>;
 
-      {notice ? <div className="border-b border-blue-100 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-900">{notice}</div> : null}
-
-      <div>
-        {messages.length === 0 ? <div className="px-6 py-16 text-center"><Mail size={34} className="mx-auto text-slate-300"/><div className="mt-3 font-black text-slate-800">No {folder} messages yet</div><p className="mt-1 text-sm leading-5 text-slate-400">Send a regular email to anyone. They do not need to be in your CRM.</p></div> : messages.map((message) => {
-          const peer = message.direction === 'inbound' ? message.from_address : message.to_addresses?.[0] || 'Recipient';
-          return <button key={message.id} onClick={() => setSelectedId(message.id)} className="flex w-full gap-3 border-b border-slate-100 px-4 py-4 text-left active:bg-slate-50"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-black text-slate-700">{peer.slice(0,2).toUpperCase()}</div><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><div className="min-w-0 flex-1 truncate text-sm font-black text-slate-900">{peer}</div><span className="shrink-0 text-[11px] font-semibold text-slate-400">{formatTime(message.created_at)}</span></div><div className="mt-0.5 truncate text-sm font-bold text-slate-700">{message.subject || '(no subject)'}</div><div className="mt-0.5 truncate text-xs text-slate-400">{message.text_body || ''}</div></div><Star size={16} className="mt-6 shrink-0 text-slate-300"/></button>;
-        })}
-      </div>
-
-      {composeOpen ? renderCompose() : null}
-    </div>
-  );
+  return <div className="min-h-[calc(100vh-8rem)] bg-white pb-24 md:hidden"><div className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur"><div className="flex items-center gap-3 px-4 pb-2 pt-3"><div className="min-w-0 flex-1"><div className="text-[22px] font-black">Setu Mail</div><div className="truncate text-xs text-slate-400">{organizationName} · {mailboxAddress}</div></div><button onClick={()=>setSearchOpen((v)=>!v)} className="rounded-full p-2"><Search size={20}/></button><button onClick={()=>setFoldersOpen((v)=>!v)} className="rounded-full p-2"><MoreHorizontal size={20}/></button></div><div className="px-4 pb-3"><button onClick={newCompose} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-sm font-black text-white"><PenLine size={16}/>Compose</button></div>{searchOpen?<div className="px-4 pb-3"><label className="flex h-10 items-center gap-2 rounded-xl bg-slate-100 px-3"><Search size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Search mail" className="min-w-0 flex-1 bg-transparent text-sm outline-none"/></label></div>:null}<div className="grid grid-cols-3 px-3">{([['inbox','Inbox',unread],['sent','Sent',0],['drafts','Drafts',0]] as const).map(([key,label,count])=><button key={key} onClick={()=>{setFolder(key);setSelectedId(null);}} className={`relative flex h-11 items-center justify-center gap-1.5 text-sm font-black ${folder===key?'text-blue-600':'text-slate-400'}`}>{key==='inbox'?<Inbox size={16}/>:key==='sent'?<Send size={16}/>:<FileText size={16}/>} {label}{count?<span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">{count}</span>:null}<span className={`absolute inset-x-2 bottom-0 h-0.5 ${folder===key?'bg-blue-600':'bg-transparent'}`}/></button>)}</div>{foldersOpen?<div className="grid grid-cols-3 border-t bg-slate-50 px-3 py-2 text-xs font-black">{([['starred','Starred',Star],['archive','Archive',Archive],['trash','Trash',Trash2]] as const).map(([key,label,Icon])=><button key={key} onClick={()=>{setFolder(key);setFoldersOpen(false);}} className={`flex flex-col items-center gap-1 rounded-lg py-2 ${folder===key?'text-blue-600':'text-slate-500'}`}><Icon size={17}/>{label}</button>)}</div>:null}</div>{notice?<div className="border-b bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-900">{notice}</div>:null}<div>{messages.length===0?<div className="px-6 py-16 text-center"><Mail size={34} className="mx-auto text-slate-300"/><div className="mt-3 font-black">No {folder} messages yet</div></div>:messages.map((message)=>{const peer=message.status==='draft'?'Draft':message.direction==='inbound'?message.from_address:message.to_addresses?.[0]||'Recipient';return <button key={message.id} onClick={()=>void selectMessage(message)} className={`flex w-full gap-3 border-b px-4 py-4 text-left active:bg-slate-50 ${!message.is_read?'bg-blue-50/30':''}`}><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-black">{peer.slice(0,2).toUpperCase()}</div><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><div className="min-w-0 flex-1 truncate text-sm font-black">{peer}</div>{message.is_starred?<Star size={14} className="fill-current text-amber-500"/>:null}<span className="text-[11px] text-slate-400">{formatTime(message.created_at)}</span></div><div className="mt-0.5 truncate text-sm font-bold text-slate-700">{message.subject||'(no subject)'}</div><div className="mt-0.5 truncate text-xs text-slate-400">{message.text_body||''}</div></div></button>})}</div>{composeOpen?renderCompose():null}</div>;
 }
