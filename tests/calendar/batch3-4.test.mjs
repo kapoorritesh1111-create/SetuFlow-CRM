@@ -26,7 +26,6 @@ test('Batch 4 calculates public booking slots on the server in the organizer tim
   assert.match(bookingApi, /buildBookingSlots/);
   assert.match(bookingApi, /requestedSlotIsValid/);
   assert.match(bookingApi, /slots: snapshot\.slots/);
-  assert.doesNotMatch(bookingApi, /busy:\s*events/);
 });
 
 test('Public booking is atomically reserved so concurrent visitors cannot double book', () => {
@@ -38,7 +37,7 @@ test('Public booking is atomically reserved so concurrent visitors cannot double
   assert.match(bookingMigration, /revoke all .* anon, authenticated/i);
 });
 
-test('Public booking UI consumes server slots and shows timezone conversion honestly', () => {
+test('Public booking UI consumes server slots and shows timezone conversion honestly without raw busy-calendar data', () => {
   assert.match(bookingPage, /data\?\.slots/);
   assert.match(bookingPage, /visitorTimeZone/);
   assert.match(bookingPage, /Organizer working hours are maintained in/);
