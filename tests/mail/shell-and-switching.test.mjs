@@ -56,6 +56,9 @@ test('mail product shell exposes functional app launcher, future Calendar, mailb
   assert.match(source, /access\.crmEnabled/);
   assert.match(source, /target\.tabIndex = -1/);
   assert.match(source, /href="\/profile"/);
+  assert.match(source, /function CrmProductIcon/);
+  assert.match(source, /src="\/logos\/setu-flow-logo\.svg"/);
+  assert.doesNotMatch(source, /AppWindow/);
   assert.doesNotMatch(source, /Microsoft|Outlook/);
 });
 
