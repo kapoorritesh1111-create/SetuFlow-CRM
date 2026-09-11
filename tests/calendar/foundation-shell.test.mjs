@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 const router = fs.readFileSync('src/components/layout/authenticated-shell-router.tsx', 'utf8');
 const shell = fs.readFileSync('src/components/layout/mail-product-shell.tsx', 'utf8');
-const workspace = fs.readFileSync('src/features/calendar/components/calendar-outlook-workspace.tsx', 'utf8');
+const workspace = fs.readFileSync('src/features/calendar/components/calendar-batch1-workspace.tsx', 'utf8');
 const page = fs.readFileSync('src/app/(app)/calendar/page.tsx', 'utf8');
 const api = fs.readFileSync('src/app/api/calendar/route.ts', 'utf8');
 const availabilityApi = fs.readFileSync('src/app/api/calendar/availability/route.ts', 'utf8');
@@ -36,13 +36,13 @@ test('Calendar top search is bridged into calendar content rather than Mail sear
 
 test('Calendar defaults to a dense work-week time grid with obvious open time', () => {
   assert.match(workspace, /useState<View>\('week'\)/);
-  assert.match(workspace, /function DenseWeekView/);
+  assert.match(workspace, /function DenseWeek/);
   assert.match(workspace, /HOUR_HEIGHT = 52/);
   assert.match(workspace, />Open</);
-  assert.match(workspace, /CurrentTimeLine/);
+  assert.match(workspace, /CurrentTime/);
   assert.match(workspace, /workWeekDays/);
   assert.match(workspace, /All day/);
-  assert.match(workspace, /eventLayout/);
+  assert.match(workspace, /layoutEvents/);
   assert.match(workspace, /columns:/);
 });
 
@@ -61,9 +61,9 @@ test('Working hours and work week are personal, org-scoped and persisted through
 
 test('Calendar preserves Month, Week, Day and Agenda views while Week is the primary schedule view', () => {
   assert.match(workspace, /type View = 'month' \| 'week' \| 'day' \| 'agenda'/);
-  assert.match(workspace, /function MonthView/);
-  assert.match(workspace, /function DenseWeekView/);
-  assert.match(workspace, /function AgendaView/);
+  assert.match(workspace, /function Month/);
+  assert.match(workspace, /function DenseWeek/);
+  assert.match(workspace, /function Agenda/);
 });
 
 test('Calendar keeps CRUD, reminders, CRM links and conflict protection', () => {
@@ -78,8 +78,8 @@ test('Calendar keeps CRUD, reminders, CRM links and conflict protection', () => 
   assert.match(api, /showAs === 'free'/);
 });
 
-test('Desktop Calendar uses the dense schedule workspace and mobile remains isolated', () => {
-  assert.match(page, /CalendarOutlookWorkspace/);
+test('Desktop Calendar uses the hardened Batch 1 workspace and mobile remains isolated', () => {
+  assert.match(page, /CalendarBatchOneWorkspace/);
   assert.match(page, /MobileCalendarWorkspace/);
   assert.match(page, /md:hidden/);
   assert.match(page, /hidden h-full md:block/);
@@ -117,7 +117,7 @@ test('Required and optional attendees, privacy, all-day and free-busy are persis
 test('Scheduling assistant is honest about external availability', () => {
   assert.match(workspace, /Availability unknown/);
   assert.match(workspace, /Setu never invents external availability/);
-  assert.match(workspace, /conflicting/);
+  assert.match(workspace, /conflicts/);
   assert.match(workspace, /Busy at this time/);
   assert.match(workspace, /Available/);
 });
