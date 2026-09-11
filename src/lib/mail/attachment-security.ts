@@ -47,7 +47,9 @@ export async function scanMailAttachmentBytes(bytes: Uint8Array, filename: strin
   const endpoint = process.env.CLOUDMERSIVE_VIRUS_SCAN_URL?.trim() || DEFAULT_SCAN_URL;
   try {
     const form = new FormData();
-    form.append('inputFile', new Blob([bytes], { type: contentType || 'application/octet-stream' }), filename);
+    const safeBytes = new Uint8Array(bytes.byteLength);
+    safeBytes.set(bytes);
+    form.append('inputFile', new Blob([safeBytes.buffer], { type: contentType || 'application/octet-stream' }), filename);
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { Apikey: apiKey },
