@@ -13,6 +13,7 @@ const outcomeWorkspace = fs.readFileSync('src/features/calendar/components/calen
 const eventContext = fs.readFileSync('src/app/api/calendar/event-context/[id]/route.ts', 'utf8');
 const mailIntelligence = fs.readFileSync('src/app/api/mail/intelligence/[id]/route.ts', 'utf8');
 const invitationDelivery = fs.readFileSync('src/lib/calendar/invite-delivery.ts', 'utf8');
+const zoomLifecycle = fs.readFileSync('src/lib/calendar/zoom-lifecycle.ts', 'utf8');
 const shell = fs.readFileSync('src/components/layout/mail-product-shell.tsx', 'utf8');
 
 test('Batch 4 calculates public booking slots on the server in the organizer timezone', () => {
@@ -57,6 +58,19 @@ test('Owners can manage booking duration, buffers, notice, window and provider',
   assert.match(bookingSettings, /Buffer between meetings/);
   assert.match(bookingSettings, /Minimum notice/);
   assert.match(shell, /\/calendar\/booking/);
+});
+
+test('Batch 4 Zoom readiness stays behind the service-role boundary and blocks unsafe publishing', () => {
+  assert.match(zoomLifecycle, /createServiceRoleClient/);
+  assert.match(zoomLifecycle, /privilegedDb\.from\('meeting_connections'\)/);
+  assert.match(zoomLifecycle, /getValidZoomAccessToken\(privilegedDb, connection\)/);
+  assert.match(bookingPageApi, /getZoomConnection\(ctx\.db, organizationId, userId\)/);
+  assert.match(bookingPageApi, /isZoomConfigured\(\)/);
+  assert.doesNotMatch(bookingPageApi, /ctx\.db\.from\('meeting_connections'\)/);
+  assert.match(bookingPageApi, /Connect Zoom in Calendar settings or choose another meeting type before publishing/);
+  assert.match(bookingSettings, /Zoom readiness/);
+  assert.match(bookingSettings, /Connect Zoom/);
+  assert.match(bookingSettings, /SETUP NEEDED/);
 });
 
 test('Batch 3 Mail to Meeting remains one click and carries recipient, lead and Mail thread context', () => {
