@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { AppWindow, CalendarDays, CircleHelp, ClipboardList, Grid2X2, Mail, Search, UsersRound } from 'lucide-react';
+import { CalendarDays, CircleHelp, ClipboardList, Grid2X2, Mail, Search, UsersRound } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import styles from './mail-product-shell.module.css';
 
@@ -33,6 +33,17 @@ function bridgeSearch(value: string) {
 
 function RailLink({ href, label, children }: { href: string; label: string; children: ReactNode }) {
   return <Link href={href} className={styles.railButton} aria-label={label} title={label}>{children}</Link>;
+}
+
+function CrmProductIcon({ menu = false }: { menu?: boolean }) {
+  return (
+    <img
+      src="/logos/setu-flow-logo.svg"
+      alt=""
+      aria-hidden="true"
+      className={menu ? 'h-[18px] w-[18px] shrink-0 rounded bg-white p-[1px] object-contain' : 'h-5 w-5 shrink-0 rounded-[5px] bg-white p-[1px] object-contain'}
+    />
+  );
 }
 
 export function MailProductShell({ children, profileName, profileEmail, avatarUrl, organizationName }: { children: ReactNode; profileName: string; profileEmail: string; avatarUrl?: string | null; organizationName: string }) {
@@ -68,7 +79,7 @@ export function MailProductShell({ children, profileName, profileEmail, avatarUr
             {appsOpen ? <div className={styles.appMenu} role="menu" aria-label="Setu apps menu">
               <Link href="/mail" role="menuitem" onClick={() => setAppsOpen(false)}><Mail size={18}/><span><strong>Mail</strong><small>Messages and shared inboxes</small></span></Link>
               <button type="button" role="menuitem" disabled><CalendarDays size={18}/><span><strong>Calendar</strong><small>Coming next</small></span></button>
-              {access.crmEnabled ? <Link href="/dashboard" role="menuitem" onClick={() => setAppsOpen(false)}><AppWindow size={18}/><span><strong>Setu Flow CRM</strong><small>Trade execution workspace</small></span></Link> : null}
+              {access.crmEnabled ? <Link href="/dashboard" role="menuitem" onClick={() => setAppsOpen(false)}><CrmProductIcon menu/><span><strong>Setu Flow CRM</strong><small>Trade execution workspace</small></span></Link> : null}
             </div> : null}
           </div>
           <img src="/logos/setu-flow-logo.svg" alt="Setu Flow" className={styles.logo}/>
@@ -105,7 +116,7 @@ export function MailProductShell({ children, profileName, profileEmail, avatarUr
           {access.crmEnabled ? <>
             <RailLink href="/leads" label="Contacts and leads"><UsersRound size={20}/></RailLink>
             <RailLink href="/tasks" label="Tasks"><ClipboardList size={20}/></RailLink>
-            <RailLink href="/dashboard" label="Setu Flow CRM"><AppWindow size={20}/></RailLink>
+            <RailLink href="/dashboard" label="Setu Flow CRM"><CrmProductIcon/></RailLink>
           </> : null}
         </nav>
         <main className={styles.content} id="app-content">{children}</main>
