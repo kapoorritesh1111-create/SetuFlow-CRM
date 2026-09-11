@@ -17,6 +17,10 @@ const ORG_HOURLY_LIMIT = 300;
 const isEmail = (value: string) => /^[^\s@\r\n]+@[^\s@\r\n]+\.[^\s@\r\n]+$/.test(value);
 const normalizeAddresses = (value: unknown) => Array.from(new Set((Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []).map(x => String(x).trim().toLowerCase()).filter(Boolean)));
 const ids = (value: unknown) => Array.isArray(value) ? Array.from(new Set(value.map(x => String(x).trim()).filter(Boolean))) : [];
+const currentMonthStart = () => {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
+};
 
 export async function POST(request: NextRequest) {
   const workspace = await getCurrentWorkspace();
@@ -40,17 +44,22 @@ export async function POST(request: NextRequest) {
   if (!apiKey) return NextResponse.json({ error: 'Resend is not configured for Setu Mail yet.' }, { status: 503 });
   const db = (await createClient()) as any;
   const admin = createAdminSupabaseClient() as any;
+  if (!admin) return NextResponse.json({ error: 'Setu Mail safety service is unavailable.' }, { status: 503 });
+
   const organizationId = workspace.organization.id, userId = workspace.user.id;
-  const [{ data: grant }, { data: entitlement }, mailbox] = await Promise.all([
+  const periodStart = currentMonthStart();
+  const [{ data: grant }, { data: entitlement }, mailbox, usageResult] = await Promise.all([
     db.from('org_module_grants').select('enabled').eq('organization_id', organizationId).eq('module_key', 'setu_mail').maybeSingle(),
-    db.from('mail_entitlements').select('status,monthly_message_limit,current_period_messages').eq('organization_id', organizationId).maybeSingle(),
+    db.from('mail_entitlements').select('status,monthly_message_limit').eq('organization_id', organizationId).maybeSingle(),
     resolveUserMailbox(db, organizationId, userId, 'id,address,display_name,status', requestedMailboxId ? { mailboxId: requestedMailboxId, permission: 'send' } : { permission: 'send' }),
+    admin.from('mail_usage_monthly_rollups').select('resend_inbound_messages,resend_outbound_messages').eq('organization_id', organizationId).eq('period_start', periodStart).maybeSingle(),
   ]);
   if (!grant?.enabled) return NextResponse.json({ error: 'Setu Mail is not enabled for this organization.' }, { status: 403 });
   if (!entitlement || entitlement.status !== 'active') return NextResponse.json({ error: 'Setu Mail subscription is not active.' }, { status: 402 });
   if (!mailbox) return NextResponse.json({ error: requestedMailboxId ? 'You do not have sending access to this mailbox.' : 'No active Setu Mail mailbox with sending access is assigned to you.' }, { status: 403 });
-  if (!admin) return NextResponse.json({ error: 'Setu Mail safety service is unavailable.' }, { status: 503 });
-  if (Number(entitlement.current_period_messages ?? 0) >= Number(entitlement.monthly_message_limit ?? 0)) return NextResponse.json({ error: 'This organization has reached its Setu Mail monthly message allowance.' }, { status: 429 });
+  if (usageResult.error) return NextResponse.json({ error: 'Setu Mail usage allowance could not be verified.' }, { status: 503 });
+  const currentPeriodMessages = Number(usageResult.data?.resend_inbound_messages ?? 0) + Number(usageResult.data?.resend_outbound_messages ?? 0);
+  if (currentPeriodMessages >= Number(entitlement.monthly_message_limit ?? 0)) return NextResponse.json({ error: 'This organization has reached its Setu Mail monthly message allowance.' }, { status: 429 });
 
   const nowMs = Date.now();
   const [mailboxRate, orgRate] = await Promise.all([
@@ -150,9 +159,6 @@ export async function POST(request: NextRequest) {
   }
   if (error || !message) return NextResponse.json({ error: 'Email sent, but Setu Mail could not save the sent copy.' }, { status: 500 });
   if (attachmentIds.length) await admin.from('mail_attachments').update({ message_id: message.id }).in('id', attachmentIds).eq('mailbox_id', mailbox.id).eq('security_status', 'clean');
-  await Promise.all([
-    db.from('mail_threads').update({ last_message_at: now, participants: Array.from(new Set([mailbox.address, ...all])), updated_at: now }).eq('id', thread),
-    db.from('mail_entitlements').update({ current_period_messages: Number(entitlement.current_period_messages ?? 0) + 1, updated_at: now }).eq('organization_id', organizationId),
-  ]);
+  await db.from('mail_threads').update({ last_message_at: now, participants: Array.from(new Set([mailbox.address, ...all])), updated_at: now }).eq('id', thread);
   return NextResponse.json({ ok: true, id: message.id, threadId: thread, providerMessageId: provider.id ?? null, from: mailbox.address });
 }
