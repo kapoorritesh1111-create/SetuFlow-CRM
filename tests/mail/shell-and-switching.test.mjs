@@ -35,14 +35,18 @@ test('mail routes through a dedicated Outlook-familiar product shell while CRM r
   assert.match(layout, /AuthenticatedShellRouter/);
 });
 
-test('mail product shell exposes Mail, future Calendar, mailbox switching and CRM app destinations without cloning Outlook branding', () => {
+test('mail product shell exposes functional app launcher, future Calendar, mailbox switching and gated CRM destinations', () => {
   const source = read('src/components/layout/mail-product-shell.tsx');
   assert.match(source, /Setu Mail/);
   assert.match(source, /Search Setu Mail/);
   assert.match(source, /Switch mailbox/);
+  assert.match(source, /aria-expanded=\{appsOpen\}/);
+  assert.match(source, /Setu apps menu/);
   assert.match(source, /Calendar — coming next/);
   assert.match(source, /Setu Flow CRM/);
+  assert.match(source, /crmEnabled: false/);
   assert.match(source, /access\.crmEnabled/);
+  assert.match(source, /target\.tabIndex = -1/);
   assert.match(source, /href="\/profile"/);
   assert.doesNotMatch(source, /Microsoft|Outlook/);
 });
@@ -52,4 +56,5 @@ test('desktop mail workspace is full-height and removes the duplicate in-pane se
   assert.match(source, /height: calc\(100vh - 48px\) !important/);
   assert.match(source, /border-radius: 0 !important/);
   assert.match(source, /clip-path: inset\(50%\)/);
+  assert.match(read('src/components/layout/mail-product-shell.module.css'), /flex-shrink: 0/);
 });

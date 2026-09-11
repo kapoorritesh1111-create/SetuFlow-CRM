@@ -36,8 +36,9 @@ function RailLink({ href, label, children }: { href: string; label: string; chil
 }
 
 export function MailProductShell({ children, profileName, profileEmail, avatarUrl, organizationName }: { children: ReactNode; profileName: string; profileEmail: string; avatarUrl?: string | null; organizationName: string }) {
-  const [access, setAccess] = useState<AccessPayload>({ activeMailboxId: null, crmEnabled: true, mailboxes: [] });
+  const [access, setAccess] = useState<AccessPayload>({ activeMailboxId: null, crmEnabled: false, mailboxes: [] });
   const [search, setSearch] = useState('');
+  const [appsOpen, setAppsOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -47,8 +48,13 @@ export function MailProductShell({ children, profileName, profileEmail, avatarUr
         if (!response.ok) throw new Error(payload.error || 'Unable to load mailbox access.');
         if (active) setAccess(payload);
       })
-      .catch(() => { if (active) setAccess((current) => ({ ...current, mailboxes: [] })); });
+      .catch(() => { if (active) setAccess((current) => ({ ...current, crmEnabled: false, mailboxes: [] })); });
     return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const target = document.querySelector<HTMLInputElement>('input[aria-label="Search mailbox"]');
+    if (target) target.tabIndex = -1;
   }, []);
 
   const activeMailbox = useMemo(() => access.mailboxes.find((mailbox) => mailbox.id === access.activeMailboxId) ?? access.mailboxes[0] ?? null, [access]);
@@ -57,7 +63,14 @@ export function MailProductShell({ children, profileName, profileEmail, avatarUr
     <div className={styles.shell} data-setu-mail-shell>
       <header className={styles.topbar}>
         <div className={styles.brandBlock}>
-          <button type="button" className={styles.launcher} aria-label="Setu apps" title="Setu apps"><Grid2X2 size={18}/></button>
+          <div className={styles.launcherWrap}>
+            <button type="button" className={styles.launcher} aria-label="Setu apps" title="Setu apps" aria-expanded={appsOpen} onClick={() => setAppsOpen((open) => !open)}><Grid2X2 size={18}/></button>
+            {appsOpen ? <div className={styles.appMenu} role="menu" aria-label="Setu apps menu">
+              <Link href="/mail" role="menuitem" onClick={() => setAppsOpen(false)}><Mail size={18}/><span><strong>Mail</strong><small>Messages and shared inboxes</small></span></Link>
+              <button type="button" role="menuitem" disabled><CalendarDays size={18}/><span><strong>Calendar</strong><small>Coming next</small></span></button>
+              {access.crmEnabled ? <Link href="/dashboard" role="menuitem" onClick={() => setAppsOpen(false)}><AppWindow size={18}/><span><strong>Setu Flow CRM</strong><small>Trade execution workspace</small></span></Link> : null}
+            </div> : null}
+          </div>
           <img src="/logos/setu-flow-logo.svg" alt="Setu Flow" className={styles.logo}/>
           <div className={styles.brandText}><strong>Setu Mail</strong><span>{organizationName}</span></div>
         </div>
