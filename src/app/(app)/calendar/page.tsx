@@ -1,5 +1,5 @@
 import { WorkspaceState } from '@/components/ui/workspace-state';
-import { CalendarOutlookWorkspace } from '@/features/calendar/components/calendar-outlook-workspace';
+import { CalendarBatchOneWorkspace } from '@/features/calendar/components/calendar-batch1-workspace';
 import { MobileCalendarWorkspace } from '@/features/calendar/components/mobile-calendar-workspace';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
@@ -13,6 +13,6 @@ export default async function CalendarPage() {
   const userName = workspace.profile?.full_name ?? workspace.profile?.username ?? workspace.user.email ?? 'Setu Flow user';
   return <>
     <div className="md:hidden"><MobileCalendarWorkspace /></div>
-    <div className="hidden h-full md:block"><CalendarOutlookWorkspace userName={userName} /></div>
+    <div className="hidden h-full md:block"><CalendarBatchOneWorkspace userName={userName} /></div>
   </>;
 }
