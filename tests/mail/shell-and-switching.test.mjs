@@ -34,23 +34,26 @@ test('send honors an explicit active mailbox and requires send permission for th
   assert.match(source, /You do not have sending access to this mailbox/);
 });
 
-test('mail routes through a dedicated Outlook-familiar product shell while CRM routes keep AppShell', () => {
+test('Mail and Calendar route through the communications shell while CRM routes keep AppShell', () => {
   const router = read('src/components/layout/authenticated-shell-router.tsx');
   const layout = read('src/app/(app)/layout.tsx');
   assert.match(router, /pathname === '\/mail'/);
+  assert.match(router, /pathname === '\/calendar'/);
   assert.match(router, /<MailProductShell/);
   assert.match(router, /<AppShell \{\.\.\.props\} \/>/);
   assert.match(layout, /AuthenticatedShellRouter/);
 });
 
-test('mail product shell exposes functional app launcher, future Calendar, mailbox switching and gated CRM destinations', () => {
+test('communications shell preserves Mail behavior while exposing live Calendar and gated CRM destinations', () => {
   const source = read('src/components/layout/mail-product-shell.tsx');
   assert.match(source, /Setu Mail/);
   assert.match(source, /Search Setu Mail/);
   assert.match(source, /Switch mailbox/);
   assert.match(source, /aria-expanded=\{appsOpen\}/);
   assert.match(source, /Setu apps menu/);
-  assert.match(source, /Calendar — coming next/);
+  assert.match(source, /href="\/calendar"/);
+  assert.match(source, /Setu Calendar/);
+  assert.doesNotMatch(source, /Calendar — coming next/);
   assert.match(source, /Setu Flow CRM/);
   assert.match(source, /crmEnabled: false/);
   assert.match(source, /access\.crmEnabled/);
