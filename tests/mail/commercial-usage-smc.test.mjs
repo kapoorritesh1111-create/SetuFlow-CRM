@@ -12,7 +12,7 @@ test('commercial usage ledger meters only persisted Setu Mail provider activity'
   assert.match(migration, /cloudmersive_scan/);
   assert.match(migration, /mail_messages_capture_commercial_usage/);
   assert.match(migration, /mail_attachments_capture_scan_usage/);
-  assert.match(migration, /Platform transactional email.*excluded/is);
+  assert.match(migration, /platform transactional.*email.*excluded/is);
   assert.doesNotMatch(migration, /notification_emails|organization_invitations.*mail_usage_events/is);
 });
 
