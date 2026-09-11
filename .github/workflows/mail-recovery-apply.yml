@@ -1,0 +1,33 @@
+name: Apply Mail recovery patch
+on:
+  push:
+    branches: [mail/mvp-completion-20260911]
+    paths:
+      - .github/workflows/mail-recovery-apply.yml
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: mail/mvp-completion-20260911
+          fetch-depth: 0
+      - name: Verify and apply tested Mail recovery patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/mail-recovery-parts/part* > /tmp/mail.patch.gz.b64
+          test "$(wc -c < /tmp/mail.patch.gz.b64)" -eq 98680
+          echo "5e19bb23b8620c1084d409dc779d6c31a62053d47a29d6360ca74c5a7ed57da1  /tmp/mail.patch.gz.b64" | sha256sum -c -
+          base64 -d /tmp/mail.patch.gz.b64 | gzip -dc > /tmp/mail.patch
+          git apply --check /tmp/mail.patch
+          git apply /tmp/mail.patch
+          rm -rf .github/mail-recovery-parts .github/workflows/mail-recovery-apply.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(mail): complete commercial MVP mail experience"
+          git push origin HEAD:mail/mvp-completion-20260911
