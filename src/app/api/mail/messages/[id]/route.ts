@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mailOrganizerContext, MailAccessError, MAIL_MESSAGE_FIELDS } from '@/lib/mail/organizer-context';
 import { isMailId } from '@/lib/mail/organization';
+import { sanitizeMailHtml } from '@/lib/mail/safe-html';
 export const dynamic = 'force-dynamic';
 
 function failure(error: unknown) {
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     ]);
     if (message.error || attachments.error) return NextResponse.json({ error: 'Unable to load the complete message. Please try again.' }, { status: 503 });
     if (!message.data) return NextResponse.json({ error: 'Message not found.' }, { status: 404 });
-    return NextResponse.json({ message: message.data, attachments: attachments.data ?? [] }, { headers: { 'Cache-Control': 'private, no-store' } });
+    const safeMessage = { ...message.data, html_body: sanitizeMailHtml(message.data.html_body) || null };
+    return NextResponse.json({ message: safeMessage, attachments: attachments.data ?? [] }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) { return failure(error); }
 }
 

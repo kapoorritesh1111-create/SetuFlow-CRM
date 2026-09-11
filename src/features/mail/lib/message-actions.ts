@@ -1,19 +1,21 @@
 import type { OrganizedMessage } from './organizer-client';
 
-export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'archive' | 'trash';
+export type MailFolder = 'inbox' | 'sent' | 'drafts' | 'starred' | 'archive' | 'trash' | 'junk';
 export type MailCounts = Record<MailFolder, number>;
 export type MailAction = 'read' | 'star' | 'archive' | 'trash';
-export const EMPTY_MAIL_COUNTS: MailCounts = { inbox: 0, sent: 0, drafts: 0, starred: 0, archive: 0, trash: 0 };
+export const EMPTY_MAIL_COUNTS: MailCounts = { inbox: 0, sent: 0, drafts: 0, starred: 0, archive: 0, trash: 0, junk: 0 };
 
+/** Ordinary folder badges are unread counts. Drafts and Starred intentionally show totals. */
 export function countMailFolders(messages: OrganizedMessage[]): MailCounts {
   const result = { ...EMPTY_MAIL_COUNTS };
   for (const message of messages) {
     if (message.folder === 'inbox' && !message.is_read) result.inbox++;
-    if (message.folder === 'sent') result.sent++;
+    if (message.folder === 'sent' && !message.is_read) result.sent++;
     if (message.folder === 'drafts' && message.status === 'draft') result.drafts++;
     if (message.is_starred && message.folder !== 'trash') result.starred++;
-    if (message.folder === 'archive') result.archive++;
-    if (message.folder === 'trash') result.trash++;
+    if (message.folder === 'archive' && !message.is_read) result.archive++;
+    if (message.folder === 'trash' && !message.is_read) result.trash++;
+    if ((message.folder === 'junk' || message.folder === 'spam') && !message.is_read) result.junk++;
   }
   return result;
 }
@@ -33,7 +35,6 @@ export async function persistMessageAction(mailboxId: string, message: Organized
   return { ...message, ...result.message };
 }
 
-/** Explicit results prevent partially successful bulk actions being reported as all done. */
 export async function runMailBatch(messages: OrganizedMessage[], update: (message: OrganizedMessage) => Promise<OrganizedMessage>, onUpdated: (before: OrganizedMessage, after: OrganizedMessage) => void) {
   const succeeded: string[] = [];
   const failed: Array<{ id: string; error: string }> = [];

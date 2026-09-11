@@ -165,7 +165,10 @@ export async function POST(request: NextRequest) {
   const now = new Date().toISOString();
   let claim: Awaited<ReturnType<typeof claimMailWebhook>>;
   try { claim = await claimMailWebhook(admin, { svix_id: svixId, event_type: eventType, provider_message_id: providerMessageId, event_created_at: webhook?.created_at ?? null, payload: webhook }, now); }
-  catch { return NextResponse.json({ error: 'Unable to record webhook. Please retry.' }, { status: 503 }); }
+  catch (error) {
+    console.error('[setu-mail:webhook] claim failed', { svixId, eventType, providerMessageId, error: error instanceof Error ? error.message : String(error) });
+    return NextResponse.json({ error: `Unable to record webhook. Reference: ${svixId}. Please retry.`, reference: svixId }, { status: 503 });
+  }
   if (claim.duplicate) return NextResponse.json({ ok: true, duplicate: true });
   if (!claim.claimed) return NextResponse.json({ error: 'Webhook is already processing. Please retry.' }, { status: 503 });
   try {
@@ -175,7 +178,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Webhook processing failed.';
-    await admin.from('mail_webhook_events').update({ status: 'failed', processed_at: new Date().toISOString(), error_message: message }).eq('svix_id', svixId).eq('status', 'processing').eq('processed_at', claim.claimedAt);
-    return NextResponse.json({ error: 'Unable to process webhook. Please retry.' }, { status: 500 });
+    const failureUpdate = await admin.from('mail_webhook_events').update({ status: 'failed', processed_at: new Date().toISOString(), error_message: message }).eq('svix_id', svixId).eq('status', 'processing').eq('processed_at', claim.claimedAt);
+    console.error('[setu-mail:webhook] processing failed', { svixId, eventType, providerMessageId, error: message, failureRecorded: !failureUpdate.error });
+    return NextResponse.json({ error: `Unable to process webhook. Reference: ${svixId}. Please retry.`, reference: svixId }, { status: 500 });
   }
 }

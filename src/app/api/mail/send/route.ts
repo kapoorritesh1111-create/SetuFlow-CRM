@@ -3,21 +3,141 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
 import { resolveUserMailbox } from '@/lib/mail/resolve-user-mailbox';
+import { plainTextToMailHtml, sanitizeMailHtml } from '@/lib/mail/safe-html';
 
 export const dynamic = 'force-dynamic';
-const ATTACHMENT_BUCKET='setu-mail-attachments',MAX_RECIPIENTS=50,MAX_ATTACHMENT_BYTES=25*1024*1024,MAILBOX_BURST_WINDOW_MS=10*60*1000,MAILBOX_BURST_LIMIT=30,ORG_HOURLY_WINDOW_MS=60*60*1000,ORG_HOURLY_LIMIT=300;
-const isEmail=(v:string)=>/^[^\s@\r\n]+@[^\s@\r\n]+\.[^\s@\r\n]+$/.test(v);const norm=(v:unknown)=>Array.from(new Set((Array.isArray(v)?v:typeof v==='string'?v.split(','):[]).map(x=>String(x).trim().toLowerCase()).filter(Boolean)));const esc=(v:string)=>v.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]??c));const ids=(v:unknown)=>Array.isArray(v)?Array.from(new Set(v.map(x=>String(x).trim()).filter(Boolean))):[];
-export async function POST(request:NextRequest){
- const w=await getCurrentWorkspace();if(!w.user)return NextResponse.json({error:'Authentication required.'},{status:401});if(!w.organization||!w.membership)return NextResponse.json({error:'Active workspace required.'},{status:403});
- const body=await request.json().catch(()=>null) as any;const to=norm(body?.to),cc=norm(body?.cc),bcc=norm(body?.bcc),attachmentIds=ids(body?.attachmentIds),all=[...to,...cc,...bcc],subject=String(body?.subject??'').trim(),rawText=String(body?.text??'').trim();if(!to.length||all.some(a=>!isEmail(a)))return NextResponse.json({error:'Enter valid recipient email addresses.'},{status:400});if(all.length>MAX_RECIPIENTS)return NextResponse.json({error:`Setu Mail supports up to ${MAX_RECIPIENTS} recipients per message.`},{status:400});if(!subject||!rawText)return NextResponse.json({error:'Subject and message are required.'},{status:400});
- const apiKey=process.env.RESEND_API_KEY;if(!apiKey)return NextResponse.json({error:'Resend is not configured for Setu Mail yet.'},{status:503});const s=(await createClient()) as any,admin=createAdminSupabaseClient() as any,org=w.organization.id,user=w.user.id;
- const [{data:grant},{data:entitlement},mailbox]=await Promise.all([s.from('org_module_grants').select('enabled').eq('organization_id',org).eq('module_key','setu_mail').maybeSingle(),s.from('mail_entitlements').select('status,monthly_message_limit,current_period_messages').eq('organization_id',org).maybeSingle(),resolveUserMailbox(s,org,user,'id,address,display_name,status')]);
- if(!grant?.enabled)return NextResponse.json({error:'Setu Mail is not enabled for this organization.'},{status:403});if(!entitlement||entitlement.status!=='active')return NextResponse.json({error:'Setu Mail subscription is not active.'},{status:402});if(!mailbox)return NextResponse.json({error:'No active Setu Mail mailbox is assigned to you.'},{status:409});if(!admin)return NextResponse.json({error:'Setu Mail safety service is unavailable.'},{status:503});if(Number(entitlement.current_period_messages??0)>=Number(entitlement.monthly_message_limit??0))return NextResponse.json({error:'This organization has reached its Setu Mail monthly message allowance.'},{status:429});
- const nowMs=Date.now(),[mr,or]=await Promise.all([admin.from('mail_messages').select('id',{count:'exact',head:true}).eq('mailbox_id',mailbox.id).eq('direction','outbound').gte('sent_at',new Date(nowMs-MAILBOX_BURST_WINDOW_MS).toISOString()),admin.from('mail_messages').select('id',{count:'exact',head:true}).eq('organization_id',org).eq('direction','outbound').gte('sent_at',new Date(nowMs-ORG_HOURLY_WINDOW_MS).toISOString())]);if(mr.error||or.error)return NextResponse.json({error:'Setu Mail safety check could not be completed.'},{status:503});if(Number(mr.count??0)>=MAILBOX_BURST_LIMIT)return NextResponse.json({error:'This mailbox is sending unusually quickly. Try again shortly.'},{status:429});if(Number(or.count??0)>=ORG_HOURLY_LIMIT)return NextResponse.json({error:'This organization has reached the Setu Mail hourly safety limit. Try again later.'},{status:429});
- const {data:sig}=body?.includeSignature===false?{data:null}:await s.from('mail_signatures').select('text_signature,html_signature').eq('mailbox_id',mailbox.id).eq('user_id',user).eq('is_default',true).limit(1).maybeSingle();const text=sig?.text_signature?`${rawText}\n\n${sig.text_signature}`:rawText,escaped=`<div style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.6;color:#0f172a">${esc(rawText)}</div>`,html=sig?.html_signature?`${escaped}<div style="margin-top:24px">${sig.html_signature}</div>`:sig?.text_signature?`${escaped}<div style="margin-top:24px;white-space:pre-wrap">${esc(sig.text_signature)}</div>`:escaped;
- let threadId=String(body?.threadId??'').trim()||null,parent:any=null;const parentId=String(body?.parentMessageId??'').trim();if(parentId){const {data}=await s.from('mail_messages').select('id,thread_id,message_id_header,reference_headers').eq('id',parentId).eq('mailbox_id',mailbox.id).maybeSingle();parent=data;if(parent?.thread_id)threadId=parent.thread_id}if(threadId){const {data}=await s.from('mail_threads').select('id').eq('id',threadId).eq('mailbox_id',mailbox.id).maybeSingle();if(!data)threadId=null}if(!threadId){const {data,error}=await s.from('mail_threads').insert({organization_id:org,mailbox_id:mailbox.id,subject,participants:all,last_message_at:new Date().toISOString()}).select('id').single();if(error||!data)return NextResponse.json({error:'Unable to create the mail conversation.'},{status:500});threadId=data.id}const tid=String(threadId);
- const attachments:any[]=[];let bytes=0;if(attachmentIds.length){const {data,error}=await admin.from('mail_attachments').select('id,filename,size_bytes,storage_path,message_id').in('id',attachmentIds).eq('organization_id',org).eq('mailbox_id',mailbox.id);if(error||(data??[]).length!==attachmentIds.length)return NextResponse.json({error:'One or more attachments could not be found.'},{status:400});for(const a of data??[]){bytes+=Number(a.size_bytes??0);if(bytes>MAX_ATTACHMENT_BYTES)return NextResponse.json({error:'Total attachment size must be 25 MB or less.'},{status:400});const {data:file,error:e}=await admin.storage.from(ATTACHMENT_BUCKET).download(a.storage_path);if(e||!file)return NextResponse.json({error:`Unable to read attachment ${a.filename}.`},{status:500});attachments.push({filename:a.filename,content:Buffer.from(await file.arrayBuffer()).toString('base64')})}}
- const domain=mailbox.address.split('@')[1]?.toLowerCase(),{data:verified}=domain?await s.from('mail_domains').select('status,sending_status').eq('organization_id',org).eq('domain',domain).maybeSingle():{data:null};const canSend=verified&&['verified','active'].includes(String(verified.status).toLowerCase())&&['verified','active','ready','enabled'].includes(String(verified.sending_status).toLowerCase());if(!canSend)return NextResponse.json({error:`${mailbox.address} is assigned to you, but its domain is not ready for sending.`},{status:503});const senderName=mailbox.display_name||w.profile?.full_name||w.organization.name||'Setu Mail',from=`${senderName} <${mailbox.address}>`;const refs=Array.from(new Set([...(parent?.reference_headers??[]),...(parent?.message_id_header?[parent.message_id_header]:[])]));const headers:any={'X-Setu-Organization':org,'X-Setu-Mailbox':mailbox.id,'X-Setu-Thread':tid};if(parent?.message_id_header)headers['In-Reply-To']=parent.message_id_header;if(refs.length)headers.References=refs.join(' ');
- const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({from,to,...(cc.length?{cc}:{}),...(bcc.length?{bcc}:{}),subject,text,html,reply_to:mailbox.address,...(attachments.length?{attachments}:{}),headers})});const provider=await response.json().catch(()=>({})) as any;const common={organization_id:org,mailbox_id:mailbox.id,thread_id:tid,direction:'outbound',from_address:mailbox.address,to_addresses:to,cc_addresses:cc,bcc_addresses:bcc,subject,text_body:text,html_body:html,is_read:true,folder:'sent',in_reply_to:parent?.message_id_header??null,reference_headers:refs};if(!response.ok){if(!body?.draftId)await s.from('mail_messages').insert({...common,status:'failed'});return NextResponse.json({error:provider?.message||provider?.error?.message||'Resend rejected the email.'},{status:502})}
- const now=new Date().toISOString();let message:any=null,error:any=null;const draftId=String(body?.draftId??'').trim();if(draftId){const r=await s.from('mail_messages').update({...common,provider_message_id:provider.id??null,status:'sent',folder:'sent',sent_at:now,draft_saved_at:null,updated_at:now}).eq('id',draftId).eq('mailbox_id',mailbox.id).eq('status','draft').select('id').maybeSingle();message=r.data;error=r.error||(!r.data?new Error('Draft not found.'):null)}else{const r=await s.from('mail_messages').insert({...common,provider_message_id:provider.id??null,status:'sent',sent_at:now}).select('id').single();message=r.data;error=r.error}if(error||!message)return NextResponse.json({error:'Email sent, but Setu Mail could not save the sent copy.'},{status:500});if(attachmentIds.length)await admin.from('mail_attachments').update({message_id:message.id}).in('id',attachmentIds).eq('mailbox_id',mailbox.id);await Promise.all([s.from('mail_threads').update({last_message_at:now,participants:Array.from(new Set([mailbox.address,...all])),updated_at:now}).eq('id',tid),s.from('mail_entitlements').update({current_period_messages:Number(entitlement.current_period_messages??0)+1,updated_at:now}).eq('organization_id',org)]);return NextResponse.json({ok:true,id:message.id,threadId:tid,providerMessageId:provider.id??null,from:mailbox.address});
+const ATTACHMENT_BUCKET = 'setu-mail-attachments';
+const MAX_RECIPIENTS = 50;
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const MAILBOX_BURST_WINDOW_MS = 10 * 60 * 1000;
+const MAILBOX_BURST_LIMIT = 30;
+const ORG_HOURLY_WINDOW_MS = 60 * 60 * 1000;
+const ORG_HOURLY_LIMIT = 300;
+const isEmail = (value: string) => /^[^\s@\r\n]+@[^\s@\r\n]+\.[^\s@\r\n]+$/.test(value);
+const normalizeAddresses = (value: unknown) => Array.from(new Set((Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []).map(x => String(x).trim().toLowerCase()).filter(Boolean)));
+const ids = (value: unknown) => Array.isArray(value) ? Array.from(new Set(value.map(x => String(x).trim()).filter(Boolean))) : [];
+
+export async function POST(request: NextRequest) {
+  const workspace = await getCurrentWorkspace();
+  if (!workspace.user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  if (!workspace.organization || !workspace.membership) return NextResponse.json({ error: 'Active workspace required.' }, { status: 403 });
+
+  const body = await request.json().catch(() => null) as any;
+  const to = normalizeAddresses(body?.to), cc = normalizeAddresses(body?.cc), bcc = normalizeAddresses(body?.bcc);
+  const attachmentIds = ids(body?.attachmentIds), all = [...to, ...cc, ...bcc];
+  const subject = String(body?.subject ?? '').trim();
+  const rawText = String(body?.text ?? '').trim();
+  const cleanBodyHtml = sanitizeMailHtml(body?.html) || plainTextToMailHtml(rawText);
+  const includeSignature = body?.includeSignature !== false;
+  if (!to.length || all.some(address => !isEmail(address))) return NextResponse.json({ error: 'Enter valid recipient email addresses.' }, { status: 400 });
+  if (all.length > MAX_RECIPIENTS) return NextResponse.json({ error: `Setu Mail supports up to ${MAX_RECIPIENTS} recipients per message.` }, { status: 400 });
+  if (!subject || !rawText) return NextResponse.json({ error: 'Subject and message are required.' }, { status: 400 });
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: 'Resend is not configured for Setu Mail yet.' }, { status: 503 });
+  const db = (await createClient()) as any;
+  const admin = createAdminSupabaseClient() as any;
+  const organizationId = workspace.organization.id, userId = workspace.user.id;
+  const [{ data: grant }, { data: entitlement }, mailbox] = await Promise.all([
+    db.from('org_module_grants').select('enabled').eq('organization_id', organizationId).eq('module_key', 'setu_mail').maybeSingle(),
+    db.from('mail_entitlements').select('status,monthly_message_limit,current_period_messages').eq('organization_id', organizationId).maybeSingle(),
+    resolveUserMailbox(db, organizationId, userId, 'id,address,display_name,status'),
+  ]);
+  if (!grant?.enabled) return NextResponse.json({ error: 'Setu Mail is not enabled for this organization.' }, { status: 403 });
+  if (!entitlement || entitlement.status !== 'active') return NextResponse.json({ error: 'Setu Mail subscription is not active.' }, { status: 402 });
+  if (!mailbox) return NextResponse.json({ error: 'No active Setu Mail mailbox is assigned to you.' }, { status: 409 });
+  if (!admin) return NextResponse.json({ error: 'Setu Mail safety service is unavailable.' }, { status: 503 });
+  if (Number(entitlement.current_period_messages ?? 0) >= Number(entitlement.monthly_message_limit ?? 0)) return NextResponse.json({ error: 'This organization has reached its Setu Mail monthly message allowance.' }, { status: 429 });
+
+  const nowMs = Date.now();
+  const [mailboxRate, orgRate] = await Promise.all([
+    admin.from('mail_messages').select('id', { count: 'exact', head: true }).eq('mailbox_id', mailbox.id).eq('direction', 'outbound').gte('sent_at', new Date(nowMs - MAILBOX_BURST_WINDOW_MS).toISOString()),
+    admin.from('mail_messages').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('direction', 'outbound').gte('sent_at', new Date(nowMs - ORG_HOURLY_WINDOW_MS).toISOString()),
+  ]);
+  if (mailboxRate.error || orgRate.error) return NextResponse.json({ error: 'Setu Mail safety check could not be completed.' }, { status: 503 });
+  if (Number(mailboxRate.count ?? 0) >= MAILBOX_BURST_LIMIT) return NextResponse.json({ error: 'This mailbox is sending unusually quickly. Try again shortly.' }, { status: 429 });
+  if (Number(orgRate.count ?? 0) >= ORG_HOURLY_LIMIT) return NextResponse.json({ error: 'This organization has reached the Setu Mail hourly safety limit. Try again later.' }, { status: 429 });
+
+  const { data: signature } = includeSignature
+    ? await db.from('mail_signatures').select('text_signature,html_signature').eq('mailbox_id', mailbox.id).eq('user_id', userId).eq('is_default', true).limit(1).maybeSingle()
+    : { data: null };
+  const signatureText = String(signature?.text_signature ?? '').trim();
+  const signatureHtml = sanitizeMailHtml(signature?.html_signature) || (signatureText ? plainTextToMailHtml(signatureText) : '');
+  const text = signatureText ? `${rawText}\n\n${signatureText}` : rawText;
+  const html = signatureHtml ? `${cleanBodyHtml}<div data-setu-mail-signature="true" style="margin-top:24px">${signatureHtml}</div>` : cleanBodyHtml;
+
+  let threadId = String(body?.threadId ?? '').trim() || null;
+  let parent: any = null;
+  const parentId = String(body?.parentMessageId ?? '').trim();
+  if (parentId) {
+    const { data } = await db.from('mail_messages').select('id,thread_id,message_id_header,reference_headers').eq('id', parentId).eq('mailbox_id', mailbox.id).maybeSingle();
+    parent = data;
+    if (parent?.thread_id) threadId = parent.thread_id;
+  }
+  if (threadId) {
+    const { data } = await db.from('mail_threads').select('id').eq('id', threadId).eq('mailbox_id', mailbox.id).maybeSingle();
+    if (!data) threadId = null;
+  }
+  if (!threadId) {
+    const { data, error } = await db.from('mail_threads').insert({ organization_id: organizationId, mailbox_id: mailbox.id, subject, participants: all, last_message_at: new Date().toISOString() }).select('id').single();
+    if (error || !data) return NextResponse.json({ error: 'Unable to create the mail conversation.' }, { status: 500 });
+    threadId = data.id;
+  }
+  const thread = String(threadId);
+
+  const attachments: any[] = [];
+  let attachmentBytes = 0;
+  if (attachmentIds.length) {
+    const { data, error } = await admin.from('mail_attachments').select('id,filename,size_bytes,storage_path,message_id').in('id', attachmentIds).eq('organization_id', organizationId).eq('mailbox_id', mailbox.id);
+    if (error || (data ?? []).length !== attachmentIds.length) return NextResponse.json({ error: 'One or more attachments could not be found.' }, { status: 400 });
+    for (const attachment of data ?? []) {
+      attachmentBytes += Number(attachment.size_bytes ?? 0);
+      if (attachmentBytes > MAX_ATTACHMENT_BYTES) return NextResponse.json({ error: 'Total attachment size must be 25 MB or less.' }, { status: 400 });
+      const { data: file, error: downloadError } = await admin.storage.from(ATTACHMENT_BUCKET).download(attachment.storage_path);
+      if (downloadError || !file) return NextResponse.json({ error: `Unable to read attachment ${attachment.filename}. Remove it or try again.` }, { status: 500 });
+      attachments.push({ filename: attachment.filename, content: Buffer.from(await file.arrayBuffer()).toString('base64') });
+    }
+  }
+
+  const domain = mailbox.address.split('@')[1]?.toLowerCase();
+  const { data: verifiedDomain } = domain ? await db.from('mail_domains').select('status,sending_status').eq('organization_id', organizationId).eq('domain', domain).maybeSingle() : { data: null };
+  const canSend = verifiedDomain && ['verified','active'].includes(String(verifiedDomain.status).toLowerCase()) && ['verified','active','ready','enabled'].includes(String(verifiedDomain.sending_status).toLowerCase());
+  if (!canSend) return NextResponse.json({ error: `${mailbox.address} is assigned to you, but its domain is not ready for sending.` }, { status: 503 });
+
+  const senderName = mailbox.display_name || workspace.profile?.full_name || workspace.organization.name || 'Setu Mail';
+  const from = `${senderName} <${mailbox.address}>`;
+  const references = Array.from(new Set([...(parent?.reference_headers ?? []), ...(parent?.message_id_header ? [parent.message_id_header] : [])]));
+  const headers: Record<string, string> = { 'X-Setu-Organization': organizationId, 'X-Setu-Mailbox': mailbox.id, 'X-Setu-Thread': thread };
+  if (parent?.message_id_header) headers['In-Reply-To'] = parent.message_id_header;
+  if (references.length) headers.References = references.join(' ');
+
+  const providerResponse = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from, to, ...(cc.length ? { cc } : {}), ...(bcc.length ? { bcc } : {}), subject, text, html, reply_to: mailbox.address, ...(attachments.length ? { attachments } : {}), headers }),
+  });
+  const provider = await providerResponse.json().catch(() => ({})) as any;
+  const common = { organization_id: organizationId, mailbox_id: mailbox.id, thread_id: thread, direction: 'outbound', from_address: mailbox.address, to_addresses: to, cc_addresses: cc, bcc_addresses: bcc, subject, text_body: text, html_body: html, compose_options: { includeSignature }, is_read: true, folder: 'sent', in_reply_to: parent?.message_id_header ?? null, reference_headers: references };
+  if (!providerResponse.ok) {
+    if (!body?.draftId) await db.from('mail_messages').insert({ ...common, status: 'failed' });
+    return NextResponse.json({ error: provider?.message || provider?.error?.message || 'Resend rejected the email.' }, { status: 502 });
+  }
+
+  const now = new Date().toISOString();
+  let message: any = null, error: any = null;
+  const draftId = String(body?.draftId ?? '').trim();
+  if (draftId) {
+    const result = await db.from('mail_messages').update({ ...common, provider_message_id: provider.id ?? null, status: 'sent', folder: 'sent', sent_at: now, draft_saved_at: null, updated_at: now }).eq('id', draftId).eq('mailbox_id', mailbox.id).eq('status', 'draft').select('id').maybeSingle();
+    message = result.data; error = result.error || (!result.data ? new Error('Draft not found.') : null);
+  } else {
+    const result = await db.from('mail_messages').insert({ ...common, provider_message_id: provider.id ?? null, status: 'sent', sent_at: now }).select('id').single();
+    message = result.data; error = result.error;
+  }
+  if (error || !message) return NextResponse.json({ error: 'Email sent, but Setu Mail could not save the sent copy.' }, { status: 500 });
+  if (attachmentIds.length) await admin.from('mail_attachments').update({ message_id: message.id }).in('id', attachmentIds).eq('mailbox_id', mailbox.id);
+  await Promise.all([
+    db.from('mail_threads').update({ last_message_at: now, participants: Array.from(new Set([mailbox.address, ...all])), updated_at: now }).eq('id', thread),
+    db.from('mail_entitlements').update({ current_period_messages: Number(entitlement.current_period_messages ?? 0) + 1, updated_at: now }).eq('organization_id', organizationId),
+  ]);
+  return NextResponse.json({ ok: true, id: message.id, threadId: thread, providerMessageId: provider.id ?? null, from: mailbox.address });
 }

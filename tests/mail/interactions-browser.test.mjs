@@ -50,15 +50,27 @@ const A = '11111111-1111-4111-8111-111111111111';
 const B = '44444444-4444-4444-8444-444444444444';
 const D = '55555555-5555-4555-8555-555555555555';
 const base = { thread_id: null, from_address: 'buyer@example.test', to_addresses: ['sales@example.test'], cc_addresses: [], bcc_addresses: [], subject: '', text_body: '', created_at: '2026-09-10T10:00:00Z', is_read: false, is_starred: false, custom_folder_id: null, status: 'received', folder: 'inbox', direction: 'inbound' };
-const initialMessages = [{...base,id:A,subject:'Inbox A',text_body:'First message'},{...base,id:B,subject:'Inbox B',text_body:'Second message'},{...base,id:D,subject:'Older saved draft',text_body:'Existing draft body',status:'draft',folder:'drafts',direction:'outbound',is_read:true,to_addresses:['customer@example.test'],cc_addresses:['copy@example.test'],bcc_addresses:['private@example.test']}];
+const initialMessages = [{...base,id:A,subject:'Inbox A',text_body:'First message'},{...base,id:B,subject:'Inbox B',text_body:'Second message'},{...base,id:D,subject:'Older saved draft',text_body:'Existing draft body',html_body:'<p>Existing draft body</p>',compose_options:{includeSignature:true},status:'draft',folder:'drafts',direction:'outbound',is_read:true,to_addresses:['customer@example.test'],cc_addresses:['copy@example.test'],bcc_addresses:['private@example.test']}];
 function mockApi() {
   window.requests = []; window.failIds = [];
-  const counts = () => ({ inbox: window.messages.filter(m=>m.folder==='inbox'&&!m.is_read).length, sent: window.messages.filter(m=>m.folder==='sent').length, drafts: window.messages.filter(m=>m.folder==='drafts'&&m.status==='draft').length, starred: window.messages.filter(m=>m.is_starred&&m.folder!=='trash').length, archive: window.messages.filter(m=>m.folder==='archive').length, trash: window.messages.filter(m=>m.folder==='trash').length });
+  const counts = () => ({ inbox: window.messages.filter(m=>m.folder==='inbox'&&!m.is_read).length, sent: window.messages.filter(m=>m.folder==='sent'&&!m.is_read).length, drafts: window.messages.filter(m=>m.folder==='drafts'&&m.status==='draft').length, starred: window.messages.filter(m=>m.is_starred&&m.folder!=='trash').length, archive: window.messages.filter(m=>m.folder==='archive'&&!m.is_read).length, junk: window.messages.filter(m=>(m.folder==='junk'||m.folder==='spam')&&!m.is_read).length, trash: window.messages.filter(m=>m.folder==='trash'&&!m.is_read).length });
   window.fetch = async (input,init={}) => {
     const url=new URL(input,'https://fixture.example'); const method=init.method||'GET'; const body=init.body?JSON.parse(init.body):null;
     window.requests.push({url:url.pathname,method,body});
     const json=(data,status=200)=>Response.json(data,{status});
     if(url.pathname==='/api/mail')return json({mailbox:{id:window.box,address:'sales@example.test'},messages:window.messages,attachments:[],signature:null,counts:counts(),providerReady:true,inboundReady:true});
+    if(url.pathname==='/api/mail/search') {
+      const folder=url.searchParams.get('folder');const q=(url.searchParams.get('q')||'').toLowerCase();
+      const matchesFolder=m=>folder==='all'||!folder||(folder==='starred'?m.is_starred&&m.folder!=='trash':folder==='junk'?(m.folder==='junk'||m.folder==='spam'):m.folder===folder);
+      const messages=window.messages.filter(m=>matchesFolder(m)&&(!q||[m.subject,m.from_address,m.text_body,...(m.to_addresses||[]),...(m.cc_addresses||[])].join(' ').toLowerCase().includes(q)));
+      return json({messages,attachments:[],nextCursor:null});
+    }
+    if(url.pathname==='/api/mail/compose/context')return json({crmMatch:null,createCrmHref:'/leads/new?email='+encodeURIComponent(url.searchParams.get('email')||'')});
+    if(url.pathname==='/api/mail/compose/guru')return json({suggestion:'Fixture Guru suggestion',action:body?.action||'improve'});
+    if(url.pathname==='/api/mail/junk'&&method==='POST') {
+      const updated=[];for(const id of body.messageIds||[]){const m=window.messages.find(x=>x.id===id);if(!m)continue;m.folder=body.junk?'junk':'inbox';m.custom_folder_id=null;updated.push(m);}
+      return json({ok:true,messages:updated,failures:[]});
+    }
     if(url.pathname==='/api/mail/organizer') {
       if(method==='POST') {const m=window.messages.find(x=>x.id===body.id);if(window.failIds.includes(m?.id))return json({error:'Fixture failure'},503);Object.assign(m,{folder:body.folderId?'custom':m.direction==='outbound'?'sent':'inbox',custom_folder_id:body.folderId});return json({ok:true,message:m});}
       if(url.searchParams.has('folderId')) {const id=url.searchParams.get('folderId');const messages=window.messages.filter(m=>m.custom_folder_id===id);return json({folder:{id,name:'Customers'},messages,attachments:[],total:messages.length,nextOffset:null});}
@@ -79,7 +91,7 @@ function mockApi() {
       let m=window.messages.find(x=>x.id===body.id);
       if(body.id&&(!m||m.folder!=='drafts'))return json({error:'Draft was moved'},409);
       if(!m){m={id:'66666666-6666-4666-8666-666666666666',direction:'outbound',status:'draft',folder:'drafts',is_read:true,is_starred:false,from_address:'sales@example.test',created_at:new Date().toISOString()};window.messages.push(m);}
-      Object.assign(m,{to_addresses:body.to,cc_addresses:body.cc,bcc_addresses:body.bcc,subject:body.subject,text_body:body.text,thread_id:body.threadId,draft_saved_at:new Date().toISOString()});
+      Object.assign(m,{to_addresses:body.to,cc_addresses:body.cc,bcc_addresses:body.bcc,subject:body.subject,text_body:body.text,html_body:body.html||null,compose_options:{includeSignature:body.includeSignature!==false},thread_id:body.threadId,draft_saved_at:new Date().toISOString()});
       return json({ok:true,draft:m});
     }
     if(url.pathname.startsWith('/api/mail/intelligence/'))return json({crmMatch:null,peerAddress:'buyer@example.test',intents:[]});
@@ -91,7 +103,7 @@ async function clickButton(page, text, scope='') {
   throw new Error(`Button not found: ${text}`);
 }
 async function folderClick(page,index){await page.click(`aside .space-y-1 > button:nth-child(${index})`);}
-async function checkCount(page, name, value) {await page.waitForFunction((name,value)=>[...document.querySelectorAll('aside .space-y-1 > button')].some(b=>b.textContent.trim()===name+value),{},name,value);}
+async function checkCount(page, name, value) {await page.waitForFunction((name,value)=>{const b=[...document.querySelectorAll('aside .space-y-1 > button')].find(b=>b.textContent.trim().startsWith(name));if(!b)return false;const badge=b.querySelector('[aria-label$=\"messages\"]');return value===0?!badge:badge?.textContent?.trim()===String(value);},{},name,value);}
 async function enabledClick(page, selector) {await page.waitForFunction(selector=>{const el=document.querySelector(selector);return el&&!el.disabled;},{},selector);await page.click(selector);}
 
 test('Mail interactions in Chromium with real React and simulated API', {timeout:120000}, async t => {
@@ -116,14 +128,15 @@ test('Mail interactions in Chromium with real React and simulated API', {timeout
       await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[data-shell-profile-menu]'));
     });
     await scenario('older saved draft restores every recipient and body, then saves and reopens',async page=>{
-      await folderClick(page,3);await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[data-mail-composer]');
-      for(const [label,value]of [['To','customer@example.test'],['Cc','copy@example.test'],['Bcc','private@example.test'],['Subject','Older saved draft'],['Message','Existing draft body']])assert.equal(await page.$eval(`[aria-label="${label}"]`,el=>el.value),value);
-      await page.type('textarea[aria-label="Message"]',' changed');await enabledClick(page,'[aria-label="Save draft and close"]');await page.waitForFunction(()=>!document.querySelector('[data-mail-composer]'));
-      await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[data-mail-composer]');assert.match(await page.$eval('[aria-label="Message"]',el=>el.value),/changed/);assert.equal(await page.evaluate(()=>window.messages.filter(m=>m.status==='draft').length),1);
+      await folderClick(page,3);await page.waitForSelector(`[data-mail-message-id="${D}"]`);await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[data-mail-composer]');
+      for(const [label,value]of [['To','customer@example.test'],['Cc','copy@example.test'],['Bcc','private@example.test'],['Subject','Older saved draft']])assert.equal(await page.$eval(`[aria-label="${label}"]`,el=>el.value),value);
+      assert.equal(await page.$eval('[aria-label="Message"]',el=>el.textContent),'Existing draft body');
+      await page.type('[aria-label="Message"]',' changed');await enabledClick(page,'[aria-label="Save draft and close"]');await page.waitForFunction(()=>!document.querySelector('[data-mail-composer]'));
+      await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[data-mail-composer]');assert.match(await page.$eval('[aria-label="Message"]',el=>el.textContent),/changed/);assert.equal(await page.evaluate(()=>window.messages.filter(m=>m.status==='draft').length),1);
     });
     await scenario('delete saved draft updates counts and retains a restorable copy in Trash',async page=>{
-      await folderClick(page,3);await enabledClick(page,'[aria-label="Delete saved draft"]');await clickButton(page,'Move to Trash','dialog');await checkCount(page,'Drafts',0);await checkCount(page,'Trash',1);
-      await page.waitForFunction(()=>!document.querySelector('dialog'));await folderClick(page,6);await page.click(`[data-mail-message-id="${D}"]`);await clickButton(page,'Restore');await checkCount(page,'Drafts',1);
+      await folderClick(page,3);await page.waitForSelector(`[data-mail-message-id="${D}"]`);await enabledClick(page,'[aria-label="Delete saved draft"]');await clickButton(page,'Move to Trash','dialog');await checkCount(page,'Drafts',0);await checkCount(page,'Trash',0);
+      await page.waitForFunction(()=>!document.querySelector('dialog'));await folderClick(page,7);await page.waitForSelector(`[data-mail-message-id="${D}"]`);await page.click(`[data-mail-message-id="${D}"]`);await clickButton(page,'Restore');await checkCount(page,'Drafts',1);
     });
     await scenario('star and read/unread counts update and explicit unread stays unread',async page=>{
       await enabledClick(page,`[data-mail-message-id="${A}"] + div [aria-label="Star message"]`);await checkCount(page,'Starred',1);
@@ -142,12 +155,12 @@ test('Mail interactions in Chromium with real React and simulated API', {timeout
       const counts=await page.evaluate(()=>window.requests.filter(r=>r.url==='/api/mail/organizer'&&r.method==='POST').map(r=>r.body.id));assert.equal(counts.filter(id=>id===A).length,1);assert.equal(counts.filter(id=>id===B).length,2);
     });
     await scenario('deleting an edited open draft flushes saves and cannot be resurrected by autosave',async page=>{
-      await folderClick(page,3);await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[data-mail-composer]');await page.type('[aria-label="Message"]',' saved before trash');
+      await folderClick(page,3);await page.waitForSelector(`[data-mail-message-id="${D}"]`);await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[data-mail-composer]');await page.type('[aria-label="Message"]',' saved before trash');
       await enabledClick(page,'[aria-label="Delete draft"]');await clickButton(page,'Move to Trash','dialog');await checkCount(page,'Drafts',0);
       await new Promise(resolve=>setTimeout(resolve,1200));assert.equal(await page.evaluate(id=>window.messages.find(m=>m.id===id).folder,D),'trash');assert.match(await page.evaluate(id=>window.messages.find(m=>m.id===id).text_body,D),/saved before trash/);
     });
     await scenario('clicking an already-open minimized draft restores the composer',async page=>{
-      await folderClick(page,3);await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[data-mail-composer]');await enabledClick(page,'[aria-label="Minimize composer"]');await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('textarea[aria-label="Message"]');assert.equal(await page.$eval('[data-mail-composer]',el=>el.dataset.minimized),'false');
+      await folderClick(page,3);await page.waitForSelector(`[data-mail-message-id="${D}"]`);await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[data-mail-composer]');await enabledClick(page,'[aria-label="Minimize composer"]');await page.click(`[data-mail-message-id="${D}"]`);await page.waitForSelector('[aria-label="Message"]');assert.equal(await page.$eval('[data-mail-composer]',el=>el.dataset.minimized),'false');
     });
     await scenario('failed star action shows an error without a false count increase',async page=>{
       await page.evaluate(id=>window.failIds=[id],A);await enabledClick(page,`[data-mail-message-id="${A}"] + div [aria-label="Star message"]`);await page.waitForFunction(()=>document.body.textContent.includes('Fixture failure'));await checkCount(page,'Starred',0);
