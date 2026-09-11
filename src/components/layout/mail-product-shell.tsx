@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CalendarDays, CircleHelp, ClipboardList, Grid2X2, Mail, Search, UsersRound } from 'lucide-react';
+import { CalendarCheck2, CalendarClock, CalendarDays, CircleHelp, ClipboardList, Grid2X2, Mail, Search, UsersRound } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import styles from './mail-product-shell.module.css';
 
@@ -111,6 +111,10 @@ export function MailProductShell({ children, profileName, profileEmail, avatarUr
           />
         </label>
         <div className={styles.topActions}>
+          {isCalendar ? <>
+            <Link href="/calendar/booking" className="hidden h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold text-white/90 hover:bg-white/10 md:inline-flex" aria-label="Booking page" title="Booking page"><CalendarClock size={16}/><span className="hidden xl:inline">Booking</span></Link>
+            <Link href="/calendar/outcomes" className="hidden h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold text-white/90 hover:bg-white/10 md:inline-flex" aria-label="Meeting outcomes" title="Meeting outcomes"><CalendarCheck2 size={16}/><span className="hidden xl:inline">Outcomes</span></Link>
+          </> : null}
           {!isCalendar && access.mailboxes.length > 0 ? (
             <form action="/api/mail/active-mailbox" method="post" className={styles.mailboxForm}>
               <select
