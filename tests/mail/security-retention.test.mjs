@@ -52,6 +52,21 @@ test('Vercel Mail deployments require the malware-scanner credential', () => {
   }
 });
 
+test('security PR preview reaches Cloudmersive and distinguishes clean from EICAR', async t => {
+  if (process.env.VERCEL_GIT_COMMIT_REF !== 'mail/security-retention-20260911') {
+    t.skip('Live provider smoke test only runs on the security PR preview branch.');
+    return;
+  }
+  const security = load('src/lib/mail/attachment-security.ts');
+  const clean = await security.scanMailAttachmentBytes(new TextEncoder().encode('Setu Mail clean attachment security smoke test.'), 'setu-clean-smoke.txt', 'text/plain');
+  assert.equal(clean.status, 'clean', `Expected clean Cloudmersive verdict, got ${clean.status}: ${clean.error ?? ''}`);
+
+  // Assemble the industry-standard EICAR antivirus test string at runtime so no static malware signature is stored in source.
+  const eicar = ['X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR', '-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'].join('');
+  const blocked = await security.scanMailAttachmentBytes(new TextEncoder().encode(eicar), 'setu-eicar-smoke.txt', 'text/plain');
+  assert.equal(blocked.status, 'quarantined', `Expected EICAR quarantine verdict, got ${blocked.status}: ${blocked.error ?? ''}`);
+});
+
 test('scanner fails closed when no malware-scanner credential is configured', async () => {
   const security = load('src/lib/mail/attachment-security.ts');
   const oldKey = process.env.CLOUDMERSIVE_API_KEY;
