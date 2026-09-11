@@ -1,0 +1,121 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import fs from 'node:fs';
+
+const migrationPath = 'supabase/migrations/20260911173500_mail_commercial_usage_reporting.sql';
+const syncMigrationPath = 'supabase/migrations/20260911174600_mail_usage_quota_sync_and_provider_plans.sql';
+const resendUnitsMigrationPath = 'supabase/migrations/20260911175400_mail_resend_billable_units.sql';
+const periodGuardMigrationPath = 'supabase/migrations/20260911180000_mail_usage_current_period_guard.sql';
+
+test('commercial usage ledger meters only persisted Setu Mail provider activity', () => {
+  const migration = fs.readFileSync(migrationPath, 'utf8');
+  assert.match(migration, /create table if not exists public\.mail_usage_events/);
+  assert.match(migration, /resend_inbound_message/);
+  assert.match(migration, /resend_outbound_message/);
+  assert.match(migration, /cloudmersive_scan/);
+  assert.match(migration, /mail_messages_capture_commercial_usage/);
+  assert.match(migration, /mail_attachments_capture_scan_usage/);
+  assert.match(migration, /platform transactional.*email.*excluded/is);
+  assert.doesNotMatch(migration, /notification_emails|organization_invitations.*mail_usage_events/is);
+});
+
+test('usage backfill excludes drafts and failed outbound messages and reconciles the quota counter', () => {
+  const migration = fs.readFileSync(migrationPath, 'utf8');
+  assert.match(migration, /m\.direction = 'outbound'.*m\.provider_message_id is not null.*m\.status not in \('draft','failed'\)/s);
+  assert.match(migration, /m\.direction = 'inbound'.*m\.status = 'received'/s);
+  assert.match(migration, /update public\.mail_entitlements e\s+set current_period_messages/s);
+  assert.match(migration, /mail_usage_monthly_rollups/);
+});
+
+test('Resend metering mirrors provider quota semantics for inbound and multiple outbound recipients', () => {
+  const units = fs.readFileSync(resendUnitsMigrationPath, 'utf8');
+  const send = fs.readFileSync('src/app/api/mail/send/route.ts', 'utf8');
+  assert.match(units, /coalesce\(cardinality\(new\.to_addresses\), 0\)/);
+  assert.match(units, /coalesce\(cardinality\(new\.cc_addresses\), 0\)/);
+  assert.match(units, /coalesce\(cardinality\(new\.bcc_addresses\), 0\)/);
+  assert.match(units, /v_quantity := 1/);
+  assert.match(units, /billable_units/);
+  assert.match(send, /nextProviderEmailUnits = all\.length/);
+  assert.match(send, /currentPeriodMessages \+ nextProviderEmailUnits > Number\(entitlement\.monthly_message_limit/);
+});
+
+test('historical usage cannot move the live entitlement period backward', () => {
+  const guard = fs.readFileSync(periodGuardMigrationPath, 'utf8');
+  assert.match(guard, /v_current_period date := date_trunc\('month', now\(\)\)::date/);
+  assert.match(guard, /if p_period <> v_current_period then\s+return;/s);
+  assert.match(guard, /current_period_start = v_current_period/);
+  assert.match(guard, /period_start = v_current_period/);
+  assert.match(guard, /new\.current_period_start := v_current_period/);
+});
+
+test('commercial usage ledger and provider cost tables are server-only', () => {
+  const migration = fs.readFileSync(migrationPath, 'utf8');
+  for (const table of ['mail_usage_events','mail_usage_monthly_rollups','mail_provider_cost_catalog','mail_provider_cost_settings']) {
+    assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
+    assert.match(migration, new RegExp(`revoke all on table public\\.${table} from anon, authenticated`));
+  }
+  assert.match(migration, /security definer\s+set search_path = public/);
+  assert.match(migration, /revoke all on function public\.capture_mail_message_usage_event\(\) from public, anon, authenticated/);
+  assert.match(migration, /security invoker\s+set search_path = public/);
+  assert.match(migration, /grant execute on function public\.mail_smc_commercial_usage\(date\) to service_role/);
+});
+
+test('provider cost catalog carries verified official references and active plans are Resend Pro plus Cloudmersive Basic', () => {
+  const migration = fs.readFileSync(migrationPath, 'utf8');
+  const sync = fs.readFileSync(syncMigrationPath, 'utf8');
+  assert.match(migration, /'resend','pro','Resend Pro',20,50000,1000,0\.90/);
+  assert.match(migration, /'resend','scale','Resend Scale',90,100000,1000,0\.90/);
+  assert.match(migration, /'cloudmersive','free','Cloudmersive Free',0,600/);
+  assert.match(migration, /'cloudmersive','basic','Cloudmersive Basic',19\.99,10000/);
+  assert.match(migration, /'cloudmersive','business','Cloudmersive Business',49\.99,25000/);
+  assert.match(migration, /'2026-09-11'/);
+  assert.match(migration, /provider invoices remain the accounting source of truth/i);
+  assert.match(sync, /when 'resend' then 'pro'/);
+  assert.match(sync, /when 'cloudmersive' then 'basic'/);
+});
+
+test('quota enforcement and compatibility counters use the durable monthly usage rollup', () => {
+  const send = fs.readFileSync('src/app/api/mail/send/route.ts', 'utf8');
+  const sync = fs.readFileSync(syncMigrationPath, 'utf8');
+  assert.match(send, /mail_usage_monthly_rollups/);
+  assert.match(send, /resend_inbound_messages/);
+  assert.match(send, /resend_outbound_messages/);
+  assert.doesNotMatch(send, /current_period_messages:\s*Number\(entitlement\.current_period_messages/);
+  assert.match(sync, /sync_mail_entitlement_message_counter/);
+  assert.match(sync, /mail_entitlements_guard_message_counter/);
+  assert.match(sync, /before update of current_period_messages/);
+});
+
+test('SMC Mail usage page is migration-safe and exposes the commercial dashboard before production promotion', () => {
+  const page = fs.readFileSync('src/app/smc/mail-usage/page.tsx', 'utf8');
+  const fallback = fs.readFileSync('src/lib/mail/smc-usage-snapshot.ts', 'utf8');
+  assert.match(page, /Mail Usage &amp; Provider Cost/);
+  assert.match(page, /Preview compatibility mode/);
+  assert.match(page, /Provider economics/);
+  assert.match(page, /Organization Mail economics/);
+  assert.match(page, /Platform transactional email is excluded by design/);
+  assert.match(page, /metered_inbound_messages/);
+  assert.match(page, /metered_outbound_messages/);
+  assert.match(page, /metered_cloudmersive_scans/);
+  assert.match(page, /metered_guru_actions/);
+  assert.match(page, /usage-weighted/);
+  assert.match(fallback, /mail_smc_commercial_usage/);
+  assert.match(fallback, /isMissingSchema/);
+  assert.match(fallback, /Preview is using live Mail tables/);
+  assert.match(fallback, /Resend Pro/);
+  assert.match(fallback, /Cloudmersive Basic/);
+});
+
+test('SMC provider cost selector is internal-only and audited', () => {
+  const api = fs.readFileSync('src/app/api/smc/mail-provider-cost-profile/route.ts', 'utf8');
+  const ui = fs.readFileSync('src/app/smc/mail-usage/provider-cost-controls.tsx', 'utf8');
+  assert.match(api, /INTERNAL_ORG_ID/);
+  assert.match(api, /SETU Mission Control access required/);
+  assert.match(api, /mail_provider_cost_catalog/);
+  assert.match(api, /mail_provider_cost_settings/);
+  assert.match(api, /smc_mail_provider_cost_profile_updated/);
+  assert.match(ui, /mail-provider-cost-profile/);
+  assert.match(ui, /Official pricing/);
+  assert.match(ui, /Cost ready/);
+  assert.match(ui, /Needs setup/);
+});
