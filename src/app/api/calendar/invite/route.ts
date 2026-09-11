@@ -1,6 +1,42 @@
-import { NextRequest,NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
-import { buildIcs } from '@/lib/calendar/ics';
-export const dynamic='force-dynamic';
-export async function POST(req:NextRequest){const w=await getCurrentWorkspace();if(!w.user)return NextResponse.json({error:'Authentication required.'},{status:401});if(!w.organization||!w.membership)return NextResponse.json({error:'Active workspace required.'},{status:403});if(!process.env.RESEND_API_KEY)return NextResponse.json({error:'Email service is not ready.'},{status:503});const {eventId}=await req.json();const db=(await createClient()) as any;const {data:e}=await db.from('calendar_events').select('*,calendar_attendees(*)').eq('id',eventId).eq('organization_id',w.organization.id).single();if(!e)return NextResponse.json({error:'Event not found.'},{status:404});const attendees=(e.calendar_attendees??[]).map((a:any)=>a.email);if(!attendees.length)return NextResponse.json({ok:true,sent:0});const organizer=w.profile?.email??w.user.email??'';const organizerName=w.profile?.full_name??w.profile?.username??'Setu Flow';const ics=buildIcs({uid:e.id,title:e.title,description:e.description,location:e.location,startsAt:e.starts_at,endsAt:e.ends_at,organizerEmail:organizer,organizerName,attendees,meetingUrl:e.meeting_url});const from=process.env.RESEND_FROM_EMAIL||organizer;const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({from,to:attendees,subject:`Invitation: ${e.title}`,html:`<div style="font-family:Arial,sans-serif;max-width:560px"><h2>${e.title}</h2><p>${new Date(e.starts_at).toLocaleString()} – ${new Date(e.ends_at).toLocaleTimeString()}</p>${e.meeting_url?`<p><a href="${e.meeting_url}" style="display:inline-block;padding:12px 18px;background:#0B2E4A;color:white;text-decoration:none;border-radius:8px">Join meeting</a></p>`:''}<p>Organized by ${organizerName}</p><p style="color:#64748b">Calendar invitation attached.</p></div>`,attachments:[{filename:'invite.ics',content:Buffer.from(ics).toString('base64'),content_type:'text/calendar; method=REQUEST'}]})});if(!response.ok)return NextResponse.json({error:'Unable to send invitations.'},{status:502});return NextResponse.json({ok:true,sent:attendees.length});}
+import { deliverCalendarInvitations, type InviteAction } from '@/lib/calendar/invite-delivery';
+
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
+  const workspace = await getCurrentWorkspace();
+  if (!workspace.user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  if (!workspace.organization || !workspace.membership) return NextResponse.json({ error: 'Active workspace required.' }, { status: 403 });
+
+  const body = await req.json().catch(() => ({}));
+  const eventId = String(body.eventId || '').trim();
+  const action = (['request', 'update', 'cancel'].includes(body.action) ? body.action : 'request') as InviteAction;
+  if (!eventId) return NextResponse.json({ error: 'Event id required.' }, { status: 400 });
+
+  const db = (await createClient()) as any;
+  const { data: event, error } = await db
+    .from('calendar_events')
+    .select('*,calendar_attendees(*)')
+    .eq('id', eventId)
+    .eq('organization_id', workspace.organization.id)
+    .single();
+  if (error || !event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
+
+  const organizerEmail = String(workspace.profile?.email ?? workspace.user.email ?? '').trim();
+  const organizerName = String(workspace.profile?.full_name ?? workspace.profile?.username ?? 'Setu Flow').trim();
+  if (!organizerEmail) return NextResponse.json({ error: 'Organizer email is unavailable.' }, { status: 400 });
+
+  const result = await deliverCalendarInvitations({
+    db,
+    event,
+    organizerEmail,
+    organizerName,
+    origin: req.nextUrl.origin,
+    action,
+    force: body.force === true,
+  });
+  if (!result.ok && !result.partial) return NextResponse.json({ error: result.error || 'Unable to send calendar invitations.', ...result }, { status: result.error?.includes('Zoom') ? 409 : 502 });
+  return NextResponse.json(result, { status: result.partial ? 207 : 200 });
+}

@@ -9,8 +9,9 @@ type Props = ComponentProps<typeof AppShell>;
 
 export function AuthenticatedShellRouter(props: Props) {
   const pathname = usePathname();
-  if (pathname === '/mail' || pathname.startsWith('/mail/')) {
-    const profileName = props.profile?.full_name ?? props.profile?.username ?? 'Setu Mail user';
+  const communicationsRoute = pathname === '/mail' || pathname.startsWith('/mail/') || pathname === '/calendar' || pathname.startsWith('/calendar/');
+  if (communicationsRoute) {
+    const profileName = props.profile?.full_name ?? props.profile?.username ?? 'Setu Communications user';
     const profileEmail = props.profile?.email ?? '';
     return (
       <MailProductShell
