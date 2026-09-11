@@ -8,22 +8,261 @@ const RESEND_API = 'https://api.resend.com/emails';
 const MAX_ATTENDEES = 100;
 
 function escapeHtml(value: unknown) {
-  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
-function partStat(value: unknown): IcsPartStat { const normalized=String(value??'needs_action').toLowerCase(); if(normalized==='accepted')return'ACCEPTED';if(normalized==='tentative')return'TENTATIVE';if(normalized==='declined')return'DECLINED';return'NEEDS-ACTION'; }
-function formatWhen(event:any){if(event.is_all_day)return new Intl.DateTimeFormat('en-US',{timeZone:event.timezone||'UTC',weekday:'short',month:'short',day:'numeric',year:'numeric'}).format(new Date(event.starts_at));const date=new Intl.DateTimeFormat('en-US',{timeZone:event.timezone||'UTC',weekday:'short',month:'short',day:'numeric',year:'numeric'}).format(new Date(event.starts_at));const start=new Intl.DateTimeFormat('en-US',{timeZone:event.timezone||'UTC',hour:'numeric',minute:'2-digit'}).format(new Date(event.starts_at));const end=new Intl.DateTimeFormat('en-US',{timeZone:event.timezone||'UTC',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(new Date(event.ends_at));return`${date} · ${start} – ${end}`;}
-function invitationHtml(event:any,attendee:any,organizerName:string,origin:string,method:'REQUEST'|'CANCEL'){const responseBase=`${origin}/rsvp/${attendee.response_token}`;const responses=method==='REQUEST'?`<div style="margin:22px 0 8px"><a href="${responseBase}?response=accepted" style="display:inline-block;margin-right:8px;padding:9px 13px;background:#0B2E4A;color:#fff;text-decoration:none;border-radius:7px;font-weight:700">Accept</a><a href="${responseBase}?response=tentative" style="display:inline-block;margin-right:8px;padding:9px 13px;background:#f1f5f9;color:#0f172a;text-decoration:none;border-radius:7px;font-weight:700">Tentative</a><a href="${responseBase}?response=declined" style="display:inline-block;padding:9px 13px;background:#f1f5f9;color:#0f172a;text-decoration:none;border-radius:7px;font-weight:700">Decline</a></div><p style="margin:6px 0;color:#64748b;font-size:12px">You can also respond from Outlook, Google Calendar or Apple Calendar using the attached calendar invitation.</p>`:'<p style="margin:16px 0;color:#b91c1c;font-weight:700">This meeting has been cancelled.</p>';const location=event.location?`<p style="margin:6px 0;color:#475569"><strong>Location:</strong> ${escapeHtml(event.location)}</p>`:'';const join=event.meeting_url&&method==='REQUEST'?`<p style="margin:20px 0"><a href="${escapeHtml(event.meeting_url)}" style="display:inline-block;padding:11px 16px;background:#0B2E4A;color:white;text-decoration:none;border-radius:8px;font-weight:700">Join meeting</a></p>`:'';const title=escapeHtml(event.title);return`<div style="font-family:Arial,sans-serif;max-width:620px;color:#0f172a"><h2 style="margin-bottom:10px">${method==='CANCEL'?`Cancelled: ${title}`:title}</h2><p style="margin:6px 0;color:#475569">${escapeHtml(formatWhen(event))}</p>${location}${join}${responses}<p style="margin-top:22px;color:#64748b">Organized by ${escapeHtml(organizerName)}</p><p style="color:#94a3b8;font-size:12px">Setu Calendar · Calendar invitation attached.</p></div>`;}
-async function sendOne(apiKey:string,payload:Record<string,unknown>){const response=await fetch(RESEND_API,{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(15000)});const data=await response.json().catch(()=>({})) as any;if(!response.ok)throw new Error(data?.message||data?.error||`Resend returned ${response.status}.`);return data;}
-function monthStart(){const now=new Date();return`${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,'0')}-01`;}
-async function providerAllowance(admin:any,organizationId:string,pending:number){if(!admin||pending<=0)return{ok:true};const[{data:entitlement},{data:usage}]=await Promise.all([admin.from('mail_entitlements').select('status,monthly_message_limit,current_period_messages').eq('organization_id',organizationId).maybeSingle(),admin.from('mail_usage_monthly_rollups').select('resend_inbound_messages,resend_outbound_messages').eq('organization_id',organizationId).eq('period_start',monthStart()).maybeSingle()]);if(!entitlement||entitlement.status!=='active')return{ok:true};const limit=Number(entitlement.monthly_message_limit??0);if(!limit)return{ok:false,error:'Setu Communications monthly email allowance is unavailable.'};const used=usage?Number(usage.resend_inbound_messages??0)+Number(usage.resend_outbound_messages??0):Number(entitlement.current_period_messages??0);return used+pending<=limit?{ok:true}:{ok:false,error:'Calendar invitations would exceed the organization’s monthly Setu Communications email allowance.'};}
-async function meterInvitation(admin:any,event:any,attendee:any,sequence:number,method:string){if(!admin)return;const result=await admin.from('mail_usage_events').insert({organization_id:event.organization_id,mailbox_id:null,provider:'resend',metric:'resend_outbound_message',quantity:1,provider_reference:`calendar_invite:${attendee.id}:${sequence}:${method}`,metadata:{source:'calendar_invitation',event_id:event.id,attendee_id:attendee.id,sequence,method},occurred_at:new Date().toISOString()});if(result.error&&result.error.code!=='23505')console.warn('[setu-calendar:usage] invitation metering failed',{eventId:event.id,attendeeId:attendee.id,error:result.error.message});}
 
-export async function deliverCalendarInvitations(options:{db:any;event:any;organizerEmail:string;organizerName:string;origin:string;action?:InviteAction;force?:boolean;}):Promise<InviteResult>{
-  const{db,event,organizerEmail,organizerName,origin,force=false}=options;const action=options.action??'request';const apiKey=String(process.env.RESEND_API_KEY||'').trim();const from=String(process.env.RESEND_FROM_EMAIL||'').trim();if(!apiKey||!from)return{ok:false,sent:0,skipped:0,failed:0,partial:false,error:'Calendar email delivery is not configured.'};
-  const attendees=Array.isArray(event.calendar_attendees)?event.calendar_attendees:[];if(attendees.length>MAX_ATTENDEES)return{ok:false,sent:0,skipped:0,failed:attendees.length,partial:false,error:`Calendar invitations support up to ${MAX_ATTENDEES} attendees per event.`};if(!attendees.length)return{ok:true,sent:0,skipped:0,failed:0,partial:false};
-  const method:'REQUEST'|'CANCEL'=action==='cancel'||event.status==='cancelled'?'CANCEL':'REQUEST';if(method==='REQUEST'&&event.meeting_provider==='zoom'&&!event.meeting_url)return{ok:false,sent:0,skipped:0,failed:attendees.length,partial:false,error:'Create the Zoom meeting before sending invitations.'};
-  const icsAttendees:IcsAttendee[]=attendees.map((attendee:any)=>({email:String(attendee.email||'').trim().toLowerCase(),name:attendee.name||null,role:attendee.attendee_type==='optional'?'OPT-PARTICIPANT':'REQ-PARTICIPANT',partstat:partStat(attendee.rsvp_status)}));const sequence=Number(event.ics_sequence??0);const ics=buildIcs({uid:event.id,title:event.title,description:event.description,location:event.location,startsAt:event.starts_at,endsAt:event.ends_at,timezone:event.timezone,isAllDay:Boolean(event.is_all_day),organizerEmail,organizerName,attendees:icsAttendees,meetingUrl:event.meeting_url,sequence,showAs:event.show_as},method);
-  const pending=attendees.filter((attendee:any)=>force||Number(attendee.last_invited_sequence??-1)!==sequence||attendee.last_invitation_method!==method);const skipped=attendees.length-pending.length;const admin=createAdminSupabaseClient() as any;const allowance=await providerAllowance(admin,event.organization_id,pending.length);if(!allowance.ok)return{ok:false,sent:0,skipped,failed:pending.length,partial:false,error:allowance.error};const results:Array<{ok:boolean}>=[];
-  for(let index=0;index<pending.length;index+=8){const batch=pending.slice(index,index+8);const settled=await Promise.all(batch.map(async(attendee:any)=>{const email=String(attendee.email||'').trim().toLowerCase();if(!email||!attendee.response_token)return{ok:false};const subjectPrefix=method==='CANCEL'?'Cancelled':action==='update'||sequence>0?'Updated invitation':'Invitation';try{await sendOne(apiKey,{from,to:[email],reply_to:organizerEmail,subject:`${subjectPrefix}: ${event.title}`,html:invitationHtml(event,attendee,organizerName,origin,method),attachments:[{filename:method==='CANCEL'?'cancelled-event.ics':'invite.ics',content:Buffer.from(ics).toString('base64'),content_type:`text/calendar; method=${method}; charset=UTF-8`}]});await meterInvitation(admin,event,attendee,sequence,method);await db.from('calendar_attendees').update({last_invited_at:new Date().toISOString(),last_invited_sequence:sequence,last_invitation_method:method}).eq('id',attendee.id).eq('organization_id',event.organization_id);return{ok:true};}catch{return{ok:false};}}));results.push(...settled);}
-  const sent=results.filter(result=>result.ok).length;const failed=results.length-sent;return{ok:failed===0,sent,skipped,failed,partial:sent>0&&failed>0,...(sent===0&&failed>0?{error:'Unable to send calendar invitations.'}:{})};
+function partStat(value: unknown): IcsPartStat {
+  const normalized = String(value ?? 'needs_action').toLowerCase();
+  if (normalized === 'accepted') return 'ACCEPTED';
+  if (normalized === 'tentative') return 'TENTATIVE';
+  if (normalized === 'declined') return 'DECLINED';
+  return 'NEEDS-ACTION';
+}
+
+function formatWhen(event: any) {
+  if (event.is_all_day) {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: event.timezone || 'UTC',
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(new Date(event.starts_at));
+  }
+  const date = new Intl.DateTimeFormat('en-US', {
+    timeZone: event.timezone || 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(event.starts_at));
+  const start = new Intl.DateTimeFormat('en-US', {
+    timeZone: event.timezone || 'UTC',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(event.starts_at));
+  const end = new Intl.DateTimeFormat('en-US', {
+    timeZone: event.timezone || 'UTC',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  }).format(new Date(event.ends_at));
+  return `${date} · ${start} – ${end}`;
+}
+
+function invitationHtml(event: any, attendee: any, organizerName: string, origin: string, method: 'REQUEST' | 'CANCEL') {
+  const responseBase = `${origin}/rsvp/${attendee.response_token}`;
+  const responses = method === 'REQUEST'
+    ? `<div style="margin:22px 0 8px"><a href="${responseBase}?response=accepted" style="display:inline-block;margin-right:8px;padding:9px 13px;background:#0B2E4A;color:#fff;text-decoration:none;border-radius:7px;font-weight:700">Accept</a><a href="${responseBase}?response=tentative" style="display:inline-block;margin-right:8px;padding:9px 13px;background:#f1f5f9;color:#0f172a;text-decoration:none;border-radius:7px;font-weight:700">Tentative</a><a href="${responseBase}?response=declined" style="display:inline-block;padding:9px 13px;background:#f1f5f9;color:#0f172a;text-decoration:none;border-radius:7px;font-weight:700">Decline</a></div><p style="margin:6px 0;color:#64748b;font-size:12px">You can also respond from Outlook, Google Calendar or Apple Calendar using the attached calendar invitation.</p>`
+    : '<p style="margin:16px 0;color:#b91c1c;font-weight:700">This meeting has been cancelled.</p>';
+  const location = event.location ? `<p style="margin:6px 0;color:#475569"><strong>Location:</strong> ${escapeHtml(event.location)}</p>` : '';
+  const join = event.meeting_url && method === 'REQUEST'
+    ? `<p style="margin:20px 0"><a href="${escapeHtml(event.meeting_url)}" style="display:inline-block;padding:11px 16px;background:#0B2E4A;color:white;text-decoration:none;border-radius:8px;font-weight:700">Join meeting</a></p>`
+    : '';
+  const title = escapeHtml(event.title);
+  return `<div style="font-family:Arial,sans-serif;max-width:620px;color:#0f172a"><h2 style="margin-bottom:10px">${method === 'CANCEL' ? `Cancelled: ${title}` : title}</h2><p style="margin:6px 0;color:#475569">${escapeHtml(formatWhen(event))}</p>${location}${join}${responses}<p style="margin-top:22px;color:#64748b">Organized by ${escapeHtml(organizerName)}</p><p style="color:#94a3b8;font-size:12px">Setu Calendar · Calendar invitation attached.</p></div>`;
+}
+
+async function sendOne(apiKey: string, payload: Record<string, unknown>) {
+  const response = await fetch(RESEND_API, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(15000),
+  });
+  const data = await response.json().catch(() => ({})) as any;
+  if (!response.ok) throw new Error(data?.message || data?.error || `Resend returned ${response.status}.`);
+  return data;
+}
+
+function monthStart() {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
+}
+
+async function providerAllowance(admin: any, organizationId: string, pending: number) {
+  if (!admin || pending <= 0) return { ok: true };
+  const [{ data: entitlement }, { data: usage }] = await Promise.all([
+    admin.from('mail_entitlements').select('status,monthly_message_limit,current_period_messages').eq('organization_id', organizationId).maybeSingle(),
+    admin.from('mail_usage_monthly_rollups').select('resend_inbound_messages,resend_outbound_messages').eq('organization_id', organizationId).eq('period_start', monthStart()).maybeSingle(),
+  ]);
+  if (!entitlement || entitlement.status !== 'active') return { ok: true };
+  const limit = Number(entitlement.monthly_message_limit ?? 0);
+  if (!limit) return { ok: false, error: 'Setu Communications monthly email allowance is unavailable.' };
+  const used = usage
+    ? Number(usage.resend_inbound_messages ?? 0) + Number(usage.resend_outbound_messages ?? 0)
+    : Number(entitlement.current_period_messages ?? 0);
+  return used + pending <= limit
+    ? { ok: true }
+    : { ok: false, error: 'Calendar invitations would exceed the organization’s monthly Setu Communications email allowance.' };
+}
+
+async function resolveCalendarSender(admin: any, event: any, organizerName: string) {
+  if (admin && event?.organization_id && event?.owner_user_id) {
+    const { data: accessRows } = await admin
+      .from('mail_mailbox_access')
+      .select('mailbox_id,is_primary,can_send')
+      .eq('organization_id', event.organization_id)
+      .eq('user_id', event.owner_user_id)
+      .eq('can_send', true)
+      .order('is_primary', { ascending: false })
+      .limit(10);
+
+    const mailboxIds = (accessRows ?? []).map((row: any) => row.mailbox_id).filter(Boolean);
+    if (mailboxIds.length) {
+      const { data: mailboxes } = await admin
+        .from('mail_mailboxes')
+        .select('id,address,status')
+        .eq('organization_id', event.organization_id)
+        .in('id', mailboxIds)
+        .eq('status', 'active');
+      const mailbox = (accessRows ?? [])
+        .map((access: any) => (mailboxes ?? []).find((item: any) => item.id === access.mailbox_id))
+        .find((item: any) => item?.address);
+      if (mailbox?.address) {
+        const safeName = String(organizerName || 'Setu Calendar').replace(/[<>]/g, '').trim().slice(0, 120) || 'Setu Calendar';
+        return `${safeName} <${String(mailbox.address).trim().toLowerCase()}>`;
+      }
+    }
+  }
+
+  const configured = String(process.env.RESEND_FROM_EMAIL || '').trim();
+  return configured || null;
+}
+
+async function meterInvitation(admin: any, event: any, attendee: any, sequence: number, method: string) {
+  if (!admin) return;
+  const result = await admin.from('mail_usage_events').insert({
+    organization_id: event.organization_id,
+    mailbox_id: null,
+    provider: 'resend',
+    metric: 'resend_outbound_message',
+    quantity: 1,
+    provider_reference: `calendar_invite:${attendee.id}:${sequence}:${method}`,
+    metadata: { source: 'calendar_invitation', event_id: event.id, attendee_id: attendee.id, sequence, method },
+    occurred_at: new Date().toISOString(),
+  });
+  if (result.error && result.error.code !== '23505') {
+    console.warn('[setu-calendar:usage] invitation metering failed', {
+      eventId: event.id,
+      attendeeId: attendee.id,
+      error: result.error.message,
+    });
+  }
+}
+
+export async function deliverCalendarInvitations(options: {
+  db: any;
+  event: any;
+  organizerEmail: string;
+  organizerName: string;
+  origin: string;
+  action?: InviteAction;
+  force?: boolean;
+}): Promise<InviteResult> {
+  const { db, event, organizerEmail, organizerName, origin, force = false } = options;
+  const action = options.action ?? 'request';
+  const apiKey = String(process.env.RESEND_API_KEY || '').trim();
+  if (!apiKey) return { ok: false, sent: 0, skipped: 0, failed: 0, partial: false, error: 'Calendar email delivery is not configured.' };
+
+  const attendees = Array.isArray(event.calendar_attendees) ? event.calendar_attendees : [];
+  if (attendees.length > MAX_ATTENDEES) {
+    return { ok: false, sent: 0, skipped: 0, failed: attendees.length, partial: false, error: `Calendar invitations support up to ${MAX_ATTENDEES} attendees per event.` };
+  }
+  if (!attendees.length) return { ok: true, sent: 0, skipped: 0, failed: 0, partial: false };
+
+  const method: 'REQUEST' | 'CANCEL' = action === 'cancel' || event.status === 'cancelled' ? 'CANCEL' : 'REQUEST';
+  if (method === 'REQUEST' && event.meeting_provider === 'zoom' && !event.meeting_url) {
+    return { ok: false, sent: 0, skipped: 0, failed: attendees.length, partial: false, error: 'Create the Zoom meeting before sending invitations.' };
+  }
+
+  const admin = createAdminSupabaseClient() as any;
+  const from = await resolveCalendarSender(admin, event, organizerName);
+  if (!from) {
+    return { ok: false, sent: 0, skipped: 0, failed: attendees.length, partial: false, error: 'No verified Setu sending mailbox is available for Calendar invitations.' };
+  }
+
+  const icsAttendees: IcsAttendee[] = attendees.map((attendee: any) => ({
+    email: String(attendee.email || '').trim().toLowerCase(),
+    name: attendee.name || null,
+    role: attendee.attendee_type === 'optional' ? 'OPT-PARTICIPANT' : 'REQ-PARTICIPANT',
+    partstat: partStat(attendee.rsvp_status),
+  }));
+  const sequence = Number(event.ics_sequence ?? 0);
+  const ics = buildIcs({
+    uid: event.id,
+    title: event.title,
+    description: event.description,
+    location: event.location,
+    startsAt: event.starts_at,
+    endsAt: event.ends_at,
+    timezone: event.timezone,
+    isAllDay: Boolean(event.is_all_day),
+    organizerEmail,
+    organizerName,
+    attendees: icsAttendees,
+    meetingUrl: event.meeting_url,
+    sequence,
+    showAs: event.show_as,
+  }, method);
+
+  const pending = attendees.filter((attendee: any) => force || Number(attendee.last_invited_sequence ?? -1) !== sequence || attendee.last_invitation_method !== method);
+  const skipped = attendees.length - pending.length;
+  const allowance = await providerAllowance(admin, event.organization_id, pending.length);
+  if (!allowance.ok) return { ok: false, sent: 0, skipped, failed: pending.length, partial: false, error: allowance.error };
+
+  const results: Array<{ ok: boolean }> = [];
+  for (let index = 0; index < pending.length; index += 8) {
+    const batch = pending.slice(index, index + 8);
+    const settled = await Promise.all(batch.map(async (attendee: any) => {
+      const email = String(attendee.email || '').trim().toLowerCase();
+      if (!email || !attendee.response_token) return { ok: false };
+      const subjectPrefix = method === 'CANCEL' ? 'Cancelled' : action === 'update' || sequence > 0 ? 'Updated invitation' : 'Invitation';
+      try {
+        await sendOne(apiKey, {
+          from,
+          to: [email],
+          reply_to: organizerEmail,
+          subject: `${subjectPrefix}: ${event.title}`,
+          html: invitationHtml(event, attendee, organizerName, origin, method),
+          attachments: [{
+            filename: method === 'CANCEL' ? 'cancelled-event.ics' : 'invite.ics',
+            content: Buffer.from(ics).toString('base64'),
+            content_type: `text/calendar; method=${method}; charset=UTF-8`,
+          }],
+        });
+        await meterInvitation(admin, event, attendee, sequence, method);
+        await db.from('calendar_attendees').update({
+          last_invited_at: new Date().toISOString(),
+          last_invited_sequence: sequence,
+          last_invitation_method: method,
+        }).eq('id', attendee.id).eq('organization_id', event.organization_id);
+        return { ok: true };
+      } catch (error) {
+        console.warn('[setu-calendar:invite] delivery failed', {
+          eventId: event.id,
+          attendeeId: attendee.id,
+          error: error instanceof Error ? error.message : 'Unknown invitation delivery error',
+        });
+        return { ok: false };
+      }
+    }));
+    results.push(...settled);
+  }
+
+  const sent = results.filter(result => result.ok).length;
+  const failed = results.length - sent;
+  return {
+    ok: failed === 0,
+    sent,
+    skipped,
+    failed,
+    partial: sent > 0 && failed > 0,
+    ...(sent === 0 && failed > 0 ? { error: 'Unable to send calendar invitations.' } : {}),
+  };
 }
