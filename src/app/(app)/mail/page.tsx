@@ -2,6 +2,7 @@ import { WorkspaceState } from '@/components/ui/workspace-state';
 import { SetuMailWorkspace } from '@/features/mail/components/setu-mail-workspace';
 import { MobileSetuMailWorkspace } from '@/features/mail/components/mobile-setu-mail-workspace';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import styles from './mail-premium.module.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,7 @@ export default async function MailPage() {
       <div className="md:hidden">
         <MobileSetuMailWorkspace userName={userName} userEmail={userEmail} organizationName={organizationName} />
       </div>
-      <div className="hidden md:block">
+      <div className={`hidden md:block ${styles.setuMailPremium}`}>
         <SetuMailWorkspace userName={userName} userEmail={userEmail} organizationName={organizationName} />
       </div>
     </>

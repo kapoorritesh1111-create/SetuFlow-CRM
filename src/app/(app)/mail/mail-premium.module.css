@@ -1,0 +1,70 @@
+/* Premium desktop treatment for Setu Mail. Scoped to the mail page so the CRM design system stays untouched. */
+.setuMailPremium {
+  position: relative;
+}
+
+.setuMailPremium > div {
+  border-color: rgb(226 232 240 / 0.9) !important;
+  border-radius: 20px !important;
+  background: rgb(255 255 255) !important;
+  box-shadow: 0 18px 48px -32px rgb(15 23 42 / 0.32), 0 1px 2px rgb(15 23 42 / 0.04) !important;
+}
+
+.setuMailPremium > div > div > aside {
+  width: 232px !important;
+  background: linear-gradient(180deg, rgb(248 250 252) 0%, rgb(255 255 255) 100%) !important;
+}
+
+.setuMailPremium > div > div > section {
+  width: 390px !important;
+  background: rgb(255 255 255);
+}
+
+.setuMailPremium > div > div > main {
+  background: linear-gradient(180deg, rgb(255 255 255) 0%, rgb(248 250 252 / 0.35) 100%);
+}
+
+.setuMailPremium > div > div > section > div:first-child {
+  padding: 18px !important;
+  background: rgb(255 255 255 / 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.setuMailPremium > div > div > section > div:last-child > button {
+  position: relative;
+  padding: 16px 18px !important;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.setuMailPremium > div > div > section > div:last-child > button:hover {
+  background: rgb(248 250 252) !important;
+}
+
+.setuMailPremium > div > div > section > div:last-child > button[class*='bg-blue-50'] {
+  background: rgb(239 246 255 / 0.78) !important;
+  box-shadow: inset 3px 0 0 rgb(37 99 235);
+}
+
+.setuMailPremium > div > div > main > div:first-child {
+  background: rgb(255 255 255 / 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.setuMailPremium > div > div > main > div:nth-child(2) {
+  max-width: 980px;
+  margin-inline: auto;
+  padding: 28px 32px 40px !important;
+}
+
+.setuMailPremium a[href^='/api/mail/attachments'] {
+  min-height: 44px;
+  border-radius: 12px !important;
+  background: rgb(248 250 252);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+@media (min-width: 1280px) {
+  .setuMailPremium > div {
+    min-height: 680px !important;
+  }
+}
