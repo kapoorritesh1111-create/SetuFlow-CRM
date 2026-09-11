@@ -38,6 +38,7 @@
 
 .setuMailPremium > div > div > section > div:last-child > button:hover {
   background: rgb(248 250 252) !important;
+  box-shadow: inset 3px 0 0 rgb(191 219 254);
 }
 
 .setuMailPremium > div > div > section > div:last-child > button[class*='bg-blue-50'] {
@@ -46,21 +47,69 @@
 }
 
 .setuMailPremium > div > div > main > div:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 20px 28px !important;
   background: rgb(255 255 255 / 0.96);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
+}
+
+.setuMailPremium > div > div > main > div:first-child h1 {
+  font-size: 1.25rem !important;
+  line-height: 1.55rem !important;
+  letter-spacing: -0.015em;
+}
+
+.setuMailPremium > div > div > main > div:first-child button {
+  border: 1px solid transparent;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.setuMailPremium > div > div > main > div:first-child button:hover {
+  border-color: rgb(226 232 240);
+  background: rgb(248 250 252) !important;
+  color: rgb(30 64 175) !important;
+}
+
+.setuMailPremium > div > div > main > div:first-child button:active {
+  transform: translateY(1px);
 }
 
 .setuMailPremium > div > div > main > div:nth-child(2) {
   max-width: 980px;
   margin-inline: auto;
-  padding: 28px 32px 40px !important;
+  padding: 32px 36px 44px !important;
+}
+
+.setuMailPremium > div > div > main > div:nth-child(2) > div:first-child {
+  font-size: 0.925rem;
+  line-height: 1.85 !important;
+  color: rgb(51 65 85);
 }
 
 .setuMailPremium a[href^='/api/mail/attachments'] {
-  min-height: 44px;
-  border-radius: 12px !important;
-  background: rgb(248 250 252);
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  min-width: 230px;
+  min-height: 52px;
+  border-radius: 14px !important;
+  border-color: rgb(226 232 240) !important;
+  background: rgb(255 255 255) !important;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 22px -18px rgb(15 23 42 / 0.28);
+  padding: 11px 13px !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.setuMailPremium a[href^='/api/mail/attachments']:hover {
+  border-color: rgb(191 219 254) !important;
+  box-shadow: 0 8px 24px -16px rgb(37 99 235 / 0.28);
+  color: rgb(37 99 235) !important;
+  transform: translateY(-1px);
+}
+
+.setuMailPremium > div > div > main > div:nth-child(2) > div[class*='border-blue-100'] {
+  margin-top: 32px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 32px -28px rgb(37 99 235 / 0.35);
 }
 
 @media (min-width: 1280px) {
