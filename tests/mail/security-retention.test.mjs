@@ -46,6 +46,12 @@ async function withScannerFetch(payload, fn) {
   }
 }
 
+test('Vercel Mail deployments require the malware-scanner credential', () => {
+  if (process.env.VERCEL) {
+    assert.ok(process.env.CLOUDMERSIVE_API_KEY?.trim(), 'CLOUDMERSIVE_API_KEY must be configured for Vercel Mail deployments');
+  }
+});
+
 test('scanner fails closed when no malware-scanner credential is configured', async () => {
   const security = load('src/lib/mail/attachment-security.ts');
   const oldKey = process.env.CLOUDMERSIVE_API_KEY;
