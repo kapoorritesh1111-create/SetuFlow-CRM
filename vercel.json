@@ -7,6 +7,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/mail-retention",
+      "schedule": "30 6 * * *"
+    },
+    {
       "path": "/api/cron/generate-changelog-drafts",
       "schedule": "0 8 * * 1"
     }
