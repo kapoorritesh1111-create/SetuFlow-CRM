@@ -4,6 +4,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { prepareIncomingOrganization } from '@/lib/mail/incoming-organization';
 import { claimMailWebhook } from '@/lib/mail/webhook-claim';
 import { secureStoredMailAttachment } from '@/lib/mail/attachment-security';
+import { applyCalendarReply } from '@/lib/calendar/ics-reply';
 
 export const dynamic = 'force-dynamic';
 const RESEND_API = 'https://api.resend.com';
@@ -87,7 +88,6 @@ async function ingestInbound(admin: any, webhook: any) {
   if (existing.error) throw existing.error;
   if (existing.data) return { messageId: existing.data.id, duplicate: true };
 
-  // Evaluate once before insert. A failed attachment lookup is UNKNOWN, never "no attachments".
   const attachmentList = await resendGet(`/emails/receiving/${encodeURIComponent(providerMessageId)}/attachments`).catch(() => null);
   const attachments: any[] = Array.isArray(attachmentList?.data) ? attachmentList.data : [];
   const attachmentMetadata = Array.isArray(attachmentList?.data) ? attachmentList.data : Array.isArray(received.attachments) ? received.attachments : Array.isArray(webhook?.data?.attachments) ? webhook.data.attachments : null;
@@ -109,7 +109,6 @@ async function ingestInbound(admin: any, webhook: any) {
   };
   let saved = await admin.from('mail_messages').insert(values).select('id').single();
   if (saved.error?.code === '23503' && values.custom_folder_id) {
-    // A manager may have deleted the target after evaluation. Receiving still takes priority.
     const destination = await admin.from('mail_folders').select('id').eq('id', values.custom_folder_id).eq('mailbox_id', mailbox.id).eq('organization_id', mailbox.organization_id).maybeSingle();
     if (!destination.error && !destination.data) {
       saved = await admin.from('mail_messages').insert({ ...values, folder: 'inbox', custom_folder_id: null, is_read: false, is_starred: false, archived_at: null, metadata: { ...values.metadata, rule_status: 'target_removed', matched_rule_id: null } }).select('id').single();
@@ -161,10 +160,12 @@ async function ingestInbound(admin: any, webhook: any) {
       const secured = await secureStoredMailAttachment(admin, attachment, bytes);
       if (secured.security_status !== 'clean') {
         console.warn('[setu-mail:webhook] attachment blocked', { providerMessageId, providerAttachmentId, messageId: message.id, attachmentId: attachment.id, securityStatus: secured.security_status });
+      } else if (contentType.toLowerCase().startsWith('text/calendar') || filename.toLowerCase().endsWith('.ics')) {
+        const reply = await applyCalendarReply(admin, { organizationId: mailbox.organization_id, fromAddress, ics: bytes.toString('utf8') }).catch(() => ({ matched: false, updated: false }));
+        if (reply.updated) console.info('[setu-calendar:rsvp] calendar client reply applied', { messageId: message.id, providerMessageId });
       }
     } catch (error) {
       console.error('[setu-mail:webhook] attachment processing failed', { providerMessageId, providerAttachmentId, messageId: message.id, error: error instanceof Error ? error.message : String(error) });
-      // The message remains available even when an attachment is unavailable. No unverified file is exposed through Setu Mail download APIs.
     }
   }
 
