@@ -1,0 +1,30 @@
+name: Mail isolated workbench
+on:
+  push:
+    branches: [mail/mvp-completion-20260911]
+    paths: [.github/workflows/mail-workbench.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Archive tracked source and public dependencies (no secrets)
+        run: |
+          git archive --format=tar HEAD > source.tar
+          tar -czf mail-workbench.tar.gz source.tar node_modules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mail-workbench
+          path: mail-workbench.tar.gz
+          retention-days: 1
+          compression-level: 0
