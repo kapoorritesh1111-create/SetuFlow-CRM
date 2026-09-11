@@ -115,7 +115,6 @@
 /* Compose is intentionally styled through its existing dialog semantics so no parallel design system is introduced. */
 .setuMailPremium [role='dialog'][aria-label='New message'],
 .setuMailPremium [role='dialog'][aria-label='Edit draft'] {
-  width: min(680px, calc(100vw - 2rem)) !important;
   max-height: calc(100vh - 2rem);
   border-radius: 18px !important;
   border-color: rgb(203 213 225 / 0.9) !important;
@@ -125,7 +124,6 @@
 
 .setuMailPremium [role='dialog'][aria-label='New message']:focus-within,
 .setuMailPremium [role='dialog'][aria-label='Edit draft']:focus-within {
-  width: min(820px, calc(100vw - 2rem)) !important;
   box-shadow: 0 34px 84px -34px rgb(15 23 42 / 0.6), 0 16px 36px -26px rgb(37 99 235 / 0.35) !important;
 }
 
