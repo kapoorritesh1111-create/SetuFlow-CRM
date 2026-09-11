@@ -76,7 +76,7 @@ async function syncAttendees(db: any, organizationId: string, eventId: string, i
   if (!incoming) return;
   const { data: existing, error: readError } = await db.from('calendar_attendees').select('*').eq('event_id', eventId).eq('organization_id', organizationId);
   if (readError) throw readError;
-  const existingByEmail = new Map((existing ?? []).map((row: any) => [String(row.email).toLowerCase(), row]));
+  const existingByEmail = new Map<string, any>((existing ?? []).map((row: any) => [String(row.email).toLowerCase(), row]));
   const incomingEmails = incoming.map(row => row.email);
   const removedIds = (existing ?? []).filter((row: any) => !incomingEmails.includes(String(row.email).toLowerCase())).map((row: any) => row.id);
   if (removedIds.length) {
