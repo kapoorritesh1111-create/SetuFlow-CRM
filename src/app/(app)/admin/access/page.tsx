@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function ProductAccessPage() {
   const { organization } = await requireAdminWorkspace();
   if (!organization) redirect('/dashboard');
-  const admin = createAdminSupabaseClient();
+  const admin = createAdminSupabaseClient() as any;
   if (!admin) return null;
   const { data: members } = await admin.from('organization_members').select('id,user_id,display_name,is_active,profiles(full_name,email)').eq('organization_id', organization.id).eq('is_active', true).order('created_at');
   const userIds = (members ?? []).map((m:any)=>m.user_id).filter(Boolean);
