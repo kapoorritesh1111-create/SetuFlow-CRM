@@ -1,0 +1,79 @@
+.shell {
+  position: relative;
+}
+
+.shell :global(main > div:first-child),
+.shell :global(main > div:first-child + div) {
+  transition: background-color var(--sf-duration-base) var(--sf-ease), border-color var(--sf-duration-base) var(--sf-ease), box-shadow var(--sf-duration-base) var(--sf-ease);
+}
+
+.shell :global(main > div:first-child) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--sf-surface-1) 96%, transparent);
+  backdrop-filter: blur(14px);
+  border-color: var(--sf-border);
+}
+
+.shell :global(main > div:first-child h1) {
+  color: var(--sf-text-primary);
+  letter-spacing: -0.015em;
+}
+
+.shell :global(main > div:first-child button) {
+  border: 1px solid transparent;
+  color: var(--sf-text-secondary);
+  transition: background-color var(--sf-duration-fast) var(--sf-ease), border-color var(--sf-duration-fast) var(--sf-ease), color var(--sf-duration-fast) var(--sf-ease), transform var(--sf-duration-fast) var(--sf-ease);
+}
+
+.shell :global(main > div:first-child button:hover) {
+  background: var(--sf-surface-2);
+  border-color: var(--sf-border);
+  color: var(--sf-navy-700);
+}
+
+.shell :global(main > div:first-child button:active) {
+  transform: translateY(1px);
+}
+
+.shell :global(main > div:nth-child(2)) {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.shell :global(main > div:nth-child(2) > div:first-child) {
+  color: var(--sf-text-primary);
+  font-size: var(--sf-text-body);
+  line-height: 1.8;
+}
+
+.shell :global(main a[href^="/api/mail/attachments"]) {
+  min-width: 220px;
+  border-color: var(--sf-border);
+  border-radius: var(--sf-radius-card);
+  background: var(--sf-surface-1);
+  box-shadow: var(--sf-shadow-soft);
+  padding: 0.75rem 0.9rem;
+  color: var(--sf-text-secondary);
+  transition: border-color var(--sf-duration-fast) var(--sf-ease), box-shadow var(--sf-duration-fast) var(--sf-ease), transform var(--sf-duration-fast) var(--sf-ease), color var(--sf-duration-fast) var(--sf-ease);
+}
+
+.shell :global(main a[href^="/api/mail/attachments"]:hover) {
+  border-color: var(--sf-navy-200);
+  box-shadow: var(--sf-shadow-card);
+  color: var(--sf-navy-700);
+  transform: translateY(-1px);
+}
+
+.shell :global(section button) {
+  transition: background-color var(--sf-duration-fast) var(--sf-ease), box-shadow var(--sf-duration-fast) var(--sf-ease);
+}
+
+.shell :global(section button:hover) {
+  box-shadow: inset 3px 0 0 var(--sf-navy-200);
+}
+
+.shell :global(section button[class*="bg-blue-50"]) {
+  box-shadow: inset 3px 0 0 var(--sf-navy-600);
+}
