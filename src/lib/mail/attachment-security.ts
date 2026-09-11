@@ -34,6 +34,7 @@ function safeFilename(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 160) || 'attachment';
 }
 
+// Scanner credentials are read server-side at runtime so preview/production can be activated independently.
 export function mailMalwareScannerConfigured() {
   return Boolean(process.env.CLOUDMERSIVE_API_KEY?.trim());
 }
