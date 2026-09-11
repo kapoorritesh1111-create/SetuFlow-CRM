@@ -31,3 +31,4 @@ jobs:
           git add -A
           git commit -m "feat(mail): complete commercial MVP mail experience"
           git push origin HEAD:mail/mvp-completion-20260911
+          echo "Verified recovery patch applied and temporary transport files removed."
