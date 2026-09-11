@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
+import { resolveUserMailbox } from '@/lib/mail/resolve-user-mailbox';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +9,7 @@ async function context() {
   const workspace = await getCurrentWorkspace();
   if (!workspace.user || !workspace.organization || !workspace.membership) return null;
   const supabase = (await createClient()) as any;
-  const { data: mailbox } = await supabase.from('mail_mailboxes').select('id,address').eq('organization_id', workspace.organization.id).eq('user_id', workspace.user.id).eq('status', 'active').limit(1).maybeSingle();
+  const mailbox = await resolveUserMailbox(supabase, workspace.organization.id, workspace.user.id, 'id,address,status');
   if (!mailbox) return null;
   return { workspace, supabase, mailbox, organizationId: workspace.organization.id, userId: workspace.user.id };
 }
