@@ -21,6 +21,10 @@ const currentMonthStart = () => {
   const now = new Date();
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
 };
+const isMissingUsageSchema = (error: any) => {
+  const text = `${error?.code ?? ''} ${error?.message ?? ''}`.toLowerCase();
+  return text.includes('pgrst205') || text.includes('42p01') || text.includes('schema cache') || text.includes('does not exist') || text.includes('could not find');
+};
 
 export async function POST(request: NextRequest) {
   const workspace = await getCurrentWorkspace();
@@ -50,15 +54,20 @@ export async function POST(request: NextRequest) {
   const periodStart = currentMonthStart();
   const [{ data: grant }, { data: entitlement }, mailbox, usageResult] = await Promise.all([
     db.from('org_module_grants').select('enabled').eq('organization_id', organizationId).eq('module_key', 'setu_mail').maybeSingle(),
-    db.from('mail_entitlements').select('status,monthly_message_limit').eq('organization_id', organizationId).maybeSingle(),
+    db.from('mail_entitlements').select('status,monthly_message_limit,current_period_messages').eq('organization_id', organizationId).maybeSingle(),
     resolveUserMailbox(db, organizationId, userId, 'id,address,display_name,status', requestedMailboxId ? { mailboxId: requestedMailboxId, permission: 'send' } : { permission: 'send' }),
     admin.from('mail_usage_monthly_rollups').select('resend_inbound_messages,resend_outbound_messages').eq('organization_id', organizationId).eq('period_start', periodStart).maybeSingle(),
   ]);
   if (!grant?.enabled) return NextResponse.json({ error: 'Setu Mail is not enabled for this organization.' }, { status: 403 });
   if (!entitlement || entitlement.status !== 'active') return NextResponse.json({ error: 'Setu Mail subscription is not active.' }, { status: 402 });
   if (!mailbox) return NextResponse.json({ error: requestedMailboxId ? 'You do not have sending access to this mailbox.' : 'No active Setu Mail mailbox with sending access is assigned to you.' }, { status: 403 });
-  if (usageResult.error) return NextResponse.json({ error: 'Setu Mail usage allowance could not be verified.' }, { status: 503 });
-  const currentPeriodMessages = Number(usageResult.data?.resend_inbound_messages ?? 0) + Number(usageResult.data?.resend_outbound_messages ?? 0);
+  let currentPeriodMessages = 0;
+  if (usageResult.error) {
+    if (!isMissingUsageSchema(usageResult.error)) return NextResponse.json({ error: 'Setu Mail usage allowance could not be verified.' }, { status: 503 });
+    currentPeriodMessages = Number(entitlement.current_period_messages ?? 0);
+  } else {
+    currentPeriodMessages = Number(usageResult.data?.resend_inbound_messages ?? 0) + Number(usageResult.data?.resend_outbound_messages ?? 0);
+  }
   const nextProviderEmailUnits = all.length;
   if (currentPeriodMessages + nextProviderEmailUnits > Number(entitlement.monthly_message_limit ?? 0)) return NextResponse.json({ error: 'This message would exceed the organization’s Setu Mail monthly email allowance.' }, { status: 429 });
 
