@@ -86,11 +86,11 @@ test('quota enforcement and compatibility counters use the durable monthly usage
   assert.match(sync, /before update of current_period_messages/);
 });
 
-test('SMC Mail usage page shows entitlement, usage, provider economics and metering drift', () => {
+test('SMC Mail usage page is migration-safe and exposes the commercial dashboard before production promotion', () => {
   const page = fs.readFileSync('src/app/smc/mail-usage/page.tsx', 'utf8');
+  const fallback = fs.readFileSync('src/lib/mail/smc-usage-snapshot.ts', 'utf8');
   assert.match(page, /Mail Usage &amp; Provider Cost/);
-  assert.match(page, /mail_smc_commercial_usage/);
-  assert.match(page, /Provider cost assumptions/);
+  assert.match(page, /Preview compatibility mode/);
   assert.match(page, /Provider economics/);
   assert.match(page, /Organization Mail economics/);
   assert.match(page, /Platform transactional email is excluded by design/);
@@ -98,8 +98,12 @@ test('SMC Mail usage page shows entitlement, usage, provider economics and meter
   assert.match(page, /metered_outbound_messages/);
   assert.match(page, /metered_cloudmersive_scans/);
   assert.match(page, /metered_guru_actions/);
-  assert.match(page, /counter drift warning/);
   assert.match(page, /usage-weighted/);
+  assert.match(fallback, /mail_smc_commercial_usage/);
+  assert.match(fallback, /isMissingSchema/);
+  assert.match(fallback, /Preview is using live Mail tables/);
+  assert.match(fallback, /Resend Pro/);
+  assert.match(fallback, /Cloudmersive Basic/);
 });
 
 test('SMC provider cost selector is internal-only and audited', () => {
