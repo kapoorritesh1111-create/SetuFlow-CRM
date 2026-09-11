@@ -55,9 +55,19 @@ function serialize(row: any, workspace: any) {
 export async function GET() {
   const ctx = await context();
   if ('error' in ctx) return ctx.error;
-  const { data, error } = await ctx.db.from('calendar_booking_pages').select('*').eq('organization_id', ctx.workspace.organization!.id).eq('user_id', ctx.workspace.user!.id).order('created_at').limit(1).maybeSingle();
-  if (error) return NextResponse.json({ error: 'Unable to load booking settings.' }, { status: 500 });
-  return NextResponse.json({ bookingPage: serialize(data, ctx.workspace), publicBaseUrl: '/book/' });
+  const organizationId = ctx.workspace.organization!.id;
+  const userId = ctx.workspace.user!.id;
+  const [pageResult, availabilityResult, zoomResult] = await Promise.all([
+    ctx.db.from('calendar_booking_pages').select('*').eq('organization_id', organizationId).eq('user_id', userId).order('created_at').limit(1).maybeSingle(),
+    ctx.db.from('calendar_availability').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('user_id', userId).eq('is_active', true),
+    ctx.db.from('meeting_connections').select('id').eq('organization_id', organizationId).eq('user_id', userId).eq('provider', 'zoom').eq('status', 'active').maybeSingle(),
+  ]);
+  if (pageResult.error) return NextResponse.json({ error: 'Unable to load booking settings.' }, { status: 500 });
+  return NextResponse.json({
+    bookingPage: serialize(pageResult.data, ctx.workspace),
+    publicBaseUrl: '/book/',
+    readiness: { workingHoursConfigured: Number(availabilityResult.count ?? 0) > 0, zoomConnected: Boolean(zoomResult.data) },
+  });
 }
 
 export async function PUT(req: NextRequest) {
@@ -85,6 +95,16 @@ export async function PUT(req: NextRequest) {
 
   const organizationId = ctx.workspace.organization!.id;
   const userId = ctx.workspace.user!.id;
+  if (isActive) {
+    const { count, error: availabilityError } = await ctx.db.from('calendar_availability').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('user_id', userId).eq('is_active', true);
+    if (availabilityError) return NextResponse.json({ error: 'Working Hours could not be verified.' }, { status: 503 });
+    if (!count) return NextResponse.json({ error: 'Set your Work Week and Working Hours in Calendar before publishing a booking link.' }, { status: 409 });
+    if (meetingProvider === 'zoom') {
+      const { data: zoom } = await ctx.db.from('meeting_connections').select('id').eq('organization_id', organizationId).eq('user_id', userId).eq('provider', 'zoom').eq('status', 'active').maybeSingle();
+      if (!zoom) return NextResponse.json({ error: 'Connect Zoom in Calendar settings or choose another meeting type before publishing this booking page.' }, { status: 409 });
+    }
+  }
+
   const { data: existing } = await ctx.db.from('calendar_booking_pages').select('id').eq('organization_id', organizationId).eq('user_id', userId).order('created_at').limit(1).maybeSingle();
   const values = {
     organization_id: organizationId,
