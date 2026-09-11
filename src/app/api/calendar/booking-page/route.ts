@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
 import { getZoomConnection, isZoomConfigured } from '@/lib/calendar/zoom-lifecycle';
 
@@ -16,6 +17,19 @@ async function context() {
   const { data: grant } = await db.from('org_module_grants').select('enabled').eq('organization_id', workspace.organization.id).eq('module_key', 'setu_mail').maybeSingle();
   if (!grant?.enabled) return { error: NextResponse.json({ error: 'Setu Communications is not enabled for this organization.' }, { status: 403 }) };
   return { workspace, db };
+}
+
+async function trustedWorkingHours(organizationId: string, userId: string) {
+  const privilegedDb = createServiceRoleClient();
+  if (!privilegedDb) return { configured: false, unavailable: true };
+  const { count, error } = await privilegedDb
+    .from('calendar_availability')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organizationId)
+    .eq('user_id', userId)
+    .eq('is_active', true);
+  if (error) return { configured: false, unavailable: true };
+  return { configured: Number(count ?? 0) > 0, unavailable: false };
 }
 
 function defaults(workspace: any) {
@@ -58,18 +72,19 @@ export async function GET() {
   if ('error' in ctx) return ctx.error;
   const organizationId = ctx.workspace.organization!.id;
   const userId = ctx.workspace.user!.id;
-  const [pageResult, availabilityResult, zoomConnection] = await Promise.all([
+  const [pageResult, workingHours, zoomConnection] = await Promise.all([
     ctx.db.from('calendar_booking_pages').select('*').eq('organization_id', organizationId).eq('user_id', userId).order('created_at').limit(1).maybeSingle(),
-    ctx.db.from('calendar_availability').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('user_id', userId).eq('is_active', true),
+    trustedWorkingHours(organizationId, userId),
     getZoomConnection(ctx.db, organizationId, userId),
   ]);
   if (pageResult.error) return NextResponse.json({ error: 'Unable to load booking settings.' }, { status: 500 });
+  if (workingHours.unavailable) return NextResponse.json({ error: 'Unable to verify Calendar working hours right now.' }, { status: 503 });
   const zoomConfigured = isZoomConfigured();
   return NextResponse.json({
     bookingPage: serialize(pageResult.data, ctx.workspace),
     publicBaseUrl: '/book/',
     readiness: {
-      workingHoursConfigured: Number(availabilityResult.count ?? 0) > 0,
+      workingHoursConfigured: workingHours.configured,
       zoomConfigured,
       zoomConnected: zoomConfigured && Boolean(zoomConnection),
       zoomAccountEmail: zoomConnection?.account_email ?? null,
@@ -103,9 +118,9 @@ export async function PUT(req: NextRequest) {
   const organizationId = ctx.workspace.organization!.id;
   const userId = ctx.workspace.user!.id;
   if (isActive) {
-    const { count, error: availabilityError } = await ctx.db.from('calendar_availability').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('user_id', userId).eq('is_active', true);
-    if (availabilityError) return NextResponse.json({ error: 'Working Hours could not be verified.' }, { status: 503 });
-    if (!count) return NextResponse.json({ error: 'Set your Work Week and Working Hours in Calendar before publishing a booking link.' }, { status: 409 });
+    const workingHours = await trustedWorkingHours(organizationId, userId);
+    if (workingHours.unavailable) return NextResponse.json({ error: 'Working Hours could not be verified.' }, { status: 503 });
+    if (!workingHours.configured) return NextResponse.json({ error: 'Set your Work Week and Working Hours in Calendar before publishing a booking link.' }, { status: 409 });
     if (meetingProvider === 'zoom') {
       if (!isZoomConfigured()) return NextResponse.json({ error: 'Zoom is not configured for this Setu environment. Choose another meeting type for now.' }, { status: 503 });
       const zoom = await getZoomConnection(ctx.db, organizationId, userId);
