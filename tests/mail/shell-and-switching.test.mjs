@@ -26,6 +26,14 @@ test('active mailbox endpoint verifies product and mailbox access before setting
   assert.match(source, /NextResponse\.redirect\(new URL\('\/mail'/);
 });
 
+test('send honors an explicit active mailbox and requires send permission for the selected From identity', () => {
+  const source = read('src/app/api/mail/send/route.ts');
+  assert.match(source, /requestedMailboxId/);
+  assert.match(source, /isMailId\(requestedMailboxId\)/);
+  assert.match(source, /mailboxId: requestedMailboxId, permission: 'send'/);
+  assert.match(source, /You do not have sending access to this mailbox/);
+});
+
 test('mail routes through a dedicated Outlook-familiar product shell while CRM routes keep AppShell', () => {
   const router = read('src/components/layout/authenticated-shell-router.tsx');
   const layout = read('src/app/(app)/layout.tsx');
