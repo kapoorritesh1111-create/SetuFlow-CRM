@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const migrationPath = 'supabase/migrations/20260911173500_mail_commercial_usage_reporting.sql';
 const syncMigrationPath = 'supabase/migrations/20260911174600_mail_usage_quota_sync_and_provider_plans.sql';
 const resendUnitsMigrationPath = 'supabase/migrations/20260911175400_mail_resend_billable_units.sql';
+const periodGuardMigrationPath = 'supabase/migrations/20260911180000_mail_usage_current_period_guard.sql';
 
 test('commercial usage ledger meters only persisted Setu Mail provider activity', () => {
   const migration = fs.readFileSync(migrationPath, 'utf8');
@@ -36,6 +37,15 @@ test('Resend metering mirrors provider quota semantics for inbound and multiple 
   assert.match(units, /billable_units/);
   assert.match(send, /nextProviderEmailUnits = all\.length/);
   assert.match(send, /currentPeriodMessages \+ nextProviderEmailUnits > Number\(entitlement\.monthly_message_limit/);
+});
+
+test('historical usage cannot move the live entitlement period backward', () => {
+  const guard = fs.readFileSync(periodGuardMigrationPath, 'utf8');
+  assert.match(guard, /v_current_period date := date_trunc\('month', now\(\)\)::date/);
+  assert.match(guard, /if p_period <> v_current_period then\s+return;/s);
+  assert.match(guard, /current_period_start = v_current_period/);
+  assert.match(guard, /period_start = v_current_period/);
+  assert.match(guard, /new\.current_period_start := v_current_period/);
 });
 
 test('commercial usage ledger and provider cost tables are server-only', () => {
