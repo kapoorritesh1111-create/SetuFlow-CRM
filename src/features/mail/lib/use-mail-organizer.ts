@@ -82,7 +82,6 @@ export function useMailOrganizer(mailboxId: string | null, activeFolderId: strin
       if (!result.ok) throw new Error('Unable to confirm the mail change.');
       if (mounted.current && identity.current.mailboxId === mailboxId) {
         if (result.message) applyMessage(result.message);
-        // A successful write is not reported as failed just because the subsequent count refresh fails.
         await reload();
       }
       return result;
@@ -90,7 +89,8 @@ export function useMailOrganizer(mailboxId: string | null, activeFolderId: strin
   }
 
   function applyMessage(message: OrganizedMessage) {
-    // Invalidate a stale folder page before applying a user's explicit move/read/star action.
+    // Drafts cannot be in custom folders; their autosaves must not cancel folder paging.
+    if (message.status === 'draft' && !message.custom_folder_id) return;
     if (identity.current.mailboxId !== mailboxId) return;
     if (identity.current.activeFolderId === activeFolderId) { ++pageVersion.current; moreBusy.current = false; setPageLoading(false); }
     setPageState(previous => previous?.mailboxId === mailboxId ? { ...previous, page: updateFolderMessage(previous.page, message) } : previous);
