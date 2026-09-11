@@ -46,14 +46,14 @@ function organizer(workspace: any) {
 function normalizeAttendees(body: any) {
   if (!Array.isArray(body.attendees)) return null;
   const map = new Map<string, any>();
-  for (const raw of body.attendees) {
-    const email = String(raw?.email ?? raw ?? '').trim().toLowerCase();
+  for (const attendee of body.attendees) {
+    const email = String(attendee?.email ?? attendee ?? '').trim().toLowerCase();
     if (!email.includes('@')) continue;
     map.set(email, {
       email,
-      name: raw?.name ? String(raw.name).slice(0, 160) : null,
-      attendee_type: raw?.attendeeType === 'optional' ? 'optional' : 'required',
-      requested_rsvp_status: RSVP.has(raw?.rsvpStatus) ? raw.rsvpStatus : null,
+      name: attendee?.name ? String(attendee.name).slice(0, 160) : null,
+      attendee_type: attendee.attendeeType === 'optional' ? 'optional' : 'required',
+      requested_rsvp_status: RSVP.has(attendee?.rsvpStatus) ? attendee.rsvpStatus : null,
     });
   }
   return [...map.values()];
