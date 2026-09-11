@@ -7,6 +7,8 @@ const bookingApi = fs.readFileSync('src/app/api/calendar/booking/route.ts', 'utf
 const bookingPageApi = fs.readFileSync('src/app/api/calendar/booking-page/route.ts', 'utf8');
 const bookingPage = fs.readFileSync('src/app/book/[slug]/page.tsx', 'utf8');
 const bookingSettings = fs.readFileSync('src/features/calendar/components/calendar-booking-settings.tsx', 'utf8');
+const calendarSettings = fs.readFileSync('src/features/calendar/components/calendar-settings-workspace.tsx', 'utf8');
+const calendarSettingsPage = fs.readFileSync('src/app/(app)/calendar/settings/page.tsx', 'utf8');
 const bookingMigration = fs.readFileSync('supabase/migrations/20260911201500_calendar_booking_atomic_slots.sql', 'utf8');
 const outcomes = fs.readFileSync('src/app/api/calendar/outcomes/route.ts', 'utf8');
 const outcomeWorkspace = fs.readFileSync('src/features/calendar/components/calendar-outcomes-workspace.tsx', 'utf8');
@@ -58,6 +60,26 @@ test('Owners can manage booking duration, buffers, notice, window and provider',
   assert.match(bookingSettings, /Buffer between meetings/);
   assert.match(bookingSettings, /Minimum notice/);
   assert.match(shell, /\/calendar\/booking/);
+});
+
+test('Booking readiness trusts canonical persisted working hours instead of a fragile browser-scoped count', () => {
+  assert.match(bookingPageApi, /createServiceRoleClient/);
+  assert.match(bookingPageApi, /trustedWorkingHours/);
+  assert.match(bookingPageApi, /privilegedDb\s*\.from\('calendar_availability'\)/);
+  assert.match(bookingPageApi, /\.eq\('organization_id', organizationId\)/);
+  assert.match(bookingPageApi, /\.eq\('user_id', userId\)/);
+  assert.match(bookingPageApi, /workingHours\.configured/);
+});
+
+test('Calendar settings is a real destination and edits the same availability source used by Week view and booking', () => {
+  assert.match(calendarSettingsPage, /CalendarSettingsWorkspace/);
+  assert.match(calendarSettings, /\/api\/calendar\/availability/);
+  assert.match(calendarSettings, /Save working hours/);
+  assert.match(calendarSettings, /\/api\/calendar\/zoom/);
+  assert.match(calendarSettings, /Connect Zoom/);
+  assert.match(calendarSettings, /Reconnect Zoom/);
+  assert.doesNotMatch(calendarSettings, /\/api\/calendar\/settings/);
+  assert.match(shell, /\/calendar\/settings/);
 });
 
 test('Batch 4 Zoom readiness stays behind the service-role boundary and blocks unsafe publishing', () => {
