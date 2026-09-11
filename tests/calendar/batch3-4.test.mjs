@@ -62,7 +62,7 @@ test('Owners can manage booking duration, buffers, notice, window and provider',
 
 test('Batch 4 Zoom readiness stays behind the service-role boundary and blocks unsafe publishing', () => {
   assert.match(zoomLifecycle, /createServiceRoleClient/);
-  assert.match(zoomLifecycle, /privilegedDb\.from\('meeting_connections'\)/);
+  assert.match(zoomLifecycle, /privilegedDb\s*\.from\('meeting_connections'\)/);
   assert.match(zoomLifecycle, /getValidZoomAccessToken\(privilegedDb, connection\)/);
   assert.match(bookingPageApi, /getZoomConnection\(ctx\.db, organizationId, userId\)/);
   assert.match(bookingPageApi, /isZoomConfigured\(\)/);
