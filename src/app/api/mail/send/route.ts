@@ -3,6 +3,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
 import { resolveUserMailbox } from '@/lib/mail/resolve-user-mailbox';
+import { isMailId } from '@/lib/mail/organization';
 import { plainTextToMailHtml, sanitizeMailHtml } from '@/lib/mail/safe-html';
 
 export const dynamic = 'force-dynamic';
@@ -23,6 +24,8 @@ export async function POST(request: NextRequest) {
   if (!workspace.organization || !workspace.membership) return NextResponse.json({ error: 'Active workspace required.' }, { status: 403 });
 
   const body = await request.json().catch(() => null) as any;
+  const requestedMailboxId = String(body?.mailboxId ?? '').trim() || null;
+  if (requestedMailboxId && !isMailId(requestedMailboxId)) return NextResponse.json({ error: 'Choose a valid sending mailbox.' }, { status: 400 });
   const to = normalizeAddresses(body?.to), cc = normalizeAddresses(body?.cc), bcc = normalizeAddresses(body?.bcc);
   const attachmentIds = ids(body?.attachmentIds), all = [...to, ...cc, ...bcc];
   const subject = String(body?.subject ?? '').trim();
@@ -41,11 +44,11 @@ export async function POST(request: NextRequest) {
   const [{ data: grant }, { data: entitlement }, mailbox] = await Promise.all([
     db.from('org_module_grants').select('enabled').eq('organization_id', organizationId).eq('module_key', 'setu_mail').maybeSingle(),
     db.from('mail_entitlements').select('status,monthly_message_limit,current_period_messages').eq('organization_id', organizationId).maybeSingle(),
-    resolveUserMailbox(db, organizationId, userId, 'id,address,display_name,status'),
+    resolveUserMailbox(db, organizationId, userId, 'id,address,display_name,status', requestedMailboxId ? { mailboxId: requestedMailboxId, permission: 'send' } : { permission: 'send' }),
   ]);
   if (!grant?.enabled) return NextResponse.json({ error: 'Setu Mail is not enabled for this organization.' }, { status: 403 });
   if (!entitlement || entitlement.status !== 'active') return NextResponse.json({ error: 'Setu Mail subscription is not active.' }, { status: 402 });
-  if (!mailbox) return NextResponse.json({ error: 'No active Setu Mail mailbox is assigned to you.' }, { status: 409 });
+  if (!mailbox) return NextResponse.json({ error: requestedMailboxId ? 'You do not have sending access to this mailbox.' : 'No active Setu Mail mailbox with sending access is assigned to you.' }, { status: 403 });
   if (!admin) return NextResponse.json({ error: 'Setu Mail safety service is unavailable.' }, { status: 503 });
   if (Number(entitlement.current_period_messages ?? 0) >= Number(entitlement.monthly_message_limit ?? 0)) return NextResponse.json({ error: 'This organization has reached its Setu Mail monthly message allowance.' }, { status: 429 });
 
