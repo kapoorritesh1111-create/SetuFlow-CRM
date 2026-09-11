@@ -3,19 +3,179 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
 
 export const dynamic = 'force-dynamic';
-const PROVIDERS = new Set(['zoom','custom','in_person','none']);
-const RSVP = new Set(['needs_action','accepted','tentative','declined']);
-const ENTITY_TYPES = new Set(['lead','quote','order','task','mail_thread','trade_event']);
+
+const PROVIDERS = new Set(['zoom', 'custom', 'in_person', 'none']);
+const RSVP = new Set(['needs_action', 'accepted', 'tentative', 'declined']);
+const SHOW_AS = new Set(['busy', 'free', 'tentative', 'out_of_office', 'working_elsewhere']);
+const VISIBILITY = new Set(['organization', 'private']);
+const ENTITY_TYPES = new Set(['lead', 'quote', 'order', 'task', 'mail_thread', 'trade_event']);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-async function context(){const workspace=await getCurrentWorkspace();if(!workspace.user)return{error:NextResponse.json({error:'Authentication required.'},{status:401})};if(!workspace.organization||!workspace.membership)return{error:NextResponse.json({error:'Active workspace required.'},{status:403})};const supabase=(await createClient()) as any;const{data:grant}=await supabase.from('org_module_grants').select('enabled').eq('organization_id',workspace.organization.id).eq('module_key','setu_mail').maybeSingle();if(!grant?.enabled)return{error:NextResponse.json({error:'Setu Communications is not enabled for this organization.'},{status:403})};return{workspace,supabase}}
-function dates(body:any){const startsAt=new Date(body.startsAt),endsAt=new Date(body.endsAt);return{startsAt,endsAt,valid:!Number.isNaN(startsAt.valueOf())&&!Number.isNaN(endsAt.valueOf())&&endsAt>startsAt}}
-async function conflict(db:any,organizationId:string,userId:string,start:string,end:string,excludeId?:string){let q=db.from('calendar_events').select('id,title,starts_at,ends_at').eq('organization_id',organizationId).eq('owner_user_id',userId).neq('status','cancelled').lt('starts_at',end).gt('ends_at',start).limit(1);if(excludeId)q=q.neq('id',excludeId);const{data}=await q;return data?.[0]??null}
-async function syncChildren(db:any,organizationId:string,eventId:string,body:any){
- if(Array.isArray(body.attendees)){await db.from('calendar_attendees').delete().eq('event_id',eventId).eq('organization_id',organizationId);const rows=body.attendees.map((a:any)=>({organization_id:organizationId,event_id:eventId,email:String(a.email??a).trim().toLowerCase(),name:a.name||null,attendee_type:a.attendeeType==='optional'?'optional':'required',rsvp_status:RSVP.has(a.rsvpStatus)?a.rsvpStatus:'needs_action'})).filter((a:any)=>a.email.includes('@'));if(rows.length)await db.from('calendar_attendees').upsert(rows,{onConflict:'event_id,email'})}
- if(body.reminderMinutes!==undefined){const minutes=Number(body.reminderMinutes);if(Number.isFinite(minutes)&&minutes>=0&&minutes<=10080){await db.from('calendar_reminders').delete().eq('event_id',eventId).eq('organization_id',organizationId);const channels=Array.isArray(body.reminderChannels)&&body.reminderChannels.length?body.reminderChannels:['in_app'];const rows=[...new Set(channels)].filter((c):c is string=>c==='in_app'||c==='email').map(channel=>({organization_id:organizationId,event_id:eventId,channel,minutes_before:minutes}));if(rows.length)await db.from('calendar_reminders').insert(rows)}}
- if(Array.isArray(body.links)){await db.from('calendar_event_links').delete().eq('event_id',eventId).eq('organization_id',organizationId);const links=body.links.map((link:any)=>({organization_id:organizationId,event_id:eventId,entity_type:String(link.entityType||link.entity_type||''),entity_id:String(link.entityId||link.entity_id||''),label:link.label?String(link.label).slice(0,160):null})).filter((link:any)=>ENTITY_TYPES.has(link.entity_type)&&UUID_RE.test(link.entity_id));if(links.length)await db.from('calendar_event_links').upsert(links,{onConflict:'event_id,entity_type,entity_id'})}
+
+async function context() {
+  const workspace = await getCurrentWorkspace();
+  if (!workspace.user) return { error: NextResponse.json({ error: 'Authentication required.' }, { status: 401 }) };
+  if (!workspace.organization || !workspace.membership) return { error: NextResponse.json({ error: 'Active workspace required.' }, { status: 403 }) };
+  const supabase = (await createClient()) as any;
+  const { data: grant } = await supabase.from('org_module_grants').select('enabled').eq('organization_id', workspace.organization.id).eq('module_key', 'setu_mail').maybeSingle();
+  if (!grant?.enabled) return { error: NextResponse.json({ error: 'Setu Communications is not enabled for this organization.' }, { status: 403 }) };
+  return { workspace, supabase };
 }
-export async function GET(req:NextRequest){const ctx=await context();if('error'in ctx)return ctx.error;const organizationId=ctx.workspace.organization!.id;const from=req.nextUrl.searchParams.get('from'),to=req.nextUrl.searchParams.get('to');let q=ctx.supabase.from('calendar_events').select('*,calendar_attendees(*),calendar_reminders(*),calendar_event_links(*)').eq('organization_id',organizationId).order('starts_at');if(from)q=q.gte('starts_at',from);if(to)q=q.lt('starts_at',to);const{data,error}=await q.limit(500);return error?NextResponse.json({error:'Unable to load calendar.'},{status:500}):NextResponse.json({events:data??[]})}
-export async function POST(req:NextRequest){const ctx=await context();if('error'in ctx)return ctx.error;const body=await req.json();const title=String(body.title??'').trim(),d=dates(body);if(!title||!d.valid)return NextResponse.json({error:'Add a title and valid start/end time.'},{status:400});const organizationId=ctx.workspace.organization!.id,userId=ctx.workspace.user!.id;const hit=await conflict(ctx.supabase,organizationId,userId,d.startsAt.toISOString(),d.endsAt.toISOString());if(hit&&!body.allowConflict)return NextResponse.json({error:'This time overlaps another calendar event.',conflict:hit},{status:409});const provider=PROVIDERS.has(body.meetingProvider)?body.meetingProvider:'none';const{data:event,error}=await ctx.supabase.from('calendar_events').insert({organization_id:organizationId,owner_user_id:userId,created_by:userId,title,description:body.description||null,location:body.location||null,starts_at:d.startsAt.toISOString(),ends_at:d.endsAt.toISOString(),timezone:body.timezone||'UTC',is_all_day:Boolean(body.isAllDay),meeting_provider:provider,meeting_url:provider==='custom'?body.meetingUrl||null:null}).select('*').single();if(error||!event)return NextResponse.json({error:'Unable to create event.'},{status:500});await syncChildren(ctx.supabase,organizationId,event.id,body);return NextResponse.json({event},{status:201})}
-export async function PATCH(req:NextRequest){const ctx=await context();if('error'in ctx)return ctx.error;const body=await req.json(),id=String(body.id||'');if(!id)return NextResponse.json({error:'Event id required.'},{status:400});const organizationId=ctx.workspace.organization!.id;const{data:existing}=await ctx.supabase.from('calendar_events').select('*').eq('id',id).eq('organization_id',organizationId).single();if(!existing)return NextResponse.json({error:'Event not found.'},{status:404});const start=new Date(body.startsAt??existing.starts_at),end=new Date(body.endsAt??existing.ends_at);if(Number.isNaN(start.valueOf())||Number.isNaN(end.valueOf())||end<=start)return NextResponse.json({error:'Add a valid start/end time.'},{status:400});const hit=await conflict(ctx.supabase,organizationId,existing.owner_user_id,start.toISOString(),end.toISOString(),id);if(hit&&!body.allowConflict)return NextResponse.json({error:'This time overlaps another calendar event.',conflict:hit},{status:409});const patch:any={updated_at:new Date().toISOString(),starts_at:start.toISOString(),ends_at:end.toISOString()};for(const[k,v]of Object.entries({title:body.title!==undefined?String(body.title).trim():undefined,description:body.description!==undefined?body.description||null:undefined,location:body.location!==undefined?body.location||null:undefined,timezone:body.timezone,is_all_day:body.isAllDay,status:body.status,meeting_provider:body.meetingProvider,meeting_url:body.meetingUrl!==undefined?body.meetingUrl||null:undefined})){if(v!==undefined)patch[k]=v}const{data,error}=await ctx.supabase.from('calendar_events').update(patch).eq('id',id).eq('organization_id',organizationId).select('*').single();if(error)return NextResponse.json({error:'Unable to update event.'},{status:500});await syncChildren(ctx.supabase,organizationId,id,body);return NextResponse.json({event:data})}
-export async function DELETE(req:NextRequest){const ctx=await context();if('error'in ctx)return ctx.error;const id=req.nextUrl.searchParams.get('id');if(!id)return NextResponse.json({error:'Event id required.'},{status:400});const{error}=await ctx.supabase.from('calendar_events').delete().eq('id',id).eq('organization_id',ctx.workspace.organization!.id);return error?NextResponse.json({error:'Unable to delete event.'},{status:500}):NextResponse.json({ok:true})}
+
+function dates(body: any) {
+  const startsAt = new Date(body.startsAt);
+  const endsAt = new Date(body.endsAt);
+  return { startsAt, endsAt, valid: !Number.isNaN(startsAt.valueOf()) && !Number.isNaN(endsAt.valueOf()) && endsAt > startsAt };
+}
+
+async function conflict(db: any, organizationId: string, userId: string, start: string, end: string, excludeId?: string, showAs = 'busy') {
+  if (showAs === 'free') return null;
+  let q = db.from('calendar_events').select('id,title,starts_at,ends_at,show_as').eq('organization_id', organizationId).eq('owner_user_id', userId).neq('status', 'cancelled').neq('show_as', 'free').lt('starts_at', end).gt('ends_at', start).limit(1);
+  if (excludeId) q = q.neq('id', excludeId);
+  const { data } = await q;
+  return data?.[0] ?? null;
+}
+
+async function syncChildren(db: any, organizationId: string, eventId: string, body: any) {
+  if (Array.isArray(body.attendees)) {
+    await db.from('calendar_attendees').delete().eq('event_id', eventId).eq('organization_id', organizationId);
+    const rows = body.attendees
+      .map((attendee: any) => ({
+        organization_id: organizationId,
+        event_id: eventId,
+        email: String(attendee.email ?? attendee).trim().toLowerCase(),
+        name: attendee.name || null,
+        attendee_type: attendee.attendeeType === 'optional' ? 'optional' : 'required',
+        rsvp_status: RSVP.has(attendee.rsvpStatus) ? attendee.rsvpStatus : 'needs_action',
+      }))
+      .filter((attendee: any) => attendee.email.includes('@'));
+    if (rows.length) await db.from('calendar_attendees').upsert(rows, { onConflict: 'event_id,email' });
+  }
+
+  if (body.reminderMinutes !== undefined) {
+    const minutes = Number(body.reminderMinutes);
+    if (Number.isFinite(minutes) && minutes >= 0 && minutes <= 10080) {
+      await db.from('calendar_reminders').delete().eq('event_id', eventId).eq('organization_id', organizationId);
+      const channels = Array.isArray(body.reminderChannels) && body.reminderChannels.length ? body.reminderChannels : ['in_app'];
+      const rows = [...new Set(channels)]
+        .filter((channel): channel is string => channel === 'in_app' || channel === 'email')
+        .map(channel => ({ organization_id: organizationId, event_id: eventId, channel, minutes_before: minutes }));
+      if (rows.length) await db.from('calendar_reminders').insert(rows);
+    }
+  }
+
+  if (Array.isArray(body.links)) {
+    await db.from('calendar_event_links').delete().eq('event_id', eventId).eq('organization_id', organizationId);
+    const links = body.links
+      .map((link: any) => ({
+        organization_id: organizationId,
+        event_id: eventId,
+        entity_type: String(link.entityType || link.entity_type || ''),
+        entity_id: String(link.entityId || link.entity_id || ''),
+        label: link.label ? String(link.label).slice(0, 160) : null,
+      }))
+      .filter((link: any) => ENTITY_TYPES.has(link.entity_type) && UUID_RE.test(link.entity_id));
+    if (links.length) await db.from('calendar_event_links').upsert(links, { onConflict: 'event_id,entity_type,entity_id' });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const ctx = await context();
+  if ('error' in ctx) return ctx.error;
+  const organizationId = ctx.workspace.organization!.id;
+  const from = req.nextUrl.searchParams.get('from');
+  const to = req.nextUrl.searchParams.get('to');
+  let q = ctx.supabase.from('calendar_events').select('*,calendar_attendees(*),calendar_reminders(*),calendar_event_links(*)').eq('organization_id', organizationId).order('starts_at');
+  if (from) q = q.gte('starts_at', from);
+  if (to) q = q.lt('starts_at', to);
+  const { data, error } = await q.limit(500);
+  return error ? NextResponse.json({ error: 'Unable to load calendar.' }, { status: 500 }) : NextResponse.json({ events: data ?? [] });
+}
+
+export async function POST(req: NextRequest) {
+  const ctx = await context();
+  if ('error' in ctx) return ctx.error;
+  const body = await req.json();
+  const title = String(body.title ?? '').trim();
+  const d = dates(body);
+  if (!title || !d.valid) return NextResponse.json({ error: 'Add a title and valid start/end time.' }, { status: 400 });
+
+  const organizationId = ctx.workspace.organization!.id;
+  const userId = ctx.workspace.user!.id;
+  const provider = PROVIDERS.has(body.meetingProvider) ? body.meetingProvider : 'none';
+  const showAs = SHOW_AS.has(body.showAs) ? body.showAs : 'busy';
+  const visibility = VISIBILITY.has(body.visibility) ? body.visibility : 'organization';
+  const hit = await conflict(ctx.supabase, organizationId, userId, d.startsAt.toISOString(), d.endsAt.toISOString(), undefined, showAs);
+  if (hit && !body.allowConflict) return NextResponse.json({ error: 'This time overlaps another calendar event.', conflict: hit }, { status: 409 });
+
+  const { data: event, error } = await ctx.supabase.from('calendar_events').insert({
+    organization_id: organizationId,
+    owner_user_id: userId,
+    created_by: userId,
+    title,
+    description: body.description || null,
+    location: body.location || null,
+    starts_at: d.startsAt.toISOString(),
+    ends_at: d.endsAt.toISOString(),
+    timezone: body.timezone || 'UTC',
+    is_all_day: Boolean(body.isAllDay),
+    visibility,
+    show_as: showAs,
+    recurrence_rule: body.recurrenceRule ? String(body.recurrenceRule).slice(0, 500) : null,
+    meeting_provider: provider,
+    meeting_url: provider === 'custom' ? body.meetingUrl || null : null,
+  }).select('*').single();
+
+  if (error || !event) return NextResponse.json({ error: 'Unable to create event.' }, { status: 500 });
+  await syncChildren(ctx.supabase, organizationId, event.id, body);
+  return NextResponse.json({ event }, { status: 201 });
+}
+
+export async function PATCH(req: NextRequest) {
+  const ctx = await context();
+  if ('error' in ctx) return ctx.error;
+  const body = await req.json();
+  const id = String(body.id || '');
+  if (!id) return NextResponse.json({ error: 'Event id required.' }, { status: 400 });
+
+  const organizationId = ctx.workspace.organization!.id;
+  const { data: existing } = await ctx.supabase.from('calendar_events').select('*').eq('id', id).eq('organization_id', organizationId).single();
+  if (!existing) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
+
+  const start = new Date(body.startsAt ?? existing.starts_at);
+  const end = new Date(body.endsAt ?? existing.ends_at);
+  if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf()) || end <= start) return NextResponse.json({ error: 'Add a valid start/end time.' }, { status: 400 });
+
+  const showAs = SHOW_AS.has(body.showAs) ? body.showAs : existing.show_as || 'busy';
+  const hit = await conflict(ctx.supabase, organizationId, existing.owner_user_id, start.toISOString(), end.toISOString(), id, showAs);
+  if (hit && !body.allowConflict) return NextResponse.json({ error: 'This time overlaps another calendar event.', conflict: hit }, { status: 409 });
+
+  const patch: any = { updated_at: new Date().toISOString(), starts_at: start.toISOString(), ends_at: end.toISOString() };
+  const fields = {
+    title: body.title !== undefined ? String(body.title).trim() : undefined,
+    description: body.description !== undefined ? body.description || null : undefined,
+    location: body.location !== undefined ? body.location || null : undefined,
+    timezone: body.timezone,
+    is_all_day: body.isAllDay,
+    status: body.status,
+    visibility: body.visibility !== undefined && VISIBILITY.has(body.visibility) ? body.visibility : undefined,
+    show_as: body.showAs !== undefined && SHOW_AS.has(body.showAs) ? body.showAs : undefined,
+    recurrence_rule: body.recurrenceRule !== undefined ? (body.recurrenceRule ? String(body.recurrenceRule).slice(0, 500) : null) : undefined,
+    meeting_provider: body.meetingProvider !== undefined && PROVIDERS.has(body.meetingProvider) ? body.meetingProvider : undefined,
+    meeting_url: body.meetingUrl !== undefined ? body.meetingUrl || null : undefined,
+  };
+  for (const [key, value] of Object.entries(fields)) if (value !== undefined) patch[key] = value;
+
+  const { data, error } = await ctx.supabase.from('calendar_events').update(patch).eq('id', id).eq('organization_id', organizationId).select('*').single();
+  if (error) return NextResponse.json({ error: 'Unable to update event.' }, { status: 500 });
+  await syncChildren(ctx.supabase, organizationId, id, body);
+  return NextResponse.json({ event: data });
+}
+
+export async function DELETE(req: NextRequest) {
+  const ctx = await context();
+  if ('error' in ctx) return ctx.error;
+  const id = req.nextUrl.searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'Event id required.' }, { status: 400 });
+  const { error } = await ctx.supabase.from('calendar_events').delete().eq('id', id).eq('organization_id', ctx.workspace.organization!.id);
+  return error ? NextResponse.json({ error: 'Unable to delete event.' }, { status: 500 }) : NextResponse.json({ ok: true });
+}
