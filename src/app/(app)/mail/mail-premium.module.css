@@ -112,6 +112,70 @@
   box-shadow: 0 14px 32px -28px rgb(37 99 235 / 0.35);
 }
 
+/* Compose is intentionally styled through its existing dialog semantics so no parallel design system is introduced. */
+.setuMailPremium [role='dialog'][aria-label='New message'],
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] {
+  width: min(680px, calc(100vw - 2rem)) !important;
+  max-height: calc(100vh - 2rem);
+  border-radius: 18px !important;
+  border-color: rgb(203 213 225 / 0.9) !important;
+  box-shadow: 0 28px 70px -34px rgb(15 23 42 / 0.55), 0 10px 24px -20px rgb(37 99 235 / 0.28) !important;
+  transition: width 180ms ease, height 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.setuMailPremium [role='dialog'][aria-label='New message']:focus-within,
+.setuMailPremium [role='dialog'][aria-label='Edit draft']:focus-within {
+  width: min(820px, calc(100vw - 2rem)) !important;
+  box-shadow: 0 34px 84px -34px rgb(15 23 42 / 0.6), 0 16px 36px -26px rgb(37 99 235 / 0.35) !important;
+}
+
+.setuMailPremium [role='dialog'][aria-label='New message'] > div:first-child,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] > div:first-child {
+  min-height: 46px;
+  padding: 12px 16px !important;
+  background: linear-gradient(90deg, rgb(15 23 42), rgb(30 41 59)) !important;
+  letter-spacing: -0.01em;
+}
+
+.setuMailPremium [role='dialog'][aria-label='New message'] fieldset input,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] fieldset input {
+  min-height: 46px;
+  color: rgb(15 23 42);
+}
+
+.setuMailPremium [role='dialog'][aria-label='New message'] fieldset input:focus,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] fieldset input:focus,
+.setuMailPremium [role='dialog'][aria-label='New message'] fieldset textarea:focus,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] fieldset textarea:focus {
+  background: rgb(248 250 252 / 0.62);
+}
+
+.setuMailPremium [role='dialog'][aria-label='New message'] fieldset textarea,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] fieldset textarea {
+  min-height: 290px;
+  line-height: 1.7;
+  color: rgb(30 41 59);
+}
+
+.setuMailPremium [role='dialog'][aria-label='New message'] > div:nth-last-child(2),
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] > div:nth-last-child(2) {
+  background: rgb(248 250 252 / 0.72);
+}
+
+.setuMailPremium [role='dialog'][aria-label='New message'] button,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] button,
+.setuMailPremium [role='dialog'][aria-label='New message'] label,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] label {
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.setuMailPremium [role='dialog'][aria-label='New message'] button:active,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] button:active,
+.setuMailPremium [role='dialog'][aria-label='New message'] label:active,
+.setuMailPremium [role='dialog'][aria-label='Edit draft'] label:active {
+  transform: translateY(1px);
+}
+
 @media (min-width: 1280px) {
   .setuMailPremium > div {
     min-height: 680px !important;
