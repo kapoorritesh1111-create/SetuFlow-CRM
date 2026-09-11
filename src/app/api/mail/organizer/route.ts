@@ -9,6 +9,7 @@ function failure(error: unknown) {
   const code = (error as { code?: string })?.code;
   if (code === '23505') return NextResponse.json({ error: 'A folder with that name already exists in this mailbox.' }, { status: 409 });
   if (code === '23503') return NextResponse.json({ error: 'Move the messages out and remove any rules using this folder before deleting it.' }, { status: 409 });
+  if (code === '23514') return NextResponse.json({ error: 'Check the folder name, rule settings, or mailbox folder/rule limit.' }, { status: 400 });
   console.error('mail.organizer.failed', { code: code ?? 'unknown' });
   return NextResponse.json({ error: 'Unable to update mail organization. Please try again.' }, { status: 500 });
 }
@@ -16,7 +17,6 @@ function requireId(value: unknown): string {
   if (!isMailId(value)) throw new MailInputError('Choose a valid item.');
   return value;
 }
-
 export async function GET(request: NextRequest) {
   try {
     const ctx = await mailOrganizerContext(request);
@@ -32,7 +32,10 @@ export async function GET(request: NextRequest) {
       if (!folder.data) throw new MailAccessError('Folder not found in this mailbox.', 404);
       const result = await db.from('mail_messages').select(MAIL_MESSAGE_FIELDS, { count: 'exact' }).eq('organization_id', organizationId).eq('mailbox_id', mailbox.id).eq('custom_folder_id', folderId).eq('folder', 'custom').order('created_at', { ascending: false }).order('id').range(offset, offset + 99);
       if (result.error) throw result.error;
-      return NextResponse.json({ folder: folder.data, messages: result.data ?? [], total: result.count ?? 0, nextOffset: offset + 100 < Number(result.count) ? offset + 100 : null });
+      const ids = (result.data ?? []).map((message: { id: string }) => message.id);
+      const attachments = ids.length ? await db.from('mail_attachments').select('id,message_id,filename,content_type,size_bytes,created_at').eq('organization_id', organizationId).eq('mailbox_id', mailbox.id).in('message_id', ids).order('created_at') : { data: [], error: null };
+      if (attachments.error) throw attachments.error;
+      return NextResponse.json({ folder: folder.data, messages: result.data ?? [], attachments: attachments.data ?? [], total: result.count ?? 0, nextOffset: offset + 100 < Number(result.count) ? offset + 100 : null });
     }
     const [folders, rules] = await Promise.all([
       db.rpc('mail_folder_counts', { p_organization_id: organizationId, p_mailbox_id: mailbox.id }),
@@ -42,7 +45,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ mailboxId: mailbox.id, folders: folders.data ?? [], rules: rules.data ?? [], canManage: ctx.canManage, canMove: ctx.canMove });
   } catch (error) { return failure(error); }
 }
-
 export async function POST(request: NextRequest) {
   try {
     const ctx = await mailOrganizerContext(request);
@@ -85,7 +87,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, folder: result.data });
     }
     if (action === 'deleteFolder') {
-      // Restrictive FKs also protect against a concurrent move into this folder.
       const result = await db.from('mail_folders').delete().eq('id', requireId(body.id)).eq('organization_id', organizationId).eq('mailbox_id', mailbox.id).select('id').maybeSingle();
       if (result.error) throw result.error;
       if (!result.data) throw new MailAccessError('Folder not found.', 404);
