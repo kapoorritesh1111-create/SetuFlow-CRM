@@ -59,7 +59,8 @@ export async function POST(request: NextRequest) {
   if (!mailbox) return NextResponse.json({ error: requestedMailboxId ? 'You do not have sending access to this mailbox.' : 'No active Setu Mail mailbox with sending access is assigned to you.' }, { status: 403 });
   if (usageResult.error) return NextResponse.json({ error: 'Setu Mail usage allowance could not be verified.' }, { status: 503 });
   const currentPeriodMessages = Number(usageResult.data?.resend_inbound_messages ?? 0) + Number(usageResult.data?.resend_outbound_messages ?? 0);
-  if (currentPeriodMessages >= Number(entitlement.monthly_message_limit ?? 0)) return NextResponse.json({ error: 'This organization has reached its Setu Mail monthly message allowance.' }, { status: 429 });
+  const nextProviderEmailUnits = all.length;
+  if (currentPeriodMessages + nextProviderEmailUnits > Number(entitlement.monthly_message_limit ?? 0)) return NextResponse.json({ error: 'This message would exceed the organization’s Setu Mail monthly email allowance.' }, { status: 429 });
 
   const nowMs = Date.now();
   const [mailboxRate, orgRate] = await Promise.all([
