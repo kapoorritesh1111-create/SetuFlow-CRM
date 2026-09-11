@@ -1,0 +1,120 @@
+.shell {
+  min-height: 100vh;
+  background: #f3f6fb;
+  color: #172033;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) minmax(320px, 680px) minmax(250px, 1fr);
+  align-items: center;
+  height: 48px;
+  gap: 16px;
+  padding: 0 12px;
+  background: linear-gradient(90deg, #061c2e 0%, #0b2e4a 55%, #123f61 100%);
+  color: white;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.08);
+}
+
+.brandBlock, .topActions { display: flex; align-items: center; min-width: 0; }
+.brandBlock { gap: 10px; }
+.topActions { justify-content: flex-end; gap: 6px; }
+.launcher, .iconLink, .profileButton {
+  display: inline-flex;
+  height: 36px;
+  width: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.88);
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.launcher:hover, .iconLink:hover, .profileButton:hover { background: rgb(255 255 255 / 0.12); color: white; }
+.logo { width: 28px; height: 28px; border-radius: 6px; background: white; padding: 3px; object-fit: contain; }
+.brandText { display: flex; min-width: 0; align-items: baseline; gap: 8px; }
+.brandText strong { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.brandText span { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: rgb(255 255 255 / 0.58); }
+.searchBox {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  gap: 8px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 7px;
+  padding: 0 11px;
+  background: rgb(255 255 255 / 0.13);
+  color: rgb(255 255 255 / 0.8);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+.searchBox:focus-within { background: white; color: #334155; border-color: white; }
+.searchBox input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: inherit; font-size: 13px; }
+.searchBox input::placeholder { color: rgb(255 255 255 / 0.65); }
+.searchBox:focus-within input::placeholder { color: #94a3b8; }
+.mailboxForm select {
+  max-width: 280px;
+  height: 32px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 7px;
+  padding: 0 28px 0 10px;
+  background: rgb(255 255 255 / 0.1);
+  color: white;
+  font-size: 12px;
+  font-weight: 650;
+  outline: 0;
+}
+.mailboxForm select option { color: #0f172a; background: white; }
+.mailboxLabel { max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: rgb(255 255 255 / 0.8); }
+.profileButton { border-radius: 999px; }
+.body { display: flex; min-height: calc(100vh - 48px); }
+.rail {
+  position: sticky;
+  top: 48px;
+  z-index: 50;
+  display: flex;
+  width: 48px;
+  height: calc(100vh - 48px);
+  shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border-right: 1px solid #dbe3ef;
+  background: #f8fafc;
+  padding: 7px 4px;
+}
+.railButton {
+  position: relative;
+  display: flex;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #526174;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.railButton:hover:not(:disabled) { background: #e8eef6; color: #0b2e4a; }
+.railButton:disabled { color: #a8b3c2; cursor: not-allowed; }
+.railButton.active { background: #e4eef8; color: #0c6fae; }
+.railButton.active::before { content: ''; position: absolute; left: -4px; width: 3px; height: 22px; border-radius: 999px; background: #0c7fff; }
+.content { min-width: 0; flex: 1; height: calc(100vh - 48px); overflow: hidden; background: white; }
+
+@media (max-width: 767px) {
+  .shell { min-height: 0; background: transparent; }
+  .topbar, .rail { display: none; }
+  .body { display: block; min-height: 0; }
+  .content { height: auto; overflow: visible; }
+}
+
+@media (max-width: 1100px) and (min-width: 768px) {
+  .topbar { grid-template-columns: 210px minmax(260px, 1fr) auto; }
+  .brandText span { display: none; }
+  .mailboxForm select { max-width: 190px; }
+}

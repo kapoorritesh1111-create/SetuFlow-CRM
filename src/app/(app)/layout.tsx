@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { AppShell } from '@/components/layout/app-shell';
+import { AuthenticatedShellRouter } from '@/components/layout/authenticated-shell-router';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
 import { ModuleAccessGuard } from '@/components/shell/ModuleAccessGuard';
 import { DocumentsUiPolish } from '@/components/shell/DocumentsUiPolish';
@@ -120,7 +120,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   );
 
   const shell = (
-    <AppShell
+    <AuthenticatedShellRouter
       profile={workspace.profile}
       organization={safeOrganization}
       membership={workspace.membership}
@@ -132,7 +132,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       packagingEnabled={verticals.packagingEnabled}
     >
       {inner}
-    </AppShell>
+    </AuthenticatedShellRouter>
   );
 
   return guidedTourEnabled ? (
