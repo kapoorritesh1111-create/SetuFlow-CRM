@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const migrationPath = 'supabase/migrations/20260911173500_mail_commercial_usage_reporting.sql';
 const syncMigrationPath = 'supabase/migrations/20260911174600_mail_usage_quota_sync_and_provider_plans.sql';
+const resendUnitsMigrationPath = 'supabase/migrations/20260911175400_mail_resend_billable_units.sql';
 
 test('commercial usage ledger meters only persisted Setu Mail provider activity', () => {
   const migration = fs.readFileSync(migrationPath, 'utf8');
@@ -23,6 +24,18 @@ test('usage backfill excludes drafts and failed outbound messages and reconciles
   assert.match(migration, /m\.direction = 'inbound'.*m\.status = 'received'/s);
   assert.match(migration, /update public\.mail_entitlements e\s+set current_period_messages/s);
   assert.match(migration, /mail_usage_monthly_rollups/);
+});
+
+test('Resend metering mirrors provider quota semantics for inbound and multiple outbound recipients', () => {
+  const units = fs.readFileSync(resendUnitsMigrationPath, 'utf8');
+  const send = fs.readFileSync('src/app/api/mail/send/route.ts', 'utf8');
+  assert.match(units, /coalesce\(cardinality\(new\.to_addresses\), 0\)/);
+  assert.match(units, /coalesce\(cardinality\(new\.cc_addresses\), 0\)/);
+  assert.match(units, /coalesce\(cardinality\(new\.bcc_addresses\), 0\)/);
+  assert.match(units, /v_quantity := 1/);
+  assert.match(units, /billable_units/);
+  assert.match(send, /nextProviderEmailUnits = all\.length/);
+  assert.match(send, /currentPeriodMessages \+ nextProviderEmailUnits > Number\(entitlement\.monthly_message_limit/);
 });
 
 test('commercial usage ledger and provider cost tables are server-only', () => {
