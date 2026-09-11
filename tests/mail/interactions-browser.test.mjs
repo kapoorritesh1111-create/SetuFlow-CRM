@@ -95,7 +95,8 @@ async function checkCount(page, name, value) {await page.waitForFunction((name,v
 async function enabledClick(page, selector) {await page.waitForFunction(selector=>{const el=document.querySelector(selector);return el&&!el.disabled;},{},selector);await page.click(selector);}
 
 test('Mail interactions in Chromium with real React and simulated API', {timeout:120000}, async t => {
-  const chromium=require('@sparticuz/chromium'); const puppeteer=require('puppeteer-core');
+  const chromiumModule=require('@sparticuz/chromium'); const chromium=chromiumModule.default ?? chromiumModule;
+  const puppeteer=require('puppeteer-core');
   const browser=await puppeteer.launch({args:chromium.args,executablePath:await chromium.executablePath(),headless:'shell',defaultViewport:{width:1600,height:1100}});
   const bundle=browserBundle();
   async function fixture() {
