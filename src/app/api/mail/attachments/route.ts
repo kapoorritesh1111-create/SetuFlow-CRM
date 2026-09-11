@@ -1,1 +1,103 @@
-import { NextRequest, NextResponse } from '@/lib/mail/attachment-route-implementation';
+import { NextRequest, NextResponse } from 'next/server';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+import { getCurrentWorkspace } from '@/lib/workspace/auth';
+
+export const dynamic = 'force-dynamic';
+
+const BUCKET = 'setu-mail-attachments';
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const ALLOWED_TYPES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
+  'text/plain',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+]);
+
+function safeFilename(value: string) {
+  return value.replace(/[^a-zA-Z0-9._-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 160) || 'attachment';
+}
+
+async function getAccess() {
+  const workspace = await getCurrentWorkspace();
+  if (!workspace.user) return { error: NextResponse.json({ error: 'Authentication required.' }, { status: 401 }) } as const;
+  if (!workspace.organization || !workspace.membership) return { error: NextResponse.json({ error: 'Active workspace required.' }, { status: 403 }) } as const;
+  const supabase = (await createClient()) as any;
+  const organizationId = workspace.organization.id;
+  const userId = workspace.user.id;
+  const [{ data: grant }, { data: mailbox }, { data: entitlement }] = await Promise.all([
+    supabase.from('org_module_grants').select('enabled').eq('organization_id', organizationId).eq('module_key', 'setu_mail').maybeSingle(),
+    supabase.from('mail_mailboxes').select('id,address,status').eq('organization_id', organizationId).eq('user_id', userId).eq('status', 'active').limit(1).maybeSingle(),
+    supabase.from('mail_entitlements').select('status,storage_limit_bytes').eq('organization_id', organizationId).maybeSingle(),
+  ]);
+  if (!grant?.enabled) return { error: NextResponse.json({ error: 'Setu Mail is not enabled for this organization.' }, { status: 403 }) } as const;
+  if (!mailbox) return { error: NextResponse.json({ error: 'No active Setu Mail mailbox is configured for this user.' }, { status: 409 }) } as const;
+  if (!entitlement || entitlement.status !== 'active') return { error: NextResponse.json({ error: 'Setu Mail subscription is not active.' }, { status: 402 }) } as const;
+  const admin = createAdminSupabaseClient();
+  if (!admin) return { error: NextResponse.json({ error: 'Attachment storage is not configured.' }, { status: 503 }) } as const;
+  return { supabase, admin: admin as any, mailbox, entitlement, organizationId } as const;
+}
+
+export async function POST(request: NextRequest) {
+  const access = await getAccess();
+  if ('error' in access) return access.error;
+  const formData = await request.formData().catch(() => null);
+  const file = formData?.get('file');
+  const messageId = String(formData?.get('messageId') ?? '').trim() || null;
+  if (!(file instanceof File)) return NextResponse.json({ error: 'Choose a file to attach.' }, { status: 400 });
+  if (file.size <= 0 || file.size > MAX_FILE_BYTES) return NextResponse.json({ error: 'Attachments must be 20 MB or smaller.' }, { status: 400 });
+  if (!ALLOWED_TYPES.has(file.type)) return NextResponse.json({ error: 'This file type is not allowed for Setu Mail attachments.' }, { status: 400 });
+  if (messageId) {
+    const { data: message } = await access.supabase.from('mail_messages').select('id,status').eq('id', messageId).eq('mailbox_id', access.mailbox.id).maybeSingle();
+    if (!message) return NextResponse.json({ error: 'Message not found in this mailbox.' }, { status: 404 });
+    if (message.status !== 'draft') return NextResponse.json({ error: 'New attachments can only be added while composing a draft.' }, { status: 409 });
+  }
+  const { data: usageRows } = await access.admin.from('mail_attachments').select('size_bytes').eq('organization_id', access.organizationId);
+  const usedBytes = (usageRows ?? []).reduce((sum: number, row: { size_bytes?: number | string | null }) => sum + Number(row.size_bytes ?? 0), 0);
+  const storageLimit = Number(access.entitlement.storage_limit_bytes ?? 0);
+  if (storageLimit > 0 && usedBytes + file.size > storageLimit) return NextResponse.json({ error: 'Your Setu Mail storage limit has been reached.' }, { status: 409 });
+  const filename = safeFilename(file.name);
+  const storagePath = `${access.organizationId}/${access.mailbox.id}/${crypto.randomUUID()}-${filename}`;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const { error: uploadError } = await access.admin.storage.from(BUCKET).upload(storagePath, bytes, { contentType: file.type, upsert: false });
+  if (uploadError) return NextResponse.json({ error: uploadError.message || 'Unable to upload attachment.' }, { status: 500 });
+  const { data: attachment, error: insertError } = await access.admin.from('mail_attachments').insert({ organization_id: access.organizationId, mailbox_id: access.mailbox.id, message_id: messageId, filename: file.name, content_type: file.type, size_bytes: file.size, storage_path: storagePath }).select('id,filename,content_type,size_bytes,message_id,created_at').single();
+  if (insertError) { await access.admin.storage.from(BUCKET).remove([storagePath]); return NextResponse.json({ error: 'Attachment uploaded but could not be recorded.' }, { status: 500 }); }
+  return NextResponse.json({ ok: true, attachment });
+}
+
+export async function GET(request: NextRequest) {
+  const access = await getAccess();
+  if ('error' in access) return access.error;
+  const id = String(request.nextUrl.searchParams.get('id') ?? '').trim();
+  if (!id) return NextResponse.json({ error: 'Attachment id is required.' }, { status: 400 });
+  const { data: attachment } = await access.admin.from('mail_attachments').select('id,filename,content_type,size_bytes,storage_path,message_id').eq('id', id).eq('organization_id', access.organizationId).eq('mailbox_id', access.mailbox.id).maybeSingle();
+  if (!attachment?.storage_path) return NextResponse.json({ error: 'Attachment not found.' }, { status: 404 });
+  const { data, error } = await access.admin.storage.from(BUCKET).createSignedUrl(attachment.storage_path, 300, { download: attachment.filename });
+  if (error || !data?.signedUrl) return NextResponse.json({ error: 'Unable to create attachment download link.' }, { status: 500 });
+  return NextResponse.json({ ok: true, attachment: { ...attachment, storage_path: undefined }, url: data.signedUrl, expiresIn: 300 });
+}
+
+export async function DELETE(request: NextRequest) {
+  const access = await getAccess();
+  if ('error' in access) return access.error;
+  const body = await request.json().catch(() => null) as { id?: string } | null;
+  const id = String(body?.id ?? '').trim();
+  if (!id) return NextResponse.json({ error: 'Attachment id is required.' }, { status: 400 });
+  const { data: attachment } = await access.admin.from('mail_attachments').select('id,storage_path,message_id').eq('id', id).eq('organization_id', access.organizationId).eq('mailbox_id', access.mailbox.id).maybeSingle();
+  if (!attachment) return NextResponse.json({ error: 'Attachment not found.' }, { status: 404 });
+  if (attachment.message_id) {
+    const { data: linkedMessage } = await access.supabase.from('mail_messages').select('status').eq('id', attachment.message_id).eq('mailbox_id', access.mailbox.id).maybeSingle();
+    if (!linkedMessage || linkedMessage.status !== 'draft') return NextResponse.json({ error: 'Sent or received message attachments cannot be deleted from the message.' }, { status: 409 });
+  }
+  if (attachment.storage_path) await access.admin.storage.from(BUCKET).remove([attachment.storage_path]);
+  const { error } = await access.admin.from('mail_attachments').delete().eq('id', id).eq('mailbox_id', access.mailbox.id);
+  if (error) return NextResponse.json({ error: 'Unable to remove attachment.' }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
