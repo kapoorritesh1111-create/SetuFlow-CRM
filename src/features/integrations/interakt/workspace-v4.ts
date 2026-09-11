@@ -1,5 +1,3 @@
-'use server';
-
 import { unstable_cache } from 'next/cache';
 
 import { assessInteraktContact } from '@/features/integrations/interakt/qualification';
