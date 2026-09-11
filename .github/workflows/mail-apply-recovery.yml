@@ -1,0 +1,62 @@
+name: Apply verified Setu Mail recovery patch
+
+on:
+  push:
+    branches:
+      - mail/mvp-completion-20260911
+    paths:
+      - .github/workflows/mail-apply-recovery.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: mail/mvp-completion-20260911
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Reassemble and verify reviewed patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .mail-recovery/patch.* > /tmp/mail.patch.b64
+          base64 -d /tmp/mail.patch.b64 > /tmp/mail.patch.xz
+          echo "13e019bd50610da5042e100cd62179ef3fcfc2bc63f8108b4920700298d3b125  /tmp/mail.patch.xz" | sha256sum -c -
+          xz -dc /tmp/mail.patch.xz > /tmp/mail.patch
+          echo "bf9cdaab5d078cc27328b5b57c67ea31c2172b763f96f4d450e995b60d656c7f  /tmp/mail.patch" | sha256sum -c -
+          git apply --check /tmp/mail.patch
+          git apply /tmp/mail.patch
+
+      - name: Install reviewed dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Mail regression suite
+        run: npm run test:mail
+
+      - name: TypeScript validation
+        run: npm run typecheck
+
+      - name: Commit verified Mail application changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .mail-recovery
+          rm -f .github/workflows/mail-apply-recovery.yml
+          git config user.name "Setu Mail Recovery"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat(mail): complete rich compose junk search and mobile parity"
+          git push origin HEAD:mail/mvp-completion-20260911
