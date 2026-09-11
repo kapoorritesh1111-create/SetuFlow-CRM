@@ -3,6 +3,7 @@ import test from 'node:test';
 import fs from 'node:fs';
 
 const migrationPath = 'supabase/migrations/20260911173500_mail_commercial_usage_reporting.sql';
+const syncMigrationPath = 'supabase/migrations/20260911174600_mail_usage_quota_sync_and_provider_plans.sql';
 
 test('commercial usage ledger meters only persisted Setu Mail provider activity', () => {
   const migration = fs.readFileSync(migrationPath, 'utf8');
@@ -36,10 +37,9 @@ test('commercial usage ledger and provider cost tables are server-only', () => {
   assert.match(migration, /grant execute on function public\.mail_smc_commercial_usage\(date\) to service_role/);
 });
 
-test('provider cost catalog carries verified official references without guessing the Resend account plan', () => {
+test('provider cost catalog carries verified official references and active plans are Resend Pro plus Cloudmersive Basic', () => {
   const migration = fs.readFileSync(migrationPath, 'utf8');
-  assert.match(migration, /'resend','unconfigured','Resend — select account plan'/);
-  assert.match(migration, /'resend','free','Resend Free',0,3000/);
+  const sync = fs.readFileSync(syncMigrationPath, 'utf8');
   assert.match(migration, /'resend','pro','Resend Pro',20,50000,1000,0\.90/);
   assert.match(migration, /'resend','scale','Resend Scale',90,100000,1000,0\.90/);
   assert.match(migration, /'cloudmersive','free','Cloudmersive Free',0,600/);
@@ -47,6 +47,20 @@ test('provider cost catalog carries verified official references without guessin
   assert.match(migration, /'cloudmersive','business','Cloudmersive Business',49\.99,25000/);
   assert.match(migration, /'2026-09-11'/);
   assert.match(migration, /provider invoices remain the accounting source of truth/i);
+  assert.match(sync, /when 'resend' then 'pro'/);
+  assert.match(sync, /when 'cloudmersive' then 'basic'/);
+});
+
+test('quota enforcement and compatibility counters use the durable monthly usage rollup', () => {
+  const send = fs.readFileSync('src/app/api/mail/send/route.ts', 'utf8');
+  const sync = fs.readFileSync(syncMigrationPath, 'utf8');
+  assert.match(send, /mail_usage_monthly_rollups/);
+  assert.match(send, /resend_inbound_messages/);
+  assert.match(send, /resend_outbound_messages/);
+  assert.doesNotMatch(send, /current_period_messages:\s*Number\(entitlement\.current_period_messages/);
+  assert.match(sync, /sync_mail_entitlement_message_counter/);
+  assert.match(sync, /mail_entitlements_guard_message_counter/);
+  assert.match(sync, /before update of current_period_messages/);
 });
 
 test('SMC Mail usage page shows entitlement, usage, provider economics and metering drift', () => {
