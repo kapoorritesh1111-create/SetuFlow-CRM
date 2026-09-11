@@ -2,7 +2,8 @@ export type MailMessage = {
   id: string; thread_id: string | null; direction: 'inbound' | 'outbound';
   status: string; folder: string; from_address: string; to_addresses: string[];
   cc_addresses: string[]; bcc_addresses: string[]; subject: string;
-  text_body: string | null; is_read: boolean; is_starred: boolean; created_at: string;
+  text_body: string | null; html_body?: string | null; compose_options?: Record<string, unknown> | null;
+  is_read: boolean; is_starred: boolean; created_at: string;
   sent_at?: string | null; received_at?: string | null; draft_saved_at?: string | null;
   updated_at?: string;
 };
@@ -11,8 +12,8 @@ export type MailSignature = {
   html_signature: string | null; is_default: boolean;
 };
 export type DraftInput = {
-  to: string[]; cc: string[]; bcc: string[]; subject: string; text: string;
-  threadId: string | null;
+  to: string[]; cc: string[]; bcc: string[]; subject: string; text: string; html: string;
+  threadId: string | null; includeSignature: boolean;
 };
 
 export function mergeSavedDraft(messages: MailMessage[], draft: MailMessage): MailMessage[] {
@@ -24,8 +25,9 @@ export function restoreDraft<T extends { message_id: string | null }>(message: M
     to: (message.to_addresses ?? []).join(', '),
     cc: (message.cc_addresses ?? []).join(', '),
     bcc: (message.bcc_addresses ?? []).join(', '),
-    subject: message.subject || '', body: message.text_body || '',
+    subject: message.subject || '', body: message.text_body || '', html: message.html_body || '',
     threadId: message.thread_id,
+    includeSignature: message.compose_options?.includeSignature !== false,
     attachments: attachments.filter((attachment) => attachment.message_id === message.id),
   };
 }
@@ -42,8 +44,6 @@ async function persistDraft(id: string | null, input: DraftInput): Promise<MailM
   return payload.draft;
 }
 
-// Each composer gets its own queue. Overlapping autosave/close/send requests must
-// reuse the first returned ID, never create two drafts or overwrite a newer edit.
 export function createDraftSession(
   initialId: string | null = null,
   persist: (id: string | null, input: DraftInput) => Promise<MailMessage> = persistDraft,
@@ -75,8 +75,6 @@ export async function persistSignature(text: string): Promise<MailSignature> {
     body: JSON.stringify({ name: 'Default signature', text }),
   });
   const payload = await response.json() as { signature?: MailSignature; error?: string };
-  if (!response.ok || !payload.signature?.id) {
-    throw new Error(payload.error || 'Unable to save signature. Please try again.');
-  }
+  if (!response.ok || !payload.signature?.id) throw new Error(payload.error || 'Unable to save signature. Please try again.');
   return payload.signature;
 }

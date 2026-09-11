@@ -54,8 +54,7 @@ export function MailFolderSidebar({ organizer, activeId, onSelect, onDeleted }: 
       const deleteReason = Number(folder.message_count) > 0 ? 'Move all messages out before deleting this folder.' : usedByRule ? 'Remove or edit rules using this folder first.' : 'Delete empty folder';
       return <div className={styles.folderRow} key={folder.id} data-active={activeId === folder.id}>
         <button type="button" className={styles.folderLink} onClick={() => onSelect(folder.id)} aria-current={activeId === folder.id ? 'page' : undefined} title={`${folder.name}: ${folder.message_count} messages, ${folder.unread_count} unread`}>
-          <Folder size={16}/><span className={styles.truncate}>{folder.name}</span><span className={styles.count} aria-label={`${folder.message_count} messages`}>{folder.message_count}</span>
-          {Number(folder.unread_count) > 0 && <span className={styles.unreadDot} aria-label={`${folder.unread_count} unread`}/>}
+          <Folder size={16}/><span className={styles.truncate}>{folder.name}</span>{Number(folder.unread_count) > 0 && <span className={styles.count} aria-label={`${folder.unread_count} unread`}>{folder.unread_count}</span>}
         </button>
         {organizer.canManage && <><button type="button" className={styles.iconButton} title={`Rename ${folder.name}`} aria-label={`Rename ${folder.name}`} disabled={organizer.busy} onClick={() => open(folder)}><Pencil size={13}/></button><button type="button" className={styles.iconButton} title={deleteReason} aria-label={`Delete ${folder.name}`} disabled={organizer.busy || Number(folder.message_count) > 0 || usedByRule} onClick={() => open(folder, true)}><Trash2 size={13}/></button></>}
       </div>;

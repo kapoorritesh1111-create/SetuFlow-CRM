@@ -33,4 +33,4 @@ export async function mailOrganizerContext(request: Request) {
   return { db, organizationId, userId, mailbox, canSend: access.data.can_send === true, canManage: access.data.can_manage === true, canMove: access.data.can_send === true || access.data.can_manage === true };
 }
 
-export const MAIL_MESSAGE_FIELDS = 'id,thread_id,direction,status,folder,custom_folder_id,from_address,to_addresses,cc_addresses,bcc_addresses,subject,text_body,is_read,is_starred,archived_at,trashed_at,draft_saved_at,message_id_header,in_reply_to,reference_headers,created_at,updated_at,sent_at,received_at';
+export const MAIL_MESSAGE_FIELDS = 'id,thread_id,direction,status,folder,custom_folder_id,from_address,to_addresses,cc_addresses,bcc_addresses,subject,text_body,html_body,compose_options,is_read,is_starred,archived_at,trashed_at,draft_saved_at,message_id_header,in_reply_to,reference_headers,created_at,updated_at,sent_at,received_at';
