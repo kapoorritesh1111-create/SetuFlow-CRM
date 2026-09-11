@@ -1,1 +1,101 @@
-'use client';import{useEffect,useState}from'react';export function CalendarSettingsWorkspace(){const[d,setD]=useState<any>(null);const[slug,setSlug]=useState('');const[duration,setDuration]=useState(30);const[status,setStatus]=useState('');useEffect(()=>{fetch('/api/calendar/settings').then(r=>r.json()).then(x=>{setD(x);setSlug(x.booking?.slug??'');setDuration(x.booking?.duration_minutes??30)})},[]);async function save(){setStatus('Saving…');const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;const availability=[1,2,3,4,5].map(weekday=>({weekday,startTime:'09:00',endTime:'17:00',timezone:tz}));const r=await fetch('/api/calendar/settings',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({availability,booking:{slug,title:'Schedule a meeting',durationMinutes:duration,bufferMinutes:15,minimumNoticeMinutes:240,bookingWindowDays:30,meetingProvider:'zoom',isActive:true}})});setStatus(r.ok?'Saved':'Could not save')}if(!d)return <div className="p-8 text-sm font-bold text-slate-400">Loading meeting settings…</div>;return <div className="space-y-6"><section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm"><div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between"><div><div className="text-[10px] font-black uppercase tracking-[.18em] text-blue-600">Meeting provider</div><h2 className="mt-1 text-xl font-black text-slate-950">Zoom</h2><p className="mt-1 text-sm text-slate-500">Create Zoom meetings automatically from Setu Calendar.</p></div>{d.zoom?.status==='active'?<div className="flex items-center gap-3"><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Connected</span><span className="text-xs font-bold text-slate-500">{d.zoom.account_email}</span></div>:<a href="/api/calendar/zoom/connect" className={`rounded-xl px-5 py-3 text-sm font-black ${d.zoomConfigured?'bg-slate-950 text-white':'pointer-events-none bg-slate-100 text-slate-400'}`}>Connect Zoom</a>}</div></section><section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm"><div className="text-[10px] font-black uppercase tracking-[.18em] text-blue-600">Booking</div><h2 className="mt-1 text-xl font-black text-slate-950">Your booking page</h2><p className="mt-1 text-sm text-slate-500">Let buyers and partners choose an available time without needing a Setu account.</p><div className="mt-5 grid gap-4 md:grid-cols-2"><label className="text-xs font-black text-slate-700">Booking link<div className="mt-2 flex rounded-xl border border-slate-200 bg-white"><span className="border-r border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-400">/book/</span><input value={slug} onChange={e=>setSlug(e.target.value)} placeholder="ritesh" className="min-w-0 flex-1 rounded-r-xl px-3 text-sm outline-none"/></div></label><label className="text-xs font-black text-slate-700">Meeting length<select value={duration} onChange={e=>setDuration(Number(e.target.value))} className="mt-2 w-full rounded-xl border border-slate-200 bg-white p-2.5 text-sm"><option value={15}>15 minutes</option><option value={30}>30 minutes</option><option value={45}>45 minutes</option><option value={60}>60 minutes</option></select></label></div><div className="mt-5 rounded-2xl bg-slate-50 p-4"><div className="text-xs font-black text-slate-800">Standard availability</div><p className="mt-1 text-xs text-slate-500">Monday–Friday · 9:00 AM–5:00 PM · 15 minute buffer · 4 hour minimum notice</p></div><div className="mt-5 flex items-center gap-3"><button onClick={save} disabled={!slug} className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white disabled:opacity-40">Save calendar settings</button><span className="text-xs font-bold text-slate-400">{status}</span></div></section></div>}
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarClock, CheckCircle2, ExternalLink, RefreshCw, Save, Video, XCircle } from 'lucide-react';
+
+type AvailabilityRow = { weekday: number; start_time: string; end_time: string; timezone: string; is_active?: boolean };
+type DayModel = { weekday: number; enabled: boolean; startTime: string; endTime: string };
+type ZoomState = { configured: boolean; connected: boolean; accountEmail?: string | null; status?: string };
+
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const defaultDays = (): DayModel[] => DAYS.map((_, weekday) => ({ weekday, enabled: weekday >= 1 && weekday <= 5, startTime: '09:00', endTime: '17:00' }));
+
+export function CalendarSettingsWorkspace() {
+  const [days, setDays] = useState<DayModel[]>(defaultDays);
+  const [timezone, setTimezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  const [zoom, setZoom] = useState<ZoomState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState('');
+
+  async function load() {
+    setLoading(true); setNotice('');
+    try {
+      const [availabilityResponse, zoomResponse] = await Promise.all([
+        fetch('/api/calendar/availability', { cache: 'no-store' }),
+        fetch('/api/calendar/zoom', { cache: 'no-store' }),
+      ]);
+      const availabilityPayload = await availabilityResponse.json();
+      const zoomPayload = await zoomResponse.json();
+      if (!availabilityResponse.ok) throw new Error(availabilityPayload.error || 'Unable to load working hours.');
+      const rows = Array.isArray(availabilityPayload.availability) ? availabilityPayload.availability as AvailabilityRow[] : [];
+      if (rows.length) {
+        const byDay = new Map(rows.map(row => [row.weekday, row]));
+        setDays(DAYS.map((_, weekday) => {
+          const row = byDay.get(weekday);
+          return { weekday, enabled: Boolean(row && row.is_active !== false), startTime: row?.start_time?.slice(0,5) || '09:00', endTime: row?.end_time?.slice(0,5) || '17:00' };
+        }));
+        setTimezone(rows[0]?.timezone || timezone);
+      }
+      setZoom(zoomResponse.ok ? { configured: Boolean(zoomPayload.configured), connected: Boolean(zoomPayload.connected), accountEmail: zoomPayload.accountEmail || null, status: zoomPayload.status } : { configured: false, connected: false });
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to load Calendar settings.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void load(); }, []);
+
+  const enabledCount = useMemo(() => days.filter(day => day.enabled).length, [days]);
+
+  async function saveWorkingHours() {
+    if (saving) return;
+    const enabled = days.filter(day => day.enabled);
+    if (!enabled.length) { setNotice('Choose at least one work day.'); return; }
+    if (enabled.some(day => !day.startTime || !day.endTime || day.endTime <= day.startTime)) { setNotice('Each work day needs a valid start and end time.'); return; }
+    setSaving(true); setNotice('');
+    const response = await fetch('/api/calendar/availability', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ timezone, days: enabled.map(day => ({ weekday: day.weekday, startTime: day.startTime, endTime: day.endTime })) }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setSaving(false);
+    if (!response.ok) { setNotice(payload.error || 'Unable to save working hours.'); return; }
+    setNotice('Working hours saved. Booking availability will use these hours.');
+    await load();
+  }
+
+  if (loading) return <div className="grid min-h-[60vh] place-items-center text-sm font-semibold text-slate-400">Loading Calendar settings…</div>;
+
+  return <div className="h-full overflow-y-auto bg-[#f7f8fa] p-5 md:p-8">
+    <div className="mx-auto max-w-5xl">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div><div className="text-[11px] font-black uppercase tracking-[.14em] text-blue-600">Setu Calendar</div><h1 className="mt-1 text-2xl font-black text-slate-950">Calendar settings</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Manage the working schedule used by Week view and public booking, and connect the meeting provider used for Zoom meetings.</p></div>
+        <div className="flex gap-2"><a href="/calendar/booking" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">Booking page</a><a href="/calendar" className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700">Back to calendar</a></div>
+      </div>
+
+      {notice ? <div className={`mt-5 rounded-xl border p-3 text-sm font-bold ${notice.includes('saved') ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>{notice}</div> : null}
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_330px]">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-4"><div><CalendarClock size={22} className="text-blue-600"/><h2 className="mt-3 text-base font-black text-slate-950">Work week & working hours</h2><p className="mt-1 text-xs leading-5 text-slate-500">These exact hours drive your Week view and the times customers can book.</p></div><span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black text-blue-700">{enabledCount} WORK DAYS</span></div>
+          <label className="mt-5 block text-xs font-bold text-slate-600">Time zone<input value={timezone} onChange={event => setTimezone(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400"/></label>
+          <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
+            {days.map(day => <div key={day.weekday} className="grid grid-cols-[120px_1fr] items-center gap-3 border-b border-slate-100 p-3 last:border-b-0 sm:grid-cols-[130px_1fr_1fr]">
+              <label className="flex items-center gap-2 text-xs font-black text-slate-700"><input type="checkbox" checked={day.enabled} onChange={event => setDays(current => current.map(item => item.weekday === day.weekday ? { ...item, enabled: event.target.checked } : item))} className="h-4 w-4"/>{DAYS[day.weekday]}</label>
+              {day.enabled ? <><input type="time" value={day.startTime} onChange={event => setDays(current => current.map(item => item.weekday === day.weekday ? { ...item, startTime: event.target.value } : item))} className="rounded-lg border border-slate-200 p-2 text-xs font-semibold"/><input type="time" value={day.endTime} onChange={event => setDays(current => current.map(item => item.weekday === day.weekday ? { ...item, endTime: event.target.value } : item))} className="rounded-lg border border-slate-200 p-2 text-xs font-semibold"/></> : <span className="col-span-2 text-xs font-semibold text-slate-400">Not a working day</span>}
+            </div>)}
+          </div>
+          <div className="mt-5 flex justify-end"><button onClick={() => void saveWorkingHours()} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[#0b2e4a] px-5 py-3 text-sm font-black text-white disabled:opacity-50"><Save size={16}/>{saving ? 'Saving…' : 'Save working hours'}</button></div>
+        </section>
+
+        <aside className="space-y-4">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><Video size={22} className="text-blue-600"/><h2 className="mt-3 text-base font-black text-slate-950">Zoom</h2>{!zoom?.configured ? <><div className="mt-3 flex items-center gap-2 text-xs font-black text-amber-700"><XCircle size={16}/>Integration setup required</div><p className="mt-2 text-xs leading-5 text-slate-500">Zoom OAuth is not configured for this Setu environment yet.</p></> : zoom.connected ? <><div className="mt-3 flex items-center gap-2 text-xs font-black text-emerald-700"><CheckCircle2 size={16}/>Connected</div>{zoom.accountEmail ? <p className="mt-2 break-all text-xs font-semibold text-slate-500">{zoom.accountEmail}</p> : null}<a href="/api/calendar/zoom/connect" className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700"><RefreshCw size={14}/>Reconnect Zoom</a></> : <><div className="mt-3 flex items-center gap-2 text-xs font-black text-amber-700"><XCircle size={16}/>Not connected</div><p className="mt-2 text-xs leading-5 text-slate-500">Connect your own Zoom account so Setu can create, update and cancel meetings for you.</p><a href="/api/calendar/zoom/connect" className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white"><Video size={14}/>Connect Zoom</a></>}</section>
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-black text-slate-900">Public booking</h2><p className="mt-2 text-xs leading-5 text-slate-500">Configure duration, buffer, minimum notice, booking window and meeting type on your booking page.</p><a href="/calendar/booking" className="mt-4 inline-flex items-center gap-2 text-xs font-black text-blue-700">Open booking settings <ExternalLink size={13}/></a></section>
+        </aside>
+      </div>
+    </div>
+  </div>;
+}
