@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
+import { resolveUserMailbox } from '@/lib/mail/resolve-user-mailbox';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   if (!workspace.organization || !workspace.membership) return NextResponse.json({ error: 'Active workspace required.' }, { status: 403 });
 
   const supabase = (await createClient()) as any;
-  const { data: mailbox } = await supabase.from('mail_mailboxes').select('id').eq('organization_id', workspace.organization.id).eq('user_id', workspace.user.id).eq('status', 'active').limit(1).maybeSingle();
+  const mailbox = await resolveUserMailbox(supabase, workspace.organization.id, workspace.user.id, 'id,address,status');
   if (!mailbox) return NextResponse.json({ error: 'Mailbox not found.' }, { status: 404 });
 
   const { data: message } = await supabase.from('mail_messages').select('id,direction,status,folder').eq('id', params.id).eq('mailbox_id', mailbox.id).maybeSingle();
