@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { prepareIncomingOrganization } from '@/lib/mail/incoming-organization';
 import { claimMailWebhook } from '@/lib/mail/webhook-claim';
+import { secureStoredMailAttachment } from '@/lib/mail/attachment-security';
 
 export const dynamic = 'force-dynamic';
 const RESEND_API = 'https://api.resend.com';
@@ -121,21 +122,52 @@ async function ingestInbound(admin: any, webhook: any) {
   }
   if (saved.error || !saved.data) throw saved.error || new Error('Unable to save inbound message.');
   const message = saved.data;
+
   for (const item of attachments) {
     const downloadUrl = String(item.download_url ?? '').trim();
     if (!downloadUrl) continue;
+    const providerAttachmentId = String(item.id ?? '').trim() || null;
     try {
       const download = await fetch(downloadUrl, { cache: 'no-store', signal: AbortSignal.timeout(15000) });
-      if (!download.ok) continue;
+      if (!download.ok) {
+        console.error('[setu-mail:webhook] attachment download failed', { providerMessageId, providerAttachmentId, messageId: message.id, status: download.status });
+        continue;
+      }
       const bytes = Buffer.from(await download.arrayBuffer());
       const filename = String(item.filename ?? 'attachment');
       const contentType = String(item.content_type ?? 'application/octet-stream');
       const path = `${mailbox.organization_id}/${mailbox.id}/${message.id}/${crypto.randomUUID()}-${filename.replace(/[^a-zA-Z0-9._-]+/g, '_')}`;
       const { error: uploadError } = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, bytes, { contentType, upsert: false });
-      if (uploadError) continue;
-      await admin.from('mail_attachments').insert({ organization_id: mailbox.organization_id, mailbox_id: mailbox.id, message_id: message.id, filename, content_type: contentType, size_bytes: bytes.length, storage_path: path, provider_attachment_id: item.id ?? null });
-    } catch { /* Keep the message even if one attachment cannot be persisted. */ }
+      if (uploadError) {
+        console.error('[setu-mail:webhook] attachment storage failed', { providerMessageId, providerAttachmentId, messageId: message.id, error: uploadError.message });
+        continue;
+      }
+      const { data: attachment, error: insertError } = await admin.from('mail_attachments').insert({
+        organization_id: mailbox.organization_id,
+        mailbox_id: mailbox.id,
+        message_id: message.id,
+        filename,
+        content_type: contentType,
+        size_bytes: bytes.length,
+        storage_path: path,
+        provider_attachment_id: item.id ?? null,
+        security_status: 'pending',
+      }).select('id,organization_id,mailbox_id,message_id,filename,content_type,size_bytes,storage_path,security_status,scan_attempts').single();
+      if (insertError || !attachment) {
+        await admin.storage.from(ATTACHMENT_BUCKET).remove([path]);
+        console.error('[setu-mail:webhook] attachment record failed', { providerMessageId, providerAttachmentId, messageId: message.id, error: insertError?.message ?? 'unknown' });
+        continue;
+      }
+      const secured = await secureStoredMailAttachment(admin, attachment, bytes);
+      if (secured.security_status !== 'clean') {
+        console.warn('[setu-mail:webhook] attachment blocked', { providerMessageId, providerAttachmentId, messageId: message.id, attachmentId: attachment.id, securityStatus: secured.security_status });
+      }
+    } catch (error) {
+      console.error('[setu-mail:webhook] attachment processing failed', { providerMessageId, providerAttachmentId, messageId: message.id, error: error instanceof Error ? error.message : String(error) });
+      // The message remains available even when an attachment is unavailable. No unverified file is exposed through Setu Mail download APIs.
+    }
   }
+
   const unread = await admin.from('mail_messages').select('id', { head: true, count: 'exact' }).eq('organization_id', mailbox.organization_id).eq('mailbox_id', mailbox.id).eq('thread_id', threadId).eq('is_read', false);
   await admin.from('mail_threads').update({ last_message_at: webhook?.created_at ?? now, ...(unread.error ? {} : { unread_count: unread.count ?? 0 }), updated_at: now }).eq('id', threadId).eq('mailbox_id', mailbox.id);
   const { data: entitlement } = await admin.from('mail_entitlements').select('current_period_messages,monthly_message_limit').eq('organization_id', mailbox.organization_id).maybeSingle();

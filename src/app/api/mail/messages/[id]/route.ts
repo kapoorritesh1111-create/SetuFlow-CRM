@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     if (!isMailId(params.id)) return NextResponse.json({ error: 'Invalid message id.' }, { status: 400 });
     const [message, attachments] = await Promise.all([
       ctx.db.from('mail_messages').select(MAIL_MESSAGE_FIELDS).eq('id', params.id).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id).maybeSingle(),
-      ctx.db.from('mail_attachments').select('id,message_id,filename,content_type,size_bytes,created_at').eq('message_id', params.id).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id),
+      ctx.db.from('mail_attachments').select('id,message_id,filename,content_type,size_bytes,created_at,security_status,scan_provider,scan_signature,scanned_at').eq('message_id', params.id).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id),
     ]);
     if (message.error || attachments.error) return NextResponse.json({ error: 'Unable to load the complete message. Please try again.' }, { status: 503 });
     if (!message.data) return NextResponse.json({ error: 'Message not found.' }, { status: 404 });

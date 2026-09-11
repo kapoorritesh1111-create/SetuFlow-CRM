@@ -91,11 +91,23 @@ export async function POST(request: NextRequest) {
   const attachments: any[] = [];
   let attachmentBytes = 0;
   if (attachmentIds.length) {
-    const { data, error } = await admin.from('mail_attachments').select('id,filename,size_bytes,storage_path,message_id').in('id', attachmentIds).eq('organization_id', organizationId).eq('mailbox_id', mailbox.id);
+    const { data, error } = await admin.from('mail_attachments')
+      .select('id,filename,size_bytes,storage_path,message_id,security_status')
+      .in('id', attachmentIds).eq('organization_id', organizationId).eq('mailbox_id', mailbox.id);
     if (error || (data ?? []).length !== attachmentIds.length) return NextResponse.json({ error: 'One or more attachments could not be found.' }, { status: 400 });
+
+    const unsafe = (data ?? []).find((attachment: any) => attachment.security_status !== 'clean');
+    if (unsafe) {
+      const blocked = unsafe.security_status === 'quarantined'
+        ? `${unsafe.filename} was blocked by malware scanning and cannot be sent.`
+        : `${unsafe.filename} has not passed malware scanning and cannot be sent.`;
+      return NextResponse.json({ error: blocked, securityStatus: unsafe.security_status }, { status: 409 });
+    }
+
     for (const attachment of data ?? []) {
       attachmentBytes += Number(attachment.size_bytes ?? 0);
       if (attachmentBytes > MAX_ATTACHMENT_BYTES) return NextResponse.json({ error: 'Total attachment size must be 25 MB or less.' }, { status: 400 });
+      if (!attachment.storage_path) return NextResponse.json({ error: `Attachment ${attachment.filename} is unavailable.` }, { status: 409 });
       const { data: file, error: downloadError } = await admin.storage.from(ATTACHMENT_BUCKET).download(attachment.storage_path);
       if (downloadError || !file) return NextResponse.json({ error: `Unable to read attachment ${attachment.filename}. Remove it or try again.` }, { status: 500 });
       attachments.push({ filename: attachment.filename, content: Buffer.from(await file.arrayBuffer()).toString('base64') });
@@ -137,7 +149,7 @@ export async function POST(request: NextRequest) {
     message = result.data; error = result.error;
   }
   if (error || !message) return NextResponse.json({ error: 'Email sent, but Setu Mail could not save the sent copy.' }, { status: 500 });
-  if (attachmentIds.length) await admin.from('mail_attachments').update({ message_id: message.id }).in('id', attachmentIds).eq('mailbox_id', mailbox.id);
+  if (attachmentIds.length) await admin.from('mail_attachments').update({ message_id: message.id }).in('id', attachmentIds).eq('mailbox_id', mailbox.id).eq('security_status', 'clean');
   await Promise.all([
     db.from('mail_threads').update({ last_message_at: now, participants: Array.from(new Set([mailbox.address, ...all])), updated_at: now }).eq('id', thread),
     db.from('mail_entitlements').update({ current_period_messages: Number(entitlement.current_period_messages ?? 0) + 1, updated_at: now }).eq('organization_id', organizationId),
