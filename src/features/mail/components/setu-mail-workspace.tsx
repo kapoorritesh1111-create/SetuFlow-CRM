@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Archive, Download, FileText, Inbox, Mail, Paperclip, PenLine, RefreshCw, Reply, Search, Send, Settings, Sparkles, Star, Trash2, X } from 'lucide-react';
+import { Archive, Bold, Download, FileText, Inbox, Italic, Mail, Maximize2, Minimize2, Paperclip, PenLine, RefreshCw, Reply, Search, Send, Settings, Sparkles, Star, Trash2, Underline, X } from 'lucide-react';
 import { createDraftSession, mergeSavedDraft, persistSignature, restoreDraft, type MailMessage, type MailSignature } from '../lib/compose-state';
 
 type Mailbox = { id: string; address: string; display_name: string | null };
@@ -20,6 +20,8 @@ export function SetuMailWorkspace({ userName, userEmail, organizationName }: { u
   const [folder, setFolder] = useState<Folder>('inbox');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composeExpanded, setComposeExpanded] = useState(false);
+  const [composeMinimized, setComposeMinimized] = useState(false);
   const [to, setTo] = useState(''); const [cc, setCc] = useState(''); const [bcc, setBcc] = useState('');
   const [subject, setSubject] = useState(''); const [body, setBody] = useState('');
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -40,6 +42,7 @@ export function SetuMailWorkspace({ userName, userEmail, organizationName }: { u
   const lastSavedInput = useRef(''); const currentInput = useRef('');
   const refreshVersion = useRef(0);
   const mounted = useRef(true);
+  const messageRef = useRef<HTMLTextAreaElement | null>(null);
   const sending = composeBusy === 'sending';
 
   function stopAutosave() { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); autosaveTimer.current = null; }
@@ -50,7 +53,6 @@ export function SetuMailWorkspace({ userName, userEmail, organizationName }: { u
       const r = await fetch('/api/mail', { cache: 'no-store' });
       const p = await r.json() as MailPayload & { error?: string };
       if (!r.ok) throw new Error(p.error || 'Unable to load mail.');
-      // Do not overwrite a draft saved while this older mailbox request was in flight.
       if (mounted.current && refreshVersion.current === version) setData(p);
     } catch (e) { if (mounted.current) setNotice(e instanceof Error ? e.message : 'Unable to load mail.'); }
     finally { if (mounted.current) setLoading(false); }
@@ -110,10 +112,19 @@ export function SetuMailWorkspace({ userName, userEmail, organizationName }: { u
 
   function resetCompose() {
     stopAutosave(); draftSession.current = null; lastSavedInput.current = ''; currentInput.current = '';
-    setComposeOpen(false); setTo(''); setCc(''); setBcc(''); setSubject(''); setBody('');
+    setComposeOpen(false); setComposeExpanded(false); setComposeMinimized(false); setTo(''); setCc(''); setBcc(''); setSubject(''); setBody('');
     setDraftId(null); setParentMessageId(null); setThreadId(null); setPendingAttachments([]); setSaveState('idle');
   }
   function openCompose() { if (composeOpen || busy.current) return; resetCompose(); draftSession.current = createDraftSession(); setComposeOpen(true); }
+  function formatSelection(prefix: string, suffix = prefix) {
+    const input = messageRef.current;
+    if (!input) return;
+    const start = input.selectionStart ?? 0, end = input.selectionEnd ?? start;
+    const selectedText = body.slice(start, end);
+    const next = `${body.slice(0, start)}${prefix}${selectedText}${suffix}${body.slice(end)}`;
+    setBody(next);
+    requestAnimationFrame(() => { input.focus(); input.setSelectionRange(start + prefix.length, end + prefix.length); });
+  }
   async function closeCompose(): Promise<boolean> {
     if (busy.current) return false;
     busy.current = true; setComposeBusy('saving'); stopAutosave();
@@ -154,7 +165,6 @@ export function SetuMailWorkspace({ userName, userEmail, organizationName }: { u
     if (!data.mailbox) { setNotice('Your mailbox is not ready yet.'); return; }
     busy.current = true; setComposeBusy('sending'); stopAutosave();
     try {
-      // Flush the latest edit and any earlier autosave before sending this exact draft.
       const savedId = await saveDraft(true);
       const r = await fetch('/api/mail/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mailboxId: data.mailbox.id, to: addresses(to), cc: addresses(cc), bcc: addresses(bcc), subject, text: body, draftId: savedId, threadId, parentMessageId, attachmentIds: pendingAttachments.map(a => a.id) }) });
       const p = await r.json(); if (!r.ok) throw new Error(p.error || 'Unable to send email.');
@@ -168,7 +178,6 @@ export function SetuMailWorkspace({ userName, userEmail, organizationName }: { u
     if (busy.current) return;
     busy.current = true; setComposeBusy('uploading'); stopAutosave();
     try {
-      // An attachment-only draft still needs a saved ID so reopening restores its files.
       const id = await saveDraft(true, true);
       if (!id) throw new Error('Save the draft before attaching a file.');
       const form = new FormData(); form.set('file', file); form.set('messageId', id); if (data.mailbox) form.set('mailboxId', data.mailbox.id);
@@ -206,6 +215,6 @@ export function SetuMailWorkspace({ userName, userEmail, organizationName }: { u
   </div>
     {notice && <div role="status" className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm text-white shadow-xl"><span>{notice}</span><button onClick={() => setNotice(null)} aria-label="Dismiss notification"><X className="h-4 w-4"/></button></div>}
     {signatureOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4"><div role="dialog" aria-modal="true" aria-labelledby="mail-signature-title" className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"><h3 id="mail-signature-title" className="text-lg font-semibold text-slate-900">Email signature</h3><p className="mt-1 text-sm text-slate-500">Added automatically when you send a message.</p><textarea aria-label="Signature text" value={signatureText} onChange={e => setSignatureText(e.target.value)} disabled={savingSignature} rows={7} maxLength={10000} className="mt-4 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-400"/>{signatureError && <p role="alert" className="mt-2 text-sm text-rose-700">{signatureError}</p>}<div className="mt-4 flex justify-end gap-2"><button disabled={savingSignature} onClick={() => setSignatureOpen(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600">Cancel</button><button disabled={savingSignature} onClick={() => void saveSignature()} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{savingSignature ? 'Saving...' : 'Save signature'}</button></div></div></div>}
-    {composeOpen && <div role="dialog" aria-label={draftId ? 'Edit draft' : 'New message'} className="fixed bottom-5 right-5 z-40 w-[560px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"><div className="flex items-center justify-between bg-slate-900 px-4 py-3 text-sm font-semibold text-white"><span>{draftId ? 'Draft' : 'New message'}</span><button disabled={Boolean(composeBusy)} onClick={() => void closeCompose()} title="Save and close" aria-label="Save draft and close"><X className="h-4 w-4"/></button></div><fieldset disabled={Boolean(composeBusy)} className="divide-y divide-slate-100"><input aria-label="To" value={to} onChange={e => setTo(e.target.value)} placeholder="To" className="w-full px-4 py-3 text-sm outline-none"/><div className="grid grid-cols-2"><input aria-label="Cc" value={cc} onChange={e => setCc(e.target.value)} placeholder="Cc" className="border-r border-slate-100 px-4 py-3 text-sm outline-none"/><input aria-label="Bcc" value={bcc} onChange={e => setBcc(e.target.value)} placeholder="Bcc" className="px-4 py-3 text-sm outline-none"/></div><input aria-label="Subject" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject" className="w-full px-4 py-3 text-sm outline-none"/><textarea aria-label="Message" value={body} onChange={e => setBody(e.target.value)} rows={12} placeholder={`Write your message, ${userName.split(' ')[0] || ''}...`} className="w-full resize-none px-4 py-3 text-sm outline-none"/></fieldset>{pendingAttachments.length > 0 && <div className="flex flex-wrap gap-2 border-t border-slate-100 px-4 py-3">{pendingAttachments.map(a => <span key={a.id} className="rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-600">{a.filename}</span>)}</div>}<div className="flex items-center justify-between border-t border-slate-100 px-4 py-3"><div className="flex items-center gap-2"><label title="Attach file" className="cursor-pointer rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Paperclip className="h-4 w-4"/><input aria-label="Attach file" type="file" disabled={Boolean(composeBusy)} className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) void upload(f); e.currentTarget.value = ''; }}/></label><span className="text-xs text-slate-400">{data.signature?.text_signature ? 'Signature on' : 'No signature'}</span></div><button disabled={Boolean(composeBusy) || !to.trim()} onClick={() => void send()} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"><Send className="h-4 w-4"/>{sending ? 'Sending...' : 'Send'}</button></div><div className="flex items-center justify-between border-t border-slate-100 px-4 py-2"><span role="status" aria-live="polite" className={`text-xs ${saveState === 'error' ? 'text-rose-700' : 'text-slate-500'}`}>{composeBusy === 'uploading' ? 'Attaching file...' : saveLabel}</span>{saveState === 'error' && <button disabled={Boolean(composeBusy)} onClick={() => { void saveDraft().catch(e => setNotice(e instanceof Error ? e.message : 'Unable to save draft.')); }} className="text-xs font-semibold text-blue-600">Retry save</button>}</div></div>}
+    {composeOpen && <div role="dialog" aria-label={draftId ? 'Edit draft' : 'New message'} className={`fixed z-40 overflow-hidden border border-slate-200 bg-white shadow-2xl ${composeExpanded ? 'inset-6 rounded-2xl' : 'bottom-5 right-5 w-[680px] max-w-[calc(100vw-2rem)] rounded-2xl'}`}><div className="flex items-center justify-between bg-slate-900 px-4 py-3 text-sm font-semibold text-white"><span>{draftId ? 'Draft' : 'New message'}</span><div className="flex items-center gap-1"><button disabled={Boolean(composeBusy)} onClick={() => setComposeMinimized(value => !value)} title={composeMinimized ? 'Restore composer' : 'Minimize composer'} aria-label={composeMinimized ? 'Restore composer' : 'Minimize composer'} className="rounded-md p-1.5 text-slate-300 hover:bg-white/10 hover:text-white"><Minimize2 className="h-4 w-4"/></button><button disabled={Boolean(composeBusy)} onClick={() => { setComposeExpanded(value => !value); setComposeMinimized(false); }} title={composeExpanded ? 'Restore composer size' : 'Expand composer'} aria-label={composeExpanded ? 'Restore composer size' : 'Expand composer'} className="rounded-md p-1.5 text-slate-300 hover:bg-white/10 hover:text-white">{composeExpanded ? <Minimize2 className="h-4 w-4"/> : <Maximize2 className="h-4 w-4"/>}</button><button disabled={Boolean(composeBusy)} onClick={() => void closeCompose()} title="Save and close" aria-label="Save draft and close" className="rounded-md p-1.5 text-slate-300 hover:bg-white/10 hover:text-white"><X className="h-4 w-4"/></button></div></div>{!composeMinimized && <><fieldset disabled={Boolean(composeBusy)} className="divide-y divide-slate-100"><input aria-label="To" value={to} onChange={e => setTo(e.target.value)} placeholder="To" className="w-full px-4 py-3 text-sm outline-none"/><div className="grid grid-cols-2"><input aria-label="Cc" value={cc} onChange={e => setCc(e.target.value)} placeholder="Cc" className="border-r border-slate-100 px-4 py-3 text-sm outline-none"/><input aria-label="Bcc" value={bcc} onChange={e => setBcc(e.target.value)} placeholder="Bcc" className="px-4 py-3 text-sm outline-none"/></div><input aria-label="Subject" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Subject" className="w-full px-4 py-3 text-sm outline-none"/><div className="flex items-center gap-1 border-b border-slate-100 bg-slate-50/70 px-3 py-2" role="toolbar" aria-label="Message formatting"><button type="button" onClick={() => formatSelection('**')} title="Bold" aria-label="Bold" className="rounded-md p-2 text-slate-500 hover:bg-white hover:text-slate-900"><Bold className="h-4 w-4"/></button><button type="button" onClick={() => formatSelection('_')} title="Italic" aria-label="Italic" className="rounded-md p-2 text-slate-500 hover:bg-white hover:text-slate-900"><Italic className="h-4 w-4"/></button><button type="button" onClick={() => formatSelection('__')} title="Underline" aria-label="Underline" className="rounded-md p-2 text-slate-500 hover:bg-white hover:text-slate-900"><Underline className="h-4 w-4"/></button><span className="ml-2 text-[11px] text-slate-400">Formatting foundation</span></div><textarea ref={messageRef} aria-label="Message" value={body} onChange={e => setBody(e.target.value)} rows={composeExpanded ? 20 : 14} placeholder={`Write your message, ${userName.split(' ')[0] || ''}...`} className="w-full resize-none px-4 py-3 text-sm outline-none"/></fieldset>{pendingAttachments.length > 0 && <div className="flex flex-wrap gap-2 border-t border-slate-100 px-4 py-3">{pendingAttachments.map(a => <span key={a.id} className="rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-600">{a.filename}</span>)}</div>}<div className="flex items-center justify-between border-t border-slate-100 px-4 py-3"><div className="flex items-center gap-2"><label title="Attach file" className="cursor-pointer rounded-lg p-2 text-slate-500 hover:bg-slate-100"><Paperclip className="h-4 w-4"/><input aria-label="Attach file" type="file" disabled={Boolean(composeBusy)} className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) void upload(f); e.currentTarget.value = ''; }}/></label><span className="text-xs text-slate-400">{data.signature?.text_signature ? 'Signature on' : 'No signature'}</span></div><button disabled={Boolean(composeBusy) || !to.trim()} onClick={() => void send()} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"><Send className="h-4 w-4"/>{sending ? 'Sending...' : 'Send'}</button></div><div className="flex items-center justify-between border-t border-slate-100 px-4 py-2"><span role="status" aria-live="polite" className={`text-xs ${saveState === 'error' ? 'text-rose-700' : 'text-slate-500'}`}>{composeBusy === 'uploading' ? 'Attaching file...' : saveLabel}</span>{saveState === 'error' && <button disabled={Boolean(composeBusy)} onClick={() => { void saveDraft().catch(e => setNotice(e instanceof Error ? e.message : 'Unable to save draft.')); }} className="text-xs font-semibold text-blue-600">Retry save</button>}</div></>}</div>}
   </div>;
 }
