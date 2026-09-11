@@ -23,7 +23,7 @@ export async function GET(){
  const a=await requireAdmin();if('error'in a)return a.error;const{organization,supabase}=a;const oid=organization.id;
  const [domains,mailboxes,aliases,access,entitlement,members]=await Promise.all([
   supabase.from('mail_domains').select('*').eq('organization_id',oid).order('created_at'),
-  supabase.from('mail_mailboxes').select('id,user_id,address,display_name,status,inbound_enabled,created_at').eq('organization_id',oid).order('address'),
+  supabase.from('mail_mailboxes').select('id,address,display_name,status,inbound_enabled,created_at').eq('organization_id',oid).order('address'),
   supabase.from('mail_aliases').select('id,mailbox_id,address,alias_type,is_active').eq('organization_id',oid).order('address'),
   supabase.from('mail_mailbox_access').select('id,mailbox_id,user_id,access_role,can_read,can_send,can_manage,is_primary').eq('organization_id',oid),
   supabase.from('mail_entitlements').select('*').eq('organization_id',oid).maybeSingle(),
@@ -45,7 +45,7 @@ export async function POST(req:NextRequest){
   if(!d||!ready(d.sending_status)||!ready(d.receiving_status))return NextResponse.json({error:'Verify sending and receiving for this domain before creating mailboxes.'},{status:409});
   const{count}=await supabase.from('mail_mailboxes').select('id',{count:'exact',head:true}).eq('organization_id',oid).eq('status','active');if(Number(count??0)>=Number(ent.mailbox_limit??5))return NextResponse.json({error:'Your Setu Mail plan has reached its mailbox limit.'},{status:409});
   if(userId){const{data:m}=await supabase.from('organization_members').select('user_id').eq('organization_id',oid).eq('user_id',userId).eq('is_active',true).maybeSingle();if(!m)return NextResponse.json({error:'The selected user is not an active organization member.'},{status:400});}
-  const{data:mb,error}=await supabase.from('mail_mailboxes').insert({organization_id:oid,user_id:userId,address,display_name:displayName,status:'active',inbound_enabled:Boolean(process.env.RESEND_WEBHOOK_SECRET)}).select('*').single();
+  const{data:mb,error}=await supabase.from('mail_mailboxes').insert({organization_id:oid,address,display_name:displayName,status:'active',inbound_enabled:Boolean(process.env.RESEND_WEBHOOK_SECRET)}).select('*').single();
   if(error)return NextResponse.json({error:error.message||'Unable to create mailbox.'},{status:409});
   if(userId)await supabase.from('mail_mailbox_access').insert({organization_id:oid,mailbox_id:mb.id,user_id:userId,access_role:'owner',can_read:true,can_send:true,can_manage:true,is_primary:true});
   return NextResponse.json({ok:true,mailbox:mb});
@@ -57,13 +57,12 @@ export async function POST(req:NextRequest){
   await supabase.from('mail_mailbox_access').update({is_primary:false,access_role:'member',can_manage:false,updated_at:new Date().toISOString()}).eq('mailbox_id',mailboxId).eq('organization_id',oid).eq('is_primary',true);
   const{error}=await supabase.from('mail_mailbox_access').upsert({organization_id:oid,mailbox_id:mailboxId,user_id:userId,access_role:'owner',can_read:true,can_send:true,can_manage:true,is_primary:true,updated_at:new Date().toISOString()},{onConflict:'mailbox_id,user_id'});
   if(error)return NextResponse.json({error:'Unable to assign mailbox.'},{status:500});
-  await supabase.from('mail_mailboxes').update({user_id:userId,updated_at:new Date().toISOString()}).eq('id',mailboxId).eq('organization_id',oid);
   return NextResponse.json({ok:true});
  }
  if(action==='unassign_mailbox'){
   const mailboxId=String(body?.mailboxId??'');if(!mailboxId)return NextResponse.json({error:'Mailbox id is required.'},{status:400});
   await supabase.from('mail_mailbox_access').delete().eq('mailbox_id',mailboxId).eq('organization_id',oid).eq('is_primary',true);
-  await supabase.from('mail_mailboxes').update({user_id:null,updated_at:new Date().toISOString()}).eq('id',mailboxId).eq('organization_id',oid);return NextResponse.json({ok:true});
+  return NextResponse.json({ok:true});
  }
  if(action==='grant_mailbox_access'){
   const mailboxId=String(body?.mailboxId??''),userId=String(body?.userId??'');if(!mailboxId||!userId)return NextResponse.json({error:'Choose a mailbox and user.'},{status:400});
