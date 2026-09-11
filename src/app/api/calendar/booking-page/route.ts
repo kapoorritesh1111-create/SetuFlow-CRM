@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
+import { getZoomConnection, isZoomConfigured } from '@/lib/calendar/zoom-lifecycle';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,16 +58,22 @@ export async function GET() {
   if ('error' in ctx) return ctx.error;
   const organizationId = ctx.workspace.organization!.id;
   const userId = ctx.workspace.user!.id;
-  const [pageResult, availabilityResult, zoomResult] = await Promise.all([
+  const [pageResult, availabilityResult, zoomConnection] = await Promise.all([
     ctx.db.from('calendar_booking_pages').select('*').eq('organization_id', organizationId).eq('user_id', userId).order('created_at').limit(1).maybeSingle(),
     ctx.db.from('calendar_availability').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('user_id', userId).eq('is_active', true),
-    ctx.db.from('meeting_connections').select('id').eq('organization_id', organizationId).eq('user_id', userId).eq('provider', 'zoom').eq('status', 'active').maybeSingle(),
+    getZoomConnection(ctx.db, organizationId, userId),
   ]);
   if (pageResult.error) return NextResponse.json({ error: 'Unable to load booking settings.' }, { status: 500 });
+  const zoomConfigured = isZoomConfigured();
   return NextResponse.json({
     bookingPage: serialize(pageResult.data, ctx.workspace),
     publicBaseUrl: '/book/',
-    readiness: { workingHoursConfigured: Number(availabilityResult.count ?? 0) > 0, zoomConnected: Boolean(zoomResult.data) },
+    readiness: {
+      workingHoursConfigured: Number(availabilityResult.count ?? 0) > 0,
+      zoomConfigured,
+      zoomConnected: zoomConfigured && Boolean(zoomConnection),
+      zoomAccountEmail: zoomConnection?.account_email ?? null,
+    },
   });
 }
 
@@ -100,7 +107,8 @@ export async function PUT(req: NextRequest) {
     if (availabilityError) return NextResponse.json({ error: 'Working Hours could not be verified.' }, { status: 503 });
     if (!count) return NextResponse.json({ error: 'Set your Work Week and Working Hours in Calendar before publishing a booking link.' }, { status: 409 });
     if (meetingProvider === 'zoom') {
-      const { data: zoom } = await ctx.db.from('meeting_connections').select('id').eq('organization_id', organizationId).eq('user_id', userId).eq('provider', 'zoom').eq('status', 'active').maybeSingle();
+      if (!isZoomConfigured()) return NextResponse.json({ error: 'Zoom is not configured for this Setu environment. Choose another meeting type for now.' }, { status: 503 });
+      const zoom = await getZoomConnection(ctx.db, organizationId, userId);
       if (!zoom) return NextResponse.json({ error: 'Connect Zoom in Calendar settings or choose another meeting type before publishing this booking page.' }, { status: 409 });
     }
   }
