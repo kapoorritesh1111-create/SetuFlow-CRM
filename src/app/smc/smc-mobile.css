@@ -161,6 +161,22 @@
     left: 14px !important;
     z-index: 85 !important;
   }
+
+  /* Keep the full-screen Chat header below the iPhone status island/battery. */
+  .smc-root .crm-chat-panel {
+    inset: env(safe-area-inset-top, 0px) 0 0 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+  .smc-root .crm-chat-close {
+    width: 44px;
+    height: 44px;
+    padding: 0 !important;
+  }
 }
 
 /* S36-MOBILE-366 — @mention highlight in issue comments */
