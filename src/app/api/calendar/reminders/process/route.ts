@@ -135,6 +135,7 @@ export async function GET(req: NextRequest) {
   let deduplicated = 0;
   let eligible = 0;
   let missingEvents = 0;
+  const timingCandidates: Array<Record<string, unknown>> = [];
 
   for (const reminder of reminders ?? []) {
     const event: any = eventsById.get(reminder.event_id);
@@ -154,7 +155,15 @@ export async function GET(req: NextRequest) {
     for (const occurrenceStart of occurrences) {
       const occurrence = new Date(occurrenceStart);
       if (recurringRoot && recurringExceptions.has(exceptionKey(event.id, occurrence.toISOString()))) continue;
-      if (!isCalendarReminderDue(occurrenceStart, Number(reminder.minutes_before || 0), now)) continue;
+      if (!isCalendarReminderDue(occurrenceStart, Number(reminder.minutes_before || 0), now)) {
+        const startMs = Date.parse(occurrenceStart);
+        const minutesBefore = Number(reminder.minutes_before || 0);
+        const dueMs = startMs - minutesBefore * 60000;
+        if (!reminder.sent_at && Number.isFinite(startMs) && startMs >= now.getTime() && timingCandidates.length < 10) {
+          timingCandidates.push({ reminderId: reminder.id, eventId: event.id, occurrenceStart, minutesBefore, now: now.toISOString(), dueAt: new Date(dueMs).toISOString(), millisecondsUntilStart: startMs - now.getTime() });
+        }
+        continue;
+      }
       eligible += 1;
 
       let claimed = false;
@@ -201,7 +210,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const summary = { scanned: reminders?.length ?? 0, eventsLoaded: events?.length ?? 0, eligible, processed, failed, deduplicated, missingEvents };
+  const summary = { scanned: reminders?.length ?? 0, eventsLoaded: events?.length ?? 0, eligible, processed, failed, deduplicated, missingEvents, timingCandidates };
   console.info('[setu-calendar:reminder] run complete', summary);
   return NextResponse.json({ ok: failed === 0, ...summary }, { status: failed > 0 ? 500 : 200 });
 }

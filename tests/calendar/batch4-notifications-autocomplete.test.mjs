@@ -28,6 +28,8 @@ test('Calendar reminders atomically claim delivery before sending and release on
   assert.match(reminders, /from\('calendar_events'\)\.select\('\*'\)\.in\('id', eventIds\)/);
   assert.match(reminders, /eventsById\.get\(reminder\.event_id\)/);
   assert.match(reminders, /missingEvents \+= 1/);
+  assert.match(reminders, /timingCandidates\.push/);
+  assert.match(reminders, /millisecondsUntilStart/);
   assert.match(reminders, /async function claimDelivery/);
   assert.match(reminders, /from\('calendar_reminder_deliveries'\)\.insert/);
   assert.match(reminders, /error\.code === '23505'/);
