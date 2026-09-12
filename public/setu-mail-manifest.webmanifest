@@ -1,0 +1,42 @@
+{
+  "id": "/setu-mail",
+  "name": "SETU Mail",
+  "short_name": "SETU Mail",
+  "description": "Mail, calendar and people for SETU Flow.",
+  "start_url": "/mail?app=setu-mail",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#ffffff",
+  "theme_color": "#0b2e4a",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "email"],
+  "icons": [
+    {
+      "src": "/icons/setu-mail.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mail",
+      "short_name": "Mail",
+      "url": "/mail?app=setu-mail",
+      "icons": [{ "src": "/icons/setu-mail.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Calendar",
+      "short_name": "Calendar",
+      "url": "/calendar?app=setu-mail",
+      "icons": [{ "src": "/icons/setu-mail.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "People",
+      "short_name": "People",
+      "url": "/contacts?app=setu-mail",
+      "icons": [{ "src": "/icons/setu-mail.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
