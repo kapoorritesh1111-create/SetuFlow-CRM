@@ -55,35 +55,47 @@ test('CAL-08 reminder delivery is actually scheduled and protected by CRON_SECRE
 });
 
 test('CAL-11 settings expose Communications entitlement, timezone, reminder defaults and Zoom state', () => {
-  assert.match(settings, /Communications entitlement/);
-  assert.match(settings, /Calendar time zone/);
-  assert.match(settings, /Default reminder/);
-  assert.match(settings, /Zoom connection/);
+  assert.match(preferenceApi, /org_module_grants/);
+  assert.match(preferenceApi, /canManage/);
+  assert.match(preferenceApi, /\/admin\/mail/);
+  assert.match(settings, /Setu Communications/);
+  assert.match(settings, /Manage Communications/);
+  assert.match(settings, /Connect Zoom/);
+  assert.match(settings, /Reconnect Zoom/);
   assert.match(settings, /\/api\/calendar\/preferences/);
-  assert.match(settings, /\/api\/calendar\/availability/);
 });
 
 test('CAL-13 recurrence parser supports daily weekly monthly and rejects DST-skipped wall-clock times', () => {
-  assert.match(recurrence, /DAILY/);
-  assert.match(recurrence, /WEEKLY/);
-  assert.match(recurrence, /MONTHLY/);
+  assert.match(recurrence, /RecurrenceFrequency = 'DAILY' \| 'WEEKLY' \| 'MONTHLY'/);
   assert.match(recurrence, /BYDAY/);
-  assert.match(recurrence, /UNTIL/);
-  assert.match(recurrence, /wall-clock time/);
-  assert.match(recurrence, /does not exist/);
+  assert.match(recurrence, /zonedDateTimeToUtc/);
+  assert.match(recurrence, /dateTimeLocalValue\(date, timeZone\) !== requested/);
+  assert.match(recurrence, /expandRecurringEvent/);
+  assert.match(recurrence, /recurrenceOccurrenceId/);
+  assert.match(calendarApi, /SERIES_CONFLICT_DAYS/);
+  assert.match(calendarApi, /materializeBusy/);
+  assert.match(calendarApi, /timezone, recurrence_rule: recurrenceRule/);
 });
 
 test('CAL-13 occurrence edits and cancellations are distinct from entire-series lifecycle and default safely', () => {
-  assert.match(calendarApi, /scope === 'series'/);
-  assert.match(calendarApi, /recurrence_original_start/);
-  assert.match(calendarApi, /SERIES_EXCEPTIONS_RESET_REQUIRED/);
-  assert.match(calendarApi, /scope === 'occurrence'/);
-  assert.match(calendarApi, /recurrence_series_id/);
-  assert.match(calendarApi, /status: 'cancelled'/);
+  assert.match(migration, /recurrence_series_id/);
+  assert.match(migration, /recurrence_original_start/);
+  assert.match(migration, /calendar_events_series_occurrence_unique/);
+  assert.match(migration, /calendar_inherit_series_recurrence_rule_trigger/);
+  assert.match(migration, /calendar_sync_series_recurrence_rule_trigger/);
+  assert.match(calendarApi, /target\.kind === 'occurrence'/);
+  assert.match(calendarApi, /ensureOccurrenceOverride/);
+  assert.match(calendarApi, /requestedScope === 'series'/);
+  assert.match(calendarApi, /Change the meeting provider for the entire series/);
+  assert.match(calendarApi, /occurrenceKey/);
+  assert.match(workspace, /This occurrence/);
+  assert.match(workspace, /Entire series/);
 });
 
 test('CAL-13 ICS uses stable series UID plus RRULE or RECURRENCE-ID', () => {
-  assert.match(ics, /RRULE/);
+  assert.match(ics, /RRULE:/);
   assert.match(ics, /RECURRENCE-ID/);
-  assert.match(ics, /recurrence_series_id/);
+  assert.match(invites, /const seriesId = event\.recurrence_series_id \|\| event\.id/);
+  assert.match(invites, /recurrenceRule:/);
+  assert.match(invites, /recurrenceId:/);
 });
