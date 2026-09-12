@@ -30,11 +30,11 @@ test('Mail notification click-through validates assignment and switches the acti
   assert.match(message, /is_read: true/);
 });
 
-test('Communications shell exposes shared notification bell and unread Mail badge', () => {
+test('Communications shell exposes product-scoped notification bell and unread Mail badge', () => {
   const shell = read('src/components/layout/mail-product-shell.tsx');
   const active = read('src/app/api/mail/active-mailbox/route.ts');
-  assert.match(shell, /InAppNotificationCenter/);
-  assert.match(shell, /showDerived=\{false\}/);
+  assert.match(shell, /CommunicationNotifications/);
+  assert.match(shell, /MobileCommunicationsChrome[^>]*organizationId=\{organizationId\}[^>]*userId=\{userId\}/);
   assert.match(shell, /unreadMailCount/);
   assert.match(shell, /badge=\{access\.unreadMailCount\}/);
   assert.match(shell, /setInterval\(loadAccess,30000\)/);
@@ -50,6 +50,7 @@ test('Communications notification dispatcher honors preferences and deduplicates
   assert.match(service, /p_channel: channel/);
   assert.match(service, /eq\('entity_ref', input\.entityRef\)/);
   assert.match(service, /sendWebPushToUsers/);
+  assert.match(service, /\}, input\.organizationId\)/);
   assert.match(service, /channels_sent/);
   const migration = read('supabase/migrations/20260912024500_s41_batch4_communications_notifications.sql');
   assert.match(migration, /'mail_received'/);

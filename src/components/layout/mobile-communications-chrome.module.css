@@ -28,6 +28,14 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .withNotifications {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .withNotifications.withCrm {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
   .tab {
     position: relative;
     display: flex;

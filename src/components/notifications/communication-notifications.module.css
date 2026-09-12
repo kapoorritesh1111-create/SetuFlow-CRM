@@ -1,0 +1,33 @@
+.trigger { position: relative; display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 1px solid var(--sf-border); border-radius: 8px; background: var(--sf-surface-1); color: var(--sf-text-brand); cursor: pointer; }
+.tabTrigger { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-width: 0; min-height: 64px; border: 0; background: transparent; color: var(--sf-text-secondary); font-size: 10px; font-weight: 600; cursor: pointer; }
+.icon { position: relative; display: grid; place-items: center; }
+.badge { position: absolute; top: -7px; left: 15px; min-width: 17px; height: 17px; display: grid; place-items: center; padding: 0 3px; border: 2px solid var(--sf-surface-1); border-radius: 999px; background: var(--sf-danger-solid); color: var(--sf-text-inverse); font-size: 8px; line-height: 1; font-weight: 700; }
+.dialog { width: min(480px, calc(100vw - 32px)); max-height: 85dvh; margin: auto; padding: 0; overflow: auto; border: 1px solid var(--sf-border); border-radius: 16px; color: var(--sf-text-primary); background: var(--sf-surface-1); font: inherit; }
+.dialog::backdrop { background: rgb(11 27 54 / 0.42); }
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 16px 12px; }
+.header h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.header p, .setup p, .nudge p { margin: 6px 0 0; color: var(--sf-text-secondary); font-size: 12px; line-height: 1.5; }
+.close { display: grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--sf-text-secondary); cursor: pointer; }
+.setup { margin: 0 16px 12px; padding: 12px; border: 1px solid var(--sf-border); border-radius: 12px; background: var(--sf-surface-2); }
+.setup strong, .nudge strong { font-size: 13px; font-weight: 700; }
+.primary, .secondary { min-height: 44px; padding: 8px 12px; border: 0; border-radius: 8px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.primary { background: var(--sf-action-primary-bg); color: var(--sf-action-primary-fg); }
+.primary:hover { background: var(--sf-action-primary-hover); }
+.primary:disabled { opacity: .65; cursor: default; }
+.secondary { background: transparent; color: var(--sf-text-brand); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.filters { display: flex; gap: 6px; padding: 0 16px 12px; border-bottom: 1px solid var(--sf-border); }
+.filter { flex: 1; min-height: 44px; border: 1px solid var(--sf-border); border-radius: 8px; background: var(--sf-surface-1); color: var(--sf-text-secondary); font-size: 12px; font-weight: 600; cursor: pointer; }
+.filter[aria-pressed='true'] { border-color: var(--sf-action-primary-bg); background: var(--sf-navy-50); color: var(--sf-text-brand); }
+.list { padding: 12px 16px 20px; }
+.card { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--sf-border); color: var(--sf-text-primary); text-decoration: none; }
+.card svg { flex: 0 0 auto; color: var(--sf-text-brand); margin-top: 2px; }
+.card span { min-width: 0; overflow-wrap: anywhere; }
+.card strong { display: block; font-size: 13px; font-weight: 600; }
+.card p { margin: 5px 0; font-size: 12px; color: var(--sf-text-secondary); line-height: 1.5; }
+.card time { font-size: 11px; color: var(--sf-text-muted); }
+.empty { padding: 20px 8px; text-align: center; color: var(--sf-text-secondary); font-size: 13px; line-height: 1.6; }
+.error { color: var(--sf-danger-fg); font-size: 12px; line-height: 1.5; }
+.nudge { position: fixed; z-index: 470; bottom: calc(76px + env(safe-area-inset-bottom)); left: 12px; right: 12px; max-width: 480px; margin: 0 auto; padding: 14px; border: 1px solid var(--sf-border-strong); border-radius: 16px; background: var(--sf-surface-1); box-shadow: 0 8px 28px rgb(11 27 54 / 0.16); color: var(--sf-text-primary); }
+.trigger:focus-visible, .tabTrigger:focus-visible, .close:focus-visible, .filter:focus-visible, .primary:focus-visible, .secondary:focus-visible, .card:focus-visible { outline: 3px solid var(--sf-focus-ring); outline-offset: 2px; }
+@media (max-width: 767px) { .dialog { width: 100%; max-height: 88dvh; margin: auto 0 0; border-radius: 20px 20px 0 0; padding-bottom: env(safe-area-inset-bottom); } }
