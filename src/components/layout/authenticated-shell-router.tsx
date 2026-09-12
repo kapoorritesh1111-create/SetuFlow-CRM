@@ -19,6 +19,8 @@ export function AuthenticatedShellRouter(props: Props) {
         profileEmail={profileEmail}
         avatarUrl={props.profile?.avatar_url}
         organizationName={props.organization?.name ?? 'Setu Flow'}
+        organizationId={props.organizationId ?? props.organization?.id ?? undefined}
+        userId={props.userId ?? props.profile?.id ?? undefined}
       >
         {props.children}
       </MailProductShell>
