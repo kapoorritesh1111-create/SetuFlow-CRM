@@ -1,0 +1,29 @@
+/* Communications surfaces use SETU semantic tokens, not a second dark palette. */
+.scope { color: var(--sf-text-primary); background: var(--sf-surface-1); }
+.scope input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.scope select, .scope textarea {
+  min-width: 0;
+  background-color: var(--sf-surface-1);
+  color: var(--sf-text-primary);
+  -webkit-text-fill-color: currentColor;
+  caret-color: var(--sf-text-accent);
+  border-color: var(--sf-border);
+  color-scheme: inherit;
+}
+.scope input::placeholder, .scope textarea::placeholder { color: var(--sf-text-muted); -webkit-text-fill-color: var(--sf-text-muted); opacity: 1; }
+.scope input[type='checkbox'], .scope input[type='radio'] { accent-color: var(--sf-action-primary-bg); color-scheme: inherit; }
+.scope input[type='time']::-webkit-datetime-edit,
+.scope input[type='datetime-local']::-webkit-datetime-edit { color: inherit; -webkit-text-fill-color: currentColor; }
+.scope option { background: var(--sf-surface-1); color: var(--sf-text-primary); }
+.safeHeader { padding-top: env(safe-area-inset-top, 0px); }
+/* Author-supplied HTML may carry its own light inline colors. Keep that document
+   on an explicit light sheet rather than inverting logos or rewriting content. */
+.htmlMessage { color-scheme: only light; color: var(--sf-navy-950); background: var(--sf-action-primary-fg); padding: 16px; border-radius: var(--sf-radius-card); overflow-wrap: anywhere; }
+.appearance { display: grid; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--sf-border); color: var(--sf-text-primary); }
+.appearance label { font-size: 13px; font-weight: 600; }
+.appearance select { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--sf-border); border-radius: var(--sf-radius-ctl); color: var(--sf-text-primary); background: var(--sf-surface-1); color-scheme: inherit; }
+.appearance p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--sf-text-muted); }
+.appearance select:focus-visible { outline: 3px solid var(--sf-focus-ring); outline-offset: 2px; }
+@media (max-width: 767px) {
+  .scope input:not([type='checkbox']):not([type='radio']):not([type='file']), .scope select, .scope textarea, .appearance select { font-size: 16px; }
+}

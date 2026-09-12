@@ -1,0 +1,50 @@
+name: Verify isolated communications theme patch
+on:
+  push:
+    branches: [fix/setu-mail-system-theme-20260912]
+    paths: [scripts/apply-communications-theme.py, .github/workflows/communications-theme-fix.yml]
+permissions:
+  contents: write
+jobs:
+  theme:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Materialize exact-source theme changes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/apply-communications-theme.py')
+          text = p.read_text()
+          before = r"(border|border-b|border-t|divide-y)(?![\w-])"
+          after = r"(border|border-b|border-t|divide-y)(?![\w:-])"
+          assert before in text
+          p.write_text(text.replace(before, after))
+          PY
+          python3 scripts/apply-communications-theme.py
+      - run: npm ci
+      - name: Type and theme regression checks
+        run: |
+          npm run typecheck
+          node --test tests/mail/communication-theme*.test.mjs
+      - name: Upload visual regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: communication-theme-evidence
+          path: artifacts/communication-theme/
+          if-no-files-found: ignore
+      - name: Commit verified patch and remove one-shot helpers
+        run: |
+          rm scripts/apply-communications-theme.py .github/workflows/communications-theme-fix.yml
+          git diff --check
+          git add src/ scripts/apply-communications-theme.py .github/workflows/communications-theme-fix.yml
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'S41-FIX-118: Apply verified Setu mobile theme and native control colors'
+          git push origin HEAD:fix/setu-mail-system-theme-20260912
