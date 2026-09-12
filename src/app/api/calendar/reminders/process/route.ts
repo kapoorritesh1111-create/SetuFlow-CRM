@@ -35,6 +35,26 @@ function isSeriesRoot(event: any) {
   return Boolean(event?.recurrence_rule && !event?.recurrence_series_id);
 }
 
+async function loadReminders(db: any, maximum = 500) {
+  const reminders: any[] = [];
+  let total: number | null = null;
+
+  while (reminders.length < maximum && (total === null || reminders.length < total)) {
+    const from = reminders.length;
+    const to = Math.min(from + maximum - 1, maximum - 1);
+    const { data, error, count } = await db.from('calendar_reminders')
+      .select('*', { count: 'exact' })
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) return { data: null, error };
+    if (total === null) total = count ?? 0;
+    if (!data?.length) break;
+    reminders.push(...data);
+  }
+
+  return { data: reminders.slice(0, maximum), error: null };
+}
+
 async function sendEmail(event: any, occurrenceStart: string, recipient: string) {
   const apiKey = String(process.env.RESEND_API_KEY || '').trim();
   const from = String(process.env.RESEND_FROM_EMAIL || process.env.SETU_NOTIFICATION_FROM_EMAIL || '').trim();
@@ -102,7 +122,9 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
   const window = occurrenceWindow(now);
-  const { data: reminders, error: reminderError } = await db.from('calendar_reminders').select('*').limit(500);
+  // PostgREST can cap each response below the requested range. Continue paging by
+  // the number actually returned so recent reminders cannot fall off the first page.
+  const { data: reminders, error: reminderError } = await loadReminders(db);
   if (reminderError) return NextResponse.json({ error: 'Unable to load Calendar reminders.' }, { status: 500 });
 
   // Load events explicitly. A failed or empty embedded relationship previously made
