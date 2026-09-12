@@ -28,12 +28,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const SERIES_CONFLICT_DAYS = 730;
 
 type LifecycleWarning = { area: 'zoom' | 'invitation'; message: string };
-
-type CalendarPreference = {
-  timezone: string;
-  defaultReminderMinutes: number;
-  defaultReminderChannels: string[];
-};
+type CalendarPreference = { timezone: string; defaultReminderMinutes: number; defaultReminderChannels: string[] };
+type ConflictExclusion = { eventId?: string; seriesId?: string; occurrenceKey?: string };
 
 async function context() {
   const workspace = await getCurrentWorkspace();
@@ -105,45 +101,64 @@ async function loadOwnerSchedule(db: any, organizationId: string, userId: string
   return data ?? [];
 }
 
-function materializeBusy(rows: any[], from: Date, to: Date, excludeSeriesId?: string) {
-  const roots = rows.filter(row => row.recurrence_rule && !row.recurrence_series_id && row.id !== excludeSeriesId && row.status !== 'cancelled' && row.show_as !== 'free');
+function occurrenceKey(seriesId: string, originalStart: string) {
+  return `${seriesId}|${new Date(originalStart).toISOString()}`;
+}
+
+function materializeBusy(rows: any[], from: Date, to: Date, exclusion: ConflictExclusion = {}) {
+  const roots = rows.filter(row => row.recurrence_rule && !row.recurrence_series_id && row.status !== 'cancelled' && row.show_as !== 'free');
   const overrides = rows.filter(row => row.recurrence_series_id && row.recurrence_original_start);
-  const overrideMap = new Map(overrides.map(row => [`${row.recurrence_series_id}|${new Date(row.recurrence_original_start).toISOString()}`, row]));
-  const busy: any[] = rows.filter(row => !row.recurrence_rule && !row.recurrence_series_id && row.id !== excludeSeriesId && row.status !== 'cancelled' && row.show_as !== 'free' && overlaps(from, to, row.starts_at, row.ends_at));
+  const overrideMap = new Map(overrides.map(row => [occurrenceKey(row.recurrence_series_id, row.recurrence_original_start), row]));
+  const busy: any[] = rows.filter(row =>
+    !row.recurrence_rule
+    && !row.recurrence_series_id
+    && row.id !== exclusion.eventId
+    && row.status !== 'cancelled'
+    && row.show_as !== 'free'
+    && overlaps(from, to, row.starts_at, row.ends_at));
   const used = new Set<string>();
 
   for (const root of roots) {
+    if (root.id === exclusion.seriesId) continue;
     for (const occurrence of expandRecurringEvent(root, from, to, 500)) {
-      const key = `${root.id}|${occurrence.originalStart}`;
+      const key = occurrenceKey(root.id, occurrence.originalStart);
+      if (key === exclusion.occurrenceKey) continue;
       const override = overrideMap.get(key);
       if (override) {
         used.add(key);
-        if (override.status !== 'cancelled' && override.show_as !== 'free' && overlaps(from, to, override.starts_at, override.ends_at)) busy.push(override);
+        if (override.id !== exclusion.eventId && override.status !== 'cancelled' && override.show_as !== 'free' && overlaps(from, to, override.starts_at, override.ends_at)) busy.push(override);
       } else {
         busy.push({ id: recurrenceOccurrenceId(root.id, occurrence.originalStart), title: root.title, starts_at: occurrence.startsAt, ends_at: occurrence.endsAt, recurrence_series_id: root.id });
       }
     }
   }
+
   for (const override of overrides) {
-    const key = `${override.recurrence_series_id}|${new Date(override.recurrence_original_start).toISOString()}`;
-    if (used.has(key) || override.recurrence_series_id === excludeSeriesId || override.status === 'cancelled' || override.show_as === 'free') continue;
+    const key = occurrenceKey(override.recurrence_series_id, override.recurrence_original_start);
+    if (used.has(key) || key === exclusion.occurrenceKey || override.id === exclusion.eventId || override.recurrence_series_id === exclusion.seriesId || override.status === 'cancelled' || override.show_as === 'free') continue;
     if (overlaps(from, to, override.starts_at, override.ends_at)) busy.push(override);
   }
   return busy;
 }
 
-async function conflict(db: any, organizationId: string, userId: string, start: Date, end: Date, recurrenceRule?: string | null, excludeSeriesId?: string, showAs = 'busy') {
+async function conflict(
+  db: any,
+  organizationId: string,
+  userId: string,
+  start: Date,
+  end: Date,
+  timezone: string,
+  recurrenceRule: string | null | undefined,
+  exclusion: ConflictExclusion = {},
+  showAs = 'busy',
+) {
   if (showAs === 'free') return null;
   const rows = await loadOwnerSchedule(db, organizationId, userId);
-  const candidate = recurrenceRule
-    ? expandRecurringEvent({ id: '00000000-0000-4000-8000-000000000000', starts_at: start.toISOString(), ends_at: end.toISOString(), timezone: arguments[0] ? undefined : undefined, recurrence_rule: recurrenceRule }, start, new Date(start.getTime() + SERIES_CONFLICT_DAYS * 86400000), 500)
-    : [{ startsAt: start.toISOString(), endsAt: end.toISOString() }];
-  const candidateTimezone = rows.find(row => row.id === excludeSeriesId)?.timezone;
-  if (recurrenceRule && candidateTimezone) {
-    candidate.splice(0, candidate.length, ...expandRecurringEvent({ id: '00000000-0000-4000-8000-000000000000', starts_at: start.toISOString(), ends_at: end.toISOString(), timezone: candidateTimezone, recurrence_rule: recurrenceRule }, start, new Date(start.getTime() + SERIES_CONFLICT_DAYS * 86400000), 500));
-  }
   const horizonEnd = recurrenceRule ? new Date(start.getTime() + SERIES_CONFLICT_DAYS * 86400000) : end;
-  const busy = materializeBusy(rows, start, horizonEnd, excludeSeriesId);
+  const candidate = recurrenceRule
+    ? expandRecurringEvent({ id: '00000000-0000-4000-8000-000000000000', starts_at: start.toISOString(), ends_at: end.toISOString(), timezone, recurrence_rule: recurrenceRule }, start, horizonEnd, 500)
+    : [{ startsAt: start.toISOString(), endsAt: end.toISOString() }];
+  const busy = materializeBusy(rows, start, horizonEnd, exclusion);
   for (const item of candidate) {
     const candidateStart = new Date(item.startsAt);
     const candidateEnd = new Date(item.endsAt);
@@ -218,30 +233,21 @@ async function syncChildren(db: any, organizationId: string, eventId: string, bo
 }
 
 async function cloneChildren(db: any, organizationId: string, source: any, targetId: string) {
-  const attendees = (source.calendar_attendees ?? []).map((row: any) => ({
-    organization_id: organizationId,
-    event_id: targetId,
-    email: row.email,
-    name: row.name,
-    attendee_type: row.attendee_type,
-    rsvp_status: row.rsvp_status,
-  }));
-  const reminders = (source.calendar_reminders ?? []).map((row: any) => ({
-    organization_id: organizationId,
-    event_id: targetId,
-    channel: row.channel,
-    minutes_before: row.minutes_before,
-  }));
-  const links = (source.calendar_event_links ?? []).map((row: any) => ({
-    organization_id: organizationId,
-    event_id: targetId,
-    entity_type: row.entity_type,
-    entity_id: row.entity_id,
-    label: row.label,
-  }));
-  if (attendees.length) await db.from('calendar_attendees').insert(attendees);
-  if (reminders.length) await db.from('calendar_reminders').insert(reminders);
-  if (links.length) await db.from('calendar_event_links').insert(links);
+  const attendees = (source.calendar_attendees ?? []).map((row: any) => ({ organization_id: organizationId, event_id: targetId, email: row.email, name: row.name, attendee_type: row.attendee_type, rsvp_status: row.rsvp_status }));
+  const reminders = (source.calendar_reminders ?? []).map((row: any) => ({ organization_id: organizationId, event_id: targetId, channel: row.channel, minutes_before: row.minutes_before }));
+  const links = (source.calendar_event_links ?? []).map((row: any) => ({ organization_id: organizationId, event_id: targetId, entity_type: row.entity_type, entity_id: row.entity_id, label: row.label }));
+  if (attendees.length) {
+    const { error } = await db.from('calendar_attendees').insert(attendees);
+    if (error) throw error;
+  }
+  if (reminders.length) {
+    const { error } = await db.from('calendar_reminders').insert(reminders);
+    if (error) throw error;
+  }
+  if (links.length) {
+    const { error } = await db.from('calendar_event_links').insert(links);
+    if (error) throw error;
+  }
 }
 
 async function sendInvites(db: any, workspace: any, event: any, origin: string, action: 'request' | 'update' | 'cancel', warnings: LifecycleWarning[]) {
@@ -254,15 +260,19 @@ async function sendInvites(db: any, workspace: any, event: any, origin: string, 
   try {
     const result = await deliverCalendarInvitations({ db, event, organizerEmail: identity.email, organizerName: identity.name, origin, action });
     if (!result.ok) {
-      const message = result.error
-        || (result.partial
-          ? `${result.failed} invitation(s) could not be delivered; ${result.sent} were sent successfully.`
-          : `${result.failed} invitation(s) could not be delivered.`);
+      const message = result.error || (result.partial ? `${result.failed} invitation(s) could not be delivered; ${result.sent} were sent successfully.` : `${result.failed} invitation(s) could not be delivered.`);
       warnings.push({ area: 'invitation', message });
     }
   } catch {
     warnings.push({ area: 'invitation', message: 'Calendar invitation delivery failed unexpectedly. The event was saved, but attendee delivery needs attention.' });
   }
+}
+
+async function cancelRemovedAttendees(db: any, workspace: any, existing: any, incoming: ReturnType<typeof normalizeAttendees>, sequence: number, origin: string, warnings: LifecycleWarning[]) {
+  if (!incoming) return;
+  const incomingEmails = new Set(incoming.map(row => row.email));
+  const removed = (existing.calendar_attendees ?? []).filter((row: any) => !incomingEmails.has(String(row.email).toLowerCase()));
+  if (removed.length) await sendInvites(db, workspace, { ...existing, calendar_attendees: removed, ics_sequence: sequence }, origin, 'cancel', warnings);
 }
 
 function windowBounds(req: NextRequest) {
@@ -291,19 +301,21 @@ export async function GET(req: NextRequest) {
   if (ordinaryResult.error || rootResult.error || overrideResult.error) return NextResponse.json({ error: 'Unable to load calendar.' }, { status: 500 });
 
   const ordinary = (ordinaryResult.data ?? []).filter((event: any) => includeCancelled || event.status !== 'cancelled');
-  const roots = (rootResult.data ?? []).filter((event: any) => includeCancelled || event.status !== 'cancelled');
+  const allRoots = rootResult.data ?? [];
+  const visibleRoots = allRoots.filter((event: any) => includeCancelled || event.status !== 'cancelled');
+  const rootById = new Map(allRoots.map((event: any) => [event.id, event]));
   const overrides = overrideResult.data ?? [];
-  const overrideMap = new Map(overrides.map((event: any) => [`${event.recurrence_series_id}|${new Date(event.recurrence_original_start).toISOString()}`, event]));
+  const overrideMap = new Map(overrides.map((event: any) => [occurrenceKey(event.recurrence_series_id, event.recurrence_original_start), event]));
   const usedOverrides = new Set<string>();
   const recurring: any[] = [];
 
-  for (const root of roots) {
+  for (const root of visibleRoots) {
     for (const occurrence of expandRecurringEvent(root, from, to, 500)) {
-      const key = `${root.id}|${occurrence.originalStart}`;
+      const key = occurrenceKey(root.id, occurrence.originalStart);
       const override = overrideMap.get(key);
       if (override) {
         usedOverrides.add(key);
-        if ((includeCancelled || override.status !== 'cancelled') && overlaps(from, to, override.starts_at, override.ends_at)) recurring.push(override);
+        if ((includeCancelled || override.status !== 'cancelled') && overlaps(from, to, override.starts_at, override.ends_at)) recurring.push({ ...override, series_recurrence_rule: root.recurrence_rule });
         continue;
       }
       recurring.push({
@@ -313,15 +325,18 @@ export async function GET(req: NextRequest) {
         recurrence_series_id: root.id,
         recurrence_original_start: occurrence.originalStart,
         recurrence_virtual: true,
+        series_recurrence_rule: root.recurrence_rule,
         starts_at: occurrence.startsAt,
         ends_at: occurrence.endsAt,
       });
     }
   }
+
   for (const override of overrides) {
-    const key = `${override.recurrence_series_id}|${new Date(override.recurrence_original_start).toISOString()}`;
-    if (usedOverrides.has(key) || (!includeCancelled && override.status === 'cancelled')) continue;
-    if (overlaps(from, to, override.starts_at, override.ends_at)) recurring.push(override);
+    const key = occurrenceKey(override.recurrence_series_id, override.recurrence_original_start);
+    const root: any = rootById.get(override.recurrence_series_id);
+    if (usedOverrides.has(key) || (!includeCancelled && (override.status === 'cancelled' || root?.status === 'cancelled'))) continue;
+    if (overlaps(from, to, override.starts_at, override.ends_at)) recurring.push({ ...override, series_recurrence_rule: root?.recurrence_rule ?? null });
   }
 
   const events = [...ordinary, ...recurring].sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at)).slice(0, 1500);
@@ -341,16 +356,13 @@ export async function POST(req: NextRequest) {
   if (!title || !validDates.valid) return NextResponse.json({ error: 'Add a title and valid start/end time. DST-skipped local times are not valid.' }, { status: 400 });
 
   let recurrenceRule: string | null = null;
-  try {
-    recurrenceRule = normalizeRecurrenceRule(body.recurrenceRule);
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Choose a supported recurrence pattern.' }, { status: 400 });
-  }
+  try { recurrenceRule = normalizeRecurrenceRule(body.recurrenceRule); }
+  catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Choose a supported recurrence pattern.' }, { status: 400 }); }
 
   const provider = PROVIDERS.has(body.meetingProvider) ? body.meetingProvider : 'none';
   const showAs = SHOW_AS.has(body.showAs) ? body.showAs : 'busy';
   const visibility = VISIBILITY.has(body.visibility) ? body.visibility : 'organization';
-  const hit = await conflict(ctx.supabase, organizationId, userId, validDates.startsAt, validDates.endsAt, recurrenceRule, undefined, showAs);
+  const hit = await conflict(ctx.supabase, organizationId, userId, validDates.startsAt, validDates.endsAt, timezone, recurrenceRule, {}, showAs);
   if (hit && !body.allowConflict) return NextResponse.json({ error: recurrenceRule ? 'This recurring schedule overlaps another calendar event.' : 'This time overlaps another calendar event.', conflict: hit }, { status: 409 });
   if (provider === 'zoom') {
     const connection = await getZoomConnection(ctx.supabase, organizationId, userId);
@@ -380,9 +392,8 @@ export async function POST(req: NextRequest) {
   const effectiveBody = body.reminderMinutes === undefined
     ? { ...body, reminderMinutes: preference.defaultReminderMinutes, reminderChannels: preference.defaultReminderChannels }
     : body;
-  try {
-    await syncChildren(ctx.supabase, organizationId, event.id, effectiveBody);
-  } catch {
+  try { await syncChildren(ctx.supabase, organizationId, event.id, effectiveBody); }
+  catch {
     await ctx.supabase.from('calendar_events').delete().eq('id', event.id).eq('organization_id', organizationId);
     return NextResponse.json({ error: 'Unable to save event attendees or reminders.' }, { status: 500 });
   }
@@ -398,27 +409,28 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ event: hydrated ?? event, warnings }, { status: 201 });
 }
 
-async function resolveMutationTarget(db: any, organizationId: string, id: string, scope: string) {
+async function resolveMutationTarget(db: any, organizationId: string, id: string, requestedScope?: string | null) {
   const virtual = parseRecurrenceOccurrenceId(id);
   if (virtual) {
     const root = await hydrateEvent(db, organizationId, virtual.seriesId);
     if (!root || !root.recurrence_rule) return null;
-    if (scope === 'series') return { kind: 'series' as const, existing: root, root, originalStart: virtual.originalStart };
+    if (requestedScope === 'series') return { kind: 'series' as const, existing: root, root, originalStart: virtual.originalStart };
     const { data: override } = await db.from('calendar_events').select('id').eq('organization_id', organizationId).eq('recurrence_series_id', root.id).eq('recurrence_original_start', virtual.originalStart).maybeSingle();
     return { kind: 'occurrence' as const, existing: override ? await hydrateEvent(db, organizationId, override.id) : null, root, originalStart: virtual.originalStart };
   }
+
   const existing = await hydrateEvent(db, organizationId, id);
   if (!existing) return null;
   if (existing.recurrence_series_id) {
     const root = await hydrateEvent(db, organizationId, existing.recurrence_series_id);
     if (!root) return null;
-    if (scope === 'series') return { kind: 'series' as const, existing: root, root, originalStart: existing.recurrence_original_start };
+    if (requestedScope === 'series') return { kind: 'series' as const, existing: root, root, originalStart: existing.recurrence_original_start };
     return { kind: 'occurrence' as const, existing, root, originalStart: new Date(existing.recurrence_original_start).toISOString() };
   }
   return { kind: 'series' as const, existing, root: existing, originalStart: null };
 }
 
-async function occurrenceBase(root: any, originalStart: string) {
+function occurrenceBase(root: any, originalStart: string) {
   const duration = new Date(root.ends_at).getTime() - new Date(root.starts_at).getTime();
   const start = new Date(originalStart);
   return { start, end: new Date(start.getTime() + duration) };
@@ -427,7 +439,7 @@ async function occurrenceBase(root: any, originalStart: string) {
 async function ensureOccurrenceOverride(db: any, organizationId: string, userId: string, root: any, originalStart: string, sequence: number) {
   const { data: row } = await db.from('calendar_events').select('id').eq('organization_id', organizationId).eq('recurrence_series_id', root.id).eq('recurrence_original_start', originalStart).maybeSingle();
   if (row) return hydrateEvent(db, organizationId, row.id);
-  const base = await occurrenceBase(root, originalStart);
+  const base = occurrenceBase(root, originalStart);
   const { data: created, error } = await db.from('calendar_events').insert({
     organization_id: organizationId,
     owner_user_id: root.owner_user_id,
@@ -466,14 +478,13 @@ export async function PATCH(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'Event id required.' }, { status: 400 });
   const organizationId = ctx.workspace.organization!.id;
   const userId = ctx.workspace.user!.id;
-  const scope = body.scope === 'occurrence' ? 'occurrence' : 'series';
-  const target = await resolveMutationTarget(ctx.supabase, organizationId, id, scope);
+  const target = await resolveMutationTarget(ctx.supabase, organizationId, id, body.scope);
   if (!target) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
-  if (target.existing?.status === 'cancelled' && target.kind !== 'occurrence') return NextResponse.json({ error: 'Cancelled events cannot be edited.' }, { status: 409 });
 
   if (target.kind === 'occurrence') {
+    if (target.existing?.status === 'cancelled') return NextResponse.json({ error: 'Cancelled occurrences cannot be edited.' }, { status: 409 });
     if (body.meetingProvider !== undefined && body.meetingProvider !== target.root.meeting_provider) return NextResponse.json({ error: 'Change the meeting provider for the entire series, not one occurrence.' }, { status: 409 });
-    const base = target.existing || await occurrenceBase(target.root, target.originalStart);
+    const base = target.existing || occurrenceBase(target.root, target.originalStart);
     const timezone = isValidTimeZone(String(body.timezone || target.root.timezone || '')) ? String(body.timezone || target.root.timezone) : 'UTC';
     const dateInput = {
       startsAt: body.startsAt ?? ('starts_at' in base ? base.starts_at : base.start.toISOString()),
@@ -484,12 +495,14 @@ export async function PATCH(req: NextRequest) {
     const validDates = dates(dateInput, timezone);
     if (!validDates.valid) return NextResponse.json({ error: 'Add a valid start/end time. DST-skipped local times are not valid.' }, { status: 400 });
     const showAs = SHOW_AS.has(body.showAs) ? body.showAs : target.existing?.show_as || target.root.show_as || 'busy';
-    const hit = await conflict(ctx.supabase, organizationId, target.root.owner_user_id, validDates.startsAt, validDates.endsAt, null, target.root.id, showAs);
+    const key = occurrenceKey(target.root.id, target.originalStart);
+    const hit = await conflict(ctx.supabase, organizationId, target.root.owner_user_id, validDates.startsAt, validDates.endsAt, timezone, null, { eventId: target.existing?.id, occurrenceKey: key }, showAs);
     if (hit && !body.allowConflict) return NextResponse.json({ error: 'This occurrence overlaps another calendar event.', conflict: hit }, { status: 409 });
 
     const nextSequence = Number(target.root.ics_sequence ?? 0) + 1;
-    await ctx.supabase.from('calendar_events').update({ ics_sequence: nextSequence, updated_at: new Date().toISOString() }).eq('id', target.root.id).eq('organization_id', organizationId);
     let occurrence = target.existing || await ensureOccurrenceOverride(ctx.supabase, organizationId, userId, target.root, target.originalStart, nextSequence);
+    const warnings: LifecycleWarning[] = [];
+    await cancelRemovedAttendees(ctx.supabase, ctx.workspace, occurrence, normalizeAttendees(body), nextSequence, req.nextUrl.origin, warnings);
     const patch: any = {
       updated_at: new Date().toISOString(),
       starts_at: validDates.startsAt.toISOString(),
@@ -508,12 +521,14 @@ export async function PATCH(req: NextRequest) {
       show_as: body.showAs !== undefined && SHOW_AS.has(body.showAs) ? body.showAs : undefined,
       meeting_url: body.meetingUrl !== undefined ? body.meetingUrl || null : undefined,
     };
-    for (const [key, value] of Object.entries(fields)) if (value !== undefined) patch[key] = value;
+    for (const [keyName, value] of Object.entries(fields)) if (value !== undefined) patch[keyName] = value;
     const { data: updated, error } = await ctx.supabase.from('calendar_events').update(patch).eq('id', occurrence.id).eq('organization_id', organizationId).select('*').single();
     if (error || !updated) return NextResponse.json({ error: 'Unable to update this occurrence.' }, { status: 500 });
-    try { await syncChildren(ctx.supabase, organizationId, occurrence.id, body); } catch { return NextResponse.json({ error: 'Occurrence was updated, but attendees or reminders could not be synchronized.' }, { status: 500 }); }
+    const { error: sequenceError } = await ctx.supabase.from('calendar_events').update({ ics_sequence: nextSequence, updated_at: new Date().toISOString() }).eq('id', target.root.id).eq('organization_id', organizationId);
+    if (sequenceError) warnings.push({ area: 'invitation', message: 'The occurrence was updated, but the series invitation sequence could not be synchronized.' });
+    try { await syncChildren(ctx.supabase, organizationId, occurrence.id, body); }
+    catch { return NextResponse.json({ error: 'Occurrence was updated, but attendees or reminders could not be synchronized.' }, { status: 500 }); }
     occurrence = await hydrateEvent(ctx.supabase, organizationId, occurrence.id);
-    const warnings: LifecycleWarning[] = [];
     if (occurrence) await sendInvites(ctx.supabase, ctx.workspace, occurrence, req.nextUrl.origin, 'update', warnings);
     return NextResponse.json({ event: occurrence ?? updated, warnings, scope: 'occurrence' });
   }
@@ -526,17 +541,13 @@ export async function PATCH(req: NextRequest) {
   if (!validDates.valid) return NextResponse.json({ error: 'Add a valid start/end time. DST-skipped local times are not valid.' }, { status: 400 });
   let recurrenceRule = existing.recurrence_rule;
   if (body.recurrenceRule !== undefined) {
-    try { recurrenceRule = normalizeRecurrenceRule(body.recurrenceRule); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Choose a supported recurrence pattern.' }, { status: 400 }); }
-  }
-  const scheduleChanged = validDates.startsAt.toISOString() !== existing.starts_at || validDates.endsAt.toISOString() !== existing.ends_at || recurrenceRule !== existing.recurrence_rule || timezone !== existing.timezone;
-  if (scheduleChanged && existing.recurrence_rule) {
-    const { data: exceptions } = await ctx.supabase.from('calendar_events').select('id').eq('organization_id', organizationId).eq('recurrence_series_id', existing.id).limit(1);
-    if (exceptions?.length && body.resetExceptions !== true) return NextResponse.json({ error: 'Changing the series schedule will reset occurrence-specific changes. Continue?', code: 'SERIES_EXCEPTIONS_RESET_REQUIRED' }, { status: 409 });
-    if (exceptions?.length && body.resetExceptions === true) await ctx.supabase.from('calendar_events').delete().eq('organization_id', organizationId).eq('recurrence_series_id', existing.id);
+    try { recurrenceRule = normalizeRecurrenceRule(body.recurrenceRule); }
+    catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Choose a supported recurrence pattern.' }, { status: 400 }); }
   }
 
   const showAs = SHOW_AS.has(body.showAs) ? body.showAs : existing.show_as || 'busy';
-  const hit = await conflict(ctx.supabase, organizationId, existing.owner_user_id, validDates.startsAt, validDates.endsAt, recurrenceRule, existing.id, showAs);
+  const exclusion = existing.recurrence_rule || recurrenceRule ? { seriesId: existing.id } : { eventId: existing.id };
+  const hit = await conflict(ctx.supabase, organizationId, existing.owner_user_id, validDates.startsAt, validDates.endsAt, timezone, recurrenceRule, exclusion, showAs);
   if (hit && !body.allowConflict) return NextResponse.json({ error: recurrenceRule ? 'This recurring schedule overlaps another calendar event.' : 'This time overlaps another calendar event.', conflict: hit }, { status: 409 });
   const targetProvider = body.meetingProvider !== undefined && PROVIDERS.has(body.meetingProvider) ? body.meetingProvider : existing.meeting_provider;
   if (targetProvider === 'zoom') {
@@ -545,12 +556,8 @@ export async function PATCH(req: NextRequest) {
   }
 
   const warnings: LifecycleWarning[] = [];
-  const incoming = normalizeAttendees(body);
-  if (incoming) {
-    const incomingEmails = new Set(incoming.map(row => row.email));
-    const removed = (existing.calendar_attendees ?? []).filter((row: any) => !incomingEmails.has(String(row.email).toLowerCase()));
-    if (removed.length) await sendInvites(ctx.supabase, ctx.workspace, { ...existing, calendar_attendees: removed, ics_sequence: Number(existing.ics_sequence ?? 0) + 1 }, req.nextUrl.origin, 'cancel', warnings);
-  }
+  const nextSequence = Number(existing.ics_sequence ?? 0) + 1;
+  await cancelRemovedAttendees(ctx.supabase, ctx.workspace, existing, normalizeAttendees(body), nextSequence, req.nextUrl.origin, warnings);
   if (existing.meeting_provider === 'zoom' && targetProvider !== 'zoom' && existing.meeting_external_id) {
     const zoomCancel = await cancelZoomMeetingForEvent(ctx.supabase, organizationId, existing.owner_user_id, existing);
     if (!zoomCancel.ok) return NextResponse.json({ error: zoomCancel.error || 'Unable to remove the existing Zoom meeting.' }, { status: 502 });
@@ -562,7 +569,7 @@ export async function PATCH(req: NextRequest) {
     ends_at: validDates.endsAt.toISOString(),
     timezone,
     recurrence_rule: recurrenceRule,
-    ics_sequence: Number(existing.ics_sequence ?? 0) + 1,
+    ics_sequence: nextSequence,
   };
   const fields = {
     title: body.title !== undefined ? String(body.title).trim() : undefined,
@@ -575,7 +582,7 @@ export async function PATCH(req: NextRequest) {
     meeting_provider: targetProvider,
     meeting_url: body.meetingUrl !== undefined ? body.meetingUrl || null : targetProvider === 'custom' ? existing.meeting_url : targetProvider === 'zoom' ? existing.meeting_url : null,
   };
-  for (const [key, value] of Object.entries(fields)) if (value !== undefined) patch[key] = value;
+  for (const [keyName, value] of Object.entries(fields)) if (value !== undefined) patch[keyName] = value;
   if (existing.meeting_provider === 'zoom' && targetProvider !== 'zoom') {
     patch.meeting_external_id = null;
     patch.meeting_host_url = null;
@@ -585,7 +592,12 @@ export async function PATCH(req: NextRequest) {
 
   const { data: updated, error } = await ctx.supabase.from('calendar_events').update(patch).eq('id', existing.id).eq('organization_id', organizationId).select('*').single();
   if (error || !updated) return NextResponse.json({ error: 'Unable to update event.' }, { status: 500 });
-  try { await syncChildren(ctx.supabase, organizationId, existing.id, body); } catch { return NextResponse.json({ error: 'Event was updated, but attendees or reminders could not be synchronized.' }, { status: 500 }); }
+  if (existing.recurrence_rule && !recurrenceRule) {
+    const { error: deleteOverridesError } = await ctx.supabase.from('calendar_events').delete().eq('organization_id', organizationId).eq('recurrence_series_id', existing.id);
+    if (deleteOverridesError) warnings.push({ area: 'invitation', message: 'The series was converted to a single event, but old occurrence overrides could not be fully cleared.' });
+  }
+  try { await syncChildren(ctx.supabase, organizationId, existing.id, body); }
+  catch { return NextResponse.json({ error: 'Event was updated, but attendees or reminders could not be synchronized.' }, { status: 500 }); }
 
   let hydrated = await hydrateEvent(ctx.supabase, organizationId, existing.id);
   if (targetProvider === 'zoom' && hydrated) {
@@ -604,20 +616,20 @@ export async function DELETE(req: NextRequest) {
   if ('error' in ctx) return ctx.error;
   const id = String(req.nextUrl.searchParams.get('id') || '').trim();
   if (!id) return NextResponse.json({ error: 'Event id required.' }, { status: 400 });
-  const scope = req.nextUrl.searchParams.get('scope') === 'occurrence' ? 'occurrence' : 'series';
+  const requestedScope = req.nextUrl.searchParams.get('scope');
   const organizationId = ctx.workspace.organization!.id;
   const userId = ctx.workspace.user!.id;
-  const target = await resolveMutationTarget(ctx.supabase, organizationId, id, scope);
+  const target = await resolveMutationTarget(ctx.supabase, organizationId, id, requestedScope);
   if (!target) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
   if (target.kind === 'occurrence') {
     const nextSequence = Number(target.root.ics_sequence ?? 0) + 1;
-    await ctx.supabase.from('calendar_events').update({ ics_sequence: nextSequence, updated_at: new Date().toISOString() }).eq('id', target.root.id).eq('organization_id', organizationId);
     let occurrence = target.existing || await ensureOccurrenceOverride(ctx.supabase, organizationId, userId, target.root, target.originalStart, nextSequence);
     if (occurrence.status === 'cancelled') return NextResponse.json({ ok: true, cancelled: true, scope: 'occurrence', warnings: [] });
     const now = new Date().toISOString();
     const { data: cancelled, error } = await ctx.supabase.from('calendar_events').update({ status: 'cancelled', cancelled_at: now, ics_sequence: nextSequence, updated_at: now }).eq('id', occurrence.id).eq('organization_id', organizationId).select('*').single();
     if (error || !cancelled) return NextResponse.json({ error: 'Unable to cancel this occurrence.' }, { status: 500 });
+    await ctx.supabase.from('calendar_events').update({ ics_sequence: nextSequence, updated_at: now }).eq('id', target.root.id).eq('organization_id', organizationId);
     occurrence = await hydrateEvent(ctx.supabase, organizationId, occurrence.id);
     const warnings: LifecycleWarning[] = [];
     if (occurrence) await sendInvites(ctx.supabase, ctx.workspace, occurrence, req.nextUrl.origin, 'cancel', warnings);
