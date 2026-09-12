@@ -5,6 +5,8 @@ import test from 'node:test';
 const read = path => readFileSync(path, 'utf8');
 const chrome = read('src/components/layout/mobile-communications-chrome.tsx');
 const chromeCss = read('src/components/layout/mobile-communications-chrome.module.css');
+const installNudge = read('src/components/layout/mobile-setu-mail-install-nudge.tsx');
+const installNudgeCss = read('src/components/layout/mobile-setu-mail-install-nudge.module.css');
 const shell = read('src/components/layout/mail-product-shell.tsx');
 const metadata = read('src/lib/setu-mail-app-metadata.ts');
 const mailLayout = read('src/app/(app)/mail/layout.tsx');
@@ -36,10 +38,12 @@ test('mobile communications chrome keeps one-tap Mail Calendar People navigation
   assert.match(chrome, /label:\s*'Calendar'/);
   assert.match(chrome, /label:\s*'People'/);
   assert.match(chrome, /params\.get\('from'\) === 'crm'/);
-  assert.match(chrome, /returnTo/);
+  assert.match(chrome, /params\.get\('app'\) === 'setu-mail'/);
   assert.match(chrome, /sessionStorage\.setItem\('setu-communications-from-crm'/);
+  assert.match(chrome, /sessionStorage\.setItem\('setu-communications-return-to'/);
   assert.match(chrome, /sessionStorage\.removeItem\('setu-communications-from-crm'/);
   assert.match(chrome, /value\.startsWith\('\/\/'\)/);
+  assert.match(chrome, /app=setu-mail/);
   assert.match(shell, /MobileCommunicationsChrome/);
 });
 
@@ -63,4 +67,14 @@ test('People has a dedicated Outlook-style mobile workspace without replacing de
   assert.match(mobilePeople, /\/mail\?compose=1&to=/);
   assert.match(mobilePeople, /\/calendar\?compose=1&guest=/);
   assert.match(mobilePeople, /Archive person/);
+});
+
+test('mobile install guidance supports Android install prompts and iPhone home-screen instructions', () => {
+  assert.match(installNudge, /beforeinstallprompt/);
+  assert.match(installNudge, /display-mode: standalone/);
+  assert.match(installNudge, /iphone\|ipad\|ipod/i);
+  assert.match(installNudge, /Add to Home Screen/);
+  assert.match(installNudge, /setu-mail-install-dismissed/);
+  assert.match(shell, /MobileSetuMailInstallNudge/);
+  assert.match(installNudgeCss, /safe-area-inset-bottom/);
 });
