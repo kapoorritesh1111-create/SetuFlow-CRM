@@ -175,6 +175,7 @@ async function ingestInbound(admin: any, webhook: any) {
         console.error('[setu-mail:webhook] attachment record failed', { providerMessageId, providerAttachmentId, messageId: message.id, error: insertError?.message ?? 'unknown' });
         continue;
       }
+      // The message remains available even when an attachment is unavailable.
       const secured = await secureStoredMailAttachment(admin, attachment, bytes);
       if (secured.security_status !== 'clean') {
         console.warn('[setu-mail:webhook] attachment blocked', { providerMessageId, providerAttachmentId, messageId: message.id, attachmentId: attachment.id, securityStatus: secured.security_status });
