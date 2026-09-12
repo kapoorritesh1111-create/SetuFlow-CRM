@@ -117,9 +117,10 @@ test('Required and optional attendees, privacy, all-day and free-busy are persis
   assert.match(migration, /add column if not exists show_as/);
 });
 
-test('Scheduling assistant is honest about external availability', () => {
+test('Scheduling assistant is honest about external availability and keeps RSVP separate', () => {
   assert.match(workspace, /Availability unknown/);
-  assert.match(workspace, /Setu never invents external availability/);
+  assert.match(workspace, /RSVP status comes from the invitation response/);
+  assert.match(workspace, /External availability is separate and remains unknown/);
   assert.match(workspace, /conflicts/);
   assert.match(workspace, /Busy at this time/);
   assert.match(workspace, /Available/);
