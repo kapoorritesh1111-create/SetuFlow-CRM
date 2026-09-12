@@ -71,7 +71,16 @@ function RecipientInput({ label, value, disabled, onChange }: { label: 'To' | 'C
     }, 140);
     return () => { active = false; clearTimeout(timer); };
   }, [fragment, disabled]);
-  return <><input aria-label={label} list={listId} value={value} onChange={e => onChange(e.target.value)} autoComplete="off"/><datalist id={listId}>{suggestions.map(item => <option key={item.email} value={item.email}>{[item.name, item.company, item.email].filter(Boolean).join(' · ')}</option>)}</datalist></>;
+  function change(next: string) {
+    const selected = suggestions.find(item => item.email.toLowerCase() === next.trim().toLowerCase());
+    if (selected && value.includes(',')) {
+      const comma = value.lastIndexOf(',');
+      onChange(`${value.slice(0, comma + 1)} ${selected.email}`);
+      return;
+    }
+    onChange(next);
+  }
+  return <><input aria-label={label} list={listId} value={value} onChange={e => change(e.target.value)} autoComplete="off"/><datalist id={listId}>{suggestions.map(item => <option key={item.email} value={item.email}>{[item.name, item.company, item.email].filter(Boolean).join(' · ')}</option>)}</datalist></>;
 }
 
 export function MailComposerPanel({ fields, from, draftId, expanded, minimized, disabled, busyLabel, saveLabel, saveError, signatureOn, signatureText, includeSignature, attachments, crmContext, crmLoading, guruPreview, guruBusy, onField, onEditor, onSignatureToggle, onExpand, onMinimize, onClose, onSend, onUpload, onRemoveAttachment, onDelete, onRetry, onGuru, onGuruInsert, onGuruRegenerate }: {
