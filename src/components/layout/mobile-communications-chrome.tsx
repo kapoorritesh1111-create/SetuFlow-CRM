@@ -74,9 +74,11 @@ export function MobileCommunicationsChrome({ crmEnabled, unreadMailCount = 0 }: 
     return href;
   };
 
+  const crmHref = crmReturnVisible ? crmReturnTo : '/dashboard';
+
   return (
     <nav className={styles.nav} aria-label="SETU Mail mobile navigation" data-setu-communications-mobile-nav>
-      <div className={`${styles.inner} ${crmEnabled && crmReturnVisible ? styles.withCrm : ''}`}>
+      <div className={`${styles.inner} ${crmEnabled ? styles.withCrm : ''}`}>
         {tabs.map(tab => {
           const Icon = tab.icon;
           const active = tab.matches(pathname);
@@ -96,9 +98,9 @@ export function MobileCommunicationsChrome({ crmEnabled, unreadMailCount = 0 }: 
             </Link>
           );
         })}
-        {crmEnabled && crmReturnVisible ? (
+        {crmEnabled ? (
           <Link
-            href={crmReturnTo}
+            href={crmHref}
             className={styles.tab}
             onClick={() => {
               try {
@@ -106,7 +108,8 @@ export function MobileCommunicationsChrome({ crmEnabled, unreadMailCount = 0 }: 
                 sessionStorage.removeItem('setu-communications-return-to');
               } catch {}
             }}
-            aria-label="Back to Setu Flow CRM"
+            aria-label={crmReturnVisible ? 'Back to Setu Flow CRM' : 'Open Setu Flow CRM'}
+            title={crmReturnVisible ? 'Back to Setu Flow CRM' : 'Open Setu Flow CRM'}
           >
             <LayoutGrid size={21} />
             <span>CRM</span>
