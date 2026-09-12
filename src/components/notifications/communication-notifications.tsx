@@ -12,6 +12,19 @@ type Notice = { id: string; type: string; title: string; body: string | null; ac
 type PushState = 'checking' | 'idle' | 'saving' | 'enabled' | 'install' | 'unsupported' | 'denied' | 'missing-key' | 'error';
 const publicKey = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY || '';
 
+function decodeApplicationServerKey(value: string) {
+  const raw = window.atob(value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4));
+  return Uint8Array.from(raw, char => char.charCodeAt(0));
+}
+
+function subscriptionUsesPublicKey(subscription: PushSubscription, value: string) {
+  const current = subscription.options.applicationServerKey;
+  if (!current) return false;
+  const expected = decodeApplicationServerKey(value);
+  const actual = new Uint8Array(current);
+  return actual.length === expected.length && actual.every((byte, index) => byte === expected[index]);
+}
+
 /** Only mount the visible instance: one query loop and one permission controller. */
 export function CommunicationNotifications(props: Props) {
   const [visible, setVisible] = useState(false);
@@ -106,7 +119,15 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
         await waitForPushWorker(worker);
         if (cancelled) return;
         registration.current = worker;
-        const subscription = await worker.pushManager.getSubscription();
+        let subscription = await worker.pushManager.getSubscription();
+        if (subscription && !subscriptionUsesPublicKey(subscription, publicKey)) {
+          const staleEndpoint = subscription.endpoint;
+          await db.from('push_subscriptions').delete()
+            .eq('organization_id', organizationId).eq('user_id', userId)
+            .eq('app_scope', COMMUNICATION_PUSH_SCOPE).eq('endpoint', staleEndpoint);
+          await subscription.unsubscribe();
+          subscription = null;
+        }
         if (!subscription) { setPush('idle'); return; }
         const saved = await db.from('push_subscriptions').select('id')
           .eq('organization_id', organizationId).eq('user_id', userId)
@@ -145,9 +166,17 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
       const worker = registration.current || await navigator.serviceWorker.register('/setu-mail-sw.js', { scope, updateViaCache: 'none' });
       await waitForPushWorker(worker);
       registration.current = worker;
-      const rawKey = window.atob(publicKey.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - publicKey.length % 4) % 4));
-      const applicationServerKey = Uint8Array.from(rawKey, char => char.charCodeAt(0));
-      const subscription = await worker.pushManager.getSubscription() || await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+      const applicationServerKey = decodeApplicationServerKey(publicKey);
+      let subscription = await worker.pushManager.getSubscription();
+      if (subscription && !subscriptionUsesPublicKey(subscription, publicKey)) {
+        const staleEndpoint = subscription.endpoint;
+        await db.from('push_subscriptions').delete()
+          .eq('organization_id', organizationId).eq('user_id', userId)
+          .eq('app_scope', COMMUNICATION_PUSH_SCOPE).eq('endpoint', staleEndpoint);
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+      subscription = subscription || await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
       const json = subscription.toJSON();
       if (!json.keys?.auth || !json.keys?.p256dh) throw new Error('The device did not return a valid notification subscription.');
       const current = await db.from('push_subscriptions').select('id')

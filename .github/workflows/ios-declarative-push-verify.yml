@@ -1,0 +1,19 @@
+name: Verify iOS declarative push
+on:
+  push:
+    branches: [fix/ios-declarative-web-push-20260912]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/mail/ios-declarative-push.test.mjs tests/mail/mobile-communication-notifications.test.mjs tests/mail/batch4-notifications.test.mjs
+      - run: npm run typecheck
+      - run: npm run build
