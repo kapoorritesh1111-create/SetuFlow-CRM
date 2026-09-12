@@ -29,6 +29,10 @@ function exceptionKey(seriesId: string, originalStart: string) {
   return `${seriesId}|${new Date(originalStart).toISOString()}`;
 }
 
+function isSeriesRoot(event: any) {
+  return Boolean(event?.recurrence_rule && !event?.recurrence_series_id);
+}
+
 async function sendEmail(event: any, occurrenceStart: string, recipient: string) {
   const apiKey = String(process.env.RESEND_API_KEY || '').trim();
   const from = String(process.env.RESEND_FROM_EMAIL || process.env.SETU_NOTIFICATION_FROM_EMAIL || '').trim();
@@ -58,7 +62,7 @@ async function sendInApp(db: any, event: any, occurrenceStart: string) {
     priority: 'normal',
     entity_type: 'calendar_event',
     entity_id: event.id,
-    entity_ref: event.recurrence_rule ? `${event.id}:${occurrenceStart}` : event.id,
+    entity_ref: isSeriesRoot(event) ? `${event.id}:${occurrenceStart}` : event.id,
     action_url: '/calendar',
     channels_sent: ['in_app'],
   });
@@ -88,8 +92,9 @@ export async function GET(req: NextRequest) {
   const { data: reminders, error: reminderError } = await db.from('calendar_reminders').select('*,calendar_events(*)').limit(500);
   if (reminderError) return NextResponse.json({ error: 'Unable to load Calendar reminders.' }, { status: 500 });
 
-  const recurringEventIds = [...new Set((reminders ?? []).filter((row: any) => row.calendar_events?.recurrence_rule).map((row: any) => row.calendar_events.id))];
-  const recurringReminderIds = (reminders ?? []).filter((row: any) => row.calendar_events?.recurrence_rule).map((row: any) => row.id);
+  const recurringRoots = (reminders ?? []).filter((row: any) => isSeriesRoot(row.calendar_events));
+  const recurringEventIds = [...new Set(recurringRoots.map((row: any) => row.calendar_events.id))];
+  const recurringReminderIds = recurringRoots.map((row: any) => row.id);
   const delivered = new Set<string>();
   if (recurringReminderIds.length) {
     const { data: rows } = await db.from('calendar_reminder_deliveries')
@@ -120,19 +125,20 @@ export async function GET(req: NextRequest) {
   for (const reminder of reminders ?? []) {
     const event: any = reminder.calendar_events;
     if (!event || event.status === 'cancelled') continue;
-    if (!event.recurrence_rule && reminder.sent_at) continue;
+    const recurringRoot = isSeriesRoot(event);
+    if (!recurringRoot && reminder.sent_at) continue;
 
-    const occurrences = event.recurrence_rule
+    const occurrences = recurringRoot
       ? expandRecurringEvent(event, window.from, window.to, 32).map(item => item.startsAt)
       : [event.starts_at];
 
     for (const occurrenceStart of occurrences) {
       const occurrence = new Date(occurrenceStart);
-      if (event.recurrence_rule && recurringExceptions.has(exceptionKey(event.id, occurrence.toISOString()))) continue;
+      if (recurringRoot && recurringExceptions.has(exceptionKey(event.id, occurrence.toISOString()))) continue;
       const due = new Date(occurrence.getTime() - Number(reminder.minutes_before || 0) * 60000);
       if (due > now || occurrence < window.from) continue;
       const deliveryKey = `${reminder.id}|${occurrence.toISOString()}|${reminder.channel}`;
-      if (event.recurrence_rule && delivered.has(deliveryKey)) continue;
+      if (recurringRoot && delivered.has(deliveryKey)) continue;
 
       try {
         if (reminder.channel === 'email') {
@@ -151,7 +157,7 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        if (event.recurrence_rule) {
+        if (recurringRoot) {
           await markRecurringDelivery(db, reminder, event, occurrence.toISOString());
           delivered.add(deliveryKey);
         } else {
