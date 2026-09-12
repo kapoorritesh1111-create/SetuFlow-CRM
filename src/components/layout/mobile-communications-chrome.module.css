@@ -9,8 +9,8 @@
     bottom: 0;
     z-index: 460;
     display: block;
-    border-top: 1px solid #d9e1ea;
-    background: rgb(255 255 255 / 0.97);
+    border-top: 1px solid var(--sf-border);
+    background: var(--sf-surface-1);
     padding-bottom: env(safe-area-inset-bottom);
     box-shadow: 0 -6px 20px rgb(15 23 42 / 0.06);
     backdrop-filter: blur(18px);
@@ -44,7 +44,7 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
-    color: #5d6674;
+    color: var(--sf-text-secondary);
     font-size: 10px;
     font-weight: 600;
     line-height: 1;
@@ -63,15 +63,15 @@
   }
 
   .tab:active {
-    background: #f5f8fb;
+    background: var(--sf-surface-2);
   }
 
   .active {
-    color: #0a72c5;
+    color: var(--sf-text-accent);
   }
 
   .active::before {
-    background: #0a72c5;
+    background: var(--sf-text-accent);
   }
 
   .iconWrap {
@@ -90,11 +90,11 @@
     min-width: 17px;
     height: 17px;
     place-items: center;
-    border: 2px solid white;
+    border: 2px solid var(--sf-surface-1);
     border-radius: 999px;
-    background: #d92d20;
+    background: var(--sf-danger-solid);
     padding: 0 3px;
-    color: white;
+    color: var(--sf-action-primary-fg);
     font-size: 8px;
     font-weight: 800;
     line-height: 1;

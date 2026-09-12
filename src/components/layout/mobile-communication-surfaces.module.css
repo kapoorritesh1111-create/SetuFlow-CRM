@@ -5,6 +5,7 @@
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   background: var(--sf-surface-1);
+  color: var(--sf-text-primary);
 }
 .fullScreen {
   box-sizing: border-box;
