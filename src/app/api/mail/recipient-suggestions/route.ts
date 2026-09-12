@@ -48,11 +48,28 @@ export async function GET(request: Request) {
 
   const db = (await createClient()) as any;
   const organizationId = workspace.organization.id;
-  const mailbox = await resolveUserMailbox(db, organizationId, workspace.user.id, 'id,address,status');
-  if (!mailbox) return NextResponse.json({ suggestions: [] });
-
   const q = clean(new URL(request.url).searchParams.get('q'), 100).toLowerCase();
   if (!q) return NextResponse.json({ suggestions: [] }, { headers: { 'Cache-Control': 'private, no-store' } });
+
+  const mailbox = await resolveUserMailbox(db, organizationId, workspace.user.id, 'id,address,status').catch(() => null);
+  const historyOutbound = mailbox
+    ? db.from('mail_messages')
+      .select('to_addresses,cc_addresses,bcc_addresses,sent_at,created_at')
+      .eq('organization_id', organizationId)
+      .eq('mailbox_id', mailbox.id)
+      .eq('direction', 'outbound')
+      .order('sent_at', { ascending: false, nullsFirst: false })
+      .limit(250)
+    : Promise.resolve({ data: [] });
+  const historyInbound = mailbox
+    ? db.from('mail_messages')
+      .select('from_address,received_at,created_at')
+      .eq('organization_id', organizationId)
+      .eq('mailbox_id', mailbox.id)
+      .eq('direction', 'inbound')
+      .order('received_at', { ascending: false, nullsFirst: false })
+      .limit(150)
+    : Promise.resolve({ data: [] });
 
   const [{ data: contacts }, { data: leads }, { data: recentOutbound }, { data: recentInbound }] = await Promise.all([
     db.from('contacts')
@@ -65,20 +82,8 @@ export async function GET(request: Request) {
       .eq('organization_id', organizationId)
       .not('email', 'is', null)
       .limit(500),
-    db.from('mail_messages')
-      .select('to_addresses,cc_addresses,bcc_addresses,sent_at,created_at')
-      .eq('organization_id', organizationId)
-      .eq('mailbox_id', mailbox.id)
-      .eq('direction', 'outbound')
-      .order('sent_at', { ascending: false, nullsFirst: false })
-      .limit(250),
-    db.from('mail_messages')
-      .select('from_address,received_at,created_at')
-      .eq('organization_id', organizationId)
-      .eq('mailbox_id', mailbox.id)
-      .eq('direction', 'inbound')
-      .order('received_at', { ascending: false, nullsFirst: false })
-      .limit(150),
+    historyOutbound,
+    historyInbound,
   ]);
 
   const map = new Map<string, Suggestion>();
