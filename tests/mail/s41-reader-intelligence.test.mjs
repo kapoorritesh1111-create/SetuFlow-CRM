@@ -5,6 +5,8 @@ import fs from 'node:fs';
 const route = fs.readFileSync('src/app/api/mail/intelligence/[id]/route.ts', 'utf8');
 const desktop = fs.readFileSync('src/features/mail/components/setu-mail-workspace.tsx', 'utf8');
 const mobile = fs.readFileSync('src/features/mail/components/mobile-setu-mail-workspace.tsx', 'utf8');
+const detail = fs.readFileSync('src/features/mail/components/mail-intelligence-detail.tsx', 'utf8');
+const contextPage = fs.readFileSync('src/app/(app)/mail/crm-context/[id]/page.tsx', 'utf8');
 
 test('S41-MAIL-009 grounds Reader intelligence in message attachments and live CRM context', () => {
   assert.match(route, /from\('mail_attachments'\)/);
@@ -52,12 +54,22 @@ test('S41-MAIL-009 honors explicit Mail thread CRM links when sender email alone
   assert.match(route, /createCrmHref: lead \? null : createLeadHref/);
 });
 
-test('Desktop and mobile Mail Reader already surface Guru evidence and user-controlled action links', () => {
-  for (const source of [desktop, mobile]) {
-    assert.match(source, /Setu Guru/);
-    assert.match(source, /intent\.suggestedAction/);
-    assert.match(source, /intent\.evidence/);
-    assert.match(source, /intent\.actionHref/);
-    assert.match(source, /intent\.actionLabel/);
-  }
+test('Desktop Reader surfaces Guru evidence and exact user-controlled review actions', () => {
+  assert.match(desktop, /Setu Guru/);
+  assert.match(desktop, /intent\.suggestedAction/);
+  assert.match(desktop, /intent\.evidence/);
+  assert.match(desktop, /intent\.actionHref/);
+  assert.match(desktop, /intent\.actionLabel/);
+});
+
+test('Mobile Reader keeps the recommendation visible and hands off to a full evidence/action surface', () => {
+  assert.match(mobile, /Setu Guru/);
+  assert.match(mobile, /intent\.suggestedAction/);
+  assert.match(mobile, /intelligence\.crmMatch\.href/);
+  assert.match(mobile, /intelligence\.createCrmHref/);
+  assert.match(contextPage, /MailIntelligenceDetail messageId=\{message\.id\}/);
+  assert.match(detail, /intent\.evidence/);
+  assert.match(detail, /intent\.actionHref/);
+  assert.match(detail, /intent\.actionLabel/);
+  assert.match(detail, /Autonomous CRM actions: off/);
 });
