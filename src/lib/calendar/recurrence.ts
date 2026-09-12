@@ -25,6 +25,11 @@ export type RecurrenceOccurrence = {
   endsAt: string;
 };
 
+export type RecurrencePresetOptions = {
+  byDay?: number[];
+  untilDate?: string | null;
+};
+
 const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const;
 const DAY_INDEX = new Map(DAY_CODES.map((code, index) => [code, index]));
 const SUPPORTED_KEYS = new Set(['FREQ', 'INTERVAL', 'BYDAY', 'COUNT', 'UNTIL']);
@@ -146,13 +151,36 @@ export function normalizeRecurrenceRule(input: string | null | undefined) {
   return parts.join(';');
 }
 
-export function recurrencePresetRule(preset: 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly', startsAt: string, timeZone: string) {
+function formatUntilDate(untilDate: string | null | undefined, timeZone: string) {
+  const dateKey = String(untilDate || '').trim();
+  if (!dateKey) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) throw new Error('Choose a valid recurrence end date.');
+  const inclusiveEnd = localDateTimeToUtc(`${dateKey}T23:59`, timeZone);
+  if (!inclusiveEnd) throw new Error('Choose a valid recurrence end date.');
+  return inclusiveEnd.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+export function recurrencePresetRule(
+  preset: 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly',
+  startsAt: string,
+  timeZone: string,
+  options: RecurrencePresetOptions = {},
+) {
   if (preset === 'none') return null;
-  if (preset === 'daily') return 'FREQ=DAILY';
-  if (preset === 'weekdays') return 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR';
-  if (preset === 'monthly') return 'FREQ=MONTHLY';
-  const day = wallClockParts(startsAt, timeZone).weekday;
-  return `FREQ=WEEKLY;BYDAY=${DAY_CODES[Math.max(0, day)]}`;
+  const parts: string[] = [];
+  if (preset === 'daily') parts.push('FREQ=DAILY');
+  else if (preset === 'weekdays') parts.push('FREQ=WEEKLY', 'BYDAY=MO,TU,WE,TH,FR');
+  else if (preset === 'monthly') parts.push('FREQ=MONTHLY');
+  else {
+    const fallbackDay = wallClockParts(startsAt, timeZone).weekday;
+    const requestedDays = Array.isArray(options.byDay) ? options.byDay : [];
+    const days = [...new Set(requestedDays.filter(day => Number.isInteger(day) && day >= 0 && day <= 6))].sort((a, b) => a - b);
+    const selectedDays = days.length ? days : [Math.max(0, fallbackDay)];
+    parts.push('FREQ=WEEKLY', `BYDAY=${selectedDays.map(day => DAY_CODES[day]).join(',')}`);
+  }
+  const until = formatUntilDate(options.untilDate, timeZone);
+  if (until) parts.push(`UNTIL=${until}`);
+  return parts.join(';');
 }
 
 function addCalendarDays(dateKey: string, count: number) {
