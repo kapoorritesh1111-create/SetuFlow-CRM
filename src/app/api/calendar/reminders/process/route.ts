@@ -25,6 +25,10 @@ function formattedWhen(event: any, occurrenceStart: string) {
   }).format(new Date(occurrenceStart));
 }
 
+function exceptionKey(seriesId: string, originalStart: string) {
+  return `${seriesId}|${new Date(originalStart).toISOString()}`;
+}
+
 async function sendEmail(event: any, occurrenceStart: string, recipient: string) {
   const apiKey = String(process.env.RESEND_API_KEY || '').trim();
   const from = String(process.env.RESEND_FROM_EMAIL || process.env.SETU_NOTIFICATION_FROM_EMAIL || '').trim();
@@ -81,12 +85,10 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
   const window = occurrenceWindow(now);
-  const { data: reminders, error: reminderError } = await db
-    .from('calendar_reminders')
-    .select('*,calendar_events(*)')
-    .limit(500);
+  const { data: reminders, error: reminderError } = await db.from('calendar_reminders').select('*,calendar_events(*)').limit(500);
   if (reminderError) return NextResponse.json({ error: 'Unable to load Calendar reminders.' }, { status: 500 });
 
+  const recurringEventIds = [...new Set((reminders ?? []).filter((row: any) => row.calendar_events?.recurrence_rule).map((row: any) => row.calendar_events.id))];
   const recurringReminderIds = (reminders ?? []).filter((row: any) => row.calendar_events?.recurrence_rule).map((row: any) => row.id);
   const delivered = new Set<string>();
   if (recurringReminderIds.length) {
@@ -96,6 +98,21 @@ export async function GET(req: NextRequest) {
       .gte('occurrence_start', window.from.toISOString())
       .lt('occurrence_start', window.to.toISOString());
     for (const row of rows ?? []) delivered.add(`${row.reminder_id}|${new Date(row.occurrence_start).toISOString()}|${row.channel}`);
+  }
+
+  // A moved/cancelled occurrence has its own cloned reminder rows. Suppress the
+  // root-series reminder for the original occurrence so users never receive both.
+  const recurringExceptions = new Set<string>();
+  if (recurringEventIds.length) {
+    const { data: rows } = await db.from('calendar_events')
+      .select('recurrence_series_id,recurrence_original_start')
+      .in('recurrence_series_id', recurringEventIds)
+      .not('recurrence_original_start', 'is', null)
+      .gte('recurrence_original_start', window.from.toISOString())
+      .lt('recurrence_original_start', window.to.toISOString());
+    for (const row of rows ?? []) {
+      if (row.recurrence_series_id && row.recurrence_original_start) recurringExceptions.add(exceptionKey(row.recurrence_series_id, row.recurrence_original_start));
+    }
   }
 
   const profileCache = new Map<string, string | null>();
@@ -113,6 +130,7 @@ export async function GET(req: NextRequest) {
 
     for (const occurrenceStart of occurrences) {
       const occurrence = new Date(occurrenceStart);
+      if (event.recurrence_rule && recurringExceptions.has(exceptionKey(event.id, occurrence.toISOString()))) continue;
       const due = new Date(occurrence.getTime() - Number(reminder.minutes_before || 0) * 60000);
       if (due > now || occurrence < window.from) continue;
       const deliveryKey = `${reminder.id}|${occurrence.toISOString()}|${reminder.channel}`;
