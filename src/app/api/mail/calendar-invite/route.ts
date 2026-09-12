@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mailOrganizerContext, MailAccessError } from '@/lib/mail/organizer-context';
 import { isMailId } from '@/lib/mail/organization';
-import { buildIncomingInviteReply, parseIncomingMailInvite, type InviteResponse } from '@/lib/calendar/incoming-mail-invite';
+import { buildIncomingInviteReply, conciseInviteNotes, parseIncomingMailInvite, type InviteResponse } from '@/lib/calendar/incoming-mail-invite';
 
 export const dynamic = 'force-dynamic';
 const ATTACHMENT_BUCKET = 'setu-mail-attachments';
@@ -85,11 +85,15 @@ export async function POST(request: NextRequest) {
     }
     const now=new Date().toISOString();
     const metadata={ ...(existing?.meeting_metadata && typeof existing.meeting_metadata==='object' ? existing.meeting_metadata : {}), source:'mail_ics', source_ics_uid:invite.uid, source_ics_sequence:invite.sequence, source_message_id:messageId, source_attachment_id:attachmentId, source_attachment_remote:recoveredFromProvider, organizer_email:invite.organizer?.email || message.from_address || null, organizer_name:invite.organizer?.name || null, source_ics_response: requestedResponse, source_ics_responded_at:now };
+    const organizerEmail = invite.organizer?.email || message.from_address || null;
+    const organizerLabel = invite.organizer?.name ? `${invite.organizer.name}${organizerEmail ? ` <${organizerEmail}>` : ''}` : organizerEmail;
+    const cleanNotes = conciseInviteNotes(invite.description, invite.meetingUrl);
+    const calendarDescription = [organizerLabel ? `Organizer: ${organizerLabel}` : '', cleanNotes].filter(Boolean).join('\n\n') || null;
     let event:any=existing;
     if (invite.method === 'CANCEL' || requestedResponse === 'declined') {
       if (existing) { const result=await ctx.db.from('calendar_events').update({ status:'cancelled',cancelled_at:now,meeting_metadata:metadata,updated_at:now }).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) { console.error('calendar-invite update cancelled failed',result.error); return NextResponse.json({error:'Unable to update this Calendar event.'},{status:500}); } event=result.data; }
     } else {
-      const patch={ title:invite.title,description:invite.description,location:invite.location,starts_at:invite.startsAt,ends_at:invite.endsAt,timezone:invite.timezone,is_all_day:invite.isAllDay,status:requestedResponse==='tentative'?'tentative':'confirmed',cancelled_at:null,visibility:'organization',show_as:requestedResponse==='tentative'?'tentative':'busy',meeting_provider:invite.meetingUrl?'custom':'none',meeting_url:invite.meetingUrl,meeting_metadata:metadata,updated_at:now };
+      const patch={ title:invite.title,description:calendarDescription,location:invite.location,starts_at:invite.startsAt,ends_at:invite.endsAt,timezone:invite.timezone,is_all_day:invite.isAllDay,status:requestedResponse==='tentative'?'tentative':'confirmed',cancelled_at:null,visibility:'organization',show_as:requestedResponse==='tentative'?'tentative':'busy',meeting_provider:invite.meetingUrl?'custom':'none',meeting_url:invite.meetingUrl,meeting_metadata:metadata,updated_at:now };
       if (existing) { const result=await ctx.db.from('calendar_events').update(patch).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) { console.error('calendar-invite update failed',result.error); return NextResponse.json({error:'Unable to update this invitation in Calendar.'},{status:500}); } event=result.data; }
       else { const result=await ctx.db.from('calendar_events').insert({ ...patch,organization_id:ctx.organizationId,owner_user_id:ctx.userId,created_by:ctx.userId }).select('id,title,starts_at,ends_at').single(); if(result.error||!result.data) { console.error('calendar-invite insert failed',result.error); return NextResponse.json({error:'Unable to add this invitation to Calendar.'},{status:500}); } event=result.data; }
     }
