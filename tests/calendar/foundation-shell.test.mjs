@@ -29,7 +29,8 @@ test('Communications rail marks Mail, Calendar and Contacts independently and pr
 
 test('Calendar top search is bridged into calendar content rather than Mail search', () => {
   assert.match(shell, /setu-calendar-search/);
-  assert.match(shell, /Search Setu Calendar/);
+  assert.match(shell, /productName=isCalendar\?'Setu Calendar'/);
+  assert.match(shell, /searchLabel=isMail\?'Search Setu Mail':`Search \$\{productName\}`/);
   assert.match(workspace, /addEventListener\('setu-calendar-search'/);
   assert.match(workspace, /matchesSearch/);
   assert.match(workspace, /calendar_attendees/);
