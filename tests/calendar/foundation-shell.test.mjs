@@ -99,7 +99,10 @@ test('Event composer follows familiar scheduling hierarchy and prevents end-befo
   assert.match(workspace, /mailThread/);
   assert.match(workspace, /lead/);
   assert.match(workspace, /Join meeting/);
-  assert.match(workspace, /\/api\/calendar\/invite/);
+  assert.match(api, /sendInvites/);
+  assert.match(api, /createZoomMeetingForEvent/);
+  assert.doesNotMatch(workspace, /\/api\/calendar\/invite/);
+  assert.doesNotMatch(workspace, /\/api\/calendar\/zoom\/meeting/);
 });
 
 test('Required and optional attendees, privacy, all-day and free-busy are persisted rather than decorative', () => {

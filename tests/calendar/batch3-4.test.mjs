@@ -130,6 +130,6 @@ test('Calendar invitation sends are metered as Resend provider usage and respect
   assert.match(invitationDelivery, /monthly_message_limit/);
   assert.match(invitationDelivery, /mail_usage_events/);
   assert.match(invitationDelivery, /calendar_invite:/);
-  assert.match(invitationDelivery, /source:'calendar_invitation'/);
+  assert.match(invitationDelivery, /source\s*:\s*'calendar_invitation'/);
   assert.match(invitationDelivery, /monthly Setu Communications email allowance/);
 });
