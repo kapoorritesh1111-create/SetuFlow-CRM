@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { CalendarDays, Menu, Search, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { CalendarPeopleInput } from './calendar-people-input';
 
@@ -37,11 +39,22 @@ type ComposerProps = {
 
 const toLocalInput = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 const parseEmails = (value: string) => [...new Set(value.split(/[;,\n]/).map(item => item.trim().toLowerCase()).filter(item => item.includes('@')))];
+const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const startOfLocalDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 function warningMessages(payload: any) {
   return Array.isArray(payload?.warnings)
     ? payload.warnings.map((warning: any) => String(warning?.message || '')).filter(Boolean)
     : [];
+}
+
+function relativeDayLabel(date: Date) {
+  const today = startOfLocalDay(new Date());
+  const target = startOfLocalDay(date);
+  const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  return '';
 }
 
 export function MobileCalendarWorkspace() {
@@ -52,6 +65,9 @@ export function MobileCalendarWorkspace() {
   const [selected, setSelected] = useState<MobileEvent | null>(null);
   const [draftStart, setDraftStart] = useState<Date | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const openedEventParam = useRef<string | null>(null);
 
   async function load() {
@@ -88,11 +104,52 @@ export function MobileCalendarWorkspace() {
     setComposerOpen(true);
   }, [params, events]);
 
-  const groups = useMemo(() => events.reduce<Record<string, MobileEvent[]>>((acc, event) => {
-    const key = new Date(event.starts_at).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  const today = useMemo(() => startOfLocalDay(new Date()), []);
+  const monthTitle = today.toLocaleDateString(undefined, { month: 'long' });
+  const weekDates = useMemo(() => {
+    const start = new Date(today);
+    start.setDate(today.getDate() - today.getDay());
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return date;
+    });
+  }, [today]);
+
+  const filteredEvents = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const sorted = [...events].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+    if (!query) return sorted;
+    return sorted.filter(event => [
+      event.title,
+      event.description ?? '',
+      event.location ?? '',
+      event.meeting_provider ?? '',
+      ...(event.calendar_attendees ?? []).flatMap(attendee => [attendee.name ?? '', attendee.email]),
+    ].join(' ').toLowerCase().includes(query));
+  }, [events, search]);
+
+  const eventsByDay = useMemo(() => filteredEvents.reduce<Record<string, MobileEvent[]>>((acc, event) => {
+    const key = localDateKey(new Date(event.starts_at));
     (acc[key] ??= []).push(event);
     return acc;
-  }, {}), [events]);
+  }, {}), [filteredEvents]);
+
+  const agendaDays = useMemo(() => {
+    const days = new Map<string, Date>();
+    if (!search.trim()) {
+      for (let index = 0; index < 14; index += 1) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + index);
+        days.set(localDateKey(date), date);
+      }
+    }
+    filteredEvents.forEach(event => {
+      const date = startOfLocalDay(new Date(event.starts_at));
+      days.set(localDateKey(date), date);
+    });
+    return [...days.values()].sort((a, b) => a.getTime() - b.getTime());
+  }, [filteredEvents, search, today]);
 
   function createEvent() {
     setSelected(null);
@@ -106,27 +163,58 @@ export function MobileCalendarWorkspace() {
     setComposerOpen(true);
   }
 
-  return <div className="min-h-screen bg-slate-50 pb-24">
-    <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur">
-      <div className="flex items-center justify-between">
-        <div><div className="text-[10px] font-black uppercase tracking-[.18em] text-blue-600">Setu Communications</div><h1 className="text-xl font-black text-slate-950">Calendar</h1></div>
-        <button onClick={createEvent} aria-label="Create calendar event" className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-950 text-xl font-black text-white">+</button>
+  function scrollToDate(date: Date) {
+    setMenuOpen(false);
+    const target = document.getElementById(`mobile-calendar-${localDateKey(date)}`);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  return <div className="min-h-screen bg-white pb-24 text-slate-900 md:hidden">
+    <header className="sticky top-0 z-30 shadow-sm">
+      <div className="relative bg-[#0b72bb] text-white">
+        <div className="flex h-14 items-center gap-2 px-3">
+          <button type="button" onClick={() => setMenuOpen(open => !open)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10" aria-label="Open calendar menu"><Menu size={22} /></button>
+          <h1 className="min-w-0 flex-1 text-[19px] font-semibold">{monthTitle}</h1>
+          <button type="button" onClick={() => setSearchOpen(open => !open)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10" aria-label="Search calendar"><Search size={21} /></button>
+          <div className="grid h-8 w-8 place-items-center rounded-full border border-white/60 bg-white/15"><CalendarDays size={16} /></div>
+        </div>
+        {searchOpen ? <div className="px-3 pb-3"><label className="flex h-10 items-center gap-2 rounded-xl bg-white px-3 text-slate-700 shadow-sm"><Search size={17} className="text-slate-400" /><input autoFocus value={search} onChange={event => setSearch(event.target.value)} placeholder="Search calendar" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear calendar search"><X size={16} /></button> : null}</label></div> : null}
+        {menuOpen ? <div className="absolute left-3 top-12 z-50 w-56 overflow-hidden rounded-xl bg-white py-1 text-sm font-semibold text-slate-700 shadow-2xl ring-1 ring-black/5"><button type="button" onClick={() => scrollToDate(today)} className="block w-full px-4 py-3 text-left hover:bg-slate-50">Today</button><Link href="/calendar/booking" className="block px-4 py-3 hover:bg-slate-50" onClick={() => setMenuOpen(false)}>Booking page</Link><Link href="/calendar/settings" className="block px-4 py-3 hover:bg-slate-50" onClick={() => setMenuOpen(false)}>Calendar settings</Link></div> : null}
+      </div>
+      <div className="grid grid-cols-7 border-b border-slate-200 bg-white px-1 pb-2 pt-1">
+        {weekDates.map(date => {
+          const active = localDateKey(date) === localDateKey(today);
+          return <button key={localDateKey(date)} type="button" onClick={() => scrollToDate(date)} className="flex min-w-0 flex-col items-center gap-1 py-1 text-slate-600" aria-label={`Jump to ${date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`}><span className="text-[10px] font-semibold uppercase">{date.toLocaleDateString(undefined, { weekday: 'narrow' })}</span><span className={`grid h-8 w-8 place-items-center rounded-full text-sm font-semibold ${active ? 'bg-[#0b72bb] text-white' : 'text-slate-600'}`}>{date.getDate()}</span></button>;
+        })}
       </div>
     </header>
-    <main className="space-y-6 p-4">
-      {loadError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-bold text-rose-700">{loadError}<button onClick={() => void load()} className="ml-2 underline">Try again</button></div> : null}
-      {loading ? <div className="py-16 text-center text-sm font-bold text-slate-400">Loading schedule…</div>
-        : Object.keys(groups).length ? Object.entries(groups).map(([day, list]) => <section key={day}>
-          <div className="mb-2 text-xs font-black uppercase tracking-wider text-slate-400">{day}</div>
-          <div className="space-y-2">{list.map(event => <article key={event.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <button onClick={() => editEvent(event)} className="flex w-full gap-3 text-left">
-              <div className="w-16 shrink-0 text-sm font-black text-slate-900">{event.is_all_day ? 'All day' : new Date(event.starts_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>
-              <div className="min-w-0 flex-1"><h2 className="truncate font-black text-slate-950">{event.title}</h2><p className="mt-1 text-xs text-slate-500">{event.location || (event.meeting_provider === 'zoom' ? 'Zoom meeting' : 'Calendar event')}</p><p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-blue-600">Tap to view or edit</p></div>
-            </button>
-            {event.meeting_url ? <a href={event.meeting_url} target="_blank" rel="noreferrer" className="ml-[76px] mt-3 inline-flex h-9 items-center rounded-xl bg-blue-600 px-4 text-xs font-black text-white">Join meeting</a> : null}
-          </article>)}</div>
-        </section>) : <div className="py-20 text-center"><h2 className="text-lg font-black text-slate-800">Your schedule is clear</h2><p className="mt-1 text-sm text-slate-400">Create a meeting when you&apos;re ready.</p><button onClick={createEvent} className="mt-5 rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white">Create event</button></div>}
+
+    <main className="pb-8">
+      {loadError ? <div className="m-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{loadError}<button onClick={() => void load()} className="ml-2 underline">Try again</button></div> : null}
+      {loading ? <div className="py-16 text-center text-sm font-semibold text-slate-400">Loading schedule…</div>
+        : agendaDays.length ? agendaDays.map(date => {
+          const key = localDateKey(date);
+          const list = eventsByDay[key] ?? [];
+          const relative = relativeDayLabel(date);
+          return <section id={`mobile-calendar-${key}`} key={key} className="scroll-mt-32 border-b border-slate-100 px-4 py-3">
+            <div className="mb-2 flex items-baseline gap-2"><span className="text-[22px] font-medium text-slate-900">{date.getDate()}</span><span className="text-[17px] font-medium text-slate-900">{date.toLocaleDateString(undefined, { weekday: 'long' })}</span>{relative ? <span className="text-[17px] font-medium text-[#0b72bb]">{relative}</span> : null}</div>
+            {list.length ? <div className="space-y-2">{list.map(event => {
+              const start = new Date(event.starts_at);
+              const end = new Date(event.ends_at);
+              const minutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+              return <article key={event.id} className="flex gap-3">
+                <div className="w-[58px] shrink-0 pt-2 text-right"><div className="text-[13px] font-medium text-slate-900">{event.is_all_day ? 'All day' : start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>{!event.is_all_day && minutes ? <div className="mt-0.5 text-[10px] text-slate-400">{minutes >= 60 ? `${Math.round(minutes / 60)}h` : `${minutes}m`}</div> : null}</div>
+                <div className="min-w-0 flex-1 rounded-md border-l-4 border-[#0b72bb] bg-[#dceafa] px-3 py-2.5">
+                  <button type="button" onClick={() => editEvent(event)} className="block w-full text-left"><h2 className="truncate text-[13px] font-semibold text-[#164f7d]">{event.title}</h2><p className="mt-1 truncate text-[11px] text-[#416781]">{event.location || (event.meeting_provider === 'zoom' ? 'Zoom meeting' : 'Calendar event')}</p></button>
+                  {event.meeting_url ? <a href={event.meeting_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex h-8 items-center rounded-lg bg-[#0b72bb] px-3 text-[11px] font-semibold text-white">Join meeting</a> : null}
+                </div>
+              </article>;
+            })}</div> : <div className="pb-2 text-[13px] text-slate-500">No plans yet</div>}
+          </section>;
+        }) : <div className="py-20 text-center"><h2 className="text-lg font-semibold text-slate-800">No matching events</h2><p className="mt-1 text-sm text-slate-400">Try a different calendar search.</p></div>}
     </main>
+
+    <button type="button" onClick={createEvent} aria-label="Create calendar event" className="fixed bottom-[82px] right-5 z-[410] grid h-14 w-14 place-items-center rounded-full bg-[#0b72bb] text-3xl font-light text-white shadow-[0_8px_20px_rgba(2,82,145,.35)]">+</button>
 
     {composerOpen ? <MobileEventComposer
       key={selected?.id ?? 'new'}

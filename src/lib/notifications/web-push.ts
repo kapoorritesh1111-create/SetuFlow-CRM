@@ -2,7 +2,7 @@
 // No-ops safely until WEB_PUSH_PUBLIC_KEY + WEB_PUSH_PRIVATE_KEY are set in the environment.
 import webpush from 'web-push';
 
-export type PushPayload = { title: string; body: string; action_url?: string; priority?: string; id?: string; type?: string };
+export type PushPayload = { title: string; body: string; action_url?: string; priority?: string; id?: string; type?: string; icon?: string; badge?: string };
 
 let configured: boolean | null = null;
 function ensureConfigured(): boolean {

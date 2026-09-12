@@ -21,6 +21,8 @@ type DispatchInput = {
   priority?: 'normal' | 'high' | 'critical';
 };
 
+const SETU_MAIL_PUSH_ICON = '/icons/setu-mail-192.png';
+
 function unique(values: string[]) {
   return [...new Set(values.map(value => String(value || '').trim()).filter(Boolean))];
 }
@@ -90,6 +92,8 @@ export async function dispatchCommunicationNotification(db: DeliveryClient, inpu
         action_url: input.actionUrl,
         priority: input.priority ?? 'normal',
         type: input.type,
+        icon: SETU_MAIL_PUSH_ICON,
+        badge: SETU_MAIL_PUSH_ICON,
       });
     } catch {
       // Browser/device delivery is best effort. In-app notification remains authoritative.
