@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+const SETU_MAIL_ICON = '/icons/setu-mail-source.png';
+
 export const SETU_MAIL_APP_METADATA: Metadata = {
   applicationName: 'SETU Mail',
   title: {
@@ -14,11 +16,8 @@ export const SETU_MAIL_APP_METADATA: Metadata = {
     statusBarStyle: 'black-translucent',
   },
   icons: {
-    icon: [
-      { url: '/icons/setu-mail-192.png', type: 'image/png', sizes: '192x192' },
-      { url: '/icons/setu-mail-512.png', type: 'image/png', sizes: '512x512' },
-    ],
-    apple: [{ url: '/icons/setu-mail-apple-touch.png', type: 'image/png', sizes: '180x180' }],
-    shortcut: ['/icons/setu-mail-192.png'],
+    icon: [{ url: SETU_MAIL_ICON, type: 'image/png', sizes: '1254x1254' }],
+    apple: [{ url: SETU_MAIL_ICON, type: 'image/png', sizes: '1254x1254' }],
+    shortcut: [SETU_MAIL_ICON],
   },
 };
