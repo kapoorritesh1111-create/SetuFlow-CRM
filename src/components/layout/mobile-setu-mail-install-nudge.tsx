@@ -72,7 +72,7 @@ export function MobileSetuMailInstallNudge() {
   return (
     <aside className={styles.card} aria-label="Install SETU Mail">
       <button type="button" onClick={dismiss} className={styles.close} aria-label="Dismiss install SETU Mail prompt"><X size={17} /></button>
-      <img src="/icons/setu-mail.svg" alt="" aria-hidden="true" className={styles.icon} />
+      <img src="/icons/setu-mail-source.png" alt="" aria-hidden="true" className={styles.icon} />
       <div className={styles.copy}>
         <strong>Put SETU Mail on your phone</strong>
         <span>{iosHelp ? 'On iPhone, tap Share and choose Add to Home Screen.' : 'Open Mail, Calendar and People like an app and receive supported notifications.'}</span>
