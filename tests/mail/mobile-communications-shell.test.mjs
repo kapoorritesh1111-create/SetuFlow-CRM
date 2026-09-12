@@ -66,6 +66,12 @@ test('mobile communications nav respects phone safe areas, unread Mail badges, a
   assert.match(shell, /unreadMailCount=\{access\.unreadMailCount\}/);
 });
 
+test('installed SETU Mail mirrors unread Mail into the platform app badge when supported', () => {
+  assert.match(chrome, /setAppBadge/);
+  assert.match(chrome, /clearAppBadge/);
+  assert.match(chrome, /Math\.floor\(Number\(unreadMailCount\)/);
+});
+
 test('People has a dedicated Outlook-style mobile workspace without replacing desktop Contacts', () => {
   assert.match(contactsPage, /MobilePeopleWorkspace/);
   assert.match(contactsPage, /md:hidden/);
