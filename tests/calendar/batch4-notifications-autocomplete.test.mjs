@@ -24,8 +24,12 @@ test('Calendar attendee autocomplete reuses Contacts CRM and Mail history on des
 
 test('Calendar reminders atomically claim delivery before sending and release on failure', () => {
   const reminders = read('src/app/api/calendar/reminders/process/route.ts');
-  assert.match(reminders, /from\('calendar_reminders'\)\.select\('\*'\)/);
+  assert.match(reminders, /from\('calendar_reminders'\)/);
   assert.match(reminders, /from\('calendar_events'\)\.select\('\*'\)\.in\('id', eventIds\)/);
+  assert.match(reminders, /async function loadReminders/);
+  assert.match(reminders, /select\('\*', \{ count: 'exact' \}\)/);
+  assert.match(reminders, /\.range\(from, to\)/);
+  assert.match(reminders, /reminders\.length < total/);
   assert.match(reminders, /eventsById\.get\(reminder\.event_id\)/);
   assert.match(reminders, /missingEvents \+= 1/);
   assert.match(reminders, /timingCandidates\.push/);
