@@ -157,10 +157,10 @@
 .content { min-width: 0; flex: 1; height: calc(100vh - 48px); overflow: hidden; background: white; }
 
 @media (max-width: 767px) {
-  .shell { min-height: 0; background: transparent; }
+  .shell { min-height: 0; background: var(--sf-bg-app); color: var(--sf-text-primary); }
   .topbar, .rail { display: none; }
   .body { display: block; min-height: 0; }
-  .content { height: auto; overflow: visible; }
+  .content { height: auto; overflow: visible; background: var(--sf-surface-1); }
 }
 
 @media (max-width: 1100px) and (min-width: 768px) {

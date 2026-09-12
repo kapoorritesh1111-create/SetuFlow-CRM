@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import styles from './mobile-communication-surfaces.module.css';
+import { CommunicationAppearanceControl } from './communication-appearance-control';
 
 /** Native top-layer dialog: no invisible overlay can intercept header taps. */
 export function MobileCommunicationDrawer({ title, subtitle, onClose, children }: {
@@ -28,7 +29,7 @@ export function MobileCommunicationDrawer({ title, subtitle, onClose, children }
     onClick={event => { if (event.target === event.currentTarget) close.current(); }}>
     <div className={styles.drawerBody}>
       <header className={styles.drawerHeader}><div><h2>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div><button type="button" className={styles.iconButton} onClick={onClose} aria-label={`Close ${title}`}><X size={22} /></button></header>
-      <div className={styles.drawerContent}>{children}</div>
+      <div className={styles.drawerContent}>{children}<CommunicationAppearanceControl/></div>
     </div>
   </dialog>;
 }

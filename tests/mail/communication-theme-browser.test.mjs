@@ -65,7 +65,7 @@ async function contrast(page, selector) {
 test('mobile theme renders real communications components with readable light/dark native controls', {timeout:120000}, async t=>{
   const out=fs.mkdtempSync(path.join(os.tmpdir(),'setu-theme-'));
   const evidence=path.resolve('artifacts/communication-theme'); fs.mkdirSync(evidence,{recursive:true});
-  const bundle=await esbuild.build({stdin:{contents:entry,resolveDir:process.cwd(),loader:'tsx'},bundle:true,write:false,outdir:out,platform:'browser',format:'iife',define:{'process.env':JSON.stringify({NODE_ENV:'production'})},plugins:[{name:'fixture-boundaries',setup(build){
+  const bundle=await esbuild.build({stdin:{contents:entry,resolveDir:process.cwd(),loader:'tsx'},bundle:true,jsx:'automatic',write:false,outdir:out,platform:'browser',format:'iife',define:{'process.env':JSON.stringify({NODE_ENV:'production'})},plugins:[{name:'fixture-boundaries',setup(build){
     build.onResolve({filter:/^(next\/(navigation|link)|@\/lib\/supabase\/client)$/},args=>({path:args.path,namespace:'fixture'}));
     build.onLoad({filter:/.*/,namespace:'fixture'},args=>({loader:'js',resolveDir:process.cwd(),contents:args.path==='next/link'?`import React from 'react';export default function Link(props){return React.createElement('a',props,props.children);}`:args.path==='next/navigation'?`import {useMemo} from 'react';export const usePathname=()=>location.pathname;export const useSearchParams=()=>useMemo(()=>new URLSearchParams(location.search),[]);export const useRouter=()=>({push:url=>location.assign(url),refresh(){}});`:`export const createClient=()=>window.fixtureDb;` }));
   }}]});
@@ -82,7 +82,7 @@ test('mobile theme renders real communications components with readable light/da
   const origin=`http://127.0.0.1:${server.address().port}`;
   const chromiumModule=require('@sparticuz/chromium'),chromium=chromiumModule.default??chromiumModule;
   const browser=await require('puppeteer-core').launch({args:chromium.args,executablePath:await chromium.executablePath(),headless:'shell',defaultViewport:{width:390,height:844,isMobile:true,hasTouch:true,deviceScaleFactor:1}});
-  async function pageFor(route,view){const page=await browser.newPage();page.setDefaultTimeout(10000);await page.emulateMediaFeatures([{name:'prefers-color-scheme',value:'dark'}]);await page.goto(`${origin}${route}?view=${view}`,{waitUntil:'networkidle0'});return page;}
+  async function pageFor(route,view){const page=await browser.newPage();page.setDefaultTimeout(10000);page.on('pageerror',error=>console.error('Theme fixture error:',error.message));await page.emulateMediaFeatures([{name:'prefers-color-scheme',value:'dark'}]);await page.goto(`${origin}${route}?view=${view}`,{waitUntil:'networkidle0'});await page.screenshot({path:path.join(evidence,view+'-initial.png')});return page;}
   try{
     await t.test('dark inbox, search, folders and bottom tabs are readable and interactive',async()=>{
       const page=await pageFor('/mail','mail');

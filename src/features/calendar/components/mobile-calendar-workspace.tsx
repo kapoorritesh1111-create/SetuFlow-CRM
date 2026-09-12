@@ -1,5 +1,7 @@
 'use client';
 
+import themeStyles from '@/components/layout/communication-theme.module.css';
+
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Search, Settings2, X } from 'lucide-react';
@@ -172,52 +174,52 @@ export function MobileCalendarWorkspace() {
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  return <div className="min-h-screen bg-white pb-24 text-slate-900 md:hidden">
+  return <div className={`${themeStyles.scope} min-h-screen bg-surface-1 pb-24 text-content-primary md:hidden`}>
     <header className={`${mobileStyles.header} sticky z-30 shadow-sm`}>
-      <div className="relative bg-[#0b72bb] text-white">
+      <div className="relative bg-brand-800 text-white">
         <div className="flex h-14 items-center gap-2 px-3">
           <button type="button" onClick={() => setMenuOpen(open => !open)} className={mobileStyles.iconButton} aria-label="Open calendar menu" aria-haspopup="dialog" aria-expanded={menuOpen}><CalendarDays size={22} /></button>
           <h1 className="min-w-0 flex-1 text-[19px] font-semibold">{monthTitle}</h1>
           <button type="button" onClick={() => setSearchOpen(open => !open)} className={mobileStyles.iconButton} aria-label="Search calendar" aria-expanded={searchOpen}><Search size={21} /></button>
           <Link href="/calendar/settings" className={mobileStyles.iconButton} aria-label="Calendar settings"><Settings2 size={21}/></Link>
         </div>
-        {searchOpen ? <div className="px-3 pb-3"><label className="flex h-10 items-center gap-2 rounded-xl bg-white px-3 text-slate-700 shadow-sm"><Search size={17} className="text-slate-400" /><input autoFocus aria-label="Search calendar events" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search calendar" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear calendar search"><X size={16} /></button> : null}</label></div> : null}
+        {searchOpen ? <div className="px-3 pb-3"><label className="flex h-10 items-center gap-2 rounded-xl bg-surface-1 px-3 text-content-secondary shadow-sm"><Search size={17} className="text-content-muted" /><input autoFocus aria-label="Search calendar events" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search calendar" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear calendar search"><X size={16} /></button> : null}</label></div> : null}
         {menuOpen ? <MobileCommunicationDrawer title="Calendar" subtitle="Setu Calendar" onClose={()=>setMenuOpen(false)}><span className={mobileStyles.sectionLabel}>My calendar</span><button type="button" className={mobileStyles.row} onClick={()=>scrollToDate(today)}><CalendarDays size={22}/><span>Calendar - today's schedule</span></button><span className={mobileStyles.sectionLabel}>Settings and tools</span><Link href="/calendar/settings" className={mobileStyles.row} onClick={()=>setMenuOpen(false)}><Settings2 size={22}/><span>Calendar settings</span></Link><Link href="/calendar/booking" className={mobileStyles.row} onClick={()=>setMenuOpen(false)}>Booking page</Link><p className={mobileStyles.hint}>Only calendars available in your Setu workspace are shown.</p></MobileCommunicationDrawer> : null}
       </div>
-      <div className="grid grid-cols-7 border-b border-slate-200 bg-white px-1 pb-2 pt-1">
+      <div className="grid grid-cols-7 border-b border-line border-line bg-surface-1 px-1 pb-2 pt-1">
         {weekDates.map(date => {
           const active = localDateKey(date) === localDateKey(today);
-          return <button key={localDateKey(date)} type="button" onClick={() => scrollToDate(date)} className="flex min-w-0 flex-col items-center gap-1 py-1 text-slate-600" aria-label={`Jump to ${date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`}><span className="text-[10px] font-semibold uppercase">{date.toLocaleDateString(undefined, { weekday: 'narrow' })}</span><span className={`grid h-8 w-8 place-items-center rounded-full text-sm font-semibold ${active ? 'bg-[#0b72bb] text-white' : 'text-slate-600'}`}>{date.getDate()}</span></button>;
+          return <button key={localDateKey(date)} type="button" onClick={() => scrollToDate(date)} className="flex min-w-0 flex-col items-center gap-1 py-1 text-content-secondary" aria-label={`Jump to ${date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`}><span className="text-[10px] font-semibold uppercase">{date.toLocaleDateString(undefined, { weekday: 'narrow' })}</span><span className={`grid h-8 w-8 place-items-center rounded-full text-sm font-semibold ${active ? 'bg-brand-800 text-white' : 'text-content-secondary'}`}>{date.getDate()}</span></button>;
         })}
       </div>
     </header>
 
     <main className="pb-8">
-      {loadError ? <div className="m-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{loadError}<button onClick={() => void load()} className="ml-2 underline">Try again</button></div> : null}
-      {loading ? <div className="py-16 text-center text-sm font-semibold text-slate-400">Loading schedule…</div>
+      {loadError ? <div className="m-4 rounded-xl border border-line border-danger-border bg-danger-bg p-4 text-sm font-semibold text-danger-fg">{loadError}<button onClick={() => void load()} className="ml-2 underline">Try again</button></div> : null}
+      {loading ? <div className="py-16 text-center text-sm font-semibold text-content-muted">Loading schedule…</div>
         : agendaDays.length ? agendaDays.map(date => {
           const key = localDateKey(date);
           const list = eventsByDay[key] ?? [];
           const relative = relativeDayLabel(date);
-          return <section id={`mobile-calendar-${key}`} key={key} className="scroll-mt-32 border-b border-slate-100 px-4 py-3">
-            <div className="mb-2 flex items-baseline gap-2"><span className="text-[22px] font-medium text-slate-900">{date.getDate()}</span><span className="text-[17px] font-medium text-slate-900">{date.toLocaleDateString(undefined, { weekday: 'long' })}</span>{relative ? <span className="text-[17px] font-medium text-[#0b72bb]">{relative}</span> : null}</div>
+          return <section id={`mobile-calendar-${key}`} key={key} className="scroll-mt-32 border-b border-line border-line px-4 py-3">
+            <div className="mb-2 flex items-baseline gap-2"><span className="text-[22px] font-medium text-content-primary">{date.getDate()}</span><span className="text-[17px] font-medium text-content-primary">{date.toLocaleDateString(undefined, { weekday: 'long' })}</span>{relative ? <span className="text-[17px] font-medium text-content-accent">{relative}</span> : null}</div>
             {list.length ? <div className="space-y-2">{list.map(event => {
               const start = new Date(event.starts_at);
               const end = new Date(event.ends_at);
               const minutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
               return <article key={event.id} className="flex gap-3">
-                <div className="w-[58px] shrink-0 pt-2 text-right"><div className="text-[13px] font-medium text-slate-900">{event.is_all_day ? 'All day' : start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>{!event.is_all_day && minutes ? <div className="mt-0.5 text-[10px] text-slate-400">{minutes >= 60 ? `${Math.round(minutes / 60)}h` : `${minutes}m`}</div> : null}</div>
-                <div className="min-w-0 flex-1 rounded-md border-l-4 border-[#0b72bb] bg-[#dceafa] px-3 py-2.5">
-                  <button type="button" onClick={() => editEvent(event)} className="block w-full text-left"><h2 className="truncate text-[13px] font-semibold text-[#164f7d]">{event.title}</h2><p className="mt-1 truncate text-[11px] text-[#416781]">{event.location || (event.meeting_provider === 'zoom' ? 'Zoom meeting' : 'Calendar event')}</p></button>
-                  {event.meeting_url ? <a href={event.meeting_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex h-8 items-center rounded-lg bg-[#0b72bb] px-3 text-[11px] font-semibold text-white">Join meeting</a> : null}
+                <div className="w-[58px] shrink-0 pt-2 text-right"><div className="text-[13px] font-medium text-content-primary">{event.is_all_day ? 'All day' : start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>{!event.is_all_day && minutes ? <div className="mt-0.5 text-[10px] text-content-muted">{minutes >= 60 ? `${Math.round(minutes / 60)}h` : `${minutes}m`}</div> : null}</div>
+                <div className="min-w-0 flex-1 rounded-md border-l-4 border-accent-500 bg-surface-2 px-3 py-2.5">
+                  <button type="button" onClick={() => editEvent(event)} className="block w-full text-left"><h2 className="truncate text-[13px] font-semibold text-content-primary">{event.title}</h2><p className="mt-1 truncate text-[11px] text-content-secondary">{event.location || (event.meeting_provider === 'zoom' ? 'Zoom meeting' : 'Calendar event')}</p></button>
+                  {event.meeting_url ? <a href={event.meeting_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex h-8 items-center rounded-lg bg-brand-800 px-3 text-[11px] font-semibold text-white">Join meeting</a> : null}
                 </div>
               </article>;
-            })}</div> : <div className="pb-2 text-[13px] text-slate-500">No plans yet</div>}
+            })}</div> : <div className="pb-2 text-[13px] text-content-muted">No plans yet</div>}
           </section>;
-        }) : <div className="py-20 text-center"><h2 className="text-lg font-semibold text-slate-800">No matching events</h2><p className="mt-1 text-sm text-slate-400">Try a different calendar search.</p></div>}
+        }) : <div className="py-20 text-center"><h2 className="text-lg font-semibold text-content-primary">No matching events</h2><p className="mt-1 text-sm text-content-muted">Try a different calendar search.</p></div>}
     </main>
 
-    <button type="button" onClick={createEvent} aria-label="Create calendar event" className="fixed bottom-[82px] right-5 z-[410] grid h-14 w-14 place-items-center rounded-full bg-[#0b72bb] text-3xl font-light text-white shadow-[0_8px_20px_rgba(2,82,145,.35)]">+</button>
+    <button type="button" onClick={createEvent} aria-label="Create calendar event" className="fixed bottom-[82px] right-5 z-[410] grid h-14 w-14 place-items-center rounded-full bg-brand-800 text-3xl font-light text-white shadow-card">+</button>
 
     {composerOpen ? <MobileEventComposer
       key={selected?.id ?? 'new'}
@@ -346,37 +348,37 @@ function MobileEventComposer({ event, defaultStart, guest, lead, mailThread, onC
     }
   }
 
-  return <div className={`${mobileStyles.fullScreen} fixed inset-0 z-[500] overflow-y-auto bg-slate-950/40 p-3 backdrop-blur-sm`}>
-    <div className="mx-auto min-h-full max-w-xl rounded-3xl bg-white shadow-2xl">
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur">
-        <div><div className="text-[10px] font-black uppercase tracking-[.18em] text-blue-600">{event ? 'Calendar event' : 'New event'}</div><h2 className="mt-1 text-lg font-black text-slate-950">{event ? 'View or edit' : 'Schedule event'}</h2></div>
-        <button onClick={onClose} aria-label="Close event" className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 text-xl font-black text-slate-500">×</button>
+  return <div className={`${themeStyles.scope} ${mobileStyles.fullScreen} fixed inset-0 z-[500] overflow-y-auto bg-slate-950/40 p-3 backdrop-blur-sm`}>
+    <div className="mx-auto min-h-full max-w-xl rounded-3xl bg-surface-1 shadow-2xl">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line border-line bg-surface-1 px-4 py-4 backdrop-blur">
+        <div><div className="text-[10px] font-bold uppercase tracking-[.18em] text-content-accent">{event ? 'Calendar event' : 'New event'}</div><h2 className="mt-1 text-lg font-bold text-content-primary">{event ? 'View or edit' : 'Schedule event'}</h2></div>
+        <button onClick={onClose} aria-label="Close event" className="grid h-10 w-10 place-items-center rounded-xl bg-surface-2 text-xl font-bold text-content-muted">×</button>
       </div>
       <div className="space-y-4 p-4">
-        {notice ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">{notice}</div> : null}
+        {notice ? <div className="rounded-xl border border-line border-danger-border bg-danger-bg p-3 text-xs font-bold text-danger-fg">{notice}</div> : null}
         <MobileField label="Title"><input value={title} onChange={input => setTitle(input.target.value)} placeholder="Meeting title" className="mobile-calendar-input" /></MobileField>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><MobileField label="Starts"><input type="datetime-local" value={startsAt} onChange={input => changeStart(input.target.value)} className="mobile-calendar-input" /></MobileField><MobileField label="Ends"><input type="datetime-local" value={endsAt} min={startsAt} onChange={input => setEndsAt(input.target.value)} className="mobile-calendar-input" /></MobileField></div>
-        <label className="flex items-center gap-2 text-xs font-bold text-slate-700"><input type="checkbox" checked={isAllDay} onChange={input => setIsAllDay(input.target.checked)} />All-day event</label>
+        <label className="flex items-center gap-2 text-xs font-bold text-content-secondary"><input type="checkbox" checked={isAllDay} onChange={input => setIsAllDay(input.target.checked)} />All-day event</label>
         <MobileField label="Required attendees"><CalendarPeopleInput ariaLabel="Required attendees" value={requiredPeople} onChange={setRequiredPeople} placeholder="Start typing a name or email" className="mobile-calendar-input" /></MobileField>
         <MobileField label="Optional attendees"><CalendarPeopleInput ariaLabel="Optional attendees" value={optionalPeople} onChange={setOptionalPeople} placeholder="Start typing a name or email" className="mobile-calendar-input" /></MobileField>
         <MobileField label="Location"><input value={location} onChange={input => setLocation(input.target.value)} placeholder="Office, booth, customer site…" className="mobile-calendar-input" /></MobileField>
         <MobileField label="Meeting type"><select value={provider} onChange={input => setProvider(input.target.value)} className="mobile-calendar-input"><option value="zoom">Zoom meeting</option><option value="custom">Custom meeting link</option><option value="in_person">In person</option><option value="none">No online meeting</option></select></MobileField>
         {provider === 'custom' ? <MobileField label="Meeting link"><input value={meetingUrl} onChange={input => setMeetingUrl(input.target.value)} placeholder="https://…" className="mobile-calendar-input" /></MobileField> : null}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><MobileField label="Show as"><select value={showAs} onChange={input => setShowAs(input.target.value as ShowAs)} className="mobile-calendar-input"><option value="busy">Busy</option><option value="free">Free</option><option value="tentative">Tentative</option><option value="out_of_office">Out of office</option><option value="working_elsewhere">Working elsewhere</option></select></MobileField><MobileField label="Reminder"><select value={reminder} onChange={input => setReminder(Number(input.target.value))} className="mobile-calendar-input"><option value={5}>5 minutes before</option><option value={10}>10 minutes before</option><option value={15}>15 minutes before</option><option value={30}>30 minutes before</option><option value={60}>1 hour before</option><option value={1440}>1 day before</option></select></MobileField></div>
-        <div className="flex flex-wrap gap-4"><label className="flex items-center gap-2 text-xs font-bold text-slate-700"><input type="checkbox" checked={emailReminder} onChange={input => setEmailReminder(input.target.checked)} />Email reminder too</label><label className="flex items-center gap-2 text-xs font-bold text-slate-700"><input type="checkbox" checked={isPrivate} onChange={input => setIsPrivate(input.target.checked)} />Private</label></div>
+        <div className="flex flex-wrap gap-4"><label className="flex items-center gap-2 text-xs font-bold text-content-secondary"><input type="checkbox" checked={emailReminder} onChange={input => setEmailReminder(input.target.checked)} />Email reminder too</label><label className="flex items-center gap-2 text-xs font-bold text-content-secondary"><input type="checkbox" checked={isPrivate} onChange={input => setIsPrivate(input.target.checked)} />Private</label></div>
         <MobileField label="Notes"><textarea value={notes} onChange={input => setNotes(input.target.value)} rows={5} placeholder="Agenda or preparation notes" className="mobile-calendar-input resize-none" /></MobileField>
-        <div className="rounded-xl bg-slate-50 p-3 text-[11px] font-semibold leading-5 text-slate-500">Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'}. Working Hours guide the view and do not restrict when you can schedule.</div>
-        {event?.meeting_url ? <a href={event.meeting_url} target="_blank" rel="noreferrer" className="block rounded-xl bg-blue-600 py-3 text-center text-sm font-black text-white">Join meeting</a> : null}
+        <div className="rounded-xl bg-surface-2 p-3 text-[11px] font-semibold leading-5 text-content-muted">Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'}. Working Hours guide the view and do not restrict when you can schedule.</div>
+        {event?.meeting_url ? <a href={event.meeting_url} target="_blank" rel="noreferrer" className="block rounded-xl bg-brand-700 py-3 text-center text-sm font-bold text-white">Join meeting</a> : null}
       </div>
-      <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-4">
-        {event ? <button disabled={saving} onClick={() => void remove()} className="text-sm font-black text-rose-600 disabled:opacity-40">Cancel event</button> : <span />}
-        <div className="flex gap-2"><button disabled={saving} onClick={onClose} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-black text-slate-600 disabled:opacity-40">Close</button><button disabled={saving || !title.trim()} onClick={() => void save()} className="h-11 rounded-xl bg-slate-950 px-5 text-sm font-black text-white disabled:opacity-40">{saving ? 'Saving…' : event ? 'Save changes' : 'Create event'}</button></div>
+      <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-line border-line bg-surface-1 px-4 py-4">
+        {event ? <button disabled={saving} onClick={() => void remove()} className="text-sm font-bold text-danger-fg disabled:opacity-40">Cancel event</button> : <span />}
+        <div className="flex gap-2"><button disabled={saving} onClick={onClose} className="h-11 rounded-xl border border-line border-line px-4 text-sm font-bold text-content-secondary disabled:opacity-40">Close</button><button disabled={saving || !title.trim()} onClick={() => void save()} className="h-11 rounded-xl bg-brand-800 px-5 text-sm font-bold text-white disabled:opacity-40">{saving ? 'Saving…' : event ? 'Save changes' : 'Create event'}</button></div>
       </div>
     </div>
-    <style jsx global>{`.mobile-calendar-input{width:100%;border:1px solid rgb(226 232 240);border-radius:12px;background:white;padding:10px 12px;font-size:14px;color:rgb(15 23 42);outline:none}.mobile-calendar-input:focus{border-color:rgb(96 165 250);box-shadow:0 0 0 3px rgb(219 234 254)}`}</style>
+    <style jsx global>{`.mobile-calendar-input{width:100%;border:1px solid var(--sf-border);border-radius:12px;background:var(--sf-surface-1);padding:10px 12px;font-size:14px;color:var(--sf-text-primary);outline:none}.mobile-calendar-input:focus{border-color:var(--sf-action-primary-bg);box-shadow:0 0 0 3px var(--sf-focus-ring)}`}</style>
   </div>;
 }
 
 function MobileField({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-xs font-black text-slate-700">{label}</span>{children}</label>;
+  return <label className="block"><span className="mb-1.5 block text-xs font-bold text-content-secondary">{label}</span>{children}</label>;
 }
