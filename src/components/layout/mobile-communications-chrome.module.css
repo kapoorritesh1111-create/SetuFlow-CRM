@@ -1,0 +1,68 @@
+.nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .nav {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 460;
+    display: block;
+    border-top: 1px solid #d9e1ea;
+    background: rgb(255 255 255 / 0.97);
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -6px 20px rgb(15 23 42 / 0.06);
+    backdrop-filter: blur(18px);
+  }
+
+  .inner {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-height: 64px;
+    margin: 0 auto;
+    max-width: 520px;
+  }
+
+  .withCrm {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .tab {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: #5d6674;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .tab::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 28px;
+    height: 2px;
+    border-radius: 999px;
+    background: transparent;
+  }
+
+  .tab:active {
+    background: #f5f8fb;
+  }
+
+  .active {
+    color: #0a72c5;
+  }
+
+  .active::before {
+    background: #0a72c5;
+  }
+}
