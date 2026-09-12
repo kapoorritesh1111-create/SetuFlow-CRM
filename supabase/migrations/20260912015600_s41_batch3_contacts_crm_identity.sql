@@ -39,7 +39,7 @@ create index if not exists contact_crm_links_org_entity_idx on public.contact_cr
 create table if not exists public.mail_crm_links (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
-  mailbox_id uuid not null references public.mailboxes(id) on delete cascade,
+  mailbox_id uuid not null references public.mail_mailboxes(id) on delete cascade,
   thread_id uuid not null references public.mail_threads(id) on delete cascade,
   entity_type text not null check (entity_type in ('contact','lead','buyer','supplier')),
   entity_id uuid not null,
