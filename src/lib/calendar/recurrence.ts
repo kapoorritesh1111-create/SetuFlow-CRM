@@ -72,16 +72,19 @@ export function wallClockParts(value: string | Date, timeZone: string) {
   };
 }
 
-export function localDateTimeToUtc(localValue: string, timeZone: string) {
-  const match = String(localValue || '').match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-  if (!match || !isValidTimeZone(timeZone)) return null;
-  const date = zonedDateTimeToUtc(match[1], match[2], timeZone);
-  return Number.isNaN(date.valueOf()) ? null : date;
-}
-
 export function dateTimeLocalValue(value: string | Date, timeZone: string) {
   const p = wallClockParts(value, timeZone);
   return `${p.dateKey}T${p.clock}`;
+}
+
+export function localDateTimeToUtc(localValue: string, timeZone: string) {
+  const match = String(localValue || '').match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  if (!match || !isValidTimeZone(timeZone)) return null;
+  const requested = `${match[1]}T${match[2]}`;
+  const date = zonedDateTimeToUtc(match[1], match[2], timeZone);
+  if (Number.isNaN(date.valueOf())) return null;
+  if (dateTimeLocalValue(date, timeZone) !== requested) return null;
+  return date;
 }
 
 function parseUntil(value: string) {
@@ -170,14 +173,8 @@ function monthDiff(fromKey: string, toKey: string) {
   return (ty - fy) * 12 + (tm - fm);
 }
 
-function dayOfMonth(dateKey: string) {
-  return Number(dateKey.slice(8, 10));
-}
-
-function weekdayForDateKey(dateKey: string) {
-  const [year, month, day] = dateKey.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
-}
+function dayOfMonth(dateKey: string) { return Number(dateKey.slice(8, 10)); }
+function weekdayForDateKey(dateKey: string) { const [year, month, day] = dateKey.split('-').map(Number); return new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay(); }
 
 function matchesRuleDate(rule: RecurrenceRule, startDateKey: string, dateKey: string, startWeekday: number) {
   const dayDiff = calendarDayDiff(startDateKey, dateKey);
@@ -213,23 +210,14 @@ export function expandRecurringEvent(event: RecurringEventShape, from: Date, to:
       if (rule.count !== null && matchedCount > rule.count) break;
       if (rule.until && occurrenceStart > rule.until) break;
       const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs);
-      if (occurrenceStart < to && occurrenceEnd > from) {
-        out.push({
-          seriesId: event.id,
-          originalStart: occurrenceStart.toISOString(),
-          startsAt: occurrenceStart.toISOString(),
-          endsAt: occurrenceEnd.toISOString(),
-        });
-      }
+      if (occurrenceStart < to && occurrenceEnd > from) out.push({ seriesId: event.id, originalStart: occurrenceStart.toISOString(), startsAt: occurrenceStart.toISOString(), endsAt: occurrenceEnd.toISOString() });
     }
     dateKey = addCalendarDays(dateKey, 1);
   }
   return out;
 }
 
-export function recurrenceOccurrenceId(seriesId: string, originalStart: string) {
-  return `recurrence:${seriesId}:${encodeURIComponent(originalStart)}`;
-}
+export function recurrenceOccurrenceId(seriesId: string, originalStart: string) { return `recurrence:${seriesId}:${encodeURIComponent(originalStart)}`; }
 
 export function parseRecurrenceOccurrenceId(value: string) {
   const match = String(value || '').match(/^recurrence:([0-9a-f-]{36}):(.+)$/i);
