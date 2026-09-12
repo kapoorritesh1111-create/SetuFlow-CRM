@@ -96,13 +96,14 @@ test('Batch 4 Zoom readiness stays behind the service-role boundary and blocks u
 });
 
 test('Batch 3 Mail to Meeting remains one click and carries recipient, lead and Mail thread context', () => {
-  assert.match(mailIntelligence, /key:'schedule_meeting'/);
-  assert.match(mailIntelligence, /actionLabel:'Schedule meeting'/);
-  assert.match(mailIntelligence, /\/calendar\?compose=1/);
-  assert.match(mailIntelligence, /guest=/);
-  assert.match(mailIntelligence, /lead=/);
-  assert.match(mailIntelligence, /mailThread=/);
-  assert.match(mailIntelligence, /autonomousActions:false/);
+  assert.match(mailIntelligence, /key:\s*'schedule_meeting'/);
+  assert.match(mailIntelligence, /actionLabel:\s*'Schedule meeting'/);
+  assert.match(mailIntelligence, /new URLSearchParams\(\{ compose: '1' \}\)/);
+  assert.match(mailIntelligence, /params\.set\('guest', context\.peer\)/);
+  assert.match(mailIntelligence, /params\.set\('lead', context\.leadId\)/);
+  assert.match(mailIntelligence, /params\.set\('mailThread', context\.threadId\)/);
+  assert.match(mailIntelligence, /actionHref:\s*`\/calendar\?\$\{params\.toString\(\)\}`/);
+  assert.match(mailIntelligence, /autonomousActions:\s*false/);
 });
 
 test('Meeting outcomes preserve provider metadata and keep follow-up human controlled', () => {
