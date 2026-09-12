@@ -54,12 +54,16 @@ test('mobile communications chrome keeps one-tap Mail Calendar People navigation
   assert.match(shell, /MobileCommunicationsChrome/);
 });
 
-test('mobile communications nav respects phone safe areas and stays hidden on desktop', () => {
+test('mobile communications nav respects phone safe areas, unread Mail badges, and desktop isolation', () => {
   assert.match(chromeCss, /@media \(max-width: 767px\)/);
   assert.match(chromeCss, /env\(safe-area-inset-bottom\)/);
   assert.match(chromeCss, /position:\s*fixed/);
   assert.match(chromeCss, /grid-template-columns:\s*repeat\(3/);
   assert.match(chromeCss, /repeat\(4/);
+  assert.match(chrome, /unreadMailCount/);
+  assert.match(chrome, /unread messages/);
+  assert.match(chromeCss, /\.badge/);
+  assert.match(shell, /unreadMailCount=\{access\.unreadMailCount\}/);
 });
 
 test('People has a dedicated Outlook-style mobile workspace without replacing desktop Contacts', () => {
