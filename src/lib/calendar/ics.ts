@@ -21,6 +21,8 @@ export type IcsEvent = {
   meetingUrl?: string | null;
   sequence?: number;
   showAs?: string | null;
+  recurrenceRule?: string | null;
+  recurrenceId?: string | null;
 };
 
 const esc = (value: string) => value
@@ -94,6 +96,14 @@ export function buildIcs(event: IcsEvent, method: 'REQUEST' | 'CANCEL' = 'REQUES
         `DTEND;VALUE=DATE:${allDayEndDate}`,
       ]
     : [`DTSTART:${utc(event.startsAt)}`, `DTEND:${utc(event.endsAt)}`];
+  const recurrenceIdLine = event.recurrenceId
+    ? event.isAllDay
+      ? `RECURRENCE-ID;VALUE=DATE:${dateInZone(event.recurrenceId, timezone)}`
+      : `RECURRENCE-ID:${utc(event.recurrenceId)}`
+    : '';
+  const recurrenceRuleLine = event.recurrenceRule && !event.recurrenceId
+    ? `RRULE:${String(event.recurrenceRule).replace(/^RRULE:/i, '')}`
+    : '';
   const transparent = event.showAs === 'free' ? 'TRANSPARENT' : 'OPAQUE';
   const now = new Date().toISOString();
 
@@ -106,6 +116,8 @@ export function buildIcs(event: IcsEvent, method: 'REQUEST' | 'CANCEL' = 'REQUES
     `X-WR-TIMEZONE:${esc(timezone)}`,
     'BEGIN:VEVENT',
     `UID:${event.uid}@setuflowcrm.com`,
+    recurrenceIdLine,
+    recurrenceRuleLine,
     `SEQUENCE:${Math.max(0, Number(event.sequence ?? 0))}`,
     `DTSTAMP:${utc(now)}`,
     `LAST-MODIFIED:${utc(now)}`,
