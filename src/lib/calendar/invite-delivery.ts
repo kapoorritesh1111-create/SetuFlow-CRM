@@ -194,8 +194,9 @@ export async function deliverCalendarInvitations(options: {
     partstat: partStat(attendee.rsvp_status),
   }));
   const sequence = Number(event.ics_sequence ?? 0);
+  const seriesId = event.recurrence_series_id || event.id;
   const ics = buildIcs({
-    uid: event.id,
+    uid: seriesId,
     title: event.title,
     description: event.description,
     location: event.location,
@@ -209,6 +210,8 @@ export async function deliverCalendarInvitations(options: {
     meetingUrl: event.meeting_url,
     sequence,
     showAs: event.show_as,
+    recurrenceRule: event.recurrence_series_id ? null : event.recurrence_rule,
+    recurrenceId: event.recurrence_series_id ? event.recurrence_original_start : null,
   }, method);
 
   const pending = attendees.filter((attendee: any) => force || Number(attendee.last_invited_sequence ?? -1) !== sequence || attendee.last_invitation_method !== method);

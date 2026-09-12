@@ -125,8 +125,16 @@ test('Scheduling assistant is honest about external availability', () => {
   assert.match(workspace, /Available/);
 });
 
-test('Recurrence UI stays explicitly deferred until a real recurrence engine exists', () => {
+test('Recurrence UI is backed by the real recurrence engine and supports occurrence or series scope', () => {
   assert.match(workspace, /Does not repeat/);
-  assert.match(workspace, /Recurring meetings will be enabled with the recurrence engine/);
-  assert.doesNotMatch(workspace, /recurrenceRule:/);
+  assert.match(workspace, /Every day/);
+  assert.match(workspace, /Every week/);
+  assert.match(workspace, /Every weekday/);
+  assert.match(workspace, /Every month/);
+  assert.match(workspace, /This occurrence/);
+  assert.match(workspace, /Entire series/);
+  assert.match(workspace, /recurrenceRule/);
+  assert.match(workspace, /scope/);
+  assert.match(api, /expandRecurringEvent/);
+  assert.match(api, /recurrenceOccurrenceId/);
 });

@@ -74,7 +74,7 @@ test('Booking readiness trusts canonical persisted working hours instead of a fr
 test('Calendar settings is a real destination and edits the same availability source used by Week view and booking', () => {
   assert.match(calendarSettingsPage, /CalendarSettingsWorkspace/);
   assert.match(calendarSettings, /\/api\/calendar\/availability/);
-  assert.match(calendarSettings, /Save working hours/);
+  assert.match(calendarSettings, /Save Calendar settings/);
   assert.match(calendarSettings, /\/api\/calendar\/zoom/);
   assert.match(calendarSettings, /Connect Zoom/);
   assert.match(calendarSettings, /Reconnect Zoom/);
