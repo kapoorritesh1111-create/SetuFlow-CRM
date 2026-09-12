@@ -8,7 +8,9 @@ export type NotifType =
   | 'payment_received'
   | 'approval_request'
   | 'quote_opened'
-  | 'catalog_engagement';
+  | 'catalog_engagement'
+  | 'mail_received'
+  | 'calendar_reminder';
 
 export type NotificationPriority = 'normal' | 'high' | 'critical';
 
@@ -23,6 +25,8 @@ export type NotificationEntityType =
   | 'rfq'
   | 'payment'
   | 'approval'
+  | 'mail_message'
+  | 'calendar_event'
   | 'other';
 
 export type NotificationTemplateContext = {
@@ -145,6 +149,24 @@ export function getNotificationTemplate(
         icon: 'bar-chart-3',
         priority: 'high',
         entityType: 'lead'
+      };
+    case 'mail_received':
+      return {
+        type,
+        title: 'New email received',
+        body: `${context.actorName || 'A sender'} sent a new message${context.entityRef ? ` · ${context.entityRef}` : ''}.`,
+        icon: 'envelope-o',
+        priority: 'normal',
+        entityType: 'mail_message'
+      };
+    case 'calendar_reminder':
+      return {
+        type,
+        title: 'Calendar reminder',
+        body: `${context.entityRef || 'A meeting'} is coming up${context.dueLabel ? ` ${context.dueLabel}` : ''}.`,
+        icon: 'calendar',
+        priority: 'normal',
+        entityType: 'calendar_event'
       };
   }
 }
