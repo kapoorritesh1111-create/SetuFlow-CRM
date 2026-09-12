@@ -30,37 +30,38 @@ export function MobileCommunicationsChrome({ crmEnabled }: Props) {
   const pathname = usePathname();
   const params = useSearchParams();
   const explicitCrmLaunch = params.get('from') === 'crm' || params.get('source') === 'crm';
-  const returnTo = useMemo(() => safeReturnTo(params.get('returnTo')), [params]);
+  const explicitStandaloneLaunch = params.get('app') === 'setu-mail';
+  const queryReturnTo = useMemo(() => safeReturnTo(params.get('returnTo')), [params]);
   const [crmReturnVisible, setCrmReturnVisible] = useState(explicitCrmLaunch);
+  const [crmReturnTo, setCrmReturnTo] = useState(queryReturnTo);
 
   useEffect(() => {
     try {
       if (explicitCrmLaunch) {
         sessionStorage.setItem('setu-communications-from-crm', '1');
-        sessionStorage.setItem('setu-communications-return-to', returnTo);
+        sessionStorage.setItem('setu-communications-return-to', queryReturnTo);
         setCrmReturnVisible(true);
+        setCrmReturnTo(queryReturnTo);
         return;
       }
-      setCrmReturnVisible(sessionStorage.getItem('setu-communications-from-crm') === '1');
+      const fromCrm = sessionStorage.getItem('setu-communications-from-crm') === '1';
+      const storedReturnTo = safeReturnTo(sessionStorage.getItem('setu-communications-return-to'));
+      setCrmReturnVisible(fromCrm);
+      setCrmReturnTo(storedReturnTo);
     } catch {
       setCrmReturnVisible(explicitCrmLaunch);
+      setCrmReturnTo(queryReturnTo);
     }
-  }, [explicitCrmLaunch, returnTo]);
+  }, [explicitCrmLaunch, queryReturnTo]);
 
   const tabHref = (href: string) => {
-    if (!crmReturnVisible) return href;
-    const query = new URLSearchParams({ from: 'crm', returnTo });
-    return `${href}?${query.toString()}`;
-  };
-
-  const crmHref = useMemo(() => {
-    if (explicitCrmLaunch) return returnTo;
-    try {
-      return safeReturnTo(sessionStorage.getItem('setu-communications-return-to'));
-    } catch {
-      return '/dashboard';
+    if (crmReturnVisible) {
+      const query = new URLSearchParams({ from: 'crm', returnTo: crmReturnTo });
+      return `${href}?${query.toString()}`;
     }
-  }, [explicitCrmLaunch, returnTo]);
+    if (explicitStandaloneLaunch) return `${href}?app=setu-mail`;
+    return href;
+  };
 
   return (
     <nav className={styles.nav} aria-label="SETU Mail mobile navigation" data-setu-communications-mobile-nav>
@@ -82,7 +83,7 @@ export function MobileCommunicationsChrome({ crmEnabled }: Props) {
         })}
         {crmEnabled && crmReturnVisible ? (
           <Link
-            href={crmHref}
+            href={crmReturnTo}
             className={styles.tab}
             onClick={() => {
               try {
