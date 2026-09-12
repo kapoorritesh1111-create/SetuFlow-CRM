@@ -50,12 +50,12 @@ function declarativePayload(payload: PushPayload, badgeCount: number) {
   const navigate = safeNavigate(payload.action_url);
   return {
     web_push: 8030,
+    app_badge: String(badgeCount),
     notification: {
       title: payload.title || 'SETU Mail',
       body: payload.body || 'You have a new Mail or Calendar notification.',
       navigate,
       silent: false,
-      app_badge: String(badgeCount),
       tag: payload.id || `${payload.type || 'mail_received'}:${navigate}`,
       icon: payload.icon || '/icons/setu-mail-192.png',
       data: { type: payload.type || 'mail_received', action_url: payload.action_url || '/mail' },
