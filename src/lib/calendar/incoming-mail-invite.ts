@@ -20,8 +20,51 @@ export type ParsedMailInvite = {
 
 type ParsedDate = { date: Date; timezone: string; allDay: boolean };
 
+const WINDOWS_TIME_ZONES: Record<string, string> = {
+  'eastern standard time': 'America/New_York',
+  'central standard time': 'America/Chicago',
+  'mountain standard time': 'America/Denver',
+  'pacific standard time': 'America/Los_Angeles',
+  'atlantic standard time': 'America/Halifax',
+  'newfoundland standard time': 'America/St_Johns',
+  'gmt standard time': 'Europe/London',
+  'greenwich standard time': 'Atlantic/Reykjavik',
+  'w. europe standard time': 'Europe/Berlin',
+  'central europe standard time': 'Europe/Budapest',
+  'central european standard time': 'Europe/Warsaw',
+  'romance standard time': 'Europe/Paris',
+  'fle standard time': 'Europe/Kyiv',
+  'gtb standard time': 'Europe/Bucharest',
+  'turkey standard time': 'Europe/Istanbul',
+  'india standard time': 'Asia/Kolkata',
+  'china standard time': 'Asia/Shanghai',
+  'tokyo standard time': 'Asia/Tokyo',
+  'aus eastern standard time': 'Australia/Sydney',
+};
+
 export function unfoldIcs(value: string) {
   return value.replace(/\r?\n[ \t]/g, '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+}
+
+function componentLines(lines: string[], component: string) {
+  const begin = `BEGIN:${component.toUpperCase()}`;
+  const end = `END:${component.toUpperCase()}`;
+  let depth = 0;
+  const out: string[] = [];
+  for (const line of lines) {
+    const upper = line.toUpperCase();
+    if (upper === begin) {
+      depth += 1;
+      if (depth === 1) continue;
+    }
+    if (upper === end) {
+      if (depth === 1) break;
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth > 0) out.push(line);
+  }
+  return out;
 }
 
 function property(lines: string[], name: string, all = false) {
@@ -44,6 +87,13 @@ function parameter(meta: string, name: string) {
   return match?.[1]?.replace(/^"|"$/g, '').replace(/\\(["\\])/g, '$1').trim() || null;
 }
 
+function normalizeTimeZone(value: string | null | undefined) {
+  const raw = String(value || '').trim().replace(/^"|"$/g, '');
+  if (!raw) return null;
+  if (isValidTimeZone(raw)) return raw;
+  return WINDOWS_TIME_ZONES[raw.toLowerCase()] || null;
+}
+
 function emailValue(value: string) {
   const candidate = value.replace(/^mailto:/i, '').trim().toLowerCase();
   return /^[^\s@\r\n]+@[^\s@\r\n]+\.[^\s@\r\n]+$/.test(candidate) ? candidate : '';
@@ -52,7 +102,7 @@ function emailValue(value: string) {
 function parseDate(entry: { meta: string; value: string } | null): ParsedDate | null {
   if (!entry) return null;
   const raw = entry.value;
-  const tzid = parameter(entry.meta, 'TZID');
+  const timezone = normalizeTimeZone(parameter(entry.meta, 'TZID'));
   if (/^\d{8}T\d{6}Z$/.test(raw)) {
     const iso = `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}T${raw.slice(9,11)}:${raw.slice(11,13)}:${raw.slice(13,15)}Z`;
     const date = new Date(iso);
@@ -60,45 +110,47 @@ function parseDate(entry: { meta: string; value: string } | null): ParsedDate | 
   }
   if (/^\d{8}T\d{6}$/.test(raw)) {
     const local = `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}T${raw.slice(9,11)}:${raw.slice(11,13)}:${raw.slice(13,15)}`;
-    if (tzid && isValidTimeZone(tzid)) {
-      const date = localDateTimeToUtc(local, tzid);
-      return date && !Number.isNaN(date.valueOf()) ? { date, timezone: tzid, allDay: false } : null;
+    if (timezone) {
+      const date = localDateTimeToUtc(local, timezone);
+      return date && !Number.isNaN(date.valueOf()) ? { date, timezone, allDay: false } : null;
     }
     const date = new Date(`${local}Z`);
     return Number.isNaN(date.valueOf()) ? null : { date, timezone: 'UTC', allDay: false };
   }
   if (/^\d{8}$/.test(raw)) {
     const date = new Date(`${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}T00:00:00Z`);
-    return Number.isNaN(date.valueOf()) ? null : { date, timezone: tzid && isValidTimeZone(tzid) ? tzid : 'UTC', allDay: true };
+    return Number.isNaN(date.valueOf()) ? null : { date, timezone: timezone || 'UTC', allDay: true };
   }
   const date = new Date(raw);
-  return Number.isNaN(date.valueOf()) ? null : { date, timezone: tzid && isValidTimeZone(tzid) ? tzid : 'UTC', allDay: false };
+  return Number.isNaN(date.valueOf()) ? null : { date, timezone: timezone || 'UTC', allDay: false };
 }
 
 export function parseIncomingMailInvite(value: string): ParsedMailInvite | null {
   const lines = unfoldIcs(value);
+  const eventLines = componentLines(lines, 'VEVENT');
+  if (!eventLines.length) return null;
   const methodRaw = String((property(lines, 'METHOD') as any)?.value || 'PUBLISH').toUpperCase();
   if (!['REQUEST', 'PUBLISH', 'CANCEL'].includes(methodRaw)) return null;
   const method = methodRaw as ParsedMailInvite['method'];
-  const uid = text((property(lines, 'UID') as any)?.value);
-  const start = parseDate(property(lines, 'DTSTART') as any);
-  const end = parseDate(property(lines, 'DTEND') as any);
+  const uid = text((property(eventLines, 'UID') as any)?.value);
+  const start = parseDate(property(eventLines, 'DTSTART') as any);
+  const end = parseDate(property(eventLines, 'DTEND') as any);
   if (!uid || !start || !end || end.date <= start.date) return null;
-  const organizerEntry = property(lines, 'ORGANIZER') as { meta: string; value: string } | null;
+  const organizerEntry = property(eventLines, 'ORGANIZER') as { meta: string; value: string } | null;
   const organizerEmail = organizerEntry ? emailValue(organizerEntry.value) : '';
-  const attendees = (property(lines, 'ATTENDEE', true) as Array<{ meta: string; value: string }>).map(entry => ({
+  const attendees = (property(eventLines, 'ATTENDEE', true) as Array<{ meta: string; value: string }>).map(entry => ({
     email: emailValue(entry.value),
     name: text(parameter(entry.meta, 'CN')) || null,
     partstat: parameter(entry.meta, 'PARTSTAT')?.toUpperCase() || null,
     role: parameter(entry.meta, 'ROLE')?.toUpperCase() || null,
   })).filter(item => Boolean(item.email));
-  const title = text((property(lines, 'SUMMARY') as any)?.value) || 'Calendar invitation';
-  const description = text((property(lines, 'DESCRIPTION') as any)?.value);
-  const location = text((property(lines, 'LOCATION') as any)?.value);
-  const urlField = text((property(lines, 'URL') as any)?.value);
+  const title = text((property(eventLines, 'SUMMARY') as any)?.value) || 'Calendar invitation';
+  const description = text((property(eventLines, 'DESCRIPTION') as any)?.value);
+  const location = text((property(eventLines, 'LOCATION') as any)?.value);
+  const urlField = text((property(eventLines, 'URL') as any)?.value);
   const haystack = [urlField, location, description].filter(Boolean).join('\n');
   const meetingUrl = /(https:\/\/[^\s<>"']+)/i.exec(haystack)?.[1]?.replace(/[),.;]+$/g, '') || null;
-  const sequence = Math.max(0, Number.parseInt(String((property(lines, 'SEQUENCE') as any)?.value || '0'), 10) || 0);
+  const sequence = Math.max(0, Number.parseInt(String((property(eventLines, 'SEQUENCE') as any)?.value || '0'), 10) || 0);
   return {
     method,
     uid,
@@ -167,6 +219,6 @@ export function incomingInviteCardHtml(options: { invite: ParsedMailInvite; mess
       ? `<form method="post" action="/api/mail/calendar-invite?mailboxId=${encodeURIComponent(options.mailboxId)}" style="margin-top:18px"><input type="hidden" name="messageId" value="${esc(options.messageId)}"><input type="hidden" name="attachmentId" value="${esc(options.attachmentId)}"><input type="hidden" name="response" value="accepted"><button type="submit" style="min-height:44px;border-radius:10px;border:1px solid #14B8A6;background:#0F766E;color:#fff;padding:10px 15px;font-weight:700;font-size:14px;cursor:pointer">Add to Setu Calendar</button></form>`
       : '';
   const notes = conciseInviteNotes(invite.description, invite.meetingUrl);
-  const organizer = invite.organizer?.name ? `<div style="margin-top:5px">Organizer: <strong style="color:#fff">${esc(invite.organizer.name)}</strong></div>` : '';
+  const organizer = invite.organizer ? `<div style="margin-top:5px">Organizer: <strong style="color:#fff">${esc(invite.organizer.name || invite.organizer.email)}</strong>${invite.organizer.name ? ` <span style="color:#9FB4CB">&lt;${esc(invite.organizer.email)}&gt;</span>` : ''}</div>` : '';
   return `<section data-setu-calendar-invite="true" style="font-family:Arial,sans-serif;margin:0 0 20px;padding:20px;border-radius:18px;background:#0B1B33;color:#F8FAFC;border:1px solid #1D4764;box-shadow:0 8px 24px rgba(2,12,27,.18)"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#5EEAD4;font-weight:800">Setu Calendar invitation</div><div style="padding:5px 9px;border-radius:999px;background:#132A47;color:#D8E6F3;font-size:11px;font-weight:700">${esc(statusLabel)}</div></div><h2 style="margin:12px 0 8px;color:#fff;font-size:22px;line-height:1.25">${esc(invite.title)}</h2><div style="color:#C9D8E8;font-size:14px;line-height:1.65"><div><strong style="color:#fff">${esc(day)}</strong></div><div>${esc(when)} · ${esc(zone)}</div>${invite.location ? `<div style="margin-top:5px">📍 ${esc(invite.location)}</div>` : ''}${organizer}${notes ? `<div style="margin-top:14px;padding:12px;border-radius:10px;background:#10233D"><div style="margin-bottom:4px;color:#5EEAD4;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Notes</div><div style="white-space:pre-wrap;color:#E4EDF6">${esc(notes)}</div></div>` : ''}${invite.meetingUrl ? `<div style="margin-top:14px"><a href="${esc(invite.meetingUrl)}" style="display:inline-block;border-radius:10px;background:#0F766E;color:#fff;padding:10px 14px;font-weight:800;text-decoration:none">Join meeting</a></div>` : ''}</div>${actions}</section>`;
 }
