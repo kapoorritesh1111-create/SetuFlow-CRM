@@ -30,7 +30,7 @@ function normalizePush(payload) {
     title: proposed.title || payload?.title || 'SETU Mail',
     body: proposed.body || payload?.body || 'You have a new Mail or Calendar notification.',
     tag: proposed.tag || payload?.id,
-    appBadge: Number(proposed.app_badge || 0),
+    appBadge: Number(payload?.app_badge || proposed.app_badge || 0),
   };
 }
 
