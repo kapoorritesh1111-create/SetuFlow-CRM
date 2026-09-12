@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SETU Mail">
+  <defs>
+    <linearGradient id="bg" x1="48" y1="460" x2="456" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#041426"/>
+      <stop offset="0.55" stop-color="#0b2e4a"/>
+      <stop offset="1" stop-color="#18c7c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M125 160h262c19 0 35 16 35 35v122c0 19-16 35-35 35H125c-19 0-35-16-35-35V195c0-19 16-35 35-35Z" fill="#fff"/>
+  <path d="M102 183 238 287c11 8 25 8 36 0l136-104" fill="none" stroke="#0b2e4a" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M158 302c35-35 68-53 98-53 36 0 52 28 78 48 19 15 38 24 61 25" fill="none" stroke="#0b2e4a" stroke-width="30" stroke-linecap="round"/>
+</svg>
