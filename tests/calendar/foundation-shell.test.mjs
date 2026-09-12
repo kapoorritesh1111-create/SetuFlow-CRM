@@ -19,16 +19,18 @@ test('Calendar is a real destination in the shared Setu Communications shell', (
   assert.doesNotMatch(shell, /Calendar — coming next/);
 });
 
-test('Communications rail marks Mail and Calendar independently and preserves CRM gating', () => {
-  assert.match(shell, /active=\{!isCalendar\}/);
+test('Communications rail marks Mail, Calendar and Contacts independently and preserves CRM gating', () => {
+  assert.match(shell, /active=\{isMail\}/);
   assert.match(shell, /active=\{isCalendar\}/);
+  assert.match(shell, /active=\{isContacts\}/);
   assert.match(shell, /access\.crmEnabled/);
   assert.match(shell, /CrmProductIcon/);
 });
 
 test('Calendar top search is bridged into calendar content rather than Mail search', () => {
   assert.match(shell, /setu-calendar-search/);
-  assert.match(shell, /Search Setu Calendar/);
+  assert.match(shell, /productName=isCalendar\?'Setu Calendar'/);
+  assert.match(shell, /searchLabel=isMail\?'Search Setu Mail':`Search \$\{productName\}`/);
   assert.match(workspace, /addEventListener\('setu-calendar-search'/);
   assert.match(workspace, /matchesSearch/);
   assert.match(workspace, /calendar_attendees/);

@@ -49,6 +49,39 @@ export function MailActionDialog({ kind, count, folders, busy, onConfirm, onClos
 export type ComposerFields = { to: string; cc: string; bcc: string; subject: string; body: string; html: string };
 export type ComposeCrmContext = null | { company_name?: string | null; contact_name?: string | null; lead_type?: string | null; stage_name?: string | null; next_follow_up_at?: string | null; deal_value?: number | null; deal_currency?: string | null; href?: string | null; createCrmHref?: string | null };
 export type GuruPreview = { suggestion: string; action: string } | null;
+type RecipientSuggestion = { email: string; name: string | null; company: string | null; source: 'contact' | 'crm' | 'history' };
+
+function recipientFragment(value: string) {
+  return value.split(',').pop()?.trim() ?? '';
+}
+
+function RecipientInput({ label, value, disabled, onChange }: { label: 'To' | 'Cc' | 'Bcc'; value: string; disabled: boolean; onChange: (value: string) => void }) {
+  const listId = useId();
+  const [suggestions, setSuggestions] = useState<RecipientSuggestion[]>([]);
+  const fragment = recipientFragment(value);
+  useEffect(() => {
+    if (disabled || fragment.length < 1 || fragment.includes('@') && fragment.includes('.')) { setSuggestions([]); return; }
+    let active = true;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/mail/recipient-suggestions?q=${encodeURIComponent(fragment)}`, { cache: 'no-store' });
+        const payload = await response.json();
+        if (active) setSuggestions(response.ok ? payload.suggestions ?? [] : []);
+      } catch { if (active) setSuggestions([]); }
+    }, 140);
+    return () => { active = false; clearTimeout(timer); };
+  }, [fragment, disabled]);
+  function change(next: string) {
+    const selected = suggestions.find(item => item.email.toLowerCase() === next.trim().toLowerCase());
+    if (selected && value.includes(',')) {
+      const comma = value.lastIndexOf(',');
+      onChange(`${value.slice(0, comma + 1)} ${selected.email}`);
+      return;
+    }
+    onChange(next);
+  }
+  return <><input aria-label={label} list={listId} value={value} onChange={e => change(e.target.value)} autoComplete="off"/><datalist id={listId}>{suggestions.map(item => <option key={item.email} value={item.email}>{[item.name, item.company, item.email].filter(Boolean).join(' · ')}</option>)}</datalist></>;
+}
 
 export function MailComposerPanel({ fields, from, draftId, expanded, minimized, disabled, busyLabel, saveLabel, saveError, signatureOn, signatureText, includeSignature, attachments, crmContext, crmLoading, guruPreview, guruBusy, onField, onEditor, onSignatureToggle, onExpand, onMinimize, onClose, onSend, onUpload, onRemoveAttachment, onDelete, onRetry, onGuru, onGuruInsert, onGuruRegenerate }: {
   fields: ComposerFields; from: string; draftId: string | null; expanded: boolean; minimized: boolean; disabled: boolean; busyLabel: string | null;
@@ -69,8 +102,8 @@ export function MailComposerPanel({ fields, from, draftId, expanded, minimized, 
     </div></div>
     {!minimized && <><div className={styles.composeBody}><div className={styles.field}><span>From</span><p className="min-w-0 break-all py-1.5">{from}</p></div>
       <fieldset disabled={disabled}>
-        <label className={styles.field}><span>To</span><input aria-label="To" value={fields.to} onChange={e => onField('to', e.target.value)} autoComplete="off"/><button type="button" className={styles.copyToggle} onClick={() => setShowCopies(v => !v)}>{showCopies ? 'Hide Cc/Bcc' : 'Cc/Bcc'}</button></label>
-        {showCopies && <><label className={styles.field}><span>Cc</span><input aria-label="Cc" value={fields.cc} onChange={e => onField('cc', e.target.value)} autoComplete="off"/></label><label className={styles.field}><span>Bcc</span><input aria-label="Bcc" value={fields.bcc} onChange={e => onField('bcc', e.target.value)} autoComplete="off"/></label></>}
+        <label className={styles.field}><span>To</span><RecipientInput label="To" value={fields.to} disabled={disabled} onChange={value => onField('to', value)}/><button type="button" className={styles.copyToggle} onClick={() => setShowCopies(v => !v)}>{showCopies ? 'Hide Cc/Bcc' : 'Cc/Bcc'}</button></label>
+        {showCopies && <><label className={styles.field}><span>Cc</span><RecipientInput label="Cc" value={fields.cc} disabled={disabled} onChange={value => onField('cc', value)}/></label><label className={styles.field}><span>Bcc</span><RecipientInput label="Bcc" value={fields.bcc} disabled={disabled} onChange={value => onField('bcc', value)}/></label></>}
         <label className={styles.field}><span>Subject</span><input aria-label="Subject" value={fields.subject} onChange={e => onField('subject', e.target.value)} autoComplete="off"/></label>
         <RichMailEditor html={fields.html} disabled={disabled} onChange={onEditor}/>
       </fieldset>
