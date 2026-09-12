@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import styles from './mobile-communications-chrome.module.css';
 
 type Props = { crmEnabled: boolean; unreadMailCount?: number };
+type BadgingNavigator = Navigator & { setAppBadge?: (contents?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
 
 type Tab = {
   href: string;
@@ -53,6 +54,16 @@ export function MobileCommunicationsChrome({ crmEnabled, unreadMailCount = 0 }: 
       setCrmReturnTo(queryReturnTo);
     }
   }, [explicitCrmLaunch, queryReturnTo]);
+
+  useEffect(() => {
+    const badgeNavigator = navigator as BadgingNavigator;
+    const unread = Math.max(0, Math.floor(Number(unreadMailCount) || 0));
+    if (unread > 0 && badgeNavigator.setAppBadge) {
+      void badgeNavigator.setAppBadge(unread).catch(() => undefined);
+    } else if (unread === 0 && badgeNavigator.clearAppBadge) {
+      void badgeNavigator.clearAppBadge().catch(() => undefined);
+    }
+  }, [unreadMailCount]);
 
   const tabHref = (href: string) => {
     if (crmReturnVisible) {
