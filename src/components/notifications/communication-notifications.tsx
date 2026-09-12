@@ -8,7 +8,7 @@ import { COMMUNICATION_NOTIFICATION_TYPES, COMMUNICATION_PUSH_SCOPE, communicati
 import styles from './communication-notifications.module.css';
 
 type Props = { organizationId: string; userId: string; mobile?: boolean };
-type Notice = { id: string; type: string; title: string; body: string | null; action_url: string | null; created_at: string };
+type Notice = { id: string; type: string; title: string; body: string | null; action_url: string | null; created_at: string; occurrence_start?: string | null; related_ids?: string[] };
 type PushState = 'checking' | 'idle' | 'saving' | 'enabled' | 'install' | 'unsupported' | 'denied' | 'missing-key' | 'error';
 const publicKey = process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY || '';
 
@@ -31,6 +31,7 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
   const db = client as unknown as SupabaseClient;
   const [items, setItems] = useState<Notice[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [feedTimezone, setFeedTimezone] = useState('UTC');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
@@ -49,16 +50,18 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
   const load = useCallback(async () => {
     const version = ++requestVersion.current;
     try {
-      // Filter in the database BEFORE the limit. SMC alerts cannot crowd out mail.
-      const result = await db.from('notifications')
-        .select('id,type,title,body,action_url,created_at', { count: 'exact' })
-        .eq('organization_id', organizationId).eq('user_id', userId)
-        .in('type', [...COMMUNICATION_NOTIFICATION_TYPES]).eq('read', false)
-        .is('archived_at', null).order('created_at', { ascending: false }).limit(50);
+      // The invoker RPC scopes by auth.uid(), active membership, occurrence date
+      // and Calendar timezone BEFORE deduplication, count and page limit.
+      const result = await db.rpc('setu_communication_notifications_today', {
+        p_organization_id: organizationId,
+        p_device_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        p_limit: 50,
+      });
       if (result.error) throw result.error;
       if (mounted.current && version === requestVersion.current) {
-        setItems((result.data || []) as Notice[]);
-        setUnreadCount(result.count ?? result.data?.length ?? 0);
+        setItems((result.data?.items || []) as Notice[]);
+        setUnreadCount(Number(result.data?.unreadCount || 0));
+        setFeedTimezone(String(result.data?.timezone || 'UTC'));
         setError('');
       }
     } catch {
@@ -163,7 +166,7 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
 
   const markRead = async (notice: Notice) => {
     const result = await db.from('notifications').update({ read: true, read_at: new Date().toISOString() })
-      .eq('id', notice.id).eq('organization_id', organizationId).eq('user_id', userId)
+      .in('id', notice.related_ids?.length ? notice.related_ids : [notice.id]).eq('organization_id', organizationId).eq('user_id', userId)
       .in('type', [...COMMUNICATION_NOTIFICATION_TYPES]);
     if (result.error) setError('The alert could not be marked read. It will remain in your notifications.');
     else await load();
@@ -189,14 +192,14 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
       {mobile ? <span>Notifications</span> : null}
     </button>
     <dialog ref={dialog} className={styles.dialog} aria-label="Mail and Calendar notifications" onCancel={() => setOpen(false)} onClose={() => setOpen(false)} onClick={event => { if (event.target === event.currentTarget) setOpen(false); }}>
-      <div className={styles.header}><div><h2>Mail &amp; Calendar notifications</h2><p>{unreadCount ? `${unreadCount} unread` : 'Your communication alerts'}</p></div><button type="button" className={styles.close} aria-label="Close notifications" onClick={() => setOpen(false)}><X size={20} /></button></div>
+      <div className={styles.header}><div><h2>Mail &amp; Calendar notifications</h2><p>{unreadCount ? `${unreadCount} unread` : 'Your communication alerts'}</p><p>Today's calendar reminders - {feedTimezone}</p></div><button type="button" className={styles.close} aria-label="Close notifications" onClick={() => setOpen(false)}><X size={20} /></button></div>
       <div className={styles.setup}><strong>{push === 'enabled' ? 'Notifications enabled' : 'Notifications on this device'}</strong><p>{hint}</p>{canEnable ? <div className={styles.actions}>{button}</div> : null}{pushError ? <p className={styles.error} role="alert">{pushError}</p> : null}</div>
       <div className={styles.filters} aria-label="Filter communication notifications">{[['all', 'All'], ['mail_received', 'Mail'], ['calendar_reminder', 'Calendar']].map(([value, label]) => <button type="button" key={value} className={styles.filter} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
       <div className={styles.list}>
         {error ? <div role="alert"><p className={styles.error}>{error}</p><button type="button" className={styles.secondary} onClick={() => void load()}>Retry</button></div> : null}
         {loading ? <p className={styles.empty} role="status">Loading notifications...</p> : !error && !visibleItems.length ? <p className={styles.empty}>All caught up.<br />New mail and calendar reminders will appear here.</p> : null}
         {visibleItems.map(notice => <a className={styles.card} key={notice.id} href={communicationActionUrl(notice.type, notice.action_url)} onClick={event => { event.preventDefault(); void markRead(notice).catch(() => undefined).finally(() => window.location.assign(communicationActionUrl(notice.type, notice.action_url))); }}>
-          {notice.type === 'calendar_reminder' ? <CalendarDays size={20} /> : <Mail size={20} />}<span><strong>{notice.title}</strong>{notice.body ? <p>{notice.body}</p> : null}<time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time></span>
+          {notice.type === 'calendar_reminder' ? <CalendarDays size={20} /> : <Mail size={20} />}<span><strong>{notice.title}</strong>{notice.occurrence_start ? <p>{new Intl.DateTimeFormat(undefined, { timeZone: feedTimezone, dateStyle: 'medium', timeStyle: 'short' }).format(new Date(notice.occurrence_start))} - {feedTimezone}</p> : notice.body ? <p>{notice.body}</p> : null}<time dateTime={notice.created_at}>{new Date(notice.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</time></span>
         </a>)}
       </div>
     </dialog>

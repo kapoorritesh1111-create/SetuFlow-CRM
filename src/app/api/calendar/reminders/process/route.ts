@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { expandRecurringEvent } from '@/lib/calendar/recurrence';
+import { isCalendarReminderDue } from '@/lib/calendar/reminder-window';
 import { dispatchCommunicationNotification } from '@/lib/notifications/communication-notification-service';
 
 export const dynamic = 'force-dynamic';
@@ -64,7 +65,7 @@ async function sendInApp(db: any, event: any, occurrenceStart: string) {
     entityType: 'calendar_event',
     entityId: event.id,
     entityRef: `${event.id}:${occurrenceIso}`,
-    actionUrl: `/calendar?eventId=${encodeURIComponent(event.id)}`,
+    actionUrl: `/calendar?eventId=${encodeURIComponent(event.id)}&occurrenceStart=${encodeURIComponent(occurrenceIso)}`,
     priority: 'normal',
   });
 }
@@ -137,8 +138,7 @@ export async function GET(req: NextRequest) {
     for (const occurrenceStart of occurrences) {
       const occurrence = new Date(occurrenceStart);
       if (recurringRoot && recurringExceptions.has(exceptionKey(event.id, occurrence.toISOString()))) continue;
-      const due = new Date(occurrence.getTime() - Number(reminder.minutes_before || 0) * 60000);
-      if (due > now || occurrence < window.from) continue;
+      if (!isCalendarReminderDue(occurrenceStart, Number(reminder.minutes_before || 0), now)) continue;
 
       let claimed = false;
       try {
