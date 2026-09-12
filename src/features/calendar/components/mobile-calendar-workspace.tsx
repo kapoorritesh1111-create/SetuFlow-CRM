@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { CalendarPeopleInput } from './calendar-people-input';
 
 type ShowAs = 'busy' | 'free' | 'tentative' | 'out_of_office' | 'working_elsewhere';
 type Attendee = { email: string; name?: string | null; attendee_type?: 'required' | 'optional'; rsvp_status: string };
@@ -19,6 +20,7 @@ type MobileEvent = {
   meeting_provider: string;
   meeting_url?: string | null;
   location?: string | null;
+  source_event_id?: string | null;
   calendar_attendees?: Attendee[];
   calendar_reminders?: Reminder[];
 };
@@ -50,6 +52,7 @@ export function MobileCalendarWorkspace() {
   const [selected, setSelected] = useState<MobileEvent | null>(null);
   const [draftStart, setDraftStart] = useState<Date | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  const openedEventParam = useRef<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -74,6 +77,16 @@ export function MobileCalendarWorkspace() {
       setComposerOpen(true);
     }
   }, [params]);
+  useEffect(() => {
+    const eventId = params.get('eventId');
+    if (!eventId || openedEventParam.current === eventId || !events.length) return;
+    const target = events.find(event => event.id === eventId || event.source_event_id === eventId);
+    if (!target) return;
+    openedEventParam.current = eventId;
+    setSelected(target);
+    setDraftStart(null);
+    setComposerOpen(true);
+  }, [params, events]);
 
   const groups = useMemo(() => events.reduce<Record<string, MobileEvent[]>>((acc, event) => {
     const key = new Date(event.starts_at).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
@@ -253,8 +266,8 @@ function MobileEventComposer({ event, defaultStart, guest, lead, mailThread, onC
         <MobileField label="Title"><input value={title} onChange={input => setTitle(input.target.value)} placeholder="Meeting title" className="mobile-calendar-input" /></MobileField>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><MobileField label="Starts"><input type="datetime-local" value={startsAt} onChange={input => changeStart(input.target.value)} className="mobile-calendar-input" /></MobileField><MobileField label="Ends"><input type="datetime-local" value={endsAt} min={startsAt} onChange={input => setEndsAt(input.target.value)} className="mobile-calendar-input" /></MobileField></div>
         <label className="flex items-center gap-2 text-xs font-bold text-slate-700"><input type="checkbox" checked={isAllDay} onChange={input => setIsAllDay(input.target.checked)} />All-day event</label>
-        <MobileField label="Required attendees"><input value={requiredPeople} onChange={input => setRequiredPeople(input.target.value)} placeholder="buyer@company.com" className="mobile-calendar-input" /></MobileField>
-        <MobileField label="Optional attendees"><input value={optionalPeople} onChange={input => setOptionalPeople(input.target.value)} placeholder="optional@company.com" className="mobile-calendar-input" /></MobileField>
+        <MobileField label="Required attendees"><CalendarPeopleInput ariaLabel="Required attendees" value={requiredPeople} onChange={setRequiredPeople} placeholder="Start typing a name or email" className="mobile-calendar-input" /></MobileField>
+        <MobileField label="Optional attendees"><CalendarPeopleInput ariaLabel="Optional attendees" value={optionalPeople} onChange={setOptionalPeople} placeholder="Start typing a name or email" className="mobile-calendar-input" /></MobileField>
         <MobileField label="Location"><input value={location} onChange={input => setLocation(input.target.value)} placeholder="Office, booth, customer site…" className="mobile-calendar-input" /></MobileField>
         <MobileField label="Meeting type"><select value={provider} onChange={input => setProvider(input.target.value)} className="mobile-calendar-input"><option value="zoom">Zoom meeting</option><option value="custom">Custom meeting link</option><option value="in_person">In person</option><option value="none">No online meeting</option></select></MobileField>
         {provider === 'custom' ? <MobileField label="Meeting link"><input value={meetingUrl} onChange={input => setMeetingUrl(input.target.value)} placeholder="https://…" className="mobile-calendar-input" /></MobileField> : null}

@@ -30,9 +30,22 @@ export async function GET() {
       listUserMailboxes(ctx.db, ctx.organizationId, ctx.userId),
       resolveUserMailbox(ctx.db, ctx.organizationId, ctx.userId),
     ]);
+    const mailboxIds = mailboxes.filter(mailbox => mailbox.can_read).map(mailbox => mailbox.id);
+    let unreadMailCount = 0;
+    if (mailboxIds.length) {
+      const unread = await ctx.db.from('mail_messages')
+        .select('id', { head: true, count: 'exact' })
+        .eq('organization_id', ctx.organizationId)
+        .in('mailbox_id', mailboxIds)
+        .eq('direction', 'inbound')
+        .eq('is_read', false)
+        .not('folder', 'in', '(junk,spam,trash)');
+      if (!unread.error) unreadMailCount = unread.count ?? 0;
+    }
     return NextResponse.json({
       activeMailboxId: active?.id ?? null,
       crmEnabled: ctx.crmEnabled,
+      unreadMailCount,
       mailboxes: mailboxes.map(({ id, address, display_name, is_primary, can_read, can_send, can_manage }) => ({ id, address, display_name: display_name ?? null, is_primary, can_read, can_send, can_manage })),
     }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch {

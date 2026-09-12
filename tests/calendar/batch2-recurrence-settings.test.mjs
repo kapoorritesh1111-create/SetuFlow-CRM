@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const recurrence = fs.readFileSync('src/lib/calendar/recurrence.ts', 'utf8');
 const calendarApi = fs.readFileSync('src/app/api/calendar/route.ts', 'utf8');
 const reminderApi = fs.readFileSync('src/app/api/calendar/reminders/process/route.ts', 'utf8');
+const communicationNotifications = fs.readFileSync('src/lib/notifications/communication-notification-service.ts', 'utf8');
 const preferenceApi = fs.readFileSync('src/app/api/calendar/preferences/route.ts', 'utf8');
 const availabilityApi = fs.readFileSync('src/app/api/calendar/availability/route.ts', 'utf8');
 const settings = fs.readFileSync('src/features/calendar/components/calendar-settings-workspace.tsx', 'utf8');
@@ -31,7 +32,10 @@ test('CAL-08 stores canonical timezone preferences and validates IANA zones', ()
 test('CAL-08 reminders are due-time driven, create real in-app notifications and track recurring occurrence delivery', () => {
   assert.doesNotMatch(reminderApi, /\.gte\('created_at'/);
   assert.match(reminderApi, /\.is\('sent_at', null\)|reminder\.sent_at/);
-  assert.match(reminderApi, /from\('notifications'\)\.insert/);
+  assert.match(reminderApi, /dispatchCommunicationNotification/);
+  assert.match(reminderApi, /type: 'calendar_reminder'/);
+  assert.match(communicationNotifications, /from\('notifications'\)\.insert/);
+  assert.match(communicationNotifications, /get_effective_notif_pref/);
   assert.match(reminderApi, /calendar_reminder_deliveries/);
   assert.match(reminderApi, /expandRecurringEvent/);
   assert.match(reminderApi, /event\.timezone/);

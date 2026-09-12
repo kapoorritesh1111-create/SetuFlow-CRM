@@ -9,6 +9,8 @@ export const notificationTypes = [
   { key: 'approval_request', label: 'Approval request', description: 'A teammate requests approval.' },
   { key: 'quote_opened', label: 'Quote opened', description: 'A recipient opens a quote.' },
   { key: 'catalog_engagement', label: 'Catalog engagement', description: 'A buyer opens, views, downloads, selects, or requests quote activity from a shared catalog.' },
+  { key: 'mail_received', label: 'New Mail received', description: 'A new message arrives in one of your assigned Setu Mail mailboxes.' },
+  { key: 'calendar_reminder', label: 'Calendar reminder', description: 'A Setu Calendar meeting or event is approaching.' },
 ] as const;
 
 export const notificationChannels = [
