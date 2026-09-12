@@ -51,6 +51,19 @@ async function sendReply(options: { from: string; invite: NonNullable<ReturnType
   const payload = await response.json().catch(()=>({})) as any; if (!response.ok) throw new Error(payload?.message || payload?.error || 'Unable to send the calendar response.');
 }
 
+async function ensureDefaultReminder(db: any, organizationId: string, userId: string, eventId: string, startsAt: string) {
+  if (!eventId || new Date(startsAt).getTime() <= Date.now()) return;
+  const { data: existing } = await db.from('calendar_reminders').select('id').eq('organization_id', organizationId).eq('event_id', eventId).limit(1);
+  if (existing?.length) return;
+  const { data: preference } = await db.from('calendar_preferences').select('default_reminder_minutes,default_reminder_channels').eq('organization_id', organizationId).eq('user_id', userId).maybeSingle();
+  const minutes = Number.isFinite(Number(preference?.default_reminder_minutes)) ? Math.max(0, Math.min(10080, Number(preference.default_reminder_minutes))) : 15;
+  const channels = Array.isArray(preference?.default_reminder_channels) && preference.default_reminder_channels.length ? preference.default_reminder_channels : ['in_app'];
+  const rows = [...new Set(channels)].filter(channel => channel === 'in_app' || channel === 'email').map(channel => ({ organization_id: organizationId, event_id: eventId, channel, minutes_before: minutes }));
+  if (!rows.length) rows.push({ organization_id: organizationId, event_id: eventId, channel: 'in_app', minutes_before: minutes });
+  const { error } = await db.from('calendar_reminders').insert(rows);
+  if (error) console.warn('calendar-invite default reminder insert failed', { eventId, error: error.message });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const ctx = await mailOrganizerContext(request);
@@ -96,6 +109,7 @@ export async function POST(request: NextRequest) {
       const patch={ title:invite.title,description:calendarDescription,location:invite.location,starts_at:invite.startsAt,ends_at:invite.endsAt,timezone:invite.timezone,is_all_day:invite.isAllDay,status:requestedResponse==='tentative'?'tentative':'confirmed',cancelled_at:null,visibility:'organization',show_as:requestedResponse==='tentative'?'tentative':'busy',meeting_provider:invite.meetingUrl?'custom':'none',meeting_url:invite.meetingUrl,meeting_metadata:metadata,updated_at:now };
       if (existing) { const result=await ctx.db.from('calendar_events').update(patch).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) { console.error('calendar-invite update failed',result.error); return NextResponse.json({error:'Unable to update this invitation in Calendar.'},{status:500}); } event=result.data; }
       else { const result=await ctx.db.from('calendar_events').insert({ ...patch,organization_id:ctx.organizationId,owner_user_id:ctx.userId,created_by:ctx.userId }).select('id,title,starts_at,ends_at').single(); if(result.error||!result.data) { console.error('calendar-invite insert failed',result.error); return NextResponse.json({error:'Unable to add this invitation to Calendar.'},{status:500}); } event=result.data; }
+      if (event?.id) await ensureDefaultReminder(ctx.db, ctx.organizationId, ctx.userId, event.id, event.starts_at || invite.startsAt);
     }
     let rsvpDelivered = true; let rsvpError: string | null = null;
     if (invite.method === 'REQUEST') {
