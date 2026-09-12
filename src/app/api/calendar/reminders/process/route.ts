@@ -100,8 +100,6 @@ export async function GET(req: NextRequest) {
     for (const row of rows ?? []) delivered.add(`${row.reminder_id}|${new Date(row.occurrence_start).toISOString()}|${row.channel}`);
   }
 
-  // A moved/cancelled occurrence has its own cloned reminder rows. Suppress the
-  // root-series reminder for the original occurrence so users never receive both.
   const recurringExceptions = new Set<string>();
   if (recurringEventIds.length) {
     const { data: rows } = await db.from('calendar_events')
@@ -141,8 +139,9 @@ export async function GET(req: NextRequest) {
           let recipient = profileCache.get(event.owner_user_id);
           if (recipient === undefined) {
             const { data: profile } = await db.from('profiles').select('email').eq('id', event.owner_user_id).maybeSingle();
-            recipient = profile?.email || null;
-            profileCache.set(event.owner_user_id, recipient);
+            const resolvedRecipient: string | null = profile?.email ? String(profile.email) : null;
+            profileCache.set(event.owner_user_id, resolvedRecipient);
+            recipient = resolvedRecipient;
           }
           if (!recipient) throw new Error('Calendar owner email is unavailable');
           await sendEmail(event, occurrence.toISOString(), recipient);
