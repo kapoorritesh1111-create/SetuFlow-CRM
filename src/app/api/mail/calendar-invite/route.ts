@@ -5,6 +5,7 @@ import { isValidTimeZone, localDateTimeToUtc } from '@/lib/calendar/recurrence';
 
 export const dynamic = 'force-dynamic';
 const ATTACHMENT_BUCKET = 'setu-mail-attachments';
+type ParsedDate = { date: Date; timezone: string; allDay: boolean };
 
 function fail(error: unknown) {
   if (error instanceof MailAccessError) return NextResponse.json({ error: error.message }, { status: error.status });
@@ -28,7 +29,7 @@ function text(value: string | null | undefined) {
   return String(value || '').replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\').trim();
 }
 
-function parseDate(entry: ReturnType<typeof field>) {
+function parseDate(entry: ReturnType<typeof field>): ParsedDate | null {
   if (!entry) return null;
   const raw = entry.value;
   const tzid = /(?:^|;)TZID=([^;:]+)/i.exec(entry.meta)?.[1]?.replace(/^"|"$/g, '') || null;
@@ -39,7 +40,11 @@ function parseDate(entry: ReturnType<typeof field>) {
   }
   if (/^\d{8}T\d{6}$/.test(raw)) {
     const local = `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}T${raw.slice(9,11)}:${raw.slice(11,13)}:${raw.slice(13,15)}`;
-    if (tzid && isValidTimeZone(tzid)) return { date: localDateTimeToUtc(local, tzid), timezone: tzid, allDay: false };
+    if (tzid && isValidTimeZone(tzid)) {
+      const date = localDateTimeToUtc(local, tzid);
+      if (!date || Number.isNaN(date.valueOf())) return null;
+      return { date, timezone: tzid, allDay: false };
+    }
     const date = new Date(`${local}Z`);
     return Number.isNaN(date.valueOf()) ? null : { date, timezone: 'UTC', allDay: false };
   }
