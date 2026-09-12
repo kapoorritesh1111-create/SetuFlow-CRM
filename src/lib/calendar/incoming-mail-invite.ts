@@ -119,7 +119,6 @@ export function parseIncomingMailInvite(value: string): ParsedMailInvite | null 
 function esc(value: unknown) {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
-
 function utc(value: string) { return new Date(value).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
 function icsText(value: string | null | undefined) { return String(value || '').replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;'); }
 function icsParam(value: string | null | undefined) { return `"${String(value || '').replace(/(["\\])/g, '\\$1')}"`; }
@@ -138,6 +137,21 @@ export function buildIncomingInviteReply(invite: ParsedMailInvite, attendee: { e
   return `${lines.join('\r\n')}\r\n`;
 }
 
+/** Keep genuine organizer notes, while removing provider-generated meeting boilerplate. */
+export function conciseInviteNotes(description: string | null, meetingUrl: string | null) {
+  let value = String(description || '').trim();
+  if (!value) return '';
+  if (meetingUrl) value = value.split(meetingUrl).join(' ');
+  const providerMarker = /(?:^|\n|\r)(?:Microsoft Teams meeting|Join Zoom Meeting|Google Meet|View Details and Replies|________________________________________________________________________________)/i;
+  const marker = providerMarker.exec(value);
+  if (marker?.index !== undefined) value = value.slice(0, marker.index);
+  value = value
+    .replace(/(?:Join on your computer, mobile app or room device|Click here to join the meeting|Meeting ID:\s*[^\n]+|Passcode:\s*[^\n]+|Download Teams|Join on the web|Learn More|Meeting options)/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return value.slice(0, 1200);
+}
+
 export function incomingInviteCardHtml(options: { invite: ParsedMailInvite; messageId: string; attachmentId: string; mailboxId: string; mailboxAddress: string; response?: string | null }) {
   const { invite } = options;
   const zone = isValidTimeZone(invite.timezone) ? invite.timezone : 'UTC';
@@ -147,7 +161,12 @@ export function incomingInviteCardHtml(options: { invite: ParsedMailInvite; mess
   const response = String(options.response || '').toLowerCase();
   const statusLabel = response === 'accepted' ? 'Accepted' : response === 'tentative' ? 'Tentative' : response === 'declined' ? 'Declined' : invite.method === 'CANCEL' ? 'Cancelled' : 'Response requested';
   const form = (choice: InviteResponse, label: string, primary = false) => `<form method="post" action="/api/mail/calendar-invite?mailboxId=${encodeURIComponent(options.mailboxId)}" style="display:inline;margin:0"><input type="hidden" name="messageId" value="${esc(options.messageId)}"><input type="hidden" name="attachmentId" value="${esc(options.attachmentId)}"><input type="hidden" name="response" value="${choice}"><button type="submit" style="min-height:44px;border-radius:10px;border:${primary ? '1px solid #14B8A6' : '1px solid #58708A'};background:${primary ? '#0F766E' : '#10233D'};color:#fff;padding:10px 15px;font-weight:700;font-size:14px;cursor:pointer">${label}</button></form>`;
-  const actions = invite.method === 'REQUEST' ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px">${form('accepted','Accept',true)}${form('tentative','Tentative')}${form('declined','Decline')}</div>` : invite.method === 'PUBLISH' ? `<form method="post" action="/api/mail/calendar-invite?mailboxId=${encodeURIComponent(options.mailboxId)}" style="margin-top:18px"><input type="hidden" name="messageId" value="${esc(options.messageId)}"><input type="hidden" name="attachmentId" value="${esc(options.attachmentId)}"><input type="hidden" name="response" value="accepted"><button type="submit" style="min-height:44px;border-radius:10px;border:1px solid #14B8A6;background:#0F766E;color:#fff;padding:10px 15px;font-weight:700;font-size:14px;cursor:pointer">Add to Setu Calendar</button></form>` : '';
-  const attendees = invite.attendees.slice(0, 4).map(item => `<span style="display:inline-block;margin:2px 4px 2px 0;padding:4px 8px;border-radius:999px;background:#17304F;color:#D8E6F3;font-size:12px">${esc(item.name || item.email)}</span>`).join('');
-  return `<section data-setu-calendar-invite="true" style="font-family:Arial,sans-serif;margin:0 0 20px;padding:20px;border-radius:18px;background:#0B1B33;color:#F8FAFC;border:1px solid #1D4764;box-shadow:0 8px 24px rgba(2,12,27,.18)"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#5EEAD4;font-weight:800">Setu Calendar invitation</div><div style="padding:5px 9px;border-radius:999px;background:#132A47;color:#D8E6F3;font-size:11px;font-weight:700">${esc(statusLabel)}</div></div><h2 style="margin:12px 0 8px;color:#fff;font-size:22px;line-height:1.25">${esc(invite.title)}</h2><div style="color:#C9D8E8;font-size:14px;line-height:1.65"><div><strong style="color:#fff">${esc(day)}</strong></div><div>${esc(when)} · ${esc(zone)}</div>${invite.location ? `<div style="margin-top:5px">📍 ${esc(invite.location)}</div>` : ''}${invite.organizer ? `<div style="margin-top:5px">Organizer: <strong style="color:#fff">${esc(invite.organizer.name || invite.organizer.email)}</strong></div>` : ''}${invite.meetingUrl ? `<div style="margin-top:10px"><a href="${esc(invite.meetingUrl)}" style="color:#5EEAD4;font-weight:700">Join meeting</a></div>` : ''}</div>${attendees ? `<div style="margin-top:12px">${attendees}</div>` : ''}${actions}<div style="margin-top:12px;color:#7890AA;font-size:11px">Response will be saved to Setu Calendar${invite.organizer ? ` and sent to ${esc(invite.organizer.email)}` : ''}.</div></section>`;
+  const actions = invite.method === 'REQUEST'
+    ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px">${form('accepted','Accept',true)}${form('tentative','Tentative')}${form('declined','Decline')}</div>`
+    : invite.method === 'PUBLISH'
+      ? `<form method="post" action="/api/mail/calendar-invite?mailboxId=${encodeURIComponent(options.mailboxId)}" style="margin-top:18px"><input type="hidden" name="messageId" value="${esc(options.messageId)}"><input type="hidden" name="attachmentId" value="${esc(options.attachmentId)}"><input type="hidden" name="response" value="accepted"><button type="submit" style="min-height:44px;border-radius:10px;border:1px solid #14B8A6;background:#0F766E;color:#fff;padding:10px 15px;font-weight:700;font-size:14px;cursor:pointer">Add to Setu Calendar</button></form>`
+      : '';
+  const notes = conciseInviteNotes(invite.description, invite.meetingUrl);
+  const organizer = invite.organizer?.name ? `<div style="margin-top:5px">Organizer: <strong style="color:#fff">${esc(invite.organizer.name)}</strong></div>` : '';
+  return `<section data-setu-calendar-invite="true" style="font-family:Arial,sans-serif;margin:0 0 20px;padding:20px;border-radius:18px;background:#0B1B33;color:#F8FAFC;border:1px solid #1D4764;box-shadow:0 8px 24px rgba(2,12,27,.18)"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#5EEAD4;font-weight:800">Setu Calendar invitation</div><div style="padding:5px 9px;border-radius:999px;background:#132A47;color:#D8E6F3;font-size:11px;font-weight:700">${esc(statusLabel)}</div></div><h2 style="margin:12px 0 8px;color:#fff;font-size:22px;line-height:1.25">${esc(invite.title)}</h2><div style="color:#C9D8E8;font-size:14px;line-height:1.65"><div><strong style="color:#fff">${esc(day)}</strong></div><div>${esc(when)} · ${esc(zone)}</div>${invite.location ? `<div style="margin-top:5px">📍 ${esc(invite.location)}</div>` : ''}${organizer}${notes ? `<div style="margin-top:14px;padding:12px;border-radius:10px;background:#10233D"><div style="margin-bottom:4px;color:#5EEAD4;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em">Notes</div><div style="white-space:pre-wrap;color:#E4EDF6">${esc(notes)}</div></div>` : ''}${invite.meetingUrl ? `<div style="margin-top:14px"><a href="${esc(invite.meetingUrl)}" style="display:inline-block;border-radius:10px;background:#0F766E;color:#fff;padding:10px 14px;font-weight:800;text-decoration:none">Join meeting</a></div>` : ''}</div>${actions}</section>`;
 }

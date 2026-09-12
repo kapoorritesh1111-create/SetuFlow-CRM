@@ -53,8 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         calendarCard=incomingInviteCardHtml({invite,messageId:params.id,attachmentId:calendarAttachment.id,mailboxId:ctx.mailbox.id,mailboxAddress:ctx.mailbox.address,response});
       }
     }
-    const sanitizedOriginal=sanitizeMailHtml(messageFields.html_body)||plainTextToMailHtml(String(messageFields.text_body||''));
-    const htmlBody=calendarCard?`${calendarCard}<details style="margin-top:18px"><summary style="cursor:pointer;font-weight:700;color:#64748b">Original invitation message</summary><div style="margin-top:12px">${sanitizedOriginal}</div></details>`:(sanitizeMailHtml(messageFields.html_body)||null);
+    const htmlBody=calendarCard ? calendarCard : (sanitizeMailHtml(messageFields.html_body)||null);
     const safeMessage={...messageFields,html_body:htmlBody};
     const visibleAttachments=calendarInvite?allAttachments.filter(item=>item.id!==calendarAttachment.id):allAttachments;
     return NextResponse.json({message:safeMessage,attachments:visibleAttachments,calendarInvite},{headers:{'Cache-Control':'private, no-store'}});

@@ -16,7 +16,6 @@ function decodeApplicationServerKey(value: string) {
   const raw = window.atob(value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4));
   return Uint8Array.from(raw, char => char.charCodeAt(0));
 }
-
 function subscriptionUsesPublicKey(subscription: PushSubscription, value: string) {
   const current = subscription.options.applicationServerKey;
   if (!current) return false;
@@ -25,7 +24,6 @@ function subscriptionUsesPublicKey(subscription: PushSubscription, value: string
   return actual.length === expected.length && actual.every((byte, index) => byte === expected[index]);
 }
 
-/** Only mount the visible instance: one query loop and one permission controller. */
 export function CommunicationNotifications(props: Props) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -40,7 +38,6 @@ export function CommunicationNotifications(props: Props) {
 
 function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
   const client = useMemo(() => createClient(), []);
-  // The additive app_scope column is intentionally isolated from legacy CRM types.
   const db = client as unknown as SupabaseClient;
   const [items, setItems] = useState<Notice[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -63,8 +60,6 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
   const load = useCallback(async () => {
     const version = ++requestVersion.current;
     try {
-      // The invoker RPC scopes by auth.uid(), active membership, occurrence date
-      // and Calendar timezone BEFORE deduplication, count and page limit.
       const result = await db.rpc('setu_communication_notifications_today', {
         p_organization_id: organizationId,
         p_device_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -122,16 +117,12 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
         let subscription = await worker.pushManager.getSubscription();
         if (subscription && !subscriptionUsesPublicKey(subscription, publicKey)) {
           const staleEndpoint = subscription.endpoint;
-          await db.from('push_subscriptions').delete()
-            .eq('organization_id', organizationId).eq('user_id', userId)
-            .eq('app_scope', COMMUNICATION_PUSH_SCOPE).eq('endpoint', staleEndpoint);
+          await db.from('push_subscriptions').delete().eq('organization_id', organizationId).eq('user_id', userId).eq('app_scope', COMMUNICATION_PUSH_SCOPE).eq('endpoint', staleEndpoint);
           await subscription.unsubscribe();
           subscription = null;
         }
         if (!subscription) { setPush('idle'); return; }
-        const saved = await db.from('push_subscriptions').select('id')
-          .eq('organization_id', organizationId).eq('user_id', userId)
-          .eq('app_scope', COMMUNICATION_PUSH_SCOPE).eq('endpoint', subscription.endpoint).maybeSingle();
+        const saved = await db.from('push_subscriptions').select('id').eq('organization_id', organizationId).eq('user_id', userId).eq('app_scope', COMMUNICATION_PUSH_SCOPE).eq('endpoint', subscription.endpoint).maybeSingle();
         if (saved.error) throw saved.error;
         if (!cancelled) setPush(saved.data && Notification.permission === 'granted' ? 'enabled' : 'idle');
       } catch { if (!cancelled) setPush('error'); }
@@ -142,9 +133,7 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
 
   useEffect(() => {
     const { data } = client.auth.onAuthStateChange(event => {
-      if (event === 'SIGNED_OUT') {
-        void registration.current?.pushManager.getSubscription().then(subscription => subscription?.unsubscribe()).catch(() => undefined);
-      }
+      if (event === 'SIGNED_OUT') void registration.current?.pushManager.getSubscription().then(subscription => subscription?.unsubscribe()).catch(() => undefined);
     });
     return () => data.subscription.unsubscribe();
   }, [client]);
@@ -157,30 +146,23 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
 
   const enablePush = async () => {
     if (push === 'saving' || push === 'enabled') return;
-    setPushError('');
-    setPush('saving');
+    setPushError(''); setPush('saving');
     try {
-      // First asynchronous call after the tap: preserve iOS user activation.
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') { setPush(permission === 'denied' ? 'denied' : 'idle'); return; }
       const worker = registration.current || await navigator.serviceWorker.register('/setu-mail-sw.js', { scope, updateViaCache: 'none' });
-      await waitForPushWorker(worker);
-      registration.current = worker;
+      await waitForPushWorker(worker); registration.current = worker;
       const applicationServerKey = decodeApplicationServerKey(publicKey);
       let subscription = await worker.pushManager.getSubscription();
       if (subscription && !subscriptionUsesPublicKey(subscription, publicKey)) {
         const staleEndpoint = subscription.endpoint;
-        await db.from('push_subscriptions').delete()
-          .eq('organization_id', organizationId).eq('user_id', userId)
-          .eq('app_scope', COMMUNICATION_PUSH_SCOPE).eq('endpoint', staleEndpoint);
-        await subscription.unsubscribe();
-        subscription = null;
+        await db.from('push_subscriptions').delete().eq('organization_id', organizationId).eq('user_id', userId).eq('app_scope', COMMUNICATION_PUSH_SCOPE).eq('endpoint', staleEndpoint);
+        await subscription.unsubscribe(); subscription = null;
       }
       subscription = subscription || await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
       const json = subscription.toJSON();
       if (!json.keys?.auth || !json.keys?.p256dh) throw new Error('The device did not return a valid notification subscription.');
-      const current = await db.from('push_subscriptions').select('id')
-        .eq('organization_id', organizationId).eq('user_id', userId).eq('endpoint', subscription.endpoint).maybeSingle();
+      const current = await db.from('push_subscriptions').select('id').eq('organization_id', organizationId).eq('user_id', userId).eq('endpoint', subscription.endpoint).maybeSingle();
       if (current.error) throw current.error;
       const values = { auth_key: json.keys.auth, p256dh: json.keys.p256dh, user_agent: navigator.userAgent, app_scope: COMMUNICATION_PUSH_SCOPE, last_seen_at: new Date().toISOString() };
       const saved = current.data
@@ -197,12 +179,19 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
     const result = await db.from('notifications').update({ read: true, read_at: new Date().toISOString() })
       .in('id', notice.related_ids?.length ? notice.related_ids : [notice.id]).eq('organization_id', organizationId).eq('user_id', userId)
       .in('type', [...COMMUNICATION_NOTIFICATION_TYPES]);
-    if (result.error) setError('The alert could not be marked read. It will remain in your notifications.');
+    if (result.error) setError('The alert could not be marked read. It will remain in your notifications.'); else await load();
+  };
+  const clearAll = async () => {
+    const ids = [...new Set(items.flatMap(item => item.related_ids?.length ? item.related_ids : [item.id]))];
+    if (!ids.length) return;
+    const result = await db.from('notifications').update({ read: true, read_at: new Date().toISOString() })
+      .in('id', ids).eq('organization_id', organizationId).eq('user_id', userId).in('type', [...COMMUNICATION_NOTIFICATION_TYPES]);
+    if (result.error) setError('Notifications could not be cleared. Please retry.');
     else await load();
   };
   const dismissNudge = () => {
     setSnoozed(true);
-    try { localStorage.setItem(snoozeKey, String(Date.now() + 7 * 24 * 60 * 60 * 1000)); } catch { /* Session dismissal still works. */ }
+    try { localStorage.setItem(snoozeKey, String(Date.now() + 7 * 24 * 60 * 60 * 1000)); } catch {}
   };
   const canEnable = ['idle', 'saving', 'error'].includes(push);
   const hint = push === 'install' ? 'On iPhone, use Share > Add to Home Screen. Open the SETU Mail icon, then tap Enable notifications.'
@@ -221,7 +210,7 @@ function NotificationCenter({ organizationId, userId, mobile = false }: Props) {
       {mobile ? <span>Notifications</span> : null}
     </button>
     <dialog ref={dialog} className={styles.dialog} aria-label="Mail and Calendar notifications" onCancel={() => setOpen(false)} onClose={() => setOpen(false)} onClick={event => { if (event.target === event.currentTarget) setOpen(false); }}>
-      <div className={styles.header}><div><h2>Mail &amp; Calendar notifications</h2><p>{unreadCount ? `${unreadCount} unread` : 'Your communication alerts'}</p><p>Today's calendar reminders - {feedTimezone}</p></div><button type="button" className={styles.close} aria-label="Close notifications" onClick={() => setOpen(false)}><X size={20} /></button></div>
+      <div className={styles.header}><div><h2>Mail &amp; Calendar notifications</h2><p>{unreadCount ? `${unreadCount} unread` : 'Your communication alerts'}</p><p>Today's calendar reminders - {feedTimezone}</p></div><div className={styles.actions}>{unreadCount > 0 ? <button type="button" className={styles.secondary} onClick={() => void clearAll()}>Clear all</button> : null}<button type="button" className={styles.close} aria-label="Close notifications" onClick={() => setOpen(false)}><X size={20} /></button></div></div>
       <div className={styles.setup}><strong>{push === 'enabled' ? 'Notifications enabled' : 'Notifications on this device'}</strong><p>{hint}</p>{canEnable ? <div className={styles.actions}>{button}</div> : null}{pushError ? <p className={styles.error} role="alert">{pushError}</p> : null}</div>
       <div className={styles.filters} aria-label="Filter communication notifications">{[['all', 'All'], ['mail_received', 'Mail'], ['calendar_reminder', 'Calendar']].map(([value, label]) => <button type="button" key={value} className={styles.filter} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
       <div className={styles.list}>

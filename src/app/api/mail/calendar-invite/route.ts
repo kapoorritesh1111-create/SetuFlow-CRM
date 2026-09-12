@@ -43,9 +43,7 @@ async function sendReply(options: { from: string; invite: NonNullable<ReturnType
   const replyIcs = buildIncomingInviteReply(options.invite, { email: options.from }, options.response);
   const label = options.response === 'accepted' ? 'Accepted' : options.response === 'tentative' ? 'Tentative' : 'Declined';
   const response = await fetch(`${RESEND_API}/emails`, { method:'POST', headers:{ Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json' }, body:JSON.stringify({
-    from: options.from,
-    to: [options.invite.organizer.email],
-    subject: `${label}: ${options.invite.title}`,
+    from: options.from, to: [options.invite.organizer.email], subject: `${label}: ${options.invite.title}`,
     text: `${label}: ${options.invite.title}`,
     html: `<div style="font-family:Arial,sans-serif"><p><strong>${label}</strong>: ${options.invite.title.replace(/[<>&]/g,'')}</p><p>Response sent from Setu Calendar.</p></div>`,
     attachments:[{ filename:'reply.ics', content:Buffer.from(replyIcs).toString('base64'), content_type:'text/calendar; method=REPLY; charset=UTF-8' }],
@@ -89,16 +87,20 @@ export async function POST(request: NextRequest) {
     const metadata={ ...(existing?.meeting_metadata && typeof existing.meeting_metadata==='object' ? existing.meeting_metadata : {}), source:'mail_ics', source_ics_uid:invite.uid, source_ics_sequence:invite.sequence, source_message_id:messageId, source_attachment_id:attachmentId, source_attachment_remote:recoveredFromProvider, organizer_email:invite.organizer?.email || message.from_address || null, source_ics_response: requestedResponse, source_ics_responded_at:now };
     let event:any=existing;
     if (invite.method === 'CANCEL' || requestedResponse === 'declined') {
-      if (existing) { const result=await ctx.db.from('calendar_events').update({ status:'cancelled',cancelled_at:now,meeting_metadata:metadata,updated_at:now }).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) return NextResponse.json({error:'Unable to update this Calendar event.'},{status:500}); event=result.data; }
+      if (existing) { const result=await ctx.db.from('calendar_events').update({ status:'cancelled',cancelled_at:now,meeting_metadata:metadata,updated_at:now }).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) { console.error('calendar-invite update cancelled failed',result.error); return NextResponse.json({error:'Unable to update this Calendar event.'},{status:500}); } event=result.data; }
     } else {
       const patch={ title:invite.title,description:invite.description,location:invite.location,starts_at:invite.startsAt,ends_at:invite.endsAt,timezone:invite.timezone,is_all_day:invite.isAllDay,status:requestedResponse==='tentative'?'tentative':'confirmed',cancelled_at:null,visibility:'organization',show_as:requestedResponse==='tentative'?'tentative':'busy',meeting_provider:invite.meetingUrl?'custom':'none',meeting_url:invite.meetingUrl,meeting_metadata:metadata,updated_at:now };
-      if (existing) { const result=await ctx.db.from('calendar_events').update(patch).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) return NextResponse.json({error:'Unable to update this invitation in Calendar.'},{status:500}); event=result.data; }
-      else { const result=await ctx.db.from('calendar_events').insert({ ...patch,organization_id:ctx.organizationId,owner_user_id:ctx.userId,created_by:ctx.userId }).select('id,title,starts_at,ends_at').single(); if(result.error||!result.data) return NextResponse.json({error:result.error?.code==='23P01'?'This invitation overlaps another event on your Setu Calendar.':'Unable to add this invitation to Calendar.'},{status:result.error?.code==='23P01'?409:500}); event=result.data; }
+      if (existing) { const result=await ctx.db.from('calendar_events').update(patch).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) { console.error('calendar-invite update failed',result.error); return NextResponse.json({error:'Unable to update this invitation in Calendar.'},{status:500}); } event=result.data; }
+      else { const result=await ctx.db.from('calendar_events').insert({ ...patch,organization_id:ctx.organizationId,owner_user_id:ctx.userId,created_by:ctx.userId }).select('id,title,starts_at,ends_at').single(); if(result.error||!result.data) { console.error('calendar-invite insert failed',result.error); return NextResponse.json({error:'Unable to add this invitation to Calendar.'},{status:500}); } event=result.data; }
     }
-    if (invite.method === 'REQUEST') await sendReply({ from:ctx.mailbox.address, invite, response:requestedResponse });
-    const result={ ok:true,existing:Boolean(existing),response:requestedResponse,event,eventRemoved:requestedResponse==='declined'||invite.method==='CANCEL' };
+    let rsvpDelivered = true; let rsvpError: string | null = null;
+    if (invite.method === 'REQUEST') {
+      try { await sendReply({ from:ctx.mailbox.address, invite, response:requestedResponse }); }
+      catch (error) { rsvpDelivered=false; rsvpError=error instanceof Error?error.message:'Unable to deliver organizer response.'; console.error('calendar-invite RSVP delivery failed',{messageId,inviteUid:invite.uid,error:rsvpError}); }
+    }
+    const result={ ok:true,existing:Boolean(existing),response:requestedResponse,event,eventRemoved:requestedResponse==='declined'||invite.method==='CANCEL',rsvpDelivered,rsvpError };
     if (parsed.form) {
-      const target = event?.id && requestedResponse !== 'declined' ? `/calendar?eventId=${encodeURIComponent(event.id)}` : `/mail?inviteResponse=${encodeURIComponent(requestedResponse)}`;
+      const target = event?.id && requestedResponse !== 'declined' ? `/calendar?eventId=${encodeURIComponent(event.id)}&inviteResponse=${encodeURIComponent(requestedResponse)}${rsvpDelivered?'':'&rsvpDelivery=pending'}` : `/mail?inviteResponse=${encodeURIComponent(requestedResponse)}${rsvpDelivered?'':'&rsvpDelivery=pending'}`;
       return NextResponse.redirect(new URL(target,request.url),303);
     }
     return NextResponse.json(result);
