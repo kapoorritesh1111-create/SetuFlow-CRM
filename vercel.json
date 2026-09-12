@@ -3,6 +3,10 @@
   "installCommand": "npm install --no-audit --no-fund",
   "crons": [
     {
+      "path": "/api/calendar/reminders/process",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/analytics-snapshot",
       "schedule": "0 6 * * *"
     },
