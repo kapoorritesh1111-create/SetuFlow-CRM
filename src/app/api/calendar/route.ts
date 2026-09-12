@@ -108,7 +108,7 @@ function occurrenceKey(seriesId: string, originalStart: string) {
 function materializeBusy(rows: any[], from: Date, to: Date, exclusion: ConflictExclusion = {}) {
   const roots = rows.filter(row => row.recurrence_rule && !row.recurrence_series_id && row.status !== 'cancelled' && row.show_as !== 'free');
   const overrides = rows.filter(row => row.recurrence_series_id && row.recurrence_original_start);
-  const overrideMap = new Map(overrides.map(row => [occurrenceKey(row.recurrence_series_id, row.recurrence_original_start), row]));
+  const overrideMap = new Map<string, any>(overrides.map((row: any) => [occurrenceKey(row.recurrence_series_id, row.recurrence_original_start), row]));
   const busy: any[] = rows.filter(row =>
     !row.recurrence_rule
     && !row.recurrence_series_id
@@ -301,11 +301,11 @@ export async function GET(req: NextRequest) {
   if (ordinaryResult.error || rootResult.error || overrideResult.error) return NextResponse.json({ error: 'Unable to load calendar.' }, { status: 500 });
 
   const ordinary = (ordinaryResult.data ?? []).filter((event: any) => includeCancelled || event.status !== 'cancelled');
-  const allRoots = rootResult.data ?? [];
+  const allRoots: any[] = rootResult.data ?? [];
   const visibleRoots = allRoots.filter((event: any) => includeCancelled || event.status !== 'cancelled');
-  const rootById = new Map(allRoots.map((event: any) => [event.id, event]));
-  const overrides = overrideResult.data ?? [];
-  const overrideMap = new Map(overrides.map((event: any) => [occurrenceKey(event.recurrence_series_id, event.recurrence_original_start), event]));
+  const rootById = new Map<string, any>(allRoots.map((event: any) => [String(event.id), event]));
+  const overrides: any[] = overrideResult.data ?? [];
+  const overrideMap = new Map<string, any>(overrides.map((event: any) => [occurrenceKey(event.recurrence_series_id, event.recurrence_original_start), event]));
   const usedOverrides = new Set<string>();
   const recurring: any[] = [];
 
@@ -334,7 +334,7 @@ export async function GET(req: NextRequest) {
 
   for (const override of overrides) {
     const key = occurrenceKey(override.recurrence_series_id, override.recurrence_original_start);
-    const root: any = rootById.get(override.recurrence_series_id);
+    const root: any = rootById.get(String(override.recurrence_series_id));
     if (usedOverrides.has(key) || (!includeCancelled && (override.status === 'cancelled' || root?.status === 'cancelled'))) continue;
     if (overlaps(from, to, override.starts_at, override.ends_at)) recurring.push({ ...override, series_recurrence_rule: root?.recurrence_rule ?? null });
   }
