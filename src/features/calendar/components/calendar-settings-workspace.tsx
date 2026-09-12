@@ -21,7 +21,7 @@ export function CalendarSettingsWorkspace() {
   const [timezone, setTimezone] = useState(browserTimezone);
   const [defaultReminder, setDefaultReminder] = useState(15);
   const [emailReminder, setEmailReminder] = useState(false);
-  const [communications, setCommunications] = useState<PreferencesPayload['communications']>(null);
+  const [communications, setCommunications] = useState<PreferencesPayload['communications'] | null>(null);
   const [zoom, setZoom] = useState<ZoomState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
