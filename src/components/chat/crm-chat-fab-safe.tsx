@@ -185,7 +185,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
     {open && <div ref={panelRef} className="crm-chat-panel" style={isMobile ? { position: "fixed", top: "env(safe-area-inset-top, 0px)", right: 0, bottom: 0, left: 0, width: "100%", height: "auto", maxWidth: "100%", maxHeight: "none", borderRadius: 0, overflow: "hidden", background: "#fff", zIndex: 9990, display: "flex", flexDirection: "column" } : { position: "fixed", bottom: 16, left: 56, width: expanded ? "min(900px,calc(100vw - 72px))" : "min(420px,calc(100vw - 72px))", height: expanded ? "calc(100vh - 32px)" : "min(580px,calc(100vh - 100px))", maxWidth: "calc(100vw - 72px)", maxHeight: "calc(100vh - 32px)", borderRadius: expanded ? 12 : 20, overflow: "hidden", background: "#fff", border: "1px solid #dbe7ea", boxShadow: "0 20px 60px rgba(15,39,68,.2)", zIndex: 9990, display: "flex", transition: "width 200ms ease, height 200ms ease" }}>
 
       {/* SIDEBAR (expanded mode — all views including DM — or the mobile list pane) */}
-      {showSidebar && <div style={{ width: isMobile ? "100%" : 220, borderRight: isMobile ? "none" : "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+      {showSidebar && <div style={{ width: isMobile ? "100%" : 220, minHeight: 0, borderRight: isMobile ? "none" : "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "10px 12px", background: "#0f2744", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span style={{ fontWeight: 700, fontSize: 14 }}>Chat</span><button type="button" onClick={() => { setView("dm-picker"); if (isMobile) setMobileShowList(false); }} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>+ DM</button></div>
         <div style={{ display: "flex", gap: 2, padding: "6px 8px", borderBottom: "1px solid #e2e8f0" }}>{(["all","unread","channels","dms"] as Filter[]).map((f) => <button key={f} type="button" onClick={() => setFilter(f)} style={{ flex: 1, border: "none", borderRadius: 6, padding: "5px 4px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textAlign: "center", background: filter === f ? "#e1f5ee" : "transparent", color: filter === f ? "#085041" : "#94a3b8", textTransform: "capitalize" }}>{f}</button>)}</div>
         <div style={{ flex: 1, overflowY: "auto" }}>
@@ -197,7 +197,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
       </div>}
 
       {/* MAIN PANEL */}
-      {(!isMobile || !mobileShowList) && <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      {(!isMobile || !mobileShowList) && <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "linear-gradient(135deg,#0f2744,#1F487C)", color: "#fff", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isMobile && <button type="button" onClick={() => setMobileShowList(true)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 12, marginRight: 4 }}>←</button>}
@@ -218,7 +218,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
         </div>}
 
         {/* content */}
-        <div style={{ flex: 1, overflow: "hidden" }}>
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
           {view === "dm-picker" && <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#fff" }}>
             <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9", flexShrink: 0 }}><input type="text" placeholder="Search team members..." value={dmSearch} onChange={(e) => setDmSearch(e.target.value)} autoFocus style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 12, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", background: "#f8fafc" }} /></div>
             <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px" }}>
