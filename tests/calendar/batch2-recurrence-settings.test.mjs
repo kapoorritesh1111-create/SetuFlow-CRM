@@ -34,6 +34,8 @@ test('CAL-08 reminders are due-time driven, create real in-app notifications and
   assert.match(reminderApi, /calendar_reminder_deliveries/);
   assert.match(reminderApi, /expandRecurringEvent/);
   assert.match(reminderApi, /event\.timezone/);
+  assert.match(reminderApi, /recurringExceptions/);
+  assert.match(reminderApi, /recurrence_original_start/);
   assert.match(migration, /create table if not exists public\.calendar_reminder_deliveries/);
   assert.match(migration, /unique\(reminder_id, occurrence_start, channel\)/);
 });
@@ -49,24 +51,27 @@ test('CAL-11 settings expose Communications entitlement, timezone, reminder defa
   assert.match(settings, /\/api\/calendar\/preferences/);
 });
 
-test('CAL-13 recurrence parser supports daily weekly monthly and preserves local wall clock across DST', () => {
+test('CAL-13 recurrence parser supports daily weekly monthly and rejects DST-skipped wall-clock times', () => {
   assert.match(recurrence, /RecurrenceFrequency = 'DAILY' \| 'WEEKLY' \| 'MONTHLY'/);
   assert.match(recurrence, /BYDAY/);
   assert.match(recurrence, /zonedDateTimeToUtc/);
+  assert.match(recurrence, /dateTimeLocalValue\(date, timeZone\) !== requested/);
   assert.match(recurrence, /expandRecurringEvent/);
   assert.match(recurrence, /recurrenceOccurrenceId/);
   assert.match(calendarApi, /SERIES_CONFLICT_DAYS/);
   assert.match(calendarApi, /materializeBusy/);
+  assert.match(calendarApi, /timezone, recurrence_rule: recurrenceRule/);
 });
 
-test('CAL-13 occurrence edits and cancellations are distinct from entire-series lifecycle', () => {
+test('CAL-13 occurrence edits and cancellations are distinct from entire-series lifecycle and default safely', () => {
   assert.match(migration, /recurrence_series_id/);
   assert.match(migration, /recurrence_original_start/);
   assert.match(migration, /calendar_events_series_occurrence_unique/);
-  assert.match(calendarApi, /scope === 'occurrence'/);
+  assert.match(calendarApi, /target\.kind === 'occurrence'/);
   assert.match(calendarApi, /ensureOccurrenceOverride/);
+  assert.match(calendarApi, /requestedScope === 'series'/);
   assert.match(calendarApi, /Change the meeting provider for the entire series/);
-  assert.match(calendarApi, /SERIES_EXCEPTIONS_RESET_REQUIRED/);
+  assert.match(calendarApi, /occurrenceKey/);
   assert.match(workspace, /This occurrence/);
   assert.match(workspace, /Entire series/);
 });
