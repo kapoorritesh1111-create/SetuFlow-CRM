@@ -30,7 +30,7 @@ test('mobile Reader always exposes a visible 44px Back to Inbox action', () => {
   assert.match(mobile, /setSelectedAttachments\(\[\]\)/);
 });
 
-test('inbound ICS survives storage MIME policy and becomes an actionable Setu Calendar invitation', () => {
+test('inbound ICS survives storage MIME policy and becomes a focused Setu Calendar invitation', () => {
   assert.match(webhook, /storageContentType = isCalendarAttachment \? 'application\/octet-stream' : contentType/);
   assert.match(invite, /source_ics_uid/);
   assert.match(invite, /security_status !== 'clean'/);
@@ -39,8 +39,9 @@ test('inbound ICS survives storage MIME policy and becomes an actionable Setu Ca
   assert.match(incomingInvite, /form\('accepted','Accept',true\)/);
   assert.match(incomingInvite, /form\('tentative','Tentative'\)/);
   assert.match(incomingInvite, /form\('declined','Decline'\)/);
+  assert.match(incomingInvite, /conciseInviteNotes/);
   assert.match(messageDetail, /incomingInviteCardHtml/);
-  assert.match(messageDetail, /Original invitation message/);
+  assert.doesNotMatch(messageDetail, /Original invitation message/);
 });
 
 test('push path records zero-delivery diagnostics and worker asks for visible renotification', () => {
