@@ -102,11 +102,20 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
   const window = occurrenceWindow(now);
-  const { data: reminders, error: reminderError } = await db.from('calendar_reminders').select('*,calendar_events(*)').limit(500);
+  const { data: reminders, error: reminderError } = await db.from('calendar_reminders').select('*').limit(500);
   if (reminderError) return NextResponse.json({ error: 'Unable to load Calendar reminders.' }, { status: 500 });
 
-  const recurringRoots = (reminders ?? []).filter((row: any) => isSeriesRoot(row.calendar_events));
-  const recurringEventIds = [...new Set(recurringRoots.map((row: any) => row.calendar_events.id))];
+  // Load events explicitly. A failed or empty embedded relationship previously made
+  // eligible reminders look like harmless rows with no event and they were silently skipped.
+  const eventIds = [...new Set((reminders ?? []).map((row: any) => row.event_id).filter(Boolean))];
+  const { data: events, error: eventError } = eventIds.length
+    ? await db.from('calendar_events').select('*').in('id', eventIds)
+    : { data: [], error: null };
+  if (eventError) return NextResponse.json({ error: 'Unable to load Calendar reminder events.' }, { status: 500 });
+  const eventsById = new Map((events ?? []).map((event: any) => [event.id, event]));
+
+  const recurringRoots = (reminders ?? []).filter((row: any) => isSeriesRoot(eventsById.get(row.event_id)));
+  const recurringEventIds = [...new Set(recurringRoots.map((row: any) => row.event_id))];
   const recurringExceptions = new Set<string>();
   if (recurringEventIds.length) {
     const { data: rows } = await db.from('calendar_events')
@@ -124,10 +133,17 @@ export async function GET(req: NextRequest) {
   let processed = 0;
   let failed = 0;
   let deduplicated = 0;
+  let eligible = 0;
+  let missingEvents = 0;
 
   for (const reminder of reminders ?? []) {
-    const event: any = reminder.calendar_events;
-    if (!event || event.status === 'cancelled') continue;
+    const event: any = eventsById.get(reminder.event_id);
+    if (!event) {
+      missingEvents += 1;
+      console.warn('[setu-calendar:reminder] event unavailable', { reminderId: reminder.id, eventId: reminder.event_id });
+      continue;
+    }
+    if (event.status === 'cancelled') continue;
     const recurringRoot = isSeriesRoot(event);
     if (!recurringRoot && reminder.sent_at) continue;
 
@@ -139,6 +155,7 @@ export async function GET(req: NextRequest) {
       const occurrence = new Date(occurrenceStart);
       if (recurringRoot && recurringExceptions.has(exceptionKey(event.id, occurrence.toISOString()))) continue;
       if (!isCalendarReminderDue(occurrenceStart, Number(reminder.minutes_before || 0), now)) continue;
+      eligible += 1;
 
       let claimed = false;
       try {
@@ -184,5 +201,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed, failed, deduplicated });
+  const summary = { scanned: reminders?.length ?? 0, eventsLoaded: events?.length ?? 0, eligible, processed, failed, deduplicated, missingEvents };
+  console.info('[setu-calendar:reminder] run complete', summary);
+  return NextResponse.json({ ok: failed === 0, ...summary }, { status: failed > 0 ? 500 : 200 });
 }

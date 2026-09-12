@@ -24,6 +24,10 @@ test('Calendar attendee autocomplete reuses Contacts CRM and Mail history on des
 
 test('Calendar reminders atomically claim delivery before sending and release on failure', () => {
   const reminders = read('src/app/api/calendar/reminders/process/route.ts');
+  assert.match(reminders, /from\('calendar_reminders'\)\.select\('\*'\)/);
+  assert.match(reminders, /from\('calendar_events'\)\.select\('\*'\)\.in\('id', eventIds\)/);
+  assert.match(reminders, /eventsById\.get\(reminder\.event_id\)/);
+  assert.match(reminders, /missingEvents \+= 1/);
   assert.match(reminders, /async function claimDelivery/);
   assert.match(reminders, /from\('calendar_reminder_deliveries'\)\.insert/);
   assert.match(reminders, /error\.code === '23505'/);
@@ -33,6 +37,7 @@ test('Calendar reminders atomically claim delivery before sending and release on
   assert.match(reminders, /dispatchCommunicationNotification/);
   assert.match(reminders, /type: 'calendar_reminder'/);
   assert.match(reminders, /actionUrl: `\/calendar\?eventId=/);
+  assert.match(reminders, /status: failed > 0 \? 500 : 200/);
 });
 
 test('Calendar notification deep links open the event editor on desktop and mobile', () => {
