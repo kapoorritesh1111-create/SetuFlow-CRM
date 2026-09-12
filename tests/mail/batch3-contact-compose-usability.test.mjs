@@ -26,3 +26,13 @@ test('compose recipient lookup includes Contacts CRM and mailbox history', () =>
   assert.match(route, /bcc_addresses/);
   assert.match(route, /slice\(0, 8\)/);
 });
+
+test('composer wires mailbox suggestions into To Cc and Bcc without dropping earlier recipients', () => {
+  const ui = read('src/features/mail/components/mail-interaction-controls.tsx');
+  assert.match(ui, /api\/mail\/recipient-suggestions/);
+  assert.match(ui, /RecipientInput label="To"/);
+  assert.match(ui, /RecipientInput label="Cc"/);
+  assert.match(ui, /RecipientInput label="Bcc"/);
+  assert.match(ui, /value\.lastIndexOf\(','\)/);
+  assert.match(ui, /value\.slice\(0, comma \+ 1\)/);
+});
