@@ -4,8 +4,11 @@ import test from 'node:test';
 
 const mobile = readFileSync('src/features/calendar/components/mobile-calendar-workspace.tsx', 'utf8');
 
-test('mobile Calendar uses an Outlook-style agenda shell without changing the calendar lifecycle API', () => {
-  assert.match(mobile, /bg-\[#0b72bb\]/);
+test('mobile Calendar uses an Outlook-style agenda with SETU theme tokens without changing the calendar lifecycle API', () => {
+  assert.match(mobile, /bg-brand-800/);
+  assert.match(mobile, /bg-surface-1/);
+  assert.match(mobile, /text-content-primary/);
+  assert.doesNotMatch(mobile, /bg-\[#0b72bb\]/);
   assert.match(mobile, /Search calendar/);
   assert.match(mobile, /weekDates/);
   assert.match(mobile, /Jump to/);
