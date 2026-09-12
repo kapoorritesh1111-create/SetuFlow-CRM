@@ -5,11 +5,27 @@ import { isValidTimeZone, localDateTimeToUtc } from '@/lib/calendar/recurrence';
 
 export const dynamic = 'force-dynamic';
 const ATTACHMENT_BUCKET = 'setu-mail-attachments';
+const RESEND_API = 'https://api.resend.com';
+const MAX_REMOTE_ICS_BYTES = 256 * 1024;
 type ParsedDate = { date: Date; timezone: string; allDay: boolean };
 
 function fail(error: unknown) {
   if (error instanceof MailAccessError) return NextResponse.json({ error: error.message }, { status: error.status });
   return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to add this invitation to Calendar.' }, { status: 500 });
+}
+
+async function resendGet(path: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const response = await fetch(`${RESEND_API}${path}`, { headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    if (!response.ok) return null;
+    return await response.json().catch(() => null) as any;
+  } catch { return null; }
+}
+
+function isCalendarAttachment(item: { content_type?: unknown; filename?: unknown }) {
+  return String(item.content_type || '').toLowerCase().startsWith('text/calendar') || String(item.filename || '').toLowerCase().endsWith('.ics');
 }
 
 function unfold(value: string) {
@@ -70,8 +86,24 @@ function parseInvite(value: string) {
   const organizer = field(lines, 'ORGANIZER')?.value.replace(/^mailto:/i, '').trim().toLowerCase() || null;
   const urlField = text(field(lines, 'URL')?.value);
   const haystack = [urlField, location, description].filter(Boolean).join('\n');
-  const meetingUrl = /(https?:\/\/[^\s<>"']+)/i.exec(haystack)?.[1]?.replace(/[),.;]+$/g, '') || null;
+  const meetingUrl = /(https:\/\/[^\s<>"']+)/i.exec(haystack)?.[1]?.replace(/[),.;]+$/g, '') || null;
   return { uid, title: title.slice(0, 240), description: description || null, location: location || null, organizer, startsAt: start.date.toISOString(), endsAt: end.date.toISOString(), timezone: start.timezone, isAllDay: start.allDay, meetingUrl };
+}
+
+async function remoteCalendarText(providerMessageId: string, attachmentId: string) {
+  const payload = await resendGet(`/emails/receiving/${encodeURIComponent(providerMessageId)}/attachments`);
+  const items = Array.isArray(payload?.data) ? payload.data : [];
+  const item = items.find((candidate: any) => String(candidate.id || '') === attachmentId && isCalendarAttachment(candidate));
+  if (!item) return null;
+  const size = Number(item.size || 0);
+  if (size > MAX_REMOTE_ICS_BYTES) throw new Error('This calendar invitation is too large to import safely.');
+  const downloadUrl = String(item.download_url || '');
+  if (!downloadUrl.startsWith('https://')) return null;
+  const response = await fetch(downloadUrl, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+  if (!response.ok) return null;
+  const buffer = await response.arrayBuffer();
+  if (buffer.byteLength > MAX_REMOTE_ICS_BYTES) throw new Error('This calendar invitation is too large to import safely.');
+  return new TextDecoder().decode(buffer);
 }
 
 export async function POST(request: NextRequest) {
@@ -84,17 +116,26 @@ export async function POST(request: NextRequest) {
 
     const [{ data: attachment, error: attachmentError }, { data: message, error: messageError }] = await Promise.all([
       ctx.db.from('mail_attachments').select('id,message_id,filename,content_type,storage_path,security_status').eq('id', attachmentId).eq('message_id', messageId).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id).maybeSingle(),
-      ctx.db.from('mail_messages').select('id,from_address').eq('id', messageId).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id).maybeSingle(),
+      ctx.db.from('mail_messages').select('id,from_address,provider_message_id').eq('id', messageId).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id).maybeSingle(),
     ]);
     if (attachmentError || messageError) return NextResponse.json({ error: 'Unable to verify this invitation.' }, { status: 503 });
-    if (!attachment || !message) return NextResponse.json({ error: 'Calendar invitation not found.' }, { status: 404 });
-    const isCalendar = String(attachment.content_type || '').toLowerCase().startsWith('text/calendar') || String(attachment.filename || '').toLowerCase().endsWith('.ics');
-    if (!isCalendar) return NextResponse.json({ error: 'This attachment is not a calendar invitation.' }, { status: 415 });
-    if (attachment.security_status !== 'clean') return NextResponse.json({ error: 'This calendar attachment has not passed attachment security checks.' }, { status: 409 });
+    if (!message) return NextResponse.json({ error: 'Calendar invitation not found.' }, { status: 404 });
 
-    const download = await ctx.db.storage.from(ATTACHMENT_BUCKET).download(attachment.storage_path);
-    if (download.error || !download.data) return NextResponse.json({ error: 'The calendar invitation file is unavailable.' }, { status: 404 });
-    const invite = parseInvite(await download.data.text());
+    let icsText: string | null = null;
+    let recoveredFromProvider = false;
+    if (attachment) {
+      if (!isCalendarAttachment(attachment)) return NextResponse.json({ error: 'This attachment is not a calendar invitation.' }, { status: 415 });
+      if (attachment.security_status !== 'clean') return NextResponse.json({ error: 'This calendar attachment has not passed attachment security checks.' }, { status: 409 });
+      const download = await ctx.db.storage.from(ATTACHMENT_BUCKET).download(attachment.storage_path);
+      if (download.error || !download.data) return NextResponse.json({ error: 'The calendar invitation file is unavailable.' }, { status: 404 });
+      icsText = await download.data.text();
+    } else if (message.provider_message_id) {
+      icsText = await remoteCalendarText(String(message.provider_message_id), attachmentId);
+      recoveredFromProvider = Boolean(icsText);
+    }
+    if (!icsText) return NextResponse.json({ error: 'Calendar invitation not found.' }, { status: 404 });
+
+    const invite = parseInvite(icsText);
     if (!invite) return NextResponse.json({ error: 'This invitation could not be resolved into a valid Calendar event.' }, { status: 422 });
 
     const { data: existing, error: existingError } = await ctx.db.from('calendar_events')
@@ -130,6 +171,7 @@ export async function POST(request: NextRequest) {
         source_ics_uid: invite.uid,
         source_message_id: messageId,
         source_attachment_id: attachmentId,
+        source_attachment_remote: recoveredFromProvider,
         organizer_email: invite.organizer || message.from_address || null,
       },
     }).select('id,title,starts_at,ends_at').single();
