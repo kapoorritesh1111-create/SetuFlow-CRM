@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { buildBookingSlots, requestedSlotIsValid } from '@/lib/calendar/booking-availability';
 import { deliverCalendarInvitations } from '@/lib/calendar/invite-delivery';
-import { getValidZoomAccessToken, zoomApi } from '@/lib/calendar/zoom';
+import { zoomApiWithRefresh } from '@/lib/calendar/zoom';
 
 export const dynamic = 'force-dynamic';
 
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
   await db.from('calendar_reminders').insert({ organization_id: page.organization_id, event_id: eventId, channel: 'in_app', minutes_before: 15 });
 
   let meetingUrl: string | null = null;
-  let provider = String(page.meeting_provider || 'none');
+  const provider = String(page.meeting_provider || 'none');
   let meetingExternalId: string | null = null;
   let meetingHostUrl: string | null = null;
 
@@ -167,8 +167,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     if (connection) {
       try {
-        const token = await getValidZoomAccessToken(db, connection);
-        const zoom = await zoomApi(token, `/users/${encodeURIComponent(connection.provider_user_id || 'me')}/meetings`, {
+        const zoom = await zoomApiWithRefresh(db, connection, `/users/${encodeURIComponent(connection.provider_user_id || 'me')}/meetings`, {
           method: 'POST',
           body: JSON.stringify({
             topic: eventTitle,
@@ -182,8 +181,10 @@ export async function POST(req: NextRequest) {
         meetingUrl = zoom?.join_url || null;
         meetingHostUrl = zoom?.start_url || null;
         meetingExternalId = String(zoom?.id || '') || null;
-      } catch {
-        warnings.push('The time was booked, but Zoom could not be created. The organizer needs to add a meeting link.');
+      } catch (error) {
+        warnings.push(error instanceof Error
+          ? `The time was booked, but Zoom could not be created: ${error.message}`
+          : 'The time was booked, but Zoom could not be created. The organizer needs to add a meeting link.');
       }
     } else {
       warnings.push('The time was booked, but the organizer has not connected Zoom yet.');
@@ -203,9 +204,13 @@ export async function POST(req: NextRequest) {
   const identity = await organizerIdentity(db, page.user_id);
   let invitationSent = false;
   if (event && identity.email && !(provider === 'zoom' && !meetingUrl)) {
-    const delivery = await deliverCalendarInvitations({ db, event, organizerEmail: identity.email, organizerName: identity.name, origin: req.nextUrl.origin, action: 'request', force: true });
-    invitationSent = delivery.sent > 0;
-    if (!delivery.ok) warnings.push('The meeting is booked, but the calendar invitation could not be delivered automatically.');
+    try {
+      const delivery = await deliverCalendarInvitations({ db, event, organizerEmail: identity.email, organizerName: identity.name, origin: req.nextUrl.origin, action: 'request', force: true });
+      invitationSent = delivery.sent > 0;
+      if (!delivery.ok) warnings.push(delivery.error || 'The meeting is booked, but one or more calendar invitations could not be delivered automatically.');
+    } catch {
+      warnings.push('The meeting is booked, but calendar invitation delivery failed unexpectedly.');
+    }
   }
 
   return NextResponse.json({

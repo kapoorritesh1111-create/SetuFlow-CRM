@@ -43,6 +43,14 @@ function dateInZone(value: string, timezone: string) {
   return `${read('year')}${read('month')}${read('day')}`;
 }
 
+function nextDateValue(value: string) {
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(4, 6));
+  const day = Number(value.slice(6, 8));
+  const next = new Date(Date.UTC(year, month - 1, day + 1));
+  return `${next.getUTCFullYear()}${String(next.getUTCMonth() + 1).padStart(2, '0')}${String(next.getUTCDate()).padStart(2, '0')}`;
+}
+
 function fold(line: string) {
   if (line.length <= 74) return line;
   const parts: string[] = [];
@@ -64,19 +72,30 @@ function attendeeLine(attendee: IcsAttendee) {
   return `ATTENDEE${cn};ROLE=${role};RSVP=TRUE;PARTSTAT=${partstat}:mailto:${attendee.email.trim().toLowerCase()}`;
 }
 
+function outlookBusyStatus(showAs: string | null | undefined) {
+  if (showAs === 'free') return 'FREE';
+  if (showAs === 'tentative') return 'TENTATIVE';
+  if (showAs === 'out_of_office') return 'OOF';
+  return 'BUSY';
+}
+
 export function buildIcs(event: IcsEvent, method: 'REQUEST' | 'CANCEL' = 'REQUEST') {
   const timezone = event.timezone || 'UTC';
   const description = [event.description, event.meetingUrl ? `Join meeting: ${event.meetingUrl}` : null]
     .filter(Boolean)
     .join('\n\n');
   const isCancelled = method === 'CANCEL';
+  const startDate = event.isAllDay ? dateInZone(event.startsAt, timezone) : '';
+  const requestedEndDate = event.isAllDay ? dateInZone(event.endsAt, timezone) : '';
+  const allDayEndDate = event.isAllDay && requestedEndDate > startDate ? requestedEndDate : nextDateValue(startDate);
   const dateLines = event.isAllDay
     ? [
-        `DTSTART;VALUE=DATE:${dateInZone(event.startsAt, timezone)}`,
-        `DTEND;VALUE=DATE:${dateInZone(event.endsAt, timezone)}`,
+        `DTSTART;VALUE=DATE:${startDate}`,
+        `DTEND;VALUE=DATE:${allDayEndDate}`,
       ]
     : [`DTSTART:${utc(event.startsAt)}`, `DTEND:${utc(event.endsAt)}`];
   const transparent = event.showAs === 'free' ? 'TRANSPARENT' : 'OPAQUE';
+  const now = new Date().toISOString();
 
   const lines = [
     'BEGIN:VCALENDAR',
@@ -84,10 +103,12 @@ export function buildIcs(event: IcsEvent, method: 'REQUEST' | 'CANCEL' = 'REQUES
     'PRODID:-//Setu Flow//Setu Communications//EN',
     'CALSCALE:GREGORIAN',
     `METHOD:${method}`,
+    `X-WR-TIMEZONE:${esc(timezone)}`,
     'BEGIN:VEVENT',
     `UID:${event.uid}@setuflowcrm.com`,
     `SEQUENCE:${Math.max(0, Number(event.sequence ?? 0))}`,
-    `DTSTAMP:${utc(new Date().toISOString())}`,
+    `DTSTAMP:${utc(now)}`,
+    `LAST-MODIFIED:${utc(now)}`,
     ...dateLines,
     `SUMMARY:${esc(event.title)}`,
     `DESCRIPTION:${esc(description)}`,
@@ -97,6 +118,7 @@ export function buildIcs(event: IcsEvent, method: 'REQUEST' | 'CANCEL' = 'REQUES
     ...event.attendees.map(attendeeLine),
     `STATUS:${isCancelled ? 'CANCELLED' : 'CONFIRMED'}`,
     `TRANSP:${transparent}`,
+    `X-MICROSOFT-CDO-BUSYSTATUS:${outlookBusyStatus(event.showAs)}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ].filter(Boolean);

@@ -1,4 +1,4 @@
-import { getValidZoomAccessToken, zoomApi } from '@/lib/calendar/zoom';
+import { zoomApiWithRefresh, type ZoomApiError } from '@/lib/calendar/zoom';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export type ZoomLifecycleResult = {
@@ -54,6 +54,19 @@ async function connectionContext(organizationId: string, userId: string) {
   return { privilegedDb, connection: connection ?? null };
 }
 
+async function markRemoteCancellation(db: any, organizationId: string, event: any, remoteMissing = false) {
+  const { error } = await db.from('calendar_events').update({
+    meeting_metadata: {
+      ...(event.meeting_metadata || {}),
+      provider: 'zoom',
+      cancelled_at: new Date().toISOString(),
+      ...(remoteMissing ? { remote_missing: true } : {}),
+    },
+    updated_at: new Date().toISOString(),
+  }).eq('id', event.id).eq('organization_id', organizationId);
+  return !error;
+}
+
 export async function createZoomMeetingForEvent(db: any, organizationId: string, userId: string, event: any): Promise<ZoomLifecycleResult> {
   if (event.meeting_external_id && event.meeting_provider === 'zoom') {
     return { ok: true, action: 'unchanged', joinUrl: event.meeting_url, meetingId: event.meeting_external_id };
@@ -62,8 +75,7 @@ export async function createZoomMeetingForEvent(db: any, organizationId: string,
   if (!privilegedDb) return { ok: false, action: 'unchanged', error: 'Zoom connection service is unavailable.' };
   if (!connection) return { ok: false, action: 'unchanged', error: 'Connect Zoom in Calendar settings before inviting people to a Zoom meeting.' };
   try {
-    const token = await getValidZoomAccessToken(privilegedDb, connection);
-    const meeting = await zoomApi(token, '/users/me/meetings', { method: 'POST', body: JSON.stringify(zoomMeetingBody(event)) });
+    const meeting = await zoomApiWithRefresh(privilegedDb, connection, '/users/me/meetings', { method: 'POST', body: JSON.stringify(zoomMeetingBody(event)) });
     const meetingId = String(meeting.id);
     const joinUrl = String(meeting.join_url || '');
     const { error } = await db.from('calendar_events').update({
@@ -88,9 +100,9 @@ export async function updateZoomMeetingForEvent(db: any, organizationId: string,
   if (!privilegedDb) return { ok: false, action: 'unchanged', error: 'Zoom connection service is unavailable.' };
   if (!connection) return { ok: false, action: 'unchanged', error: 'Zoom is disconnected. Reconnect Zoom before updating this meeting.' };
   try {
-    const token = await getValidZoomAccessToken(privilegedDb, connection);
-    await zoomApi(token, `/meetings/${encodeURIComponent(event.meeting_external_id)}`, { method: 'PATCH', body: JSON.stringify(zoomMeetingBody(event)) });
-    await db.from('calendar_events').update({ meeting_metadata: { ...(event.meeting_metadata || {}), provider: 'zoom', synced_at: new Date().toISOString() }, updated_at: new Date().toISOString() }).eq('id', event.id).eq('organization_id', organizationId);
+    await zoomApiWithRefresh(privilegedDb, connection, `/meetings/${encodeURIComponent(event.meeting_external_id)}`, { method: 'PATCH', body: JSON.stringify(zoomMeetingBody(event)) });
+    const { error } = await db.from('calendar_events').update({ meeting_metadata: { ...(event.meeting_metadata || {}), provider: 'zoom', synced_at: new Date().toISOString() }, updated_at: new Date().toISOString() }).eq('id', event.id).eq('organization_id', organizationId);
+    if (error) throw new Error('Zoom updated the meeting, but Setu could not save the synchronization state.');
     return { ok: true, action: 'updated', joinUrl: event.meeting_url, meetingId: event.meeting_external_id };
   } catch (error) {
     return { ok: false, action: 'unchanged', error: error instanceof Error ? error.message : 'Unable to update Zoom meeting.' };
@@ -103,14 +115,16 @@ export async function cancelZoomMeetingForEvent(db: any, organizationId: string,
   if (!privilegedDb) return { ok: false, action: 'unchanged', error: 'Zoom connection service is unavailable.' };
   if (!connection) return { ok: false, action: 'unchanged', error: 'Zoom is disconnected, so the remote Zoom meeting could not be cancelled.' };
   try {
-    const token = await getValidZoomAccessToken(privilegedDb, connection);
-    await zoomApi(token, `/meetings/${encodeURIComponent(event.meeting_external_id)}`, { method: 'DELETE' });
-    await db.from('calendar_events').update({
-      meeting_metadata: { ...(event.meeting_metadata || {}), provider: 'zoom', cancelled_at: new Date().toISOString() },
-      updated_at: new Date().toISOString(),
-    }).eq('id', event.id).eq('organization_id', organizationId);
+    await zoomApiWithRefresh(privilegedDb, connection, `/meetings/${encodeURIComponent(event.meeting_external_id)}`, { method: 'DELETE' });
+    const saved = await markRemoteCancellation(db, organizationId, event);
+    if (!saved) throw new Error('Zoom cancelled the meeting, but Setu could not save the synchronization state.');
     return { ok: true, action: 'cancelled', meetingId: event.meeting_external_id };
   } catch (error) {
+    if ((error as ZoomApiError)?.status === 404) {
+      const saved = await markRemoteCancellation(db, organizationId, event, true);
+      if (!saved) return { ok: false, action: 'unchanged', error: 'The Zoom meeting is already gone, but Setu could not save the cancellation state.' };
+      return { ok: true, action: 'cancelled', meetingId: event.meeting_external_id };
+    }
     return { ok: false, action: 'unchanged', error: error instanceof Error ? error.message : 'Unable to cancel Zoom meeting.' };
   }
 }
