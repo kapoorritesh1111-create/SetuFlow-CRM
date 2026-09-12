@@ -138,8 +138,18 @@ async function sendInvites(db: any, workspace: any, event: any, origin: string, 
     warnings.push({ area: 'invitation', message: 'Organizer email is unavailable, so invitations were not sent.' });
     return;
   }
-  const result = await deliverCalendarInvitations({ db, event, organizerEmail: identity.email, organizerName: identity.name, origin, action });
-  if (!result.ok) warnings.push({ area: 'invitation', message: result.error || `${result.failed} invitation(s) could not be delivered.` });
+  try {
+    const result = await deliverCalendarInvitations({ db, event, organizerEmail: identity.email, organizerName: identity.name, origin, action });
+    if (!result.ok) {
+      const message = result.error
+        || (result.partial
+          ? `${result.failed} invitation(s) could not be delivered; ${result.sent} were sent successfully.`
+          : `${result.failed} invitation(s) could not be delivered.`);
+      warnings.push({ area: 'invitation', message });
+    }
+  } catch {
+    warnings.push({ area: 'invitation', message: 'Calendar invitation delivery failed unexpectedly. The event was saved, but attendee delivery needs attention.' });
+  }
 }
 
 export async function GET(req: NextRequest) {
