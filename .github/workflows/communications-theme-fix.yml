@@ -27,6 +27,13 @@ jobs:
           after = r"(border|border-b|border-t|divide-y)(?![\w:-])"
           assert before in text
           p.write_text(text.replace(before, after))
+          p = Path('tests/mail/communication-theme-browser.test.mjs')
+          text = p.read_text()
+          assert 'bundle:true,write:false' in text
+          text = text.replace('bundle:true,write:false', "bundle:true,jsx:'automatic',write:false")
+          text = text.replace('page.setDefaultTimeout(10000);', "page.setDefaultTimeout(10000);page.on('pageerror',error=>console.error('Theme fixture error:',error.message));")
+          text = text.replace("{waitUntil:'networkidle0'});return page;", "{waitUntil:'networkidle0'});await page.screenshot({path:path.join(evidence,view+'-initial.png')});return page;")
+          p.write_text(text)
           PY
           python3 scripts/apply-communications-theme.py
       - run: npm ci
@@ -45,6 +52,6 @@ jobs:
         run: |
           rm scripts/apply-communications-theme.py .github/workflows/communications-theme-fix.yml
           git diff --check
-          git add src/ scripts/apply-communications-theme.py .github/workflows/communications-theme-fix.yml
+          git add src/ tests/ scripts/apply-communications-theme.py .github/workflows/communications-theme-fix.yml
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'S41-FIX-118: Apply verified Setu mobile theme and native control colors'
           git push origin HEAD:fix/setu-mail-system-theme-20260912
