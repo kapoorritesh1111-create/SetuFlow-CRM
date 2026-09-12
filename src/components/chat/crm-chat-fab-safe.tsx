@@ -37,6 +37,8 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
   const [activeDms, setActiveDms] = useState<DmRecord[]>([]);
   const [prefs, setPrefs] = useState<Pref[]>([]);
   const [presence, setPresence] = useState<Record<string, boolean>>({});
+  const [mobileShowList, setMobileShowList] = useState(true);
+  const [deepLinkedConversationId, setDeepLinkedConversationId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const unreadCounts: Record<string, number> = {};
@@ -73,16 +75,29 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
         const rows = (d.conversations ?? []) as Conv[];
         if (rows.length === 0) { fetch("/api/chat/conversations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organization_id: organizationId, provision_defaults: true }) }).catch(() => {}); }
         setConvs(rows);
-        const ch = rows.find((c) => c.channel_key === activeChannel);
-        if (ch && view === "chat") setActiveConvId(ch.id);
         const dms = rows.filter((c) => c.conversation_type === "dm" && c.title);
         setActiveDms(dms.map((c) => ({ id: c.id, name: c.title ?? "Team Member", initials: gi(c.title ?? "TM"), unread: c.unread_count ?? 0, lastMsg: c.last_message_preview, lastAt: c.last_message_at })));
+        const linked = deepLinkedConversationId ? rows.find((c) => c.id === deepLinkedConversationId) : null;
+        if (linked) {
+          setActiveConvId(linked.id);
+          if (linked.conversation_type === "dm") {
+            setView("dm-chat");
+            setDmTarget({ name: linked.title ?? "Team Member", convId: linked.id });
+          } else {
+            setView("chat");
+            if (linked.channel_key) setActiveChannel(linked.channel_key);
+          }
+          setDeepLinkedConversationId(null);
+        } else {
+          const ch = rows.find((c) => c.channel_key === activeChannel);
+          if (ch && view === "chat") setActiveConvId(ch.id);
+        }
       })
       .catch(() => {});
     load();
     const t = setInterval(load, open ? 5000 : 15000);
     return () => clearInterval(t);
-  }, [organizationId, activeChannel, view, open]);
+  }, [organizationId, activeChannel, view, open, deepLinkedConversationId]);
 
   // Mobile fix: the trigger's fixed left:56 assumes the desktop 56px collapsed
   // sidebar rail. On mobile that position lands directly on top of the
@@ -93,6 +108,16 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const conversationId = params.get("conversation_id");
+    if (params.get("chat") !== "open" || !conversationId) return;
+    setOpen(true);
+    setActiveConvId(conversationId);
+    setDeepLinkedConversationId(conversationId);
+    setMobileShowList(false);
   }, []);
 
   // Prefs polling
@@ -152,13 +177,12 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
   // Show sidebar in expanded mode for ALL views (including DM)
   // Mobile: single-pane flow (list, then thread) instead of desktop's
   // permanent side-by-side split, which doesn't fit a phone width.
-  const [mobileShowList, setMobileShowList] = useState(true);
   const showSidebar = isMobile ? mobileShowList : expanded;
 
   return <>
     {!open && <button type="button" onClick={() => setOpen(true)} style={isMobile ? { position: "fixed", bottom: "calc(96px + env(safe-area-inset-bottom))", right: 16, zIndex: 60, display: "flex", alignItems: "center", gap: 6, padding: "12px 16px", border: "none", borderRadius: 999, background: "linear-gradient(135deg,#0f2744,#279491)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(15,39,68,.3)", fontFamily: "inherit" } : { position: "fixed", bottom: 16, left: 56, zIndex: 50, display: "flex", alignItems: "center", gap: 6, padding: "12px 18px", border: "none", borderRadius: 999, background: "linear-gradient(135deg,#0f2744,#279491)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(15,39,68,.3)", fontFamily: "inherit" }}>Chat{totalUnread > 0 && <span style={{ background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 99, marginLeft: 2 }}>{totalUnread}</span>}</button>}
     {open && <div onClick={() => { setOpen(false); setView("chat"); setExpanded(false); setMobileShowList(true); }} style={{ position: "fixed", inset: 0, zIndex: 9989 }} />}
-    {open && <div ref={panelRef} style={isMobile ? { position: "fixed", inset: 0, width: "100%", height: "100%", maxWidth: "100%", maxHeight: "100%", borderRadius: 0, overflow: "hidden", background: "#fff", zIndex: 9990, display: "flex", flexDirection: "column" } : { position: "fixed", bottom: 16, left: 56, width: expanded ? "min(900px,calc(100vw - 72px))" : "min(420px,calc(100vw - 72px))", height: expanded ? "calc(100vh - 32px)" : "min(580px,calc(100vh - 100px))", maxWidth: "calc(100vw - 72px)", maxHeight: "calc(100vh - 32px)", borderRadius: expanded ? 12 : 20, overflow: "hidden", background: "#fff", border: "1px solid #dbe7ea", boxShadow: "0 20px 60px rgba(15,39,68,.2)", zIndex: 9990, display: "flex", transition: "width 200ms ease, height 200ms ease" }}>
+    {open && <div ref={panelRef} className="crm-chat-panel" style={isMobile ? { position: "fixed", top: "env(safe-area-inset-top, 0px)", right: 0, bottom: 0, left: 0, width: "100%", height: "auto", maxWidth: "100%", maxHeight: "none", borderRadius: 0, overflow: "hidden", background: "#fff", zIndex: 9990, display: "flex", flexDirection: "column" } : { position: "fixed", bottom: 16, left: 56, width: expanded ? "min(900px,calc(100vw - 72px))" : "min(420px,calc(100vw - 72px))", height: expanded ? "calc(100vh - 32px)" : "min(580px,calc(100vh - 100px))", maxWidth: "calc(100vw - 72px)", maxHeight: "calc(100vh - 32px)", borderRadius: expanded ? 12 : 20, overflow: "hidden", background: "#fff", border: "1px solid #dbe7ea", boxShadow: "0 20px 60px rgba(15,39,68,.2)", zIndex: 9990, display: "flex", transition: "width 200ms ease, height 200ms ease" }}>
 
       {/* SIDEBAR (expanded mode — all views including DM — or the mobile list pane) */}
       {showSidebar && <div style={{ width: isMobile ? "100%" : 220, borderRight: isMobile ? "none" : "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
@@ -183,7 +207,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             {!isMobile && <button type="button" onClick={() => setExpanded(!expanded)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>{expanded ? "↙" : "↗"}</button>}
-            <button type="button" onClick={() => { setOpen(false); setView("chat"); setExpanded(false); setMobileShowList(true); }} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>✕</button>
+            <button type="button" aria-label="Close chat" onClick={() => { setOpen(false); setView("chat"); setExpanded(false); setMobileShowList(true); }} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: isMobile ? 0 : "4px 8px", width: isMobile ? 44 : undefined, height: isMobile ? 44 : undefined, cursor: "pointer", fontSize: 13 }}>✕</button>
           </div>
         </div>
 

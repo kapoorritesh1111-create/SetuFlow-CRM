@@ -10,6 +10,7 @@ import {
   getDisplayName,
   getUserOrganizationId,
 } from "@/lib/chat/api-helpers";
+import { sendWebPushToUsers } from "@/lib/notifications/web-push";
 
 export const dynamic = "force-dynamic";
 
@@ -259,7 +260,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (notificationUserIds.size > 0) {
-      const notifs = Array.from(notificationUserIds).map((userId) => {
+      const recipientIds = Array.from(notificationUserIds);
+      const notificationBody = trimmedContent ? trimmedContent.slice(0, 140) : "Attachment";
+      const notificationLink = `/dashboard?chat=open&conversation_id=${encodeURIComponent(convId)}`;
+      const notifs = recipientIds.map((userId) => {
         const isMention = validMentions.includes(userId);
         const isDm = conversation?.conversation_type === "dm";
         return {
@@ -269,11 +273,29 @@ export async function POST(request: NextRequest) {
           message_id: data.id,
           type: isDm && !isMention ? "dm" : parentId ? "reply" : "mention",
           title: isDm ? `${displayName} sent you a direct message` : `${displayName} mentioned you in ${conversation?.channel_key ? `#${conversation.channel_key}` : "chat"}`,
-          content: trimmedContent ? trimmedContent.slice(0, 140) : "Attachment",
-          link: `/chat?conversation_id=${convId}`,
+          content: notificationBody,
+          link: notificationLink,
         };
       });
-      try { await admin.from("chat_notifications").insert(notifs); } catch (notifyErr) { console.error("Chat notification insert error:", notifyErr); }
+      try {
+        await admin.from("chat_notifications").insert(notifs);
+        const pushResult = await sendWebPushToUsers(admin, recipientIds, {
+          id: data.id,
+          type: "chat_message",
+          title: notifs[0].title,
+          body: notificationBody,
+          action_url: notificationLink,
+          priority: "normal",
+          icon: "/icons/icon-192.png",
+          badge: "/icons/icon-192.png",
+        }, orgId);
+        if (pushResult.sent === 0) {
+          console.warn("Chat push had no device delivery", { organizationId: orgId, recipientCount: recipientIds.length, skipped: pushResult.skipped ?? null, pruned: pushResult.pruned });
+        }
+      } catch (notifyErr) {
+        // Chat delivery is best-effort and must never roll back the saved message.
+        console.error("Chat notification delivery error:", notifyErr);
+      }
     }
 
     return NextResponse.json({ message: { ...data, reply_count: 0 } }, { status: 201 });

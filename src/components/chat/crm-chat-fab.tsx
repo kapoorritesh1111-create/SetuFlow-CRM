@@ -182,7 +182,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
   return <>
     {!open && <button type="button" className="crm-chat-fab-launch" onClick={() => setOpen(true)} style={{ position: "fixed", bottom: 16, left: 56, zIndex: 50, display: "flex", alignItems: "center", gap: 6, padding: "12px 18px", border: "none", borderRadius: 999, background: "linear-gradient(135deg,#0f2744,#279491)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 8px 24px rgba(15,39,68,.3)", fontFamily: "inherit" }}>Chat{totalUnread > 0 && <span style={{ background: "#ef4444", color: "#fff", fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 99, marginLeft: 2 }}>{totalUnread}</span>}</button>}
     {open && <div onClick={() => { setOpen(false); setView("chat"); }} style={{ position: "fixed", inset: 0, zIndex: 9989 }} />}
-    {open && <div ref={panelRef} style={{ position: "fixed", bottom: 16, left: 56, width: expanded ? "min(900px,calc(100vw - 72px))" : "min(420px,calc(100vw - 72px))", height: expanded ? "calc(100vh - 32px)" : "min(580px,calc(100vh - 100px))", maxWidth: "calc(100vw - 72px)", maxHeight: "calc(100vh - 32px)", borderRadius: expanded ? 12 : 20, overflow: "hidden", background: "#fff", border: "1px solid #dbe7ea", boxShadow: "0 20px 60px rgba(15,39,68,.2)", zIndex: 9990, display: "flex", transition: "width 200ms ease, height 200ms ease" }}>
+    {open && <div ref={panelRef} className="crm-chat-panel" style={{ position: "fixed", bottom: 16, left: 56, width: expanded ? "min(900px,calc(100vw - 72px))" : "min(420px,calc(100vw - 72px))", height: expanded ? "calc(100vh - 32px)" : "min(580px,calc(100vh - 100px))", maxWidth: "calc(100vw - 72px)", maxHeight: "calc(100vh - 32px)", borderRadius: expanded ? 12 : 20, overflow: "hidden", background: "#fff", border: "1px solid #dbe7ea", boxShadow: "0 20px 60px rgba(15,39,68,.2)", zIndex: 9990, display: "flex", transition: "width 200ms ease, height 200ms ease" }}>
       {/* sidebar (expanded mode only) */}
       {showSidebar && <div style={{ width: 220, borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "10px 12px", background: "#0f2744", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -227,7 +227,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             <button type="button" onClick={() => setExpanded(!expanded)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>{expanded ? "↙" : "↗"}</button>
-            <button type="button" onClick={() => { setOpen(false); setView("chat"); }} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>✕</button>
+            <button type="button" className="crm-chat-close" aria-label="Close chat" onClick={() => { setOpen(false); setView("chat"); }} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 13 }}>✕</button>
           </div>
         </div>
         {/* compact channel tabs (non-expanded mode) */}
