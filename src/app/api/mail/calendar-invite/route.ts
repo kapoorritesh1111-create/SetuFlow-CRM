@@ -76,17 +76,24 @@ export async function POST(request: NextRequest) {
     if (!icsText) return NextResponse.json({ error:'Calendar invitation not found.' }, { status:404 });
     const invite=parseIncomingMailInvite(icsText); if (!invite) return NextResponse.json({ error:'This invitation could not be resolved into a valid Calendar event.' }, { status:422 });
 
-    const { data: existing, error: existingError } = await ctx.db.from('calendar_events').select('id,title,starts_at,ends_at,meeting_metadata,status').eq('organization_id',ctx.organizationId).eq('owner_user_id',ctx.userId).contains('meeting_metadata',{source_ics_uid:invite.uid}).limit(1).maybeSingle();
-    if (existingError) return NextResponse.json({ error:'Unable to check for an existing Calendar event.' }, { status:503 });
+    const existingSelect='id,title,starts_at,ends_at,meeting_metadata,status';
+    const byUid=await ctx.db.from('calendar_events').select(existingSelect).eq('organization_id',ctx.organizationId).eq('owner_user_id',ctx.userId).eq('meeting_metadata->>source_ics_uid',invite.uid).limit(1).maybeSingle();
+    if (byUid.error) return NextResponse.json({ error:'Unable to check for an existing Calendar event.' }, { status:503 });
+    let existing:any=byUid.data;
+    if (!existing) {
+      const byMessage=await ctx.db.from('calendar_events').select(existingSelect).eq('organization_id',ctx.organizationId).eq('owner_user_id',ctx.userId).eq('meeting_metadata->>source_message_id',messageId).limit(1).maybeSingle();
+      if (byMessage.error) return NextResponse.json({ error:'Unable to check the previously imported Calendar event.' }, { status:503 });
+      existing=byMessage.data;
+    }
     const now=new Date().toISOString();
     const metadata={ ...(existing?.meeting_metadata && typeof existing.meeting_metadata==='object' ? existing.meeting_metadata : {}), source:'mail_ics', source_ics_uid:invite.uid, source_ics_sequence:invite.sequence, source_message_id:messageId, source_attachment_id:attachmentId, source_attachment_remote:recoveredFromProvider, organizer_email:invite.organizer?.email || message.from_address || null, source_ics_response: requestedResponse, source_ics_responded_at:now };
     let event:any=existing;
     if (invite.method === 'CANCEL' || requestedResponse === 'declined') {
       if (existing) { const result=await ctx.db.from('calendar_events').update({ status:'cancelled',cancelled_at:now,meeting_metadata:metadata,updated_at:now }).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) return NextResponse.json({error:'Unable to update this Calendar event.'},{status:500}); event=result.data; }
     } else {
-      const patch={ title:invite.title,description:invite.description,location:invite.location,starts_at:invite.startsAt,ends_at:invite.endsAt,timezone:invite.timezone,is_all_day:invite.isAllDay,status:'confirmed',cancelled_at:null,visibility:'organization',show_as:requestedResponse==='tentative'?'tentative':'busy',meeting_provider:invite.meetingUrl?'custom':'none',meeting_url:invite.meetingUrl,meeting_metadata:metadata,updated_at:now };
+      const patch={ title:invite.title,description:invite.description,location:invite.location,starts_at:invite.startsAt,ends_at:invite.endsAt,timezone:invite.timezone,is_all_day:invite.isAllDay,status:requestedResponse==='tentative'?'tentative':'confirmed',cancelled_at:null,visibility:'organization',show_as:requestedResponse==='tentative'?'tentative':'busy',meeting_provider:invite.meetingUrl?'custom':'none',meeting_url:invite.meetingUrl,meeting_metadata:metadata,updated_at:now };
       if (existing) { const result=await ctx.db.from('calendar_events').update(patch).eq('id',existing.id).eq('organization_id',ctx.organizationId).select('id,title,starts_at,ends_at').single(); if(result.error) return NextResponse.json({error:'Unable to update this invitation in Calendar.'},{status:500}); event=result.data; }
-      else { const result=await ctx.db.from('calendar_events').insert({ ...patch,organization_id:ctx.organizationId,owner_user_id:ctx.userId,created_by:ctx.userId }).select('id,title,starts_at,ends_at').single(); if(result.error||!result.data) return NextResponse.json({error:'Unable to add this invitation to Calendar.'},{status:500}); event=result.data; }
+      else { const result=await ctx.db.from('calendar_events').insert({ ...patch,organization_id:ctx.organizationId,owner_user_id:ctx.userId,created_by:ctx.userId }).select('id,title,starts_at,ends_at').single(); if(result.error||!result.data) return NextResponse.json({error:result.error?.code==='23P01'?'This invitation overlaps another event on your Setu Calendar.':'Unable to add this invitation to Calendar.'},{status:result.error?.code==='23P01'?409:500}); event=result.data; }
     }
     if (invite.method === 'REQUEST') await sendReply({ from:ctx.mailbox.address, invite, response:requestedResponse });
     const result={ ok:true,existing:Boolean(existing),response:requestedResponse,event,eventRemoved:requestedResponse==='declined'||invite.method==='CANCEL' };
