@@ -41,8 +41,7 @@ async function unreadMailBadge(supabase: AnyClient, organizationId: string | und
     .eq('organization_id', organizationId)
     .eq('user_id', userId)
     .eq('type', 'mail_received')
-    .eq('read', false)
-    .is('archived_at', null);
+    .eq('read', false);
   if (error) return 1;
   return Math.max(1, Math.min(Number(count || 1), 999));
 }
