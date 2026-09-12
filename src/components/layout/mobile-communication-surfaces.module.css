@@ -75,3 +75,5 @@
 .accountForm label { color: var(--sf-text-muted); font-size: 12px; }
 .accountForm select { width: 100%; min-height: 44px; border: 1px solid var(--sf-border); border-radius: 8px; background: var(--sf-surface-1); color: var(--sf-text-primary); font-size: 14px; padding: 8px; }
 .iconButton:focus-visible, .row:focus-visible, .accountForm select:focus-visible { outline: 3px solid var(--sf-focus-ring); outline-offset: 2px; }
+
+@media (max-width: 767px) { .settingsPage { padding-top: var(--setu-safe-top, env(safe-area-inset-top, 0px)); } }

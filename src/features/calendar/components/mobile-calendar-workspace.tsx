@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, Menu, Search, X } from 'lucide-react';
+import { CalendarDays, Search, Settings2, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { CalendarPeopleInput } from './calendar-people-input';
+import { MobileCommunicationDrawer } from '@/components/layout/mobile-communication-drawer';
+import mobileStyles from '@/components/layout/mobile-communication-surfaces.module.css';
 
 type ShowAs = 'busy' | 'free' | 'tentative' | 'out_of_office' | 'working_elsewhere';
 type Attendee = { email: string; name?: string | null; attendee_type?: 'required' | 'optional'; rsvp_status: string };
@@ -96,7 +98,8 @@ export function MobileCalendarWorkspace() {
   useEffect(() => {
     const eventId = params.get('eventId');
     if (!eventId || openedEventParam.current === eventId || !events.length) return;
-    const target = events.find(event => event.id === eventId || event.source_event_id === eventId);
+    const occurrence = params.get('occurrenceStart');
+    const target = events.find(event => (event.id === eventId || event.source_event_id === eventId) && (!occurrence || new Date(event.starts_at).getTime() === new Date(occurrence).getTime()));
     if (!target) return;
     openedEventParam.current = eventId;
     setSelected(target);
@@ -170,16 +173,16 @@ export function MobileCalendarWorkspace() {
   }
 
   return <div className="min-h-screen bg-white pb-24 text-slate-900 md:hidden">
-    <header className="sticky top-0 z-30 shadow-sm">
+    <header className={`${mobileStyles.header} sticky z-30 shadow-sm`}>
       <div className="relative bg-[#0b72bb] text-white">
         <div className="flex h-14 items-center gap-2 px-3">
-          <button type="button" onClick={() => setMenuOpen(open => !open)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10" aria-label="Open calendar menu"><Menu size={22} /></button>
+          <button type="button" onClick={() => setMenuOpen(open => !open)} className={mobileStyles.iconButton} aria-label="Open calendar menu" aria-haspopup="dialog" aria-expanded={menuOpen}><CalendarDays size={22} /></button>
           <h1 className="min-w-0 flex-1 text-[19px] font-semibold">{monthTitle}</h1>
-          <button type="button" onClick={() => setSearchOpen(open => !open)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10" aria-label="Search calendar"><Search size={21} /></button>
-          <div className="grid h-8 w-8 place-items-center rounded-full border border-white/60 bg-white/15"><CalendarDays size={16} /></div>
+          <button type="button" onClick={() => setSearchOpen(open => !open)} className={mobileStyles.iconButton} aria-label="Search calendar" aria-expanded={searchOpen}><Search size={21} /></button>
+          <Link href="/calendar/settings" className={mobileStyles.iconButton} aria-label="Calendar settings"><Settings2 size={21}/></Link>
         </div>
-        {searchOpen ? <div className="px-3 pb-3"><label className="flex h-10 items-center gap-2 rounded-xl bg-white px-3 text-slate-700 shadow-sm"><Search size={17} className="text-slate-400" /><input autoFocus value={search} onChange={event => setSearch(event.target.value)} placeholder="Search calendar" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear calendar search"><X size={16} /></button> : null}</label></div> : null}
-        {menuOpen ? <div className="absolute left-3 top-12 z-50 w-56 overflow-hidden rounded-xl bg-white py-1 text-sm font-semibold text-slate-700 shadow-2xl ring-1 ring-black/5"><button type="button" onClick={() => scrollToDate(today)} className="block w-full px-4 py-3 text-left hover:bg-slate-50">Today</button><Link href="/calendar/booking" className="block px-4 py-3 hover:bg-slate-50" onClick={() => setMenuOpen(false)}>Booking page</Link><Link href="/calendar/settings" className="block px-4 py-3 hover:bg-slate-50" onClick={() => setMenuOpen(false)}>Calendar settings</Link></div> : null}
+        {searchOpen ? <div className="px-3 pb-3"><label className="flex h-10 items-center gap-2 rounded-xl bg-white px-3 text-slate-700 shadow-sm"><Search size={17} className="text-slate-400" /><input autoFocus aria-label="Search calendar events" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search calendar" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />{search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear calendar search"><X size={16} /></button> : null}</label></div> : null}
+        {menuOpen ? <MobileCommunicationDrawer title="Calendar" subtitle="Setu Calendar" onClose={()=>setMenuOpen(false)}><span className={mobileStyles.sectionLabel}>My calendar</span><button type="button" className={mobileStyles.row} onClick={()=>scrollToDate(today)}><CalendarDays size={22}/><span>Calendar - today's schedule</span></button><span className={mobileStyles.sectionLabel}>Settings and tools</span><Link href="/calendar/settings" className={mobileStyles.row} onClick={()=>setMenuOpen(false)}><Settings2 size={22}/><span>Calendar settings</span></Link><Link href="/calendar/booking" className={mobileStyles.row} onClick={()=>setMenuOpen(false)}>Booking page</Link><p className={mobileStyles.hint}>Only calendars available in your Setu workspace are shown.</p></MobileCommunicationDrawer> : null}
       </div>
       <div className="grid grid-cols-7 border-b border-slate-200 bg-white px-1 pb-2 pt-1">
         {weekDates.map(date => {
@@ -343,7 +346,7 @@ function MobileEventComposer({ event, defaultStart, guest, lead, mailThread, onC
     }
   }
 
-  return <div className="fixed inset-0 z-[90] overflow-y-auto bg-slate-950/40 p-3 backdrop-blur-sm">
+  return <div className={`${mobileStyles.fullScreen} fixed inset-0 z-[500] overflow-y-auto bg-slate-950/40 p-3 backdrop-blur-sm`}>
     <div className="mx-auto min-h-full max-w-xl rounded-3xl bg-white shadow-2xl">
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur">
         <div><div className="text-[10px] font-black uppercase tracking-[.18em] text-blue-600">{event ? 'Calendar event' : 'New event'}</div><h2 className="mt-1 text-lg font-black text-slate-950">{event ? 'View or edit' : 'Schedule event'}</h2></div>
