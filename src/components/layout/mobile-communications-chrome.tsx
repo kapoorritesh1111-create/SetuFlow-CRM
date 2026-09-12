@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { CalendarDays, ContactRound, LayoutGrid, Mail } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { CommunicationNotifications } from '@/components/notifications/communication-notifications';
 import styles from './mobile-communications-chrome.module.css';
 
-type Props = { crmEnabled: boolean; unreadMailCount?: number };
+type Props = { crmEnabled: boolean; unreadMailCount?: number; organizationId?: string; userId?: string };
 type BadgingNavigator = Navigator & { setAppBadge?: (contents?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
 
 type Tab = {
@@ -27,7 +28,7 @@ function safeReturnTo(value: string | null) {
   return value;
 }
 
-export function MobileCommunicationsChrome({ crmEnabled, unreadMailCount = 0 }: Props) {
+export function MobileCommunicationsChrome({ crmEnabled, unreadMailCount = 0, organizationId, userId }: Props) {
   const pathname = usePathname();
   const params = useSearchParams();
   const explicitCrmLaunch = params.get('from') === 'crm' || params.get('source') === 'crm';
@@ -78,7 +79,7 @@ export function MobileCommunicationsChrome({ crmEnabled, unreadMailCount = 0 }: 
 
   return (
     <nav className={styles.nav} aria-label="SETU Mail mobile navigation" data-setu-communications-mobile-nav>
-      <div className={`${styles.inner} ${crmEnabled ? styles.withCrm : ''}`}>
+      <div className={`${styles.inner} ${crmEnabled ? styles.withCrm : ''} ${organizationId && userId ? styles.withNotifications : ''}`}>
         {tabs.map(tab => {
           const Icon = tab.icon;
           const active = tab.matches(pathname);
@@ -98,6 +99,7 @@ export function MobileCommunicationsChrome({ crmEnabled, unreadMailCount = 0 }: 
             </Link>
           );
         })}
+        {organizationId && userId ? <CommunicationNotifications organizationId={organizationId} userId={userId} mobile /> : null}
         {crmEnabled ? (
           <Link
             href={crmHref}

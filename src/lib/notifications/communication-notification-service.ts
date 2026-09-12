@@ -94,7 +94,7 @@ export async function dispatchCommunicationNotification(db: DeliveryClient, inpu
         type: input.type,
         icon: SETU_MAIL_PUSH_ICON,
         badge: SETU_MAIL_PUSH_ICON,
-      });
+      }, input.organizationId);
     } catch {
       // Browser/device delivery is best effort. In-app notification remains authoritative.
     }

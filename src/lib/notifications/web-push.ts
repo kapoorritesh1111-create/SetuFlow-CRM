@@ -1,6 +1,7 @@
-// S36-MOBILE-371 — server-side web push send.
-// No-ops safely until WEB_PUSH_PUBLIC_KEY + WEB_PUSH_PRIVATE_KEY are set in the environment.
+// S36-MOBILE-371: server-side web push send.
+// No-ops safely until WEB_PUSH_PUBLIC_KEY + WEB_PUSH_PRIVATE_KEY are configured.
 import webpush from 'web-push';
+import { pushScopesFor } from './communication-scope';
 
 export type PushPayload = { title: string; body: string; action_url?: string; priority?: string; id?: string; type?: string; icon?: string; badge?: string };
 
@@ -20,11 +21,16 @@ type SubRow = { id: string; endpoint: string; auth_key: string; p256dh: string }
 // Loosely typed to accept either the admin or server Supabase client.
 type AnyClient = { from: (table: string) => any };
 
-export async function sendWebPushToUsers(supabase: AnyClient, userIds: string[], payload: PushPayload): Promise<{ sent: number; pruned: number; skipped?: string }> {
+export async function sendWebPushToUsers(supabase: AnyClient, userIds: string[], payload: PushPayload, organizationId?: string): Promise<{ sent: number; pruned: number; skipped?: string }> {
   if (!ensureConfigured()) return { sent: 0, pruned: 0, skipped: 'vapid-not-configured' };
   if (!userIds.length) return { sent: 0, pruned: 0 };
 
-  const { data } = await supabase.from('push_subscriptions').select('id,endpoint,auth_key,p256dh').in('user_id', userIds);
+  let query = supabase.from('push_subscriptions').select('id,endpoint,auth_key,p256dh')
+    .in('user_id', userIds).in('app_scope', pushScopesFor(payload.type, organizationId));
+  if (organizationId) query = query.eq('organization_id', organizationId);
+  const { data, error } = await query;
+  // Fail closed: never fall back to an unscoped device query.
+  if (error) return { sent: 0, pruned: 0, skipped: 'subscription-query-failed' };
   const subs = (data ?? []) as SubRow[];
   if (!subs.length) return { sent: 0, pruned: 0 };
 
