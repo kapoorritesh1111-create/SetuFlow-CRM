@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+const read = path => readFileSync(path, 'utf8');
+
+test('received Mail can explicitly create a Contact without creating a Lead', () => {
+  const route = read('src/app/api/mail/intelligence/[id]/route.ts');
+  assert.match(route, /Save sender to Contacts/);
+  assert.match(route, /Create contact/);
+  assert.match(route, /m\.direction==='inbound'/);
+  assert.match(route, /!identity\.contact/);
+  assert.match(route, /\/contacts\?create=1&email=/);
+  assert.match(route, /autonomousActions:false/);
+});
+
+test('compose recipient lookup includes Contacts CRM and mailbox history', () => {
+  const route = read('src/app/api/mail/recipient-suggestions/route.ts');
+  assert.match(route, /from\('contacts'\)/);
+  assert.match(route, /from\('leads'\)/);
+  assert.match(route, /from\('mail_messages'\)/);
+  assert.match(route, /eq\('mailbox_id', mailbox\.id\)/);
+  assert.match(route, /eq\('direction', 'outbound'\)/);
+  assert.match(route, /to_addresses/);
+  assert.match(route, /cc_addresses/);
+  assert.match(route, /bcc_addresses/);
+  assert.match(route, /slice\(0, 8\)/);
+});
