@@ -5,6 +5,8 @@ import test from 'node:test';
 const mobile = readFileSync('src/features/mail/components/mobile-setu-mail-workspace.tsx', 'utf8');
 const webhook = readFileSync('src/app/api/mail/webhooks/resend/route.ts', 'utf8');
 const invite = readFileSync('src/app/api/mail/calendar-invite/route.ts', 'utf8');
+const incomingInvite = readFileSync('src/lib/calendar/incoming-mail-invite.ts', 'utf8');
+const messageDetail = readFileSync('src/app/api/mail/messages/[id]/route.ts', 'utf8');
 const delivery = readFileSync('src/lib/notifications/communication-notification-service.ts', 'utf8');
 const worker = readFileSync('public/setu-mail-sw.js', 'utf8');
 
@@ -28,13 +30,17 @@ test('mobile Reader always exposes a visible 44px Back to Inbox action', () => {
   assert.match(mobile, /setSelectedAttachments\(\[\]\)/);
 });
 
-test('inbound ICS survives storage MIME policy and is importable into Setu Calendar', () => {
+test('inbound ICS survives storage MIME policy and becomes an actionable Setu Calendar invitation', () => {
   assert.match(webhook, /storageContentType = isCalendarAttachment \? 'application\/octet-stream' : contentType/);
-  assert.match(mobile, /Add to Calendar/);
-  assert.match(mobile, /\/api\/mail\/calendar-invite/);
   assert.match(invite, /source_ics_uid/);
   assert.match(invite, /security_status !== 'clean'/);
-  assert.match(invite, /method !== 'REQUEST' && method !== 'PUBLISH'/);
+  assert.match(invite, /buildIncomingInviteReply/);
+  assert.match(incomingInvite, /\['REQUEST', 'PUBLISH', 'CANCEL'\]/);
+  assert.match(incomingInvite, /form\('accepted','Accept',true\)/);
+  assert.match(incomingInvite, /form\('tentative','Tentative'\)/);
+  assert.match(incomingInvite, /form\('declined','Decline'\)/);
+  assert.match(messageDetail, /incomingInviteCardHtml/);
+  assert.match(messageDetail, /Original invitation message/);
 });
 
 test('push path records zero-delivery diagnostics and worker asks for visible renotification', () => {
