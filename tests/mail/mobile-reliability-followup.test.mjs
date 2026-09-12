@@ -36,9 +36,9 @@ test('inbound ICS survives storage MIME policy and becomes an actionable Setu Ca
   assert.match(invite, /security_status !== 'clean'/);
   assert.match(invite, /buildIncomingInviteReply/);
   assert.match(incomingInvite, /\['REQUEST', 'PUBLISH', 'CANCEL'\]/);
-  assert.match(incomingInvite, /value=\"accepted\"/);
-  assert.match(incomingInvite, /value=\"tentative\"/);
-  assert.match(incomingInvite, /value=\"declined\"/);
+  assert.match(incomingInvite, /form\('accepted','Accept',true\)/);
+  assert.match(incomingInvite, /form\('tentative','Tentative'\)/);
+  assert.match(incomingInvite, /form\('declined','Decline'\)/);
   assert.match(messageDetail, /incomingInviteCardHtml/);
   assert.match(messageDetail, /Original invitation message/);
 });
