@@ -5,6 +5,7 @@ import { prepareIncomingOrganization } from '@/lib/mail/incoming-organization';
 import { claimMailWebhook } from '@/lib/mail/webhook-claim';
 import { secureStoredMailAttachment } from '@/lib/mail/attachment-security';
 import { applyCalendarReply } from '@/lib/calendar/ics-reply';
+import { dispatchCommunicationNotification } from '@/lib/notifications/communication-notification-service';
 
 export const dynamic = 'force-dynamic';
 const RESEND_API = 'https://api.resend.com';
@@ -72,6 +73,23 @@ async function findOrCreateThread(admin: any, mailbox: any, subject: string, fro
   const { data, error } = await admin.from('mail_threads').insert({ organization_id: mailbox.organization_id, mailbox_id: mailbox.id, subject, participants: Array.from(participants), last_message_at: new Date().toISOString(), unread_count: 1 }).select('id').single();
   if (error) throw error;
   return data.id;
+}
+async function inboundNotificationUsers(admin: any, organizationId: string, mailboxId: string) {
+  const { data: access, error } = await admin.from('mail_mailbox_access')
+    .select('user_id')
+    .eq('organization_id', organizationId)
+    .eq('mailbox_id', mailboxId)
+    .eq('can_read', true);
+  if (error) throw error;
+  const userIds = [...new Set((access ?? []).map((row: any) => String(row.user_id ?? '')).filter(Boolean))];
+  if (!userIds.length) return [];
+  const { data: members, error: memberError } = await admin.from('organization_members')
+    .select('user_id')
+    .eq('organization_id', organizationId)
+    .eq('is_active', true)
+    .in('user_id', userIds);
+  if (memberError) throw memberError;
+  return (members ?? []).map((row: any) => String(row.user_id));
 }
 async function ingestInbound(admin: any, webhook: any) {
   const providerMessageId = String(webhook?.data?.email_id ?? webhook?.data?.id ?? '').trim();
@@ -157,7 +175,6 @@ async function ingestInbound(admin: any, webhook: any) {
         console.error('[setu-mail:webhook] attachment record failed', { providerMessageId, providerAttachmentId, messageId: message.id, error: insertError?.message ?? 'unknown' });
         continue;
       }
-      // The message remains available even when an attachment is unavailable.
       const secured = await secureStoredMailAttachment(admin, attachment, bytes);
       if (secured.security_status !== 'clean') {
         console.warn('[setu-mail:webhook] attachment blocked', { providerMessageId, providerAttachmentId, messageId: message.id, attachmentId: attachment.id, securityStatus: secured.security_status });
@@ -174,6 +191,28 @@ async function ingestInbound(admin: any, webhook: any) {
   await admin.from('mail_threads').update({ last_message_at: webhook?.created_at ?? now, ...(unread.error ? {} : { unread_count: unread.count ?? 0 }), updated_at: now }).eq('id', threadId).eq('mailbox_id', mailbox.id);
   const { data: entitlement } = await admin.from('mail_entitlements').select('current_period_messages,monthly_message_limit').eq('organization_id', mailbox.organization_id).maybeSingle();
   if (entitlement) await admin.from('mail_entitlements').update({ current_period_messages: Number(entitlement.current_period_messages ?? 0) + 1, updated_at: now }).eq('organization_id', mailbox.organization_id);
+
+  const effectiveFolder = String((values as any).folder ?? 'inbox').toLowerCase();
+  if (!['junk', 'spam', 'trash'].includes(effectiveFolder)) {
+    try {
+      const userIds = await inboundNotificationUsers(admin, mailbox.organization_id, mailbox.id);
+      if (userIds.length) await dispatchCommunicationNotification(admin, {
+        organizationId: mailbox.organization_id,
+        userIds,
+        type: 'mail_received',
+        title: subject ? `New email: ${subject}` : 'New email received',
+        body: `From ${fromAddress}`,
+        icon: 'envelope-o',
+        entityType: 'mail_message',
+        entityId: message.id,
+        entityRef: message.id,
+        actionUrl: `/api/mail/open?mailboxId=${encodeURIComponent(mailbox.id)}&messageId=${encodeURIComponent(message.id)}`,
+        priority: 'normal',
+      });
+    } catch (error) {
+      console.warn('[setu-mail:webhook] notification delivery failed', { messageId: message.id, mailboxId: mailbox.id, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
   return { messageId: message.id, duplicate: false };
 }
 async function updateDelivery(admin: any, webhook: any) {
