@@ -12,6 +12,7 @@ const workspace = fs.readFileSync('src/features/calendar/components/calendar-bat
 const ics = fs.readFileSync('src/lib/calendar/ics.ts', 'utf8');
 const invites = fs.readFileSync('src/lib/calendar/invite-delivery.ts', 'utf8');
 const migration = fs.readFileSync('supabase/migrations/20260912011500_calendar_recurrence_preferences_reminders.sql', 'utf8');
+const vercel = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
 
 test('CAL-08 stores canonical timezone preferences and validates IANA zones', () => {
   assert.match(migration, /create table if not exists public\.calendar_preferences/);
@@ -36,8 +37,17 @@ test('CAL-08 reminders are due-time driven, create real in-app notifications and
   assert.match(reminderApi, /event\.timezone/);
   assert.match(reminderApi, /recurringExceptions/);
   assert.match(reminderApi, /recurrence_original_start/);
+  assert.match(reminderApi, /isSeriesRoot/);
   assert.match(migration, /create table if not exists public\.calendar_reminder_deliveries/);
   assert.match(migration, /unique\(reminder_id, occurrence_start, channel\)/);
+});
+
+test('CAL-08 reminder delivery is actually scheduled and protected by CRON_SECRET', () => {
+  assert.ok(Array.isArray(vercel.crons));
+  assert.ok(vercel.crons.some((cron) => cron.path === '/api/calendar/reminders/process' && cron.schedule === '*/5 * * * *'));
+  assert.match(reminderApi, /process\.env\.CRON_SECRET/);
+  assert.match(reminderApi, /authorization/);
+  assert.match(reminderApi, /Bearer \$\{secret\}/);
 });
 
 test('CAL-11 settings expose Communications entitlement, timezone, reminder defaults and Zoom state', () => {
@@ -67,6 +77,8 @@ test('CAL-13 occurrence edits and cancellations are distinct from entire-series 
   assert.match(migration, /recurrence_series_id/);
   assert.match(migration, /recurrence_original_start/);
   assert.match(migration, /calendar_events_series_occurrence_unique/);
+  assert.match(migration, /calendar_inherit_series_recurrence_rule_trigger/);
+  assert.match(migration, /calendar_sync_series_recurrence_rule_trigger/);
   assert.match(calendarApi, /target\.kind === 'occurrence'/);
   assert.match(calendarApi, /ensureOccurrenceOverride/);
   assert.match(calendarApi, /requestedScope === 'series'/);
