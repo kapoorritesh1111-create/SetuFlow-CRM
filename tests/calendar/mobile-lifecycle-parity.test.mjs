@@ -15,7 +15,7 @@ test('Mobile Calendar editing reuses the authoritative calendar lifecycle API', 
   assert.match(mobile, /fetch\('\/api\/calendar'/);
   assert.doesNotMatch(mobile, /\/api\/calendar\/invite/);
   assert.doesNotMatch(mobile, /\/api\/calendar\/zoom\/meeting/);
-  assert.match(mobile, /result\.warnings/);
+  assert.match(mobile, /warningMessages\(result\)/);
   assert.match(mobile, /Event saved, but/);
 });
 
