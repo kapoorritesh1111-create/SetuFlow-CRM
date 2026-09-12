@@ -16,8 +16,58 @@ alter table public.calendar_events add constraint calendar_events_recurrence_ove
   check (
     (recurrence_series_id is null and recurrence_original_start is null)
     or
-    (recurrence_series_id is not null and recurrence_original_start is not null and recurrence_rule is null)
+    (recurrence_series_id is not null and recurrence_original_start is not null)
   );
+
+create or replace function public.calendar_inherit_series_recurrence_rule()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  if new.recurrence_series_id is not null then
+    select recurrence_rule
+      into new.recurrence_rule
+      from public.calendar_events
+      where id = new.recurrence_series_id
+        and organization_id = new.organization_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists calendar_inherit_series_recurrence_rule_trigger on public.calendar_events;
+create trigger calendar_inherit_series_recurrence_rule_trigger
+before insert or update of recurrence_series_id, recurrence_rule
+on public.calendar_events
+for each row
+execute function public.calendar_inherit_series_recurrence_rule();
+
+create or replace function public.calendar_sync_series_recurrence_rule()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  if new.recurrence_series_id is null and new.recurrence_rule is distinct from old.recurrence_rule then
+    update public.calendar_events
+       set recurrence_rule = new.recurrence_rule,
+           updated_at = now()
+     where organization_id = new.organization_id
+       and recurrence_series_id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists calendar_sync_series_recurrence_rule_trigger on public.calendar_events;
+create trigger calendar_sync_series_recurrence_rule_trigger
+after update of recurrence_rule
+on public.calendar_events
+for each row
+execute function public.calendar_sync_series_recurrence_rule();
 
 create table if not exists public.calendar_preferences (
   organization_id uuid not null references public.organizations(id) on delete cascade,
