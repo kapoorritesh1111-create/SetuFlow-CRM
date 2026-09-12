@@ -22,7 +22,7 @@ test('calendar reminder catch-up never sends Upcoming notifications after the ev
   const start = '2026-09-12T14:00:00.000Z';
   assert.equal(isCalendarReminderDue(start, 15, new Date('2026-09-12T13:45:00.000Z')), true);
   assert.equal(isCalendarReminderDue(start, 15, new Date('2026-09-12T13:50:00.000Z')), true);
-  assert.equal(isCalendarReminderDue(start, 15, new Date('2026-09-12T14:00:00.000Z')), true);
+  assert.equal(isCalendarReminderDue(start, 15, new Date('2026-09-12T14:00:00.000Z')), false);
   assert.equal(isCalendarReminderDue(start, 15, new Date('2026-09-12T14:00:00.001Z')), false);
   assert.equal(isCalendarReminderDue(start, 15, new Date('2026-09-12T13:44:59.999Z')), false);
 });
