@@ -19,9 +19,10 @@ test('Calendar is a real destination in the shared Setu Communications shell', (
   assert.doesNotMatch(shell, /Calendar — coming next/);
 });
 
-test('Communications rail marks Mail and Calendar independently and preserves CRM gating', () => {
-  assert.match(shell, /active=\{!isCalendar\}/);
+test('Communications rail marks Mail, Calendar and Contacts independently and preserves CRM gating', () => {
+  assert.match(shell, /active=\{isMail\}/);
   assert.match(shell, /active=\{isCalendar\}/);
+  assert.match(shell, /active=\{isContacts\}/);
   assert.match(shell, /access\.crmEnabled/);
   assert.match(shell, /CrmProductIcon/);
 });
