@@ -26,6 +26,7 @@ self.addEventListener('push', event => {
       icon: '/icons/setu-mail-source.png',
       badge: '/icons/setu-mail-source.png',
       tag: payload.id || `${payload.type}:${url}`,
+      renotify: true,
       data: { url, type: payload.type },
     }),
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {

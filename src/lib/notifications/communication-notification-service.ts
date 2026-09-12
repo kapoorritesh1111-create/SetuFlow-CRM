@@ -86,7 +86,7 @@ export async function dispatchCommunicationNotification(db: DeliveryClient, inpu
 
   if (pushUserIds.length) {
     try {
-      await sendWebPushToUsers(db, pushUserIds, {
+      const pushResult = await sendWebPushToUsers(db, pushUserIds, {
         title: input.title,
         body: input.body,
         action_url: input.actionUrl,
@@ -95,6 +95,7 @@ export async function dispatchCommunicationNotification(db: DeliveryClient, inpu
         icon: SETU_MAIL_PUSH_ICON,
         badge: SETU_MAIL_PUSH_ICON,
       }, input.organizationId);
+      if (pushResult.sent === 0) console.warn('[setu-communications:push] no device delivery', { organizationId: input.organizationId, type: input.type, userCount: pushUserIds.length, skipped: pushResult.skipped ?? null, pruned: pushResult.pruned });
     } catch {
       // Browser/device delivery is best effort. In-app notification remains authoritative.
     }

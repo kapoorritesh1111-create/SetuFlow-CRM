@@ -153,8 +153,11 @@ async function ingestInbound(admin: any, webhook: any) {
       const bytes = Buffer.from(await download.arrayBuffer());
       const filename = String(item.filename ?? 'attachment');
       const contentType = String(item.content_type ?? 'application/octet-stream');
+      const isCalendarAttachment = contentType.toLowerCase().startsWith('text/calendar') || filename.toLowerCase().endsWith('.ics');
+      // Supabase bucket MIME policy may reject text/calendar. Store bytes with a safe transport MIME while preserving the real MIME in mail_attachments.
+      const storageContentType = isCalendarAttachment ? 'application/octet-stream' : contentType;
       const path = `${mailbox.organization_id}/${mailbox.id}/${message.id}/${crypto.randomUUID()}-${filename.replace(/[^a-zA-Z0-9._-]+/g, '_')}`;
-      const { error: uploadError } = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, bytes, { contentType, upsert: false });
+      const { error: uploadError } = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, bytes, { contentType: storageContentType, upsert: false });
       if (uploadError) {
         console.error('[setu-mail:webhook] attachment storage failed', { providerMessageId, providerAttachmentId, messageId: message.id, error: uploadError.message });
         continue;

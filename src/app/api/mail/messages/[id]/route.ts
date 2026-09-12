@@ -3,9 +3,43 @@ import { mailOrganizerContext, MailAccessError, MAIL_MESSAGE_FIELDS } from '@/li
 import { isMailId } from '@/lib/mail/organization';
 import { sanitizeMailHtml } from '@/lib/mail/safe-html';
 export const dynamic = 'force-dynamic';
+const RESEND_API = 'https://api.resend.com';
 
 function failure(error: unknown) {
   return NextResponse.json({ error: error instanceof MailAccessError ? error.message : 'Unable to update message.' }, { status: error instanceof MailAccessError ? error.status : 500 });
+}
+
+async function resendGet(path: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const response = await fetch(`${RESEND_API}${path}`, { headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    if (!response.ok) return null;
+    return await response.json().catch(() => null) as any;
+  } catch { return null; }
+}
+
+function isCalendarAttachment(item: { content_type?: unknown; filename?: unknown }) {
+  return String(item.content_type || '').toLowerCase().startsWith('text/calendar') || String(item.filename || '').toLowerCase().endsWith('.ics');
+}
+
+async function recoverRemoteCalendarAttachments(providerMessageId: string | null, messageId: string) {
+  if (!providerMessageId) return [];
+  const payload = await resendGet(`/emails/receiving/${encodeURIComponent(providerMessageId)}/attachments`);
+  const rows = Array.isArray(payload?.data) ? payload.data : [];
+  return rows.filter(isCalendarAttachment).map((item: any) => ({
+    id: String(item.id || ''),
+    message_id: messageId,
+    filename: String(item.filename || 'calendar-invite.ics'),
+    content_type: String(item.content_type || 'text/calendar'),
+    size_bytes: Number(item.size || 0) || null,
+    created_at: new Date().toISOString(),
+    security_status: 'remote_calendar',
+    scan_provider: 'resend',
+    scan_signature: null,
+    scanned_at: null,
+    remote_calendar: true,
+  })).filter((item: any) => isMailId(item.id));
 }
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -13,13 +47,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const ctx = await mailOrganizerContext(request);
     if (!isMailId(params.id)) return NextResponse.json({ error: 'Invalid message id.' }, { status: 400 });
     const [message, attachments] = await Promise.all([
-      ctx.db.from('mail_messages').select(MAIL_MESSAGE_FIELDS).eq('id', params.id).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id).maybeSingle(),
+      ctx.db.from('mail_messages').select(`${MAIL_MESSAGE_FIELDS},provider_message_id`).eq('id', params.id).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id).maybeSingle(),
       ctx.db.from('mail_attachments').select('id,message_id,filename,content_type,size_bytes,created_at,security_status,scan_provider,scan_signature,scanned_at').eq('message_id', params.id).eq('organization_id', ctx.organizationId).eq('mailbox_id', ctx.mailbox.id),
     ]);
     if (message.error || attachments.error) return NextResponse.json({ error: 'Unable to load the complete message. Please try again.' }, { status: 503 });
     if (!message.data) return NextResponse.json({ error: 'Message not found.' }, { status: 404 });
-    const safeMessage = { ...message.data, html_body: sanitizeMailHtml(message.data.html_body) || null };
-    return NextResponse.json({ message: safeMessage, attachments: attachments.data ?? [] }, { headers: { 'Cache-Control': 'private, no-store' } });
+    const { provider_message_id: providerMessageId, ...messageFields } = message.data as any;
+    const localAttachments = attachments.data ?? [];
+    const remoteCalendar = localAttachments.some(isCalendarAttachment) ? [] : await recoverRemoteCalendarAttachments(String(providerMessageId || '') || null, params.id);
+    const safeMessage = { ...messageFields, html_body: sanitizeMailHtml(messageFields.html_body) || null };
+    return NextResponse.json({ message: safeMessage, attachments: [...localAttachments, ...remoteCalendar] }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) { return failure(error); }
 }
 
@@ -35,7 +72,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const body = await request.json().catch(() => null) as Record<string, unknown> | null;
     let action = String(body?.action ?? '').trim();
     let value = body?.value;
-    // Preserve the existing mobile boolean action contract.
     if (!action) for (const key of ['read', 'star', 'archive', 'trash']) {
       if (typeof body?.[key] === 'boolean') { action = key; value = body[key]; break; }
     }
