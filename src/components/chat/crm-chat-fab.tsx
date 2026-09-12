@@ -216,7 +216,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
       </div>}
 
       {/* main panel */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "linear-gradient(135deg,#0f2744,#1F487C)", color: "#fff", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {(view === "dm-chat" || view === "dm-picker") && <button type="button" onClick={() => setView("chat")} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#fff", borderRadius: 8, padding: "4px 8px", cursor: "pointer", fontSize: 12, marginRight: 4 }}>←</button>}
@@ -235,7 +235,7 @@ export function CrmChatFab({ organizationId, currentUserId, currentUserName, org
           {channels.map((ch) => <button key={ch.key} type="button" onClick={() => switchChannel(ch.key)} style={{ border: view === "chat" && activeChannel === ch.key ? "1px solid #279491" : "1px solid transparent", borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", background: view === "chat" && activeChannel === ch.key ? "rgba(39,148,145,.08)" : "transparent", color: view === "chat" && activeChannel === ch.key ? "#279491" : "#64748b", whiteSpace: "nowrap", fontFamily: "inherit" }}># {ch.label}{unreadCounts[ch.key] ? <span style={{ background: "#ef4444", color: "#fff", fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 99, marginLeft: 3 }}>{unreadCounts[ch.key]}</span> : null}</button>)}
           <button type="button" onClick={() => setView(view === "dm-picker" ? "chat" : "dm-picker")} style={{ marginLeft: "auto", border: view === "dm-picker" || view === "dm-chat" ? "1px solid #279491" : "1px solid transparent", borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", background: view === "dm-picker" || view === "dm-chat" ? "rgba(39,148,145,.08)" : "transparent", color: view === "dm-picker" || view === "dm-chat" ? "#279491" : "#64748b", fontFamily: "inherit" }}>DM{activeDms.reduce((a, b) => a + b.unread, 0) > 0 && <span style={{ background: "#ef4444", color: "#fff", fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 99, marginLeft: 4 }}>{activeDms.reduce((a, b) => a + b.unread, 0)}</span>}</button>
         </div>}
-        <div style={{ flex: 1, overflow: "hidden" }}>
+        <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
           {view === "dm-picker" && <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#fff" }}>
             <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9", flexShrink: 0 }}>
               <input type="text" placeholder="Search team members..." value={dmSearch} onChange={(e) => setDmSearch(e.target.value)} autoFocus style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 12, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", background: "#f8fafc" }} />

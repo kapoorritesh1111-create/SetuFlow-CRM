@@ -65,7 +65,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   const [error, setError] = useState<string | null>(null);
   const [unreadFromId, setUnreadFromId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const messageAreaRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const composerEmojiRef = useRef<HTMLDivElement>(null);
   const typingRef = useRef<any>(null);
@@ -78,7 +78,11 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
 
   useEffect(() => { void fetchMembers(organizationId).then(setMembers); }, [organizationId]);
   useEffect(() => setActiveConversationId(conversationId ?? null), [conversationId]);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    const messageArea = messageAreaRef.current;
+    if (!messageArea) return;
+    messageArea.scrollTo({ top: messageArea.scrollHeight, behavior: "smooth" });
+  }, [messages]);
   useEffect(() => { const timer = window.setInterval(() => setTypingUsers((x) => ({ ...x })), 1000); return () => clearInterval(timer); }, []);
 
   // presence heartbeat
@@ -180,7 +184,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
   const pinnedMessage = useMemo(() => messages.filter((m) => m.pinned_at).sort((a, b) => new Date(b.pinned_at!).getTime() - new Date(a.pinned_at!).getTime())[0] ?? null, [messages]);
 
   return (
-    <section className={compact ? "chat-thread chat-thread-compact" : "chat-thread chat-thread-inline"} style={{ height: compact ? "100%" : undefined, minHeight: compact ? undefined : 520, display: "flex", flexDirection: "column" }}>
+    <section className={compact ? "chat-thread chat-thread-compact" : "chat-thread chat-thread-inline"} style={{ height: compact ? "100%" : undefined, minHeight: compact ? 0 : 520, overflow: compact ? "hidden" : undefined, display: "flex", flexDirection: "column" }}>
       {/* thread header */}
       {threadParent && (
         <div style={{ padding: 10, borderBottom: "1px solid #e2e8f0", background: "#fff", display: "flex", justifyContent: "space-between", gap: 10 }}>
@@ -191,7 +195,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
 
       {/* pinned message bar */}
       {pinnedMessage && !threadParent && (
-        <div onClick={() => { const el = document.getElementById(`msg-${pinnedMessage.id}`); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.style.background = "#fffbeb"; setTimeout(() => { el.style.background = ""; }, 1500); } }}
+        <div onClick={() => { const el = document.getElementById(`msg-${pinnedMessage.id}`); const messageArea = messageAreaRef.current; if (el && messageArea) { const top = el.offsetTop - ((messageArea.clientHeight - el.clientHeight) / 2); messageArea.scrollTo({ top, behavior: "smooth" }); el.style.background = "#fffbeb"; setTimeout(() => { el.style.background = ""; }, 1500); } }}
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: "#FAEEDA", borderBottom: "1px solid #FAC775", fontSize: 12, color: "#854F0B", cursor: "pointer" }}>
           <span>📌</span>
           <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><strong>{pinnedMessage.sender_name}</strong>: {(pinnedMessage.content || "Attachment").slice(0, 60)}</span>
@@ -200,11 +204,12 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
 
       {/* message area */}
       <div
+        ref={messageAreaRef}
         onDragEnter={(e) => { e.preventDefault(); setDragging(true); }}
         onDragOver={(e) => e.preventDefault()}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
-        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: compact ? 12 : 18, background: dragging ? "#ecfeff" : compact ? "#f8fafc" : "linear-gradient(180deg,#f8fafc,#eef9f8)", borderRadius: compact ? 0 : 20, position: "relative" }}
+        style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: compact ? 12 : 18, background: dragging ? "#ecfeff" : compact ? "#f8fafc" : "linear-gradient(180deg,#f8fafc,#eef9f8)", borderRadius: compact ? 0 : 20, position: "relative" }}
       >
         {dragging && <div style={{ position: "absolute", inset: 12, border: "2px dashed #279491", borderRadius: 18, background: "rgba(236,254,255,.76)", display: "grid", placeItems: "center", zIndex: 5, fontWeight: 700 }}>Drop files to attach</div>}
         {loading && <div style={{ textAlign: "center", color: "#64748b", padding: 24 }}>Loading discussion...</div>}
@@ -244,7 +249,6 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
           />
           </div>
         ))}
-        <div ref={endRef} />
       </div>
 
       {/* typing indicator */}
@@ -254,7 +258,7 @@ export function ChatThread({ entityType, entityId, conversationId, organizationI
       {error && <div style={{ color: "#b91c1c", background: "#fee2e2", padding: "8px 12px", fontSize: 12 }}>{error}</div>}
 
       {/* ── COMPOSER ── */}
-      <div style={{ position: "relative", padding: compact ? 10 : 12, borderTop: "1px solid #e2e8f0", background: "#fff" }}>
+      <div style={{ position: "relative", flexShrink: 0, padding: compact ? 10 : 12, borderTop: "1px solid #e2e8f0", background: "#fff" }}>
         {/* mention popup */}
         {showMentions && (
           <div style={{ position: "absolute", bottom: "100%", left: 12, zIndex: 20, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 6, minWidth: 240, maxHeight: 260, overflowY: "auto", boxShadow: "0 16px 40px rgba(15,39,68,.16)" }}>
