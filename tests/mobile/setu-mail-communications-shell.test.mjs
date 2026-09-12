@@ -10,6 +10,8 @@ const metadata = read('src/lib/setu-mail-app-metadata.ts');
 const mailLayout = read('src/app/(app)/mail/layout.tsx');
 const calendarLayout = read('src/app/(app)/calendar/layout.tsx');
 const contactsLayout = read('src/app/(app)/contacts/layout.tsx');
+const contactsPage = read('src/app/(app)/contacts/page.tsx');
+const mobilePeople = read('src/features/contacts/components/mobile-people-workspace.tsx');
 const manifest = JSON.parse(read('public/setu-mail-manifest.webmanifest'));
 
 test('SETU Mail standalone manifest opens mail and exposes communications shortcuts', () => {
@@ -47,4 +49,18 @@ test('mobile communications nav respects phone safe areas and stays hidden on de
   assert.match(chromeCss, /position:\s*fixed/);
   assert.match(chromeCss, /grid-template-columns:\s*repeat\(3/);
   assert.match(chromeCss, /repeat\(4/);
+});
+
+test('People has a dedicated Outlook-style mobile workspace without replacing desktop Contacts', () => {
+  assert.match(contactsPage, /MobilePeopleWorkspace/);
+  assert.match(contactsPage, /md:hidden/);
+  assert.match(contactsPage, /hidden h-full md:block/);
+  assert.match(mobilePeople, />People</);
+  assert.match(mobilePeople, /Search people/);
+  assert.match(mobilePeople, /Add person/);
+  assert.match(mobilePeople, /grid h-10 w-10 shrink-0 place-items-center rounded-full/);
+  assert.match(mobilePeople, /Object\.entries\(groups\)/);
+  assert.match(mobilePeople, /\/mail\?compose=1&to=/);
+  assert.match(mobilePeople, /\/calendar\?compose=1&guest=/);
+  assert.match(mobilePeople, /Archive person/);
 });
