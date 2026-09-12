@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { expandRecurringEvent } from '@/lib/calendar/recurrence';
+import { dispatchCommunicationNotification } from '@/lib/notifications/communication-notification-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,33 +53,44 @@ async function sendEmail(event: any, occurrenceStart: string, recipient: string)
 }
 
 async function sendInApp(db: any, event: any, occurrenceStart: string) {
-  const { error } = await db.from('notifications').insert({
-    organization_id: event.organization_id,
-    user_id: event.owner_user_id,
+  const occurrenceIso = new Date(occurrenceStart).toISOString();
+  await dispatchCommunicationNotification(db, {
+    organizationId: event.organization_id,
+    userIds: [event.owner_user_id],
     type: 'calendar_reminder',
     title: `Upcoming: ${event.title}`,
-    body: `${formattedWhen(event, occurrenceStart)} · ${event.timezone || 'UTC'}`,
+    body: `${formattedWhen(event, occurrenceIso)} · ${event.timezone || 'UTC'}`,
     icon: 'calendar',
+    entityType: 'calendar_event',
+    entityId: event.id,
+    entityRef: `${event.id}:${occurrenceIso}`,
+    actionUrl: `/calendar?eventId=${encodeURIComponent(event.id)}`,
     priority: 'normal',
-    entity_type: 'calendar_event',
-    entity_id: event.id,
-    entity_ref: isSeriesRoot(event) ? `${event.id}:${occurrenceStart}` : event.id,
-    action_url: '/calendar',
-    channels_sent: ['in_app'],
   });
-  if (error) throw error;
 }
 
-async function markRecurringDelivery(db: any, reminder: any, event: any, occurrenceStart: string) {
+async function claimDelivery(db: any, reminder: any, event: any, occurrenceStart: string) {
+  const occurrenceIso = new Date(occurrenceStart).toISOString();
   const { error } = await db.from('calendar_reminder_deliveries').insert({
     organization_id: event.organization_id,
     reminder_id: reminder.id,
     event_id: event.id,
-    occurrence_start: occurrenceStart,
+    occurrence_start: occurrenceIso,
     channel: reminder.channel,
     sent_at: new Date().toISOString(),
   });
-  if (error && error.code !== '23505') throw error;
+  if (!error) return true;
+  if (error.code === '23505') return false;
+  throw error;
+}
+
+async function releaseDelivery(db: any, reminder: any, occurrenceStart: string) {
+  const occurrenceIso = new Date(occurrenceStart).toISOString();
+  await db.from('calendar_reminder_deliveries')
+    .delete()
+    .eq('reminder_id', reminder.id)
+    .eq('occurrence_start', occurrenceIso)
+    .eq('channel', reminder.channel);
 }
 
 export async function GET(req: NextRequest) {
@@ -94,17 +106,6 @@ export async function GET(req: NextRequest) {
 
   const recurringRoots = (reminders ?? []).filter((row: any) => isSeriesRoot(row.calendar_events));
   const recurringEventIds = [...new Set(recurringRoots.map((row: any) => row.calendar_events.id))];
-  const recurringReminderIds = recurringRoots.map((row: any) => row.id);
-  const delivered = new Set<string>();
-  if (recurringReminderIds.length) {
-    const { data: rows } = await db.from('calendar_reminder_deliveries')
-      .select('reminder_id,occurrence_start,channel')
-      .in('reminder_id', recurringReminderIds)
-      .gte('occurrence_start', window.from.toISOString())
-      .lt('occurrence_start', window.to.toISOString());
-    for (const row of rows ?? []) delivered.add(`${row.reminder_id}|${new Date(row.occurrence_start).toISOString()}|${row.channel}`);
-  }
-
   const recurringExceptions = new Set<string>();
   if (recurringEventIds.length) {
     const { data: rows } = await db.from('calendar_events')
@@ -121,6 +122,7 @@ export async function GET(req: NextRequest) {
   const profileCache = new Map<string, string | null>();
   let processed = 0;
   let failed = 0;
+  let deduplicated = 0;
 
   for (const reminder of reminders ?? []) {
     const event: any = reminder.calendar_events;
@@ -137,10 +139,15 @@ export async function GET(req: NextRequest) {
       if (recurringRoot && recurringExceptions.has(exceptionKey(event.id, occurrence.toISOString()))) continue;
       const due = new Date(occurrence.getTime() - Number(reminder.minutes_before || 0) * 60000);
       if (due > now || occurrence < window.from) continue;
-      const deliveryKey = `${reminder.id}|${occurrence.toISOString()}|${reminder.channel}`;
-      if (recurringRoot && delivered.has(deliveryKey)) continue;
 
+      let claimed = false;
       try {
+        claimed = await claimDelivery(db, reminder, event, occurrence.toISOString());
+        if (!claimed) {
+          deduplicated += 1;
+          continue;
+        }
+
         if (reminder.channel === 'email') {
           let recipient = profileCache.get(event.owner_user_id);
           if (recipient === undefined) {
@@ -154,18 +161,17 @@ export async function GET(req: NextRequest) {
         } else if (reminder.channel === 'in_app') {
           await sendInApp(db, event, occurrence.toISOString());
         } else {
+          await releaseDelivery(db, reminder, occurrence.toISOString());
           continue;
         }
 
-        if (recurringRoot) {
-          await markRecurringDelivery(db, reminder, event, occurrence.toISOString());
-          delivered.add(deliveryKey);
-        } else {
+        if (!recurringRoot) {
           const { error } = await db.from('calendar_reminders').update({ sent_at: now.toISOString() }).eq('id', reminder.id).is('sent_at', null);
-          if (error) throw error;
+          if (error) console.warn('[setu-calendar:reminder] sent_at update failed after claimed delivery', { reminderId: reminder.id, error: error.message });
         }
         processed += 1;
       } catch (error) {
+        if (claimed) await releaseDelivery(db, reminder, occurrence.toISOString());
         failed += 1;
         console.warn('[setu-calendar:reminder] delivery failed', {
           reminderId: reminder.id,
@@ -178,5 +184,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed, failed });
+  return NextResponse.json({ ok: true, processed, failed, deduplicated });
 }
