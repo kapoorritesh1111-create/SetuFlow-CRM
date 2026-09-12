@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentWorkspace } from '@/lib/workspace/auth';
+import { isValidTimeZone } from '@/lib/calendar/recurrence';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,7 @@ export async function PUT(req: NextRequest) {
   const body = await req.json().catch(() => null) as { timezone?: string; days?: AvailabilityRow[] } | null;
   const timezone = String(body?.timezone ?? '').trim().slice(0, 80) || 'UTC';
   const days = Array.isArray(body?.days) ? body!.days : [];
+  if (!isValidTimeZone(timezone)) return NextResponse.json({ error: 'Choose a valid IANA time zone.' }, { status: 400 });
   if (days.length > 7 || days.some(row => !validRow(row))) return NextResponse.json({ error: 'Choose valid work days and working hours.' }, { status: 400 });
   if (new Set(days.map(row => row.weekday)).size !== days.length) return NextResponse.json({ error: 'Each work day can only be configured once.' }, { status: 400 });
 
