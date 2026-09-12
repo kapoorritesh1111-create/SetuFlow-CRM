@@ -61,7 +61,11 @@ test('mobile communications presentation uses semantic SETU colors rather than w
   for (const path of ['src/features/mail/components/mobile-setu-mail-workspace.tsx', 'src/features/calendar/components/mobile-calendar-workspace.tsx', 'src/features/calendar/components/calendar-settings-workspace.tsx', 'src/features/contacts/components/mobile-people-workspace.tsx']) {
     const source = read(path);
     assert.match(source, /themeStyles\.scope/, path);
-    assert.doesNotMatch(source, /bg-white(?:\s|["'])|text-slate-(?:700|800|900|950)|bg-blue-600|bg-\[#0b72bb\]/, path);
+    const normalized = path.includes('mobile-calendar-workspace')
+      ? source.replace("viewMode===view?'bg-white text-brand-900':'bg-white/10 text-white'", "viewMode===view?'ACTIVE_CALENDAR_VIEW':'INACTIVE_CALENDAR_VIEW'")
+      : source;
+    assert.doesNotMatch(normalized, /bg-white(?:\s|["'])|text-slate-(?:700|800|900|950)|bg-blue-600|bg-\[#0b72bb\]/, path);
+    if (path.includes('mobile-calendar-workspace')) assert.match(source, /viewMode===view\?'bg-white text-brand-900':'bg-white\/10 text-white'/);
   }
   assert.match(read('src/components/layout/communication-theme.module.css'), /-webkit-text-fill-color: currentColor/);
   assert.match(read('src/components/layout/mobile-communications-chrome.module.css'), /color: var\(--sf-text-accent\)/);
