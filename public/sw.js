@@ -1,4 +1,4 @@
-const CACHE_NAME = 'setuflow-offline-v5-investor-css-fix';
+const CACHE_NAME = 'setuflow-offline-v6-setu-mail';
 const CAPTURE_URL = '/contact-exchange/scan';
 const DEFAULT_NOTIFICATION_URL = '/dashboard?panel=notifications';
 const LEAD_DB_NAME = 'setuflow-offline';
@@ -11,7 +11,9 @@ const STATIC_ASSETS = [
   '/logos/setu-flow-lockup.svg',
   '/logos/setu-flow-lockup-white.svg',
   '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-512.png',
+  '/icons/setu-mail-192.png',
+  '/icons/setu-mail-512.png'
 ];
 
 function openLeadDb() {
@@ -180,13 +182,15 @@ self.addEventListener('push', (event) => {
   const body = payload.body || 'A workflow notification needs your attention.';
   const url = payload.action_url || payload.actionUrl || DEFAULT_NOTIFICATION_URL;
   const priority = payload.priority || 'normal';
+  const icon = payload.icon || '/icons/icon-192.png';
+  const badge = payload.badge || icon || '/icons/icon-192.png';
 
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
       tag: payload.id || payload.type || 'setuflow-notification',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon,
+      badge,
       image: payload.image || undefined,
       data: { url, id: payload.id || null, priority },
       actions: [
