@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { createCatalogBrochureShare } from '@/features/catalog-brochures/server';
 import { sendInteraktTemplate, sendInteraktText } from '@/features/integrations/interakt/client';
+import { env } from '@/lib/env';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
@@ -13,31 +14,358 @@ const SOURCE_PROVIDER = 'interakt';
 const INBOUND_PATH = '/leads/inbound';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
 const WHATSAPP_REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 type SalesMessageActionResult = { ok: true; message: string } | { ok: false; message: string };
-const clean=(v:unknown)=>String(v??'').trim();
-const safeObject=(v:unknown):Record<string,unknown>=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
-const phoneDigits=(v:unknown)=>clean(v).replace(/[^0-9]/g,'');
-const replyWindowOpen=(v:unknown)=>{const t=new Date(clean(v)).getTime();if(!Number.isFinite(t))return false;const elapsed=Date.now()-t;return elapsed>=0&&elapsed<=WHATSAPP_REPLY_WINDOW_MS;};
-function approvedFollowUpTemplate(){const templateName=clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE),languageCode=clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE_LANGUAGE)||'en';if(!templateName)throw new Error('No approved Stark Packmate WhatsApp follow-up template is configured yet. Add the approved Interakt template in Admin → Integrations before restarting this conversation.');return{templateName,languageCode};}
-function assertDraftContext(formData:FormData,rowId:string){const draftRowId=clean(formData.get('draftRowId'));if(!draftRowId||draftRowId!==rowId)throw new Error('Customer changed. The reply has been refreshed for the selected inquiry. Please review it before sending.');}
-function safeSalesError(error:unknown){const message=error instanceof Error?error.message:'The message could not be sent.';if(/complete WhatsApp number|valid WhatsApp country code|phone number are required/i.test(message))return 'This customer does not have a usable WhatsApp number yet.';if(/INTERAKT_STARK_PACKMATE_API_KEY|connector is restricted/i.test(message))return 'WhatsApp messaging is not available right now. Ask an administrator to check the Interakt connection.';if(/Database admin client unavailable/i.test(message))return 'Setu Flow could not prepare this message. Please try again.';if(/No approved template found/i.test(message))return 'The configured WhatsApp template is not approved or no longer exists in Interakt. Update the Stark Packmate template in Admin → Integrations.';return message;}
-async function requireStarkSalesAccess(){const workspace=await requireWorkspace();const organization=workspace.organization;const isStark=organization?.id===STARK_PACKMATE_ORG_ID||String(organization?.slug??'').toLowerCase()===STARK_PACKMATE_SLUG;if(!isStark||!workspace.user||!organization)throw new Error('This Interakt connector is restricted to Stark Packmate.');if(!workspace.currentRoles.some((role)=>WRITE_ROLES.has(String(role))))throw new Error('Sales permission is required to message this customer.');return workspace;}
-function salesFollowUpContext(row:any){const blockers=[!clean(row.company_name)?'Company':null,!(clean(row.packaging_type)||clean(row.pouch_type))?'Product / pouch type':null].filter(Boolean) as string[];if(blockers.length)return blockers.join(', ');return [row.pouch_type||row.packaging_type,row.quantity_text].map(clean).filter(Boolean).join(' · ')||'Follow-up';}
-function resolveWhatsAppRecipient(row:any){const raw=safeObject(row.raw_payload),customer=safeObject(raw.customer);let countryCode=clean(row.country_code)||clean(customer.country_code),phoneNumber=clean(row.phone_number)||clean(customer.phone_number);const fullPhone=clean(row.full_phone_number)||clean(customer.channel_phone_number),fullDigits=phoneDigits(fullPhone),countryDigits=phoneDigits(countryCode),localDigits=phoneDigits(phoneNumber);if(!phoneNumber&&countryDigits&&fullDigits.startsWith(countryDigits)&&fullDigits.length>countryDigits.length)phoneNumber=fullDigits.slice(countryDigits.length);if(!countryCode&&localDigits&&fullDigits.endsWith(localDigits)&&fullDigits.length>localDigits.length){const prefix=fullDigits.slice(0,fullDigits.length-localDigits.length);if(prefix.length>=1&&prefix.length<=3)countryCode=`+${prefix}`;}if(!countryCode&&!phoneNumber&&fullDigits.length===12&&fullDigits.startsWith('91')){countryCode='+91';phoneNumber=fullDigits.slice(2);}if(!countryCode||!phoneNumber)throw new Error('This customer does not have a complete WhatsApp number in Interakt.');return{countryCode,phoneNumber};}
-async function loadInboundRow(db:any,organizationId:string,rowId:string){const{data:row,error}=await db.from('lead_intake_staging').select('*').eq('id',rowId).eq('organization_id',organizationId).eq('source_provider',SOURCE_PROVIDER).maybeSingle();if(error||!row?.id)throw new Error('Inbound inquiry not found.');return row;}
-async function loadLeadInboundRow(db:any,organizationId:string,leadId:string){const{data:row,error}=await db.from('lead_intake_staging').select('*').eq('organization_id',organizationId).eq('source_provider',SOURCE_PROVIDER).eq('qualified_lead_id',leadId).order('last_inbound_at',{ascending:false}).limit(1).maybeSingle();if(error||!row?.id)throw new Error('This lead does not have a linked Interakt conversation.');return row;}
-async function persistResolvedRecipient(db:any,organizationId:string,row:any,recipient:{countryCode:string;phoneNumber:string}){if(clean(row.country_code)&&clean(row.phone_number))return;await db.from('lead_intake_staging').update({country_code:clean(row.country_code)||recipient.countryCode,phone_number:clean(row.phone_number)||recipient.phoneNumber,updated_at:new Date().toISOString()}).eq('id',row.id).eq('organization_id',organizationId);}
-async function discardUnsentBrochureShare(db:any,organizationId:string,shareId:string|null|undefined){if(shareId)await db.from('catalog_brochure_shares').delete().eq('id',shareId).eq('organization_id',organizationId);}
-async function recordOutboundMessage({db,workspace,row,result,messageType,messageText,callbackData,payload}:{db:any;workspace:Awaited<ReturnType<typeof requireStarkSalesAccess>>;row:any;result:{id:string;message:string|null};messageType:'Text'|'Template';messageText:string;callbackData:string;payload:Record<string,unknown>}){const now=new Date().toISOString();const{error:messageError}=await db.from('lead_intake_messages').upsert({organization_id:workspace.organization!.id,intake_id:row.id,provider:SOURCE_PROVIDER,external_message_id:result.id,event_type:'message_api_send_requested',direction:'outbound',actor_type:'agent',actor_name:workspace.profile?.full_name??workspace.user?.email??'Setu Flow user',message_type:messageType,message_text:messageText,message_payload:payload,sent_at:now,status:'sent',callback_data:callbackData,updated_at:now},{onConflict:'organization_id,provider,external_message_id'});if(messageError)throw new Error(`WhatsApp sent but the Setu Flow conversation log could not be updated: ${String(messageError.message??'unknown database error')}`);await db.from('lead_intake_staging').update({last_outbound_at:now,needs_reply:false,updated_at:now}).eq('id',row.id).eq('organization_id',workspace.organization!.id);if(row.qualified_lead_id){await db.from('communications').insert({organization_id:workspace.organization!.id,lead_id:row.qualified_lead_id,related_entity:'lead',related_id:row.qualified_lead_id,communication_type:'follow_up',direction:'outbound',channel:'whatsapp',body:messageText,status:'sent',sent_at:now,created_by:workspace.user!.id,provider_message_id:result.id,metadata:{source:'interakt_lead_detail',intake_id:row.id}});}}
+type AttachmentShare = { id: string; token: string; fileName: string; mimeType: string | null; fileSize: number | null; url: string };
 
-async function performStarkInteraktSalesText(formData:FormData){const workspace=await requireStarkSalesAccess(),organizationId=workspace.organization!.id,rowId=clean(formData.get('rowId')),originalMessage=clean(formData.get('message')),brochureId=clean(formData.get('brochureId'));if(!rowId)throw new Error('Inbound inquiry is required.');assertDraftContext(formData,rowId);if(!originalMessage)throw new Error('Type a WhatsApp message before sending.');const db=createAdminSupabaseClient() as any;if(!db)throw new Error('Database admin client unavailable.');const row=await loadInboundRow(db,organizationId,rowId),recipient=resolveWhatsAppRecipient(row);await persistResolvedRecipient(db,organizationId,row,recipient);if(!replyWindowOpen(row.last_inbound_at))throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');let message=originalMessage,brochureShare:{id:string;url:string;brochureName:string}|null=null;if(brochureId){brochureShare=await createCatalogBrochureShare({brochureId,intakeId:row.id,channel:'whatsapp'});message=`${originalMessage}\n\nView our ${brochureShare.brochureName} catalog: ${brochureShare.url}`;}if(message.length>4096){await discardUnsentBrochureShare(db,organizationId,brochureShare?.id);throw new Error('This message is too long after adding the brochure link.');}const callbackData=JSON.stringify({source:'setu_flow_inbound_sales',intake_id:row.id,actor_user_id:workspace.user!.id,mode:'free_text',brochure_share_id:brochureShare?.id??null});let result:{id:string;message:string|null};try{result=await sendInteraktText({countryCode:recipient.countryCode,phoneNumber:recipient.phoneNumber,message,callbackData});}catch(error){await discardUnsentBrochureShare(db,organizationId,brochureShare?.id);throw error;}await recordOutboundMessage({db,workspace,row,result,messageType:'Text',messageText:message,callbackData,payload:{mode:'free_text',message,brochure_id:brochureId||null,brochure_share_id:brochureShare?.id??null,brochure_url:brochureShare?.url??null}});revalidatePath(INBOUND_PATH);}
-export async function sendStarkInteraktSalesText(formData:FormData):Promise<SalesMessageActionResult>{try{const hasBrochure=Boolean(clean(formData.get('brochureId')));await performStarkInteraktSalesText(formData);return{ok:true,message:hasBrochure?'WhatsApp message and brochure sent.':'WhatsApp message sent.'};}catch(error){return{ok:false,message:safeSalesError(error)};}}
+const clean = (v: unknown) => String(v ?? '').trim();
+const safeObject = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
+const phoneDigits = (v: unknown) => clean(v).replace(/[^0-9]/g, '');
+const replyWindowOpen = (v: unknown) => {
+  const t = new Date(clean(v)).getTime();
+  if (!Number.isFinite(t)) return false;
+  const elapsed = Date.now() - t;
+  return elapsed >= 0 && elapsed <= WHATSAPP_REPLY_WINDOW_MS;
+};
 
-export async function sendStarkLeadWhatsApp(formData:FormData):Promise<SalesMessageActionResult>{try{const workspace=await requireStarkSalesAccess(),leadId=clean(formData.get('leadId')),message=clean(formData.get('message'));if(!leadId||!message)throw new Error('Lead and message are required.');if(message.length>4096)throw new Error('WhatsApp message is too long.');const db=createAdminSupabaseClient() as any;if(!db)throw new Error('Database admin client unavailable.');const row=await loadLeadInboundRow(db,workspace.organization!.id,leadId);if(!replyWindowOpen(row.last_inbound_at))throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');const recipient=resolveWhatsAppRecipient(row);await persistResolvedRecipient(db,workspace.organization!.id,row,recipient);const callbackData=JSON.stringify({source:'setu_flow_lead_detail',intake_id:row.id,lead_id:leadId,actor_user_id:workspace.user!.id,mode:'free_text'});const result=await sendInteraktText({countryCode:recipient.countryCode,phoneNumber:recipient.phoneNumber,message,callbackData});await recordOutboundMessage({db,workspace,row,result,messageType:'Text',messageText:message,callbackData,payload:{mode:'free_text',message,lead_id:leadId}});revalidatePath(`/leads/${leadId}`);return{ok:true,message:'WhatsApp message sent and added to the customer timeline.'};}catch(error){return{ok:false,message:safeSalesError(error)};}}
+function approvedFollowUpTemplate() {
+  const templateName = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE);
+  const languageCode = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE_LANGUAGE) || 'en';
+  if (!templateName) throw new Error('No approved Stark Packmate WhatsApp follow-up template is configured yet. Add the approved Interakt template in Admin → Integrations before restarting this conversation.');
+  return { templateName, languageCode };
+}
 
-export async function sendStarkLeadWhatsAppTemplate(formData:FormData):Promise<SalesMessageActionResult>{try{const workspace=await requireStarkSalesAccess(),leadId=clean(formData.get('leadId'));if(!leadId)throw new Error('Lead is required.');const preset=approvedFollowUpTemplate();const db=createAdminSupabaseClient() as any;if(!db)throw new Error('Database admin client unavailable.');const row=await loadLeadInboundRow(db,workspace.organization!.id,leadId),recipient=resolveWhatsAppRecipient(row);await persistResolvedRecipient(db,workspace.organization!.id,row,recipient);const customerName=clean(row.person_name||row.contact_name)||'Customer',context=salesFollowUpContext(row),callbackData=JSON.stringify({source:'setu_flow_lead_detail',intake_id:row.id,lead_id:leadId,actor_user_id:workspace.user!.id,mode:'template_restart'});const result=await sendInteraktTemplate({countryCode:recipient.countryCode,phoneNumber:recipient.phoneNumber,templateName:preset.templateName,languageCode:preset.languageCode,bodyValues:[customerName,context],callbackData});await recordOutboundMessage({db,workspace,row,result,messageType:'Template',messageText:'WhatsApp approved follow-up',callbackData,payload:{mode:'template_restart',lead_id:leadId,templateName:preset.templateName,languageCode:preset.languageCode,bodyValues:[customerName,context]}});revalidatePath(`/leads/${leadId}`);return{ok:true,message:'Approved WhatsApp follow-up sent. Free-text messaging will reopen after the customer replies.'};}catch(error){return{ok:false,message:safeSalesError(error)};}}
+function assertDraftContext(formData: FormData, rowId: string) {
+  const draftRowId = clean(formData.get('draftRowId'));
+  if (!draftRowId || draftRowId !== rowId) throw new Error('Customer changed. The reply has been refreshed for the selected inquiry. Please review it before sending.');
+}
 
-export async function logStarkExternalEmailSent(formData:FormData):Promise<SalesMessageActionResult>{try{const workspace=await requireStarkSalesAccess(),leadId=clean(formData.get('leadId')),toEmail=clean(formData.get('toEmail')).toLowerCase(),subject=clean(formData.get('subject')),body=clean(formData.get('body'));if(!leadId||!toEmail||!body)throw new Error('Lead, recipient and email body are required.');const db=createAdminSupabaseClient() as any;if(!db)throw new Error('Database admin client unavailable.');const{data:lead}=await db.from('leads').select('id,email').eq('organization_id',workspace.organization!.id).eq('id',leadId).maybeSingle();if(!lead?.id)throw new Error('Lead not found.');if(clean(lead.email).toLowerCase()!==toEmail)throw new Error('Email recipient no longer matches this lead. Refresh before logging.');const now=new Date().toISOString();const{error}=await db.from('communications').insert({organization_id:workspace.organization!.id,lead_id:leadId,related_entity:'lead',related_id:leadId,communication_type:'follow_up',direction:'outbound',channel:'email',subject:subject||null,body,status:'sent',sent_at:now,created_by:workspace.user!.id,email_delivery_status:'external_unverified',metadata:{source:'lead_detail_mailto',to_email:toEmail,delivery_note:'User confirmed this email was sent from an external email client; provider delivery is not verified by Setu Flow.'}});if(error)throw error;revalidatePath(`/leads/${leadId}`);return{ok:true,message:'Email recorded in the customer timeline. Delivery is marked external/unverified.'};}catch(error){return{ok:false,message:safeSalesError(error)};}}
+function safeSalesError(error: unknown) {
+  const message = error instanceof Error ? error.message : 'The message could not be sent.';
+  if (/complete WhatsApp number|valid WhatsApp country code|phone number are required/i.test(message)) return 'This customer does not have a usable WhatsApp number yet.';
+  if (/INTERAKT_STARK_PACKMATE_API_KEY|connector is restricted/i.test(message)) return 'WhatsApp messaging is not available right now. Ask an administrator to check the Interakt connection.';
+  if (/Database admin client unavailable/i.test(message)) return 'Setu Flow could not prepare this message. Please try again.';
+  if (/No approved template found/i.test(message)) return 'The configured WhatsApp template is not approved or no longer exists in Interakt. Update the Stark Packmate template in Admin → Integrations.';
+  return message;
+}
 
-async function performStarkInteraktSalesFollowUp(formData:FormData){const workspace=await requireStarkSalesAccess(),organizationId=workspace.organization!.id,rowId=clean(formData.get('rowId'));if(!rowId)throw new Error('Inbound inquiry is required.');assertDraftContext(formData,rowId);const preset=approvedFollowUpTemplate();const db=createAdminSupabaseClient() as any;if(!db)throw new Error('Database admin client unavailable.');const row=await loadInboundRow(db,organizationId,rowId),recipient=resolveWhatsAppRecipient(row);await persistResolvedRecipient(db,organizationId,row,recipient);const customerName=clean(row.person_name||row.contact_name)||'Customer',context=salesFollowUpContext(row),callbackData=JSON.stringify({source:'setu_flow_inbound_sales',intake_id:row.id,actor_user_id:workspace.user!.id,mode:'template_restart'});const result=await sendInteraktTemplate({countryCode:recipient.countryCode,phoneNumber:recipient.phoneNumber,templateName:preset.templateName,languageCode:preset.languageCode,bodyValues:[customerName,context],callbackData});await recordOutboundMessage({db,workspace,row,result,messageType:'Template',messageText:'WhatsApp approved follow-up',callbackData,payload:{templateName:preset.templateName,languageCode:preset.languageCode,bodyValues:[customerName,context]}});revalidatePath(INBOUND_PATH);}
-export async function sendStarkInteraktSalesFollowUp(formData:FormData):Promise<SalesMessageActionResult>{try{await performStarkInteraktSalesFollowUp(formData);return{ok:true,message:'Approved WhatsApp follow-up sent.'};}catch(error){return{ok:false,message:safeSalesError(error)};}}
+async function requireStarkSalesAccess() {
+  const workspace = await requireWorkspace();
+  const organization = workspace.organization;
+  const isStark = organization?.id === STARK_PACKMATE_ORG_ID || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
+  if (!isStark || !workspace.user || !organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
+  if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales permission is required to message this customer.');
+  return workspace;
+}
+
+function salesFollowUpContext(row: any) {
+  const blockers = [!clean(row.company_name) ? 'Company' : null, !(clean(row.packaging_type) || clean(row.pouch_type)) ? 'Product / pouch type' : null].filter(Boolean) as string[];
+  if (blockers.length) return blockers.join(', ');
+  return [row.pouch_type || row.packaging_type, row.quantity_text].map(clean).filter(Boolean).join(' · ') || 'Follow-up';
+}
+
+function resolveWhatsAppRecipient(row: any) {
+  const raw = safeObject(row.raw_payload);
+  const customer = safeObject(raw.customer);
+  let countryCode = clean(row.country_code) || clean(customer.country_code);
+  let phoneNumber = clean(row.phone_number) || clean(customer.phone_number);
+  const fullPhone = clean(row.full_phone_number) || clean(customer.channel_phone_number);
+  const fullDigits = phoneDigits(fullPhone);
+  const countryDigits = phoneDigits(countryCode);
+  const localDigits = phoneDigits(phoneNumber);
+  if (!phoneNumber && countryDigits && fullDigits.startsWith(countryDigits) && fullDigits.length > countryDigits.length) phoneNumber = fullDigits.slice(countryDigits.length);
+  if (!countryCode && localDigits && fullDigits.endsWith(localDigits) && fullDigits.length > localDigits.length) {
+    const prefix = fullDigits.slice(0, fullDigits.length - localDigits.length);
+    if (prefix.length >= 1 && prefix.length <= 3) countryCode = `+${prefix}`;
+  }
+  if (!countryCode && !phoneNumber && fullDigits.length === 12 && fullDigits.startsWith('91')) {
+    countryCode = '+91';
+    phoneNumber = fullDigits.slice(2);
+  }
+  if (!countryCode || !phoneNumber) throw new Error('This customer does not have a complete WhatsApp number in Interakt.');
+  return { countryCode, phoneNumber };
+}
+
+async function loadInboundRow(db: any, organizationId: string, rowId: string) {
+  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('id', rowId).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
+  if (error || !row?.id) throw new Error('Inbound inquiry not found.');
+  return row;
+}
+
+async function loadLeadInboundRow(db: any, organizationId: string, leadId: string) {
+  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('qualified_lead_id', leadId).order('last_inbound_at', { ascending: false }).limit(1).maybeSingle();
+  if (error || !row?.id) throw new Error('This lead does not have a linked Interakt conversation.');
+  return row;
+}
+
+async function persistResolvedRecipient(db: any, organizationId: string, row: any, recipient: { countryCode: string; phoneNumber: string }) {
+  if (clean(row.country_code) && clean(row.phone_number)) return;
+  await db.from('lead_intake_staging').update({ country_code: clean(row.country_code) || recipient.countryCode, phone_number: clean(row.phone_number) || recipient.phoneNumber, updated_at: new Date().toISOString() }).eq('id', row.id).eq('organization_id', organizationId);
+}
+
+async function discardUnsentBrochureShare(db: any, organizationId: string, shareId: string | null | undefined) {
+  if (shareId) await db.from('catalog_brochure_shares').delete().eq('id', shareId).eq('organization_id', organizationId);
+}
+
+function attachmentUrl(token: string) {
+  return `${env.appUrl.replace(/\/$/, '')}/api/public/whatsapp-attachments/${token}`;
+}
+
+async function loadAttachmentShare(db: any, organizationId: string, attachmentId: string, context: { intakeId?: string; leadId?: string }): Promise<AttachmentShare | null> {
+  if (!attachmentId) return null;
+  const { data: row, error } = await db.from('whatsapp_attachment_shares')
+    .select('id,token,file_name,mime_type,file_size,status,intake_id,lead_id,expires_at')
+    .eq('id', attachmentId)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+  if (error || !row?.id) throw new Error('The selected attachment is no longer available. Please attach it again.');
+  if (row.status !== 'staged') throw new Error('This attachment has already been sent. Please attach the file again if you need to resend it.');
+  if (new Date(String(row.expires_at)).getTime() <= Date.now()) throw new Error('The staged attachment expired. Please attach it again.');
+  if (context.intakeId && String(row.intake_id ?? '') !== context.intakeId) throw new Error('The attachment belongs to a different inbound inquiry.');
+  if (context.leadId && String(row.lead_id ?? '') !== context.leadId) throw new Error('The attachment belongs to a different lead.');
+  return { id: String(row.id), token: String(row.token), fileName: String(row.file_name), mimeType: row.mime_type ? String(row.mime_type) : null, fileSize: row.file_size == null ? null : Number(row.file_size), url: attachmentUrl(String(row.token)) };
+}
+
+async function markAttachmentSent(db: any, organizationId: string, attachment: AttachmentShare | null, providerMessageId: string) {
+  if (!attachment) return;
+  await db.from('whatsapp_attachment_shares').update({ status: 'sent', provider_message_id: providerMessageId, sent_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', attachment.id).eq('organization_id', organizationId);
+}
+
+async function recordOutboundMessage({ db, workspace, row, result, messageType, messageText, callbackData, payload, attachment }: {
+  db: any;
+  workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>;
+  row: any;
+  result: { id: string; message: string | null };
+  messageType: 'Text' | 'Template';
+  messageText: string;
+  callbackData: string;
+  payload: Record<string, unknown>;
+  attachment?: AttachmentShare | null;
+}) {
+  const now = new Date().toISOString();
+  const { error: messageError } = await db.from('lead_intake_messages').upsert({
+    organization_id: workspace.organization!.id,
+    intake_id: row.id,
+    provider: SOURCE_PROVIDER,
+    external_message_id: result.id,
+    event_type: 'message_api_send_requested',
+    direction: 'outbound',
+    actor_type: 'agent',
+    actor_name: workspace.profile?.full_name ?? workspace.user?.email ?? 'Setu Flow user',
+    message_type: messageType,
+    message_text: messageText,
+    message_payload: payload,
+    media_url: attachment?.url ?? null,
+    sent_at: now,
+    status: 'sent',
+    callback_data: callbackData,
+    updated_at: now,
+  }, { onConflict: 'organization_id,provider,external_message_id' });
+  if (messageError) throw new Error(`WhatsApp sent but the Setu Flow conversation log could not be updated: ${String(messageError.message ?? 'unknown database error')}`);
+
+  await db.from('lead_intake_staging').update({ last_outbound_at: now, needs_reply: false, updated_at: now }).eq('id', row.id).eq('organization_id', workspace.organization!.id);
+  if (row.qualified_lead_id) {
+    await db.from('communications').insert({
+      organization_id: workspace.organization!.id,
+      lead_id: row.qualified_lead_id,
+      related_entity: 'lead',
+      related_id: row.qualified_lead_id,
+      communication_type: 'follow_up',
+      direction: 'outbound',
+      channel: 'whatsapp',
+      body: messageText,
+      status: 'sent',
+      sent_at: now,
+      created_by: workspace.user!.id,
+      provider_message_id: result.id,
+      metadata: {
+        source: 'interakt_lead_detail',
+        intake_id: row.id,
+        ...(attachment ? { attachment_id: attachment.id, attachment_name: attachment.fileName, attachment_url: attachment.url, attachment_mime_type: attachment.mimeType, attachment_size: attachment.fileSize } : {}),
+      },
+    });
+  }
+}
+
+async function performStarkInteraktSalesText(formData: FormData) {
+  const workspace = await requireStarkSalesAccess();
+  const organizationId = workspace.organization!.id;
+  const rowId = clean(formData.get('rowId'));
+  const originalMessage = clean(formData.get('message'));
+  const brochureId = clean(formData.get('brochureId'));
+  const attachmentId = clean(formData.get('attachmentId'));
+  if (!rowId) throw new Error('Inbound inquiry is required.');
+  assertDraftContext(formData, rowId);
+  if (!originalMessage && !brochureId && !attachmentId) throw new Error('Type a WhatsApp message or add an attachment before sending.');
+
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+  const row = await loadInboundRow(db, organizationId, rowId);
+  const recipient = resolveWhatsAppRecipient(row);
+  await persistResolvedRecipient(db, organizationId, row, recipient);
+  if (!replyWindowOpen(row.last_inbound_at)) throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');
+
+  const attachment = await loadAttachmentShare(db, organizationId, attachmentId, { intakeId: row.id });
+  let brochureShare: { id: string; url: string; brochureName: string } | null = null;
+  const parts = [originalMessage].filter(Boolean);
+  if (brochureId) {
+    brochureShare = await createCatalogBrochureShare({ brochureId, intakeId: row.id, channel: 'whatsapp' });
+    parts.push(`View our ${brochureShare.brochureName} catalog: ${brochureShare.url}`);
+  }
+  if (attachment) parts.push(`Attachment — ${attachment.fileName}: ${attachment.url}`);
+  const message = parts.join('\n\n');
+  if (message.length > 4096) {
+    await discardUnsentBrochureShare(db, organizationId, brochureShare?.id);
+    throw new Error('This message is too long after adding the brochure or attachment link.');
+  }
+
+  const mode = attachment ? (brochureShare ? 'attachment_brochure' : 'attachment') : (brochureShare ? 'brochure' : 'free_text');
+  const callbackData = JSON.stringify({ source: 'setu_flow_inbound_sales', intake_id: row.id, actor_user_id: workspace.user!.id, mode, brochure_share_id: brochureShare?.id ?? null, attachment_id: attachment?.id ?? null });
+  let result: { id: string; message: string | null };
+  try {
+    result = await sendInteraktText({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, message, callbackData });
+  } catch (error) {
+    await discardUnsentBrochureShare(db, organizationId, brochureShare?.id);
+    throw error;
+  }
+
+  await recordOutboundMessage({ db, workspace, row, result, messageType: 'Text', messageText: message, callbackData, attachment, payload: { mode, message, brochure_id: brochureId || null, brochure_share_id: brochureShare?.id ?? null, brochure_url: brochureShare?.url ?? null, attachment_id: attachment?.id ?? null, attachment_name: attachment?.fileName ?? null, attachment_url: attachment?.url ?? null, attachment_mime_type: attachment?.mimeType ?? null } });
+  await markAttachmentSent(db, organizationId, attachment, result.id);
+  revalidatePath(INBOUND_PATH);
+}
+
+export async function sendStarkInteraktSalesText(formData: FormData): Promise<SalesMessageActionResult> {
+  try {
+    const hasBrochure = Boolean(clean(formData.get('brochureId')));
+    const hasAttachment = Boolean(clean(formData.get('attachmentId')));
+    await performStarkInteraktSalesText(formData);
+    return { ok: true, message: hasAttachment && hasBrochure ? 'WhatsApp message, brochure and attachment sent.' : hasAttachment ? 'WhatsApp message and attachment sent.' : hasBrochure ? 'WhatsApp message and brochure sent.' : 'WhatsApp message sent.' };
+  } catch (error) {
+    return { ok: false, message: safeSalesError(error) };
+  }
+}
+
+export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMessageActionResult> {
+  try {
+    const workspace = await requireStarkSalesAccess();
+    const leadId = clean(formData.get('leadId'));
+    const originalMessage = clean(formData.get('message'));
+    const brochureId = clean(formData.get('brochureId'));
+    const attachmentId = clean(formData.get('attachmentId'));
+    if (!leadId) throw new Error('Lead is required.');
+    if (!originalMessage && !brochureId && !attachmentId) throw new Error('Type a WhatsApp message or add an attachment before sending.');
+
+    const db = createAdminSupabaseClient() as any;
+    if (!db) throw new Error('Database admin client unavailable.');
+    const row = await loadLeadInboundRow(db, workspace.organization!.id, leadId);
+    if (!replyWindowOpen(row.last_inbound_at)) throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');
+    const recipient = resolveWhatsAppRecipient(row);
+    await persistResolvedRecipient(db, workspace.organization!.id, row, recipient);
+
+    const attachment = await loadAttachmentShare(db, workspace.organization!.id, attachmentId, { leadId });
+    let brochureShare: { id: string; url: string; brochureName: string } | null = null;
+    const parts = [originalMessage].filter(Boolean);
+    if (brochureId) {
+      brochureShare = await createCatalogBrochureShare({ brochureId, leadId, intakeId: row.id, channel: 'whatsapp' });
+      parts.push(`View our ${brochureShare.brochureName} catalog: ${brochureShare.url}`);
+    }
+    if (attachment) parts.push(`Attachment — ${attachment.fileName}: ${attachment.url}`);
+    const message = parts.join('\n\n');
+    if (message.length > 4096) {
+      await discardUnsentBrochureShare(db, workspace.organization!.id, brochureShare?.id);
+      throw new Error('WhatsApp message is too long after adding the brochure or attachment link.');
+    }
+
+    const mode = attachment ? (brochureShare ? 'attachment_brochure' : 'attachment') : (brochureShare ? 'brochure' : 'free_text');
+    const callbackData = JSON.stringify({ source: 'setu_flow_lead_detail', intake_id: row.id, lead_id: leadId, actor_user_id: workspace.user!.id, mode, brochure_share_id: brochureShare?.id ?? null, attachment_id: attachment?.id ?? null });
+    let result: { id: string; message: string | null };
+    try {
+      result = await sendInteraktText({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, message, callbackData });
+    } catch (error) {
+      await discardUnsentBrochureShare(db, workspace.organization!.id, brochureShare?.id);
+      throw error;
+    }
+
+    await recordOutboundMessage({ db, workspace, row, result, messageType: 'Text', messageText: message, callbackData, attachment, payload: { mode, message, lead_id: leadId, brochure_id: brochureId || null, brochure_share_id: brochureShare?.id ?? null, brochure_url: brochureShare?.url ?? null, attachment_id: attachment?.id ?? null, attachment_name: attachment?.fileName ?? null, attachment_url: attachment?.url ?? null, attachment_mime_type: attachment?.mimeType ?? null } });
+    await markAttachmentSent(db, workspace.organization!.id, attachment, result.id);
+    revalidatePath(`/leads/${leadId}`);
+    return { ok: true, message: attachment && brochureShare ? 'WhatsApp message, brochure and attachment sent and added to the customer timeline.' : attachment ? 'WhatsApp message and attachment sent and added to the customer timeline.' : brochureShare ? 'WhatsApp message and brochure sent and added to the customer timeline.' : 'WhatsApp message sent and added to the customer timeline.' };
+  } catch (error) {
+    return { ok: false, message: safeSalesError(error) };
+  }
+}
+
+export async function sendStarkLeadWhatsAppTemplate(formData: FormData): Promise<SalesMessageActionResult> {
+  try {
+    const workspace = await requireStarkSalesAccess();
+    const leadId = clean(formData.get('leadId'));
+    if (!leadId) throw new Error('Lead is required.');
+    const preset = approvedFollowUpTemplate();
+    const db = createAdminSupabaseClient() as any;
+    if (!db) throw new Error('Database admin client unavailable.');
+    const row = await loadLeadInboundRow(db, workspace.organization!.id, leadId);
+    const recipient = resolveWhatsAppRecipient(row);
+    await persistResolvedRecipient(db, workspace.organization!.id, row, recipient);
+    const customerName = clean(row.person_name || row.contact_name) || 'Customer';
+    const context = salesFollowUpContext(row);
+    const callbackData = JSON.stringify({ source: 'setu_flow_lead_detail', intake_id: row.id, lead_id: leadId, actor_user_id: workspace.user!.id, mode: 'template_restart' });
+    const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context], callbackData });
+    await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: 'WhatsApp approved follow-up', callbackData, payload: { mode: 'template_restart', lead_id: leadId, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context] } });
+    revalidatePath(`/leads/${leadId}`);
+    return { ok: true, message: 'Approved WhatsApp follow-up sent. Free-text messaging will reopen after the customer replies.' };
+  } catch (error) {
+    return { ok: false, message: safeSalesError(error) };
+  }
+}
+
+export async function logStarkExternalEmailSent(formData: FormData): Promise<SalesMessageActionResult> {
+  try {
+    const workspace = await requireStarkSalesAccess();
+    const leadId = clean(formData.get('leadId'));
+    const toEmail = clean(formData.get('toEmail')).toLowerCase();
+    const subject = clean(formData.get('subject'));
+    const body = clean(formData.get('body'));
+    if (!leadId || !toEmail || !body) throw new Error('Lead, recipient and email body are required.');
+    const db = createAdminSupabaseClient() as any;
+    if (!db) throw new Error('Database admin client unavailable.');
+    const { data: lead } = await db.from('leads').select('id,email').eq('organization_id', workspace.organization!.id).eq('id', leadId).maybeSingle();
+    if (!lead?.id) throw new Error('Lead not found.');
+    if (clean(lead.email).toLowerCase() !== toEmail) throw new Error('Email recipient no longer matches this lead. Refresh before logging.');
+    const now = new Date().toISOString();
+    const { error } = await db.from('communications').insert({ organization_id: workspace.organization!.id, lead_id: leadId, related_entity: 'lead', related_id: leadId, communication_type: 'follow_up', direction: 'outbound', channel: 'email', subject: subject || null, body, status: 'sent', sent_at: now, created_by: workspace.user!.id, email_delivery_status: 'external_unverified', metadata: { source: 'lead_detail_mailto', to_email: toEmail, delivery_note: 'User confirmed this email was sent from an external email client; provider delivery is not verified by Setu Flow.' } });
+    if (error) throw error;
+    revalidatePath(`/leads/${leadId}`);
+    return { ok: true, message: 'Email recorded in the customer timeline. Delivery is marked external/unverified.' };
+  } catch (error) {
+    return { ok: false, message: safeSalesError(error) };
+  }
+}
+
+async function performStarkInteraktSalesFollowUp(formData: FormData) {
+  const workspace = await requireStarkSalesAccess();
+  const organizationId = workspace.organization!.id;
+  const rowId = clean(formData.get('rowId'));
+  if (!rowId) throw new Error('Inbound inquiry is required.');
+  assertDraftContext(formData, rowId);
+  const preset = approvedFollowUpTemplate();
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+  const row = await loadInboundRow(db, organizationId, rowId);
+  const recipient = resolveWhatsAppRecipient(row);
+  await persistResolvedRecipient(db, organizationId, row, recipient);
+  const customerName = clean(row.person_name || row.contact_name) || 'Customer';
+  const context = salesFollowUpContext(row);
+  const callbackData = JSON.stringify({ source: 'setu_flow_inbound_sales', intake_id: row.id, actor_user_id: workspace.user!.id, mode: 'template_restart' });
+  const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context], callbackData });
+  await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: 'WhatsApp approved follow-up', callbackData, payload: { templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context] } });
+  revalidatePath(INBOUND_PATH);
+}
+
+export async function sendStarkInteraktSalesFollowUp(formData: FormData): Promise<SalesMessageActionResult> {
+  try {
+    await performStarkInteraktSalesFollowUp(formData);
+    return { ok: true, message: 'Approved WhatsApp follow-up sent.' };
+  } catch (error) {
+    return { ok: false, message: safeSalesError(error) };
+  }
+}
