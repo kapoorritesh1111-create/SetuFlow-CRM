@@ -9,6 +9,10 @@ const conversation = read('src/features/integrations/interakt/components/inbound
 const composer = read('src/features/integrations/interakt/components/sales-message-composer.tsx');
 const intelligence = read('src/features/integrations/interakt/intelligence.ts');
 const webhook = read('src/features/integrations/interakt/webhook.ts');
+const actions = read('src/features/integrations/interakt/sales-message-actions.ts');
+const leadDrawer = read('src/features/leads/canonical/StarkCommunicationsDrawer.tsx');
+const uploadRoute = read('src/app/api/interakt/attachments/route.ts');
+const publicAttachmentRoute = read('src/app/api/public/whatsapp-attachments/[token]/route.ts');
 const packageJson = read('package.json');
 
 test('S51-LEADS-014 presents one coherent conversation intelligence section', () => {
@@ -70,15 +74,31 @@ test('S51-LEADS-017 avoids repeated workflow identity evidence while preserving 
   assert.match(webhook, /return \{ latest: next, history: \[\.\.\.history, next\] \}/);
 });
 
-test('S51-LEADS-016 keeps one recommended reply prominent and moves alternatives and brochure into compact controls', () => {
+test('S51-LEADS-016 keeps one recommended reply prominent and adds rich engagement controls', () => {
   assert.match(composer, /Setu recommended reply/);
   assert.match(composer, /Change reply/);
-  assert.match(composer, /suggestions\.map\(\(suggestion\) => <option/);
-  assert.match(composer, /Attach brochure/);
-  assert.match(composer, /open=\{Boolean\(brochureId\)\}/);
-  assert.doesNotMatch(composer, /Setu suggested replies/);
+  assert.match(composer, /suggestions\.map/);
+  assert.match(composer, /Recommended for this requirement/);
+  assert.match(composer, /if \(!brochureTouched && !brochureId && recommended\?\.id\) setBrochureId\(recommended\.id\)/);
+  assert.match(composer, /😀 Emoji/);
+  assert.match(composer, /📎 Attach file/);
+  assert.match(composer, /\/api\/interakt\/attachments/);
   assert.match(composer, /name="draftRowId" value=\{draftRowId\}/);
   assert.match(composer, /const contextChanged = draftRowId !== rowId/);
+});
+
+test('S51 WhatsApp rich engagement supports secure attachments for inbound and converted leads', () => {
+  assert.match(uploadRoute, /STARK_PACKMATE_ORG_ID/);
+  assert.match(uploadRoute, /MAX_BYTES = 12 \* 1024 \* 1024/);
+  assert.match(uploadRoute, /whatsapp_attachment_shares/);
+  assert.match(publicAttachmentRoute, /createSignedUrl/);
+  assert.match(actions, /attachment_brochure/);
+  assert.match(actions, /attachment_name/);
+  assert.match(actions, /media_url: attachment\?\.url/);
+  assert.match(leadDrawer, /📎 Attach artwork \/ file/);
+  assert.match(leadDrawer, /Recommended:/);
+  assert.match(leadDrawer, /brochureId/);
+  assert.match(leadDrawer, /attachmentId/);
 });
 
 test('S51-LEADS-016 reduces reply-window guidance to an info affordance instead of a heavy banner', () => {
