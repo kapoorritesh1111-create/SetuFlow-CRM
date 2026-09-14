@@ -66,6 +66,18 @@ export type CostMasterRateV5 = {
   metadata?: Record<string, unknown>;
 };
 
+export type ChargeMasterRateV5 = {
+  id: string;
+  code: string;
+  name: string;
+  category: 'extra' | 'pre' | 'post';
+  basis: 'per_unit' | 'per_running_metre' | 'per_frame' | 'flat' | 'percent' | null;
+  application_stage: 'before_wastage_margin' | 'after_core_price' | 'separate_quote_line' | null;
+  current_rate: number | null;
+  currency: string;
+  metadata?: Record<string, unknown>;
+};
+
 export type CommercialBandV5 = {
   id?: string;
   pricing_bucket: PricingBucketV5;
@@ -132,6 +144,7 @@ export type PricingContextV5 = {
   constructions: ConstructionV5[];
   constructionLayers: ConstructionLayerV5[];
   masters: CostMasterRateV5[];
+  charges: ChargeMasterRateV5[];
   bands: CommercialBandV5[];
 };
 
@@ -160,6 +173,12 @@ export type PackagingPricingResultV5 = {
     wastage_pct: number;
     margin_per_frame: number;
   };
+  applied_charges: Array<{
+    code: string;
+    name: string;
+    application_stage: string;
+    amount: number;
+  }>;
   selling_price: {
     unit_price: number;
     product_total: number;
