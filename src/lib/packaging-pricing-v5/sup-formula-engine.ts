@@ -33,6 +33,13 @@ function selectedCharges(context: PricingContextV5, codes: string[], errors: str
     if(!charge){errors.push(`${code} is not configured in Charge Master.`);return null;}
     if(charge.current_rate==null) errors.push(`${charge.name} needs a rate before it can be quoted.`);
     if(!charge.basis||!charge.application_stage) errors.push(`${charge.name} needs a pricing basis and application stage.`);
+    if(charge.basis==='percent'){
+      const percentBase=String(charge.metadata?.percent_base??'').trim();
+      if(!percentBase) errors.push(`${charge.name} is percent-based but metadata.percent_base is not configured.`);
+      else if(charge.application_stage!=='after_core_price'||percentBase!=='core_product_total') {
+        errors.push(`${charge.name} uses unsupported percent base "${percentBase}" for Pricing v5.`);
+      }
+    }
     return charge;
   }).filter((item):item is ChargeMasterRateV5=>Boolean(item));
 }
@@ -66,7 +73,14 @@ function afterCoreChargeTotal(charge:ChargeMasterRateV5,quantity:number,coreTota
   const rate=n(charge.current_rate);
   if(charge.basis==='flat') return rate;
   if(charge.basis==='per_unit') return rate*quantity;
-  if(charge.basis==='percent') return coreTotal*rate/100;
+  if(charge.basis==='percent') {
+    const percentBase=String(charge.metadata?.percent_base??'').trim();
+    if(percentBase!=='core_product_total') {
+      errors.push(`${charge.name} must use metadata.percent_base="core_product_total" for Pricing v5.`);
+      return 0;
+    }
+    return coreTotal*rate/100;
+  }
   errors.push(`${charge.name} uses an unsupported after-core basis for Pricing v5.`);
   return 0;
 }
