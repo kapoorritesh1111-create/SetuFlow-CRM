@@ -13,15 +13,19 @@ export async function isPackagingPricingV5EnabledForOrg(organizationId:string){
 }
 
 export async function listSalesPackagingPricingV5Options(organizationId:string){
+  const empty={families:[],templates:[],sizes:[],constructions:[],klds:[]};
   const db:any=createServiceRoleClient();
-  if(!db) return {families:[],templates:[],sizes:[],constructions:[]};
+  if(!db) return empty;
   const {data:templates,error}=await db.from('packaging_pricing_templates')
     .select('id,family_id,name,currency,calculation_version,calculation_engine_key,status,is_active')
     .eq('organization_id',organizationId).eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').eq('status','published').eq('is_active',true);
-  if(error||!(templates??[]).length) return {families:[],templates:[],sizes:[],constructions:[]};
+  if(error||!(templates??[]).length) return empty;
   const template=templates[0];
   const context=await loadPricingContextV5(organizationId,template.id,{publishedOnly:true});
-  const {data:families}=await db.from('packaging_service_families').select('id,name,slug,is_quoteable,is_active').eq('organization_id',organizationId).eq('id',template.family_id).eq('is_active',true).eq('is_quoteable',true);
+  const [{data:families},{data:klds}]=await Promise.all([
+    db.from('packaging_service_families').select('id,name,slug,is_quoteable,is_active').eq('organization_id',organizationId).eq('id',template.family_id).eq('is_active',true).eq('is_quoteable',true),
+    db.from('packaging_kld_files').select('id,family_id,file_name,version_label,spec_key,is_active').eq('organization_id',organizationId).eq('family_id',template.family_id).eq('is_active',true).order('created_at',{ascending:false}),
+  ]);
   const sizes=context.sizeProfiles.filter((item)=>item.is_active&&item.is_quoteable).map((item)=>({
     id:item.id,name:item.name,width_mm:item.width_mm,height_mm:item.height_mm,bottom_gusset_each_mm:item.bottom_gusset_each_mm,
     pricing_bucket:item.pricing_bucket,gusset_production_mode:item.gusset_production_mode,bottom_registration_mode:item.bottom_registration_mode,
@@ -31,5 +35,5 @@ export async function listSalesPackagingPricingV5Options(organizationId:string){
     if(!resolved||resolved.validation_errors.length) return null;
     return {id:item.id,name:item.name,construction_family_key:item.construction_family_key,finish_type:item.finish_type,barrier_type:item.barrier_type,sealant_code:item.sealant_code,layer_count:item.layer_count,structure_label:resolved.structure_label};
   }).filter(Boolean);
-  return {families:families??[],templates, sizes, constructions};
+  return {families:families??[],templates,sizes,constructions,klds:klds??[]};
 }
