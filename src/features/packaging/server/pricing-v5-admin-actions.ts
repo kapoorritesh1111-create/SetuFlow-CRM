@@ -60,16 +60,33 @@ export async function savePackagingCommercialBandV5(formData:FormData){
 
 export async function savePackagingMasterRateV5(formData:FormData){
   const {organization,user,supabase}=await adminDb();
-  const id=text(formData,'id');
-  if(!id) throw new Error('Cost Master item is required.');
+  const masterId=text(formData,'id');
+  const templateId=text(formData,'template_id');
+  if(!masterId||!templateId) throw new Error('Pricing v5 template and Cost Master item are required.');
   const raw=text(formData,'current_rate');
   const rate=raw===''?null:Number(raw);
   if(rate!=null&&(!Number.isFinite(rate)||rate<0)) throw new Error('Rate must be zero or greater.');
-  const {data,error}=await supabase.from('packaging_cost_master_items')
-    .update({current_rate:rate,updated_by:user.id,updated_at:new Date().toISOString()})
-    .eq('organization_id',organization.id).eq('id',id).select('id').maybeSingle();
-  if(error||!data?.id) throw new Error(error?.message??'Cost Master item was not found.');
+
+  const [{data:template,error:templateError},{data:master,error:masterError}]=await Promise.all([
+    supabase.from('packaging_pricing_templates').select('id').eq('organization_id',organization.id).eq('id',templateId).eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').maybeSingle(),
+    supabase.from('packaging_cost_master_items').select('id').eq('organization_id',organization.id).eq('id',masterId).eq('is_active',true).maybeSingle(),
+  ]);
+  if(templateError||!template?.id) throw new Error(templateError?.message??'Pricing v5 template was not found.');
+  if(masterError||!master?.id) throw new Error(masterError?.message??'Cost Master item was not found.');
+
+  const now=new Date().toISOString();
+  const {error}=await supabase.from('packaging_pricing_cost_rates_v5').upsert({
+    organization_id:organization.id,
+    template_id:templateId,
+    cost_master_item_id:masterId,
+    current_rate:rate,
+    updated_by:user.id,
+    updated_at:now,
+    metadata:{source:'pricing_v5_admin_override'},
+  },{onConflict:'organization_id,template_id,cost_master_item_id'});
+  if(error) throw new Error(error.message);
   revalidatePath(ADMIN_PATH);
+  revalidatePath(`${ADMIN_PATH}/matrix`);
 }
 
 export async function setPackagingConstructionQuoteableV5(formData:FormData){
@@ -102,13 +119,13 @@ export async function validatePackagingTemplateV5(templateId:string){
     for(const layer of layers){
       const master=context.masters.find((item)=>item.id===layer.cost_master_item_id);
       if(!master) errors.push(`${construction.name} has an unmapped material layer.`);
-      else if(master.current_rate==null) errors.push(`${construction.name}: ${master.name} needs a rate.`);
+      else if(master.current_rate==null) errors.push(`${construction.name}: ${master.name} needs a v5 rate.`);
       else if(master.gsm==null&&(master.micron==null||master.density==null)) errors.push(`${construction.name}: ${master.name} needs GSM or micron+density.`);
     }
   }
   for(const code of ['MAT_ADHESIVE','PROC_PRINT_CMYK','PROC_PRINT_CMYKW','PROC_LAMINATION','PROC_SLITTING','PROC_POUCHING']){
     const master=context.masters.find((item)=>item.code===code);
-    if(!master||master.current_rate==null) errors.push(`${code} needs a Cost Master rate.`);
+    if(!master||master.current_rate==null) errors.push(`${code} needs a Pricing v5 rate.`);
   }
   return {ok:errors.length===0,errors};
 }
