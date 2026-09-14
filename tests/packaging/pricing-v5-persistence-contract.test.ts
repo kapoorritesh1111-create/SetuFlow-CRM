@@ -9,6 +9,7 @@ const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','u
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts','utf8');
 const adminActions=fs.readFileSync('src/features/packaging/server/pricing-v5-admin-actions.ts','utf8');
+const adminWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-admin-workspace.tsx','utf8');
 const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
 
 test('S52-PKG-V5: v5 uses isolated tables and a separate disabled feature flag',()=>{
@@ -27,6 +28,31 @@ test('S52-PKG-V5: v5 rate edits are version-scoped and cannot overwrite v4 maste
   assert.doesNotMatch(adminActions,/from\('packaging_cost_master_items'\)\s*\.update\(\{current_rate/);
   assert.match(repository,/from\('packaging_pricing_cost_rates_v5'\)/);
   assert.match(repository,/from\('packaging_pricing_charge_rates_v5'\)/);
+});
+
+test('S52-PKG-V5: published templates are immutable through Admin actions',()=>{
+  assert.match(adminActions,/function requireDraftTemplate/);
+  assert.match(adminActions,/data\.status!==['"]draft['"]/);
+  assert.match(adminActions,/Published Pricing v5 is immutable/);
+  assert.match(adminActions,/\.eq\('status','draft'\)/);
+  assert.match(adminWorkspace,/Published Pricing v5 is locked against structural and rate edits/);
+});
+
+test('S52-PKG-V5: Admin can create a private custom construction but it starts non-quoteable',()=>{
+  assert.match(adminActions,/export async function createPackagingConstructionV5/);
+  assert.match(adminActions,/private_custom:true/);
+  assert.match(adminActions,/is_quoteable:false/);
+  assert.match(adminActions,/final construction layer must be a PE sealant material/i);
+  assert.match(adminWorkspace,/Create private custom construction/);
+  assert.match(adminWorkspace,/Create custom construction/);
+});
+
+test('S52-PKG-V5: publish validation enforces workbook catalog and exact run-length schedules',()=>{
+  assert.match(adminActions,/activeSizes\.length!==20/);
+  assert.match(adminActions,/activeConstructions\.length<44/);
+  assert.match(adminActions,/1:\[500,1000,2000,3000,5000,10000\]/);
+  assert.match(adminActions,/2:\[250,500,1000,2000,3000,5000,10000\]/);
+  assert.match(adminActions,/does not match the approved run-length schedule/);
 });
 
 test('S52-PKG-V5: v5 quote persistence has its own atomic RPC and snapshot namespace',()=>{
