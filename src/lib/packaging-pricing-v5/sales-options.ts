@@ -12,6 +12,12 @@ export async function isPackagingPricingV5EnabledForOrg(organizationId:string){
   return !allowed.length||allowed.includes(organizationId);
 }
 
+function chargeSupportedByPricingV5(item:any){
+  if(item.current_rate==null||!item.basis||!item.application_stage||item.application_stage==='separate_quote_line') return false;
+  if(item.basis!=='percent') return true;
+  return item.application_stage==='after_core_price'&&String(item.metadata?.percent_base??'').trim()==='core_product_total';
+}
+
 export async function listSalesPackagingPricingV5Options(organizationId:string){
   const empty={families:[],templates:[],sizes:[],constructions:[],klds:[],charges:[]};
   const db:any=createServiceRoleClient();
@@ -36,7 +42,7 @@ export async function listSalesPackagingPricingV5Options(organizationId:string){
     return {id:item.id,name:item.name,construction_family_key:item.construction_family_key,finish_type:item.finish_type,barrier_type:item.barrier_type,sealant_code:item.sealant_code,layer_count:item.layer_count,structure_label:resolved.structure_label};
   }).filter(Boolean);
   const charges=(context.charges??[])
-    .filter((item)=>item.current_rate!=null&&item.basis&&item.application_stage&&item.application_stage!=='separate_quote_line')
+    .filter(chargeSupportedByPricingV5)
     .map((item)=>({code:item.code,name:item.name,category:item.category,application_stage:item.application_stage}));
   return {families:families??[],templates,sizes,constructions,klds:klds??[],charges};
 }
