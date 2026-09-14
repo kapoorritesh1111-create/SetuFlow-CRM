@@ -51,17 +51,8 @@ export async function savePackagingSizeProfileV5(formData:FormData){
   const registrationMode=text(formData,'bottom_registration_mode');
   if(!['integrated','separate','conditional'].includes(gussetMode)) throw new Error('Unsupported gusset production mode.');
   if(!['not_applicable','optional','required_registered','required_unregistered'].includes(registrationMode)) throw new Error('Unsupported bottom registration mode.');
-  const payload={
-    pricing_bucket:bucket,
-    production_profile_key:text(formData,'production_profile_key')||null,
-    gusset_production_mode:gussetMode,
-    bottom_registration_mode:registrationMode,
-    is_quoteable:checked(formData,'is_quoteable'),
-    is_active:checked(formData,'is_active'),
-    updated_by:user.id,updated_at:new Date().toISOString(),
-  };
-  const {data,error}=await supabase.from('packaging_size_profiles_v5').update(payload)
-    .eq('organization_id',organization.id).eq('id',id).select('id').maybeSingle();
+  const payload={pricing_bucket:bucket,production_profile_key:text(formData,'production_profile_key')||null,gusset_production_mode:gussetMode,bottom_registration_mode:registrationMode,is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),updated_by:user.id,updated_at:new Date().toISOString()};
+  const {data,error}=await supabase.from('packaging_size_profiles_v5').update(payload).eq('organization_id',organization.id).eq('id',id).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 size was not found.');
   revalidatePath(ADMIN_PATH);
 }
@@ -74,9 +65,7 @@ export async function savePackagingCommercialBandV5(formData:FormData){
   await requireDraftTemplate(supabase,organization.id,templateId);
   const wastage=numberValue(formData,'wastage_pct','Wastage',{min:0,max:100});
   const margin=numberValue(formData,'margin_per_frame','Margin per frame',{min:0,max:1000000});
-  const {data,error}=await supabase.from('packaging_pricing_commercial_bands_v5')
-    .update({wastage_pct:wastage,margin_per_frame:margin,updated_by:user.id,updated_at:new Date().toISOString()})
-    .eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).select('id').maybeSingle();
+  const {data,error}=await supabase.from('packaging_pricing_commercial_bands_v5').update({wastage_pct:wastage,margin_per_frame:margin,updated_by:user.id,updated_at:new Date().toISOString()}).eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 commercial band was not found.');
   revalidatePath(ADMIN_PATH);
 }
@@ -90,14 +79,10 @@ export async function savePackagingMasterRateV5(formData:FormData){
   const raw=text(formData,'current_rate');
   const rate=raw===''?null:Number(raw);
   if(rate!=null&&(!Number.isFinite(rate)||rate<0)) throw new Error('Rate must be zero or greater.');
-  const {data:master,error:masterError}=await supabase.from('packaging_cost_master_items')
-    .select('id').eq('organization_id',organization.id).eq('id',masterId).eq('is_active',true).maybeSingle();
+  const {data:master,error:masterError}=await supabase.from('packaging_cost_master_items').select('id').eq('organization_id',organization.id).eq('id',masterId).eq('is_active',true).maybeSingle();
   if(masterError||!master?.id) throw new Error(masterError?.message??'Cost Master item was not found.');
   const now=new Date().toISOString();
-  const {error}=await supabase.from('packaging_pricing_cost_rates_v5').upsert({
-    organization_id:organization.id,template_id:templateId,cost_master_item_id:masterId,current_rate:rate,
-    updated_by:user.id,updated_at:now,metadata:{source:'pricing_v5_admin_override'},
-  },{onConflict:'organization_id,template_id,cost_master_item_id'});
+  const {error}=await supabase.from('packaging_pricing_cost_rates_v5').upsert({organization_id:organization.id,template_id:templateId,cost_master_item_id:masterId,current_rate:rate,updated_by:user.id,updated_at:now,metadata:{source:'pricing_v5_admin_override'}},{onConflict:'organization_id,template_id,cost_master_item_id'});
   if(error) throw new Error(error.message);
   revalidatePath(ADMIN_PATH);
   revalidatePath(`${ADMIN_PATH}/matrix`);
@@ -109,9 +94,7 @@ export async function setPackagingConstructionQuoteableV5(formData:FormData){
   const templateId=text(formData,'template_id');
   if(!id) throw new Error('Construction is required.');
   await requireDraftTemplate(supabase,organization.id,templateId);
-  const {data,error}=await supabase.from('packaging_constructions_v5')
-    .update({is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),updated_by:user.id,updated_at:new Date().toISOString()})
-    .eq('organization_id',organization.id).eq('id',id).select('id').maybeSingle();
+  const {data,error}=await supabase.from('packaging_constructions_v5').update({is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),updated_by:user.id,updated_at:new Date().toISOString()}).eq('organization_id',organization.id).eq('id',id).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Construction was not found.');
   revalidatePath(ADMIN_PATH);
 }
@@ -124,31 +107,20 @@ export async function createPackagingConstructionV5(formData:FormData){
   if(name.length<3) throw new Error('Construction name is required.');
   const layerIds=[1,2,3,4,5,6].map((position)=>text(formData,`layer_${position}`)).filter(Boolean);
   if(layerIds.length<2||layerIds.length>6) throw new Error('A custom construction requires between 2 and 6 layers.');
-  if(new Set(layerIds).size!==layerIds.length) throw new Error('The same Cost Master material cannot be used twice in one custom construction.');
-  const {data:materials,error:materialError}=await supabase.from('packaging_cost_master_items')
-    .select('id,code,item_type,is_active').eq('organization_id',organization.id).in('id',layerIds);
+  const uniqueLayerIds=[...new Set(layerIds)];
+  const {data:materials,error:materialError}=await supabase.from('packaging_cost_master_items').select('id,code,item_type,is_active').eq('organization_id',organization.id).in('id',uniqueLayerIds);
   if(materialError) throw new Error(materialError.message);
-  if((materials??[]).length!==layerIds.length||(materials??[]).some((item:any)=>item.item_type!=='material'||!item.is_active)) throw new Error('Every construction layer must map to an active material Cost Master item.');
+  if((materials??[]).length!==uniqueLayerIds.length||(materials??[]).some((item:any)=>item.item_type!=='material'||!item.is_active)) throw new Error('Every construction layer must map to an active material Cost Master item.');
   const materialById=new Map((materials??[]).map((item:any)=>[String(item.id),item]));
   const sealant=materialById.get(layerIds[layerIds.length-1]);
   if(!sealant?.code?.startsWith('MAT_PE_')) throw new Error('The final construction layer must be a PE sealant material.');
   const keyBase=slug(text(formData,'construction_key')||name);
   if(!keyBase) throw new Error('Construction key is required.');
   const now=new Date().toISOString();
-  const payload={
-    organization_id:organization.id,family_id:template.family_id,
-    construction_key:keyBase,construction_family_key:slug(text(formData,'construction_family_key')||'custom'),
-    name,finish_type:text(formData,'finish_type')||null,barrier_type:text(formData,'barrier_type')||null,
-    sealant_code:sealant.code,layer_count:layerIds.length,is_active:true,is_quoteable:false,
-    sort_order:900,metadata:{source:'pricing_v5_admin_custom',private_custom:true},created_by:user.id,updated_by:user.id,created_at:now,updated_at:now,
-  };
+  const payload={organization_id:organization.id,family_id:template.family_id,construction_key:keyBase,construction_family_key:slug(text(formData,'construction_family_key')||'custom'),name,finish_type:text(formData,'finish_type')||null,barrier_type:text(formData,'barrier_type')||null,sealant_code:sealant.code,layer_count:layerIds.length,is_active:true,is_quoteable:false,sort_order:900,metadata:{source:'pricing_v5_admin_custom',private_custom:true},created_by:user.id,updated_by:user.id,created_at:now,updated_at:now};
   const {data:construction,error:constructionError}=await supabase.from('packaging_constructions_v5').insert(payload).select('id').single();
   if(constructionError||!construction?.id) throw new Error(constructionError?.message??'Custom construction could not be created.');
-  const rows=layerIds.map((masterId,idx)=>({
-    organization_id:organization.id,construction_id:construction.id,layer_position:idx+1,
-    role_key:idx===0?'print_layer':idx===layerIds.length-1?'sealant_layer':`middle_layer_${idx}`,
-    cost_master_item_id:masterId,is_print_layer:idx===0,is_sealant_layer:idx===layerIds.length-1,created_by:user.id,
-  }));
+  const rows=layerIds.map((masterId,idx)=>({organization_id:organization.id,construction_id:construction.id,layer_position:idx+1,role_key:idx===0?'print_layer':idx===layerIds.length-1?'sealant_layer':`middle_layer_${idx}`,cost_master_item_id:masterId,is_print_layer:idx===0,is_sealant_layer:idx===layerIds.length-1,created_by:user.id}));
   const {error:layerError}=await supabase.from('packaging_construction_layers_v5').insert(rows);
   if(layerError){
     await supabase.from('packaging_constructions_v5').delete().eq('organization_id',organization.id).eq('id',construction.id);
@@ -203,10 +175,7 @@ export async function publishPackagingTemplateV5(formData:FormData){
   const validation=await validatePackagingTemplateV5(templateId);
   if(!validation.ok) throw new Error(validation.errors.join(' '));
   const now=new Date().toISOString();
-  const {data,error}=await supabase.from('packaging_pricing_templates')
-    .update({status:'published',is_active:true,published_at:now,published_by:user.id,updated_at:now})
-    .eq('organization_id',organization.id).eq('id',templateId).eq('status','draft')
-    .eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').select('id').maybeSingle();
+  const {data,error}=await supabase.from('packaging_pricing_templates').update({status:'published',is_active:true,published_at:now,published_by:user.id,updated_at:now}).eq('organization_id',organization.id).eq('id',templateId).eq('status','draft').eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 template was not found or is no longer a draft.');
   revalidatePath(ADMIN_PATH);
 }
