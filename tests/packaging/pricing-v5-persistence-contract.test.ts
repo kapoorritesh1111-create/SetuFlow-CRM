@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const schema=fs.readFileSync('supabase/migrations/20260914013000_s52_pkg_v5_schema.sql','utf8');
 const rateOverrides=fs.readFileSync('supabase/migrations/20260914013050_s52_pkg_v5_rate_overrides.sql','utf8');
 const templateScope=fs.readFileSync('supabase/migrations/20260914013500_s52_pkg_v5_template_scoped_structures.sql','utf8');
+const quoteIntegrity=fs.readFileSync('supabase/migrations/20260914013600_s52_pkg_v5_quote_template_integrity.sql','utf8');
 const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5_quote_persistence.sql','utf8');
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
@@ -39,6 +40,13 @@ test('S52-PKG-V5: sizes and constructions are template-scoped for immutable revi
   assert.match(repository,/packaging_size_profiles_v5'[\s\S]*\.eq\('template_id',template\.id\)/);
   assert.match(repository,/packaging_constructions_v5'[\s\S]*\.eq\('template_id',template\.id\)/);
   assert.match(repository,/packaging_construction_layers_v5'[\s\S]*\.eq\('template_id',template\.id\)/);
+});
+
+test('S52-PKG-V5: quote lines cannot mix a size from a different template revision',()=>{
+  assert.match(quoteIntegrity,/guard_packaging_v5_quote_template_size/);
+  assert.match(quoteIntegrity,/s\.template_id=new\.packaging_template_id/);
+  assert.match(quoteIntegrity,/s\.family_id=new\.packaging_family_id/);
+  assert.match(quoteIntegrity,/before insert or update of packaging_template_id,packaging_size_profile_v5_id,packaging_family_id,calculation_version/i);
 });
 
 test('S52-PKG-V5: published templates are immutable and can be cloned into a new draft revision',()=>{
