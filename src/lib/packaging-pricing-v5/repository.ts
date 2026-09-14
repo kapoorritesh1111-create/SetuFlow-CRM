@@ -23,7 +23,7 @@ export async function loadPricingContextV5(
     .eq('organization_id', organizationId)
     .eq('id', templateId)
     .eq('calculation_version', 5)
-    .eq('calculation_engine_key', 'sup_formula_v5');
+    .in('calculation_engine_key', ['sup_formula_v5','frame_formula_v5']);
   if (options.publishedOnly) templateQuery = templateQuery.eq('status','published').eq('is_active',true);
   const { data: template, error: templateError } = await templateQuery.maybeSingle();
   if (templateError) throw new Error(templateError.message);
