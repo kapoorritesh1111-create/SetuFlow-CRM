@@ -35,8 +35,6 @@ begin
 
   select id into v_template from public.packaging_pricing_templates where organization_id=v_org and slug='stark-sup-formula-v5';
 
-  -- Snapshot the current shared Master values into the v5 draft. From this point
-  -- Admin edits are version-scoped and cannot alter live v4 pricing.
   insert into public.packaging_pricing_cost_rates_v5
     (organization_id,template_id,cost_master_item_id,current_rate,metadata)
   select v_org,v_template,m.id,m.current_rate,
