@@ -31,6 +31,7 @@ export function toSalesPricingResultV5(result: PackagingPricingResultV5) {
         units_per_frame: component.units_per_frame,
       })),
     },
+    applied_charges: result.applied_charges,
     selling_price: result.selling_price,
     alternative_quantities: result.alternative_quantities,
     source_hash: result.source_hash,
