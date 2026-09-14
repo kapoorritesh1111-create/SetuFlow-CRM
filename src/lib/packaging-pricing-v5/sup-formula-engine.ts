@@ -4,6 +4,7 @@ import { resolveConstructionV5 } from './construction-resolver';
 import { resolveProductionRouteV5 } from './production-route-resolver';
 import type {
   AlternativePriceV5,
+  ChargeMasterRateV5,
   CostMasterRateV5,
   PackagingPricingResultV5,
   PricingContextV5,
@@ -25,6 +26,17 @@ function requireMaster(context: PricingContextV5, code: string, errors: string[]
   return master;
 }
 
+function selectedCharges(context: PricingContextV5, codes: string[], errors: string[]): ChargeMasterRateV5[] {
+  const unique=[...new Set(codes.filter(Boolean))];
+  return unique.map((code)=>{
+    const charge=context.charges.find((item)=>item.code===code)??null;
+    if(!charge){errors.push(`${code} is not configured in Charge Master.`);return null;}
+    if(charge.current_rate==null) errors.push(`${charge.name} needs a rate before it can be quoted.`);
+    if(!charge.basis||!charge.application_stage) errors.push(`${charge.name} needs a pricing basis and application stage.`);
+    return charge;
+  }).filter((item):item is ChargeMasterRateV5=>Boolean(item));
+}
+
 function materialAmount(master: CostMasterRateV5, webMm: number, runMm: number) {
   const gsm = master.gsm != null ? n(master.gsm) : n(master.micron) * n(master.density);
   const grams = gsm * ((webMm * runMm) / 1_000_000);
@@ -37,10 +49,33 @@ function processAmount(master: CostMasterRateV5, runM: number) {
   return n(master.current_rate);
 }
 
+function beforeCommercialChargePerFrame(charge:ChargeMasterRateV5,component:{key:string;apply_zipper:boolean;units_per_frame:number;web_run_mm_per_frame:number},errors:string[]){
+  if(charge.application_stage!=='before_wastage_margin') return 0;
+  if(charge.code==='EXTRA_ZIPPER'&&!component.apply_zipper) return 0;
+  if(charge.code!=='EXTRA_ZIPPER'&&component.key!=='main_body') return 0;
+  const rate=n(charge.current_rate);
+  if(charge.basis==='per_running_metre') return rate*(component.web_run_mm_per_frame/1000);
+  if(charge.basis==='per_frame') return rate;
+  if(charge.basis==='per_unit') return rate*component.units_per_frame;
+  errors.push(`${charge.name} uses an unsupported before-wastage basis for Pricing v5.`);
+  return 0;
+}
+
+function afterCoreChargeTotal(charge:ChargeMasterRateV5,quantity:number,coreTotal:number,errors:string[]){
+  if(charge.application_stage!=='after_core_price') return 0;
+  const rate=n(charge.current_rate);
+  if(charge.basis==='flat') return rate;
+  if(charge.basis==='per_unit') return rate*quantity;
+  if(charge.basis==='percent') return coreTotal*rate/100;
+  errors.push(`${charge.name} uses an unsupported after-core basis for Pricing v5.`);
+  return 0;
+}
+
 type CostedComponent = {
   key: 'main_body' | 'bottom_gusset';
   material_per_frame: number;
   process_per_frame: number;
+  production_extras_per_frame: number;
   pre_commercial_per_frame: number;
   wastage_per_frame: number;
   margin_per_frame: number;
@@ -48,6 +83,7 @@ type CostedComponent = {
   total_for_job: number;
   material_breakdown: Array<Record<string, unknown>>;
   process_breakdown: Array<Record<string, unknown>>;
+  charge_breakdown: Array<Record<string, unknown>>;
 };
 
 type CoreResult = PackagingPricingResultV5 & { _internal?: { primary_run_length_m: number } };
@@ -63,6 +99,11 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
   if (!size) errors.push('Selected Pricing v5 size is not available.');
   if (!resolvedConstruction) errors.push('Selected Pricing v5 construction is not available.');
   if (resolvedConstruction) errors.push(...resolvedConstruction.validation_errors);
+
+  const charges=selectedCharges(context,input.selected_charge_codes??[],errors);
+  for(const charge of charges){
+    if(charge.application_stage==='separate_quote_line') errors.push(`${charge.name} is not enabled in the Pricing v5 quote flow yet.`);
+  }
 
   const rules = context.template.production_rules_json ?? {};
   const route = size ? resolveProductionRouteV5(size, quantity, rules, input.bottom_print_mode) : null;
@@ -84,6 +125,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
   const pouching = resolvedConstruction ? requireMaster(context, 'PROC_POUCHING', errors) : null;
 
   const costedComponents: CostedComponent[] = [];
+  const appliedChargeTotals=new Map<string,{charge:ChargeMasterRateV5;amount:number}>();
   if (route && resolvedConstruction && band && !errors.length) {
     for (const component of route.components) {
       const innerWebMm = stockWeb(component.web_needed_mm, innerLadder);
@@ -143,7 +185,19 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
         processBreakdown.push({ component:component.key, code:pouching.code, rate:n(pouching.current_rate), amount_per_frame:amount });
       }
 
-      const preCommercial = materialPerFrame + processPerFrame;
+      let productionExtrasPerFrame=0;
+      const chargeBreakdown:Array<Record<string,unknown>>=[];
+      for(const charge of charges.filter((item)=>item.application_stage==='before_wastage_margin')){
+        const amount=beforeCommercialChargePerFrame(charge,component,errors);
+        if(amount<=0) continue;
+        productionExtrasPerFrame+=amount;
+        const jobAmount=amount*component.frames_exact;
+        const existing=appliedChargeTotals.get(charge.code);
+        appliedChargeTotals.set(charge.code,{charge,amount:(existing?.amount??0)+jobAmount});
+        chargeBreakdown.push({component:component.key,code:charge.code,name:charge.name,basis:charge.basis,snapshotted_rate:n(charge.current_rate),amount_per_frame:amount,total_for_job:jobAmount});
+      }
+
+      const preCommercial = materialPerFrame + processPerFrame + productionExtrasPerFrame;
       const wastagePerFrame = component.apply_wastage ? preCommercial * band.wastage_pct / 100 : 0;
       const marginPerFrame = component.apply_margin ? band.margin_per_frame : 0;
       const sellingPerFrame = preCommercial + wastagePerFrame + marginPerFrame;
@@ -151,6 +205,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
         key:component.key,
         material_per_frame:materialPerFrame,
         process_per_frame:processPerFrame,
+        production_extras_per_frame:productionExtrasPerFrame,
         pre_commercial_per_frame:preCommercial,
         wastage_per_frame:wastagePerFrame,
         margin_per_frame:marginPerFrame,
@@ -158,14 +213,23 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
         total_for_job:sellingPerFrame * component.frames_exact,
         material_breakdown:materialBreakdown,
         process_breakdown:processBreakdown,
+        charge_breakdown:chargeBreakdown,
       });
     }
   }
 
-  const productTotal = costedComponents.reduce((sum,item)=>sum+item.total_for_job,0);
+  const coreProductTotal = costedComponents.reduce((sum,item)=>sum+item.total_for_job,0);
+  let afterCoreTotal=0;
+  for(const charge of charges.filter((item)=>item.application_stage==='after_core_price')){
+    const amount=afterCoreChargeTotal(charge,quantity,coreProductTotal,errors);
+    afterCoreTotal+=amount;
+    appliedChargeTotals.set(charge.code,{charge,amount});
+  }
+  const productTotal=coreProductTotal+afterCoreTotal;
   const unitPrice = quantity ? productTotal / quantity : 0;
   const gstPct = n(context.template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
+  const appliedCharges=[...appliedChargeTotals.values()].map(({charge,amount})=>({code:charge.code,name:charge.name,application_stage:String(charge.application_stage),amount:round(amount,2)}));
 
   const hashPayload = {
     engine_version:5,
@@ -181,6 +245,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
     route,
     component_costs:costedComponents,
     commercial_band:band,
+    applied_charges:appliedCharges,
   };
 
   const alternatives: AlternativePriceV5[] = [];
@@ -210,6 +275,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
       size:size?.name??null,
       dimensions:size?{width_mm:size.width_mm,height_mm:size.height_mm,bottom_gusset_each_mm:size.bottom_gusset_each_mm}:null,
       construction_id:input.construction_id,print:input.print,quantity,bottom_print_mode:input.bottom_print_mode??null,
+      selected_charge_codes:input.selected_charge_codes??[],
     },
     construction:resolvedConstruction?{
       id:resolvedConstruction.construction.id,name:resolvedConstruction.construction.name,
@@ -224,6 +290,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
       bucket_no:size?.pricing_bucket??null,run_length_m:round(primaryRunLengthM,8),band_max_m:band?.run_length_max_m??null,
       wastage_pct:band?.wastage_pct??0,margin_per_frame:band?.margin_per_frame??0,
     },
+    applied_charges:appliedCharges,
     selling_price:{
       unit_price:round(unitPrice,8),product_total:round(productTotal,2),currency:context.template.currency,
       gst_pct:gstPct,gst:round(gst,2),grand_total_before_freight:round(productTotal+gst,2),
