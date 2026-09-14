@@ -5,10 +5,16 @@ import { readFileSync } from 'node:fs';
 const completionRoute = readFileSync('src/app/api/auth/reset-password/complete/route.ts', 'utf8');
 const resetClient = readFileSync('src/app/reset-password/reset-password-client.tsx', 'utf8');
 
-test('password reset completion accepts the recovery access token when cookies lag behind', () => {
+test('password reset completion prefers the explicit recovery access token over stale cookies', () => {
   assert.match(completionRoute, /authorization/i);
   assert.match(completionRoute, /bearer /i);
+  assert.match(completionRoute, /const bearerToken = getBearerToken\(request\)/);
   assert.match(completionRoute, /admin\.auth\.getUser\(bearerToken\)/);
+  assert.ok(
+    completionRoute.indexOf('const bearerToken = getBearerToken(request)') <
+      completionRoute.indexOf('const cookieUserResult = await supabase.auth.getUser()'),
+    'bearer identity must be resolved before cookie identity',
+  );
   assert.match(resetClient, /supabase\.auth\.getSession\(\)/);
   assert.match(resetClient, /Authorization: `Bearer \$\{accessToken\}`/);
 });
