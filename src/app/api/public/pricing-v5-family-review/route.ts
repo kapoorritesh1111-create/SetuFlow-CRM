@@ -5,6 +5,7 @@ import { checkRateLimit, publicRateLimitKey } from '@/lib/rate-limit/simple';
 export const dynamic = 'force-dynamic';
 
 const STARK_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
+const DEFAULT_REVIEW_QUANTITIES = [500, 1000, 2000, 5000, 10000] as const;
 
 const FAMILY_KEYS = {
   flat_bottom: 'Flat Bottom Pouches',
@@ -22,11 +23,6 @@ type TemplateRow = {
   is_active: boolean | null;
   calculation_engine_key: string | null;
   currency: string | null;
-  quote_qty_1: number | null;
-  quote_qty_2: number | null;
-  quote_qty_3: number | null;
-  quote_qty_4: number | null;
-  quote_qty_5: number | null;
   family_id: string | null;
 };
 
@@ -65,7 +61,7 @@ export async function GET(request: NextRequest) {
         .order('name'),
       (admin as any)
         .from('packaging_pricing_templates')
-        .select('id,name,slug,status,is_active,calculation_engine_key,currency,quote_qty_1,quote_qty_2,quote_qty_3,quote_qty_4,quote_qty_5,family_id')
+        .select('id,name,slug,status,is_active,calculation_engine_key,currency,family_id')
         .eq('organization_id', STARK_ORG_ID)
         .eq('is_active', true)
         .order('name'),
@@ -84,18 +80,16 @@ export async function GET(request: NextRequest) {
     const familyList = Array.isArray(families) ? families : [];
     const templateList = (Array.isArray(templates) ? templates : []) as TemplateRow[];
     const rowList = (Array.isArray(matrixRows) ? matrixRows : []) as MatrixRow[];
-    const familyById = new Map(familyList.map((family: any) => [family.id, family]));
 
     const compactTemplate = (template: TemplateRow) => {
       const rows = rowList.filter((row) => row.template_id === template.id);
-      const quantities = [template.quote_qty_1, template.quote_qty_2, template.quote_qty_3, template.quote_qty_4, template.quote_qty_5].map(numberOrNull);
       return {
         id: template.id,
         name: template.name,
         status: template.status,
         engine: template.calculation_engine_key,
         currency: template.currency,
-        quantities,
+        quantities: [...DEFAULT_REVIEW_QUANTITIES],
         row_count: rows.length,
         rows: rows.map((row) => ({
           id: row.id,
@@ -160,7 +154,8 @@ export async function GET(request: NextRequest) {
       families: result,
       configured_family_count: Object.values(result).filter((item) => item.state === 'published_baseline').length,
     }, { headers: { 'Cache-Control': 'private, no-store' } });
-  } catch {
+  } catch (error) {
+    console.error('[pricing-v5-family-review] failed', error);
     return NextResponse.json({ ok: false, error: 'family_review_unavailable' }, { status: 503 });
   }
 }
