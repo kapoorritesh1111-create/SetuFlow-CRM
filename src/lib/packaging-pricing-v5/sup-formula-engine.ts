@@ -1,12 +1,12 @@
 import { pricingSourceHash } from '../packaging-pricing/snapshot';
 import { resolveCommercialBandV5 } from './commercial-band-resolver';
 import { resolveConstructionV5 } from './construction-resolver';
+import { resolveProductionRouteV5 } from './production-route-resolver';
 import type {
   AlternativePriceV5,
   CostMasterRateV5,
   PackagingPricingResultV5,
   PricingContextV5,
-  SizeProfileV5,
   SupPricingInputV5,
 } from './types';
 
@@ -37,18 +37,18 @@ function processAmount(master: CostMasterRateV5, runM: number) {
   return n(master.current_rate);
 }
 
-function integratedGeometry(size: SizeProfileV5, rules: Record<string, any>) {
-  const machineWidth = n(rules.machine_width_mm ?? 740);
-  const machineLength = n(rules.machine_length_mm ?? 1120);
-  const trim = n(rules.trim_allowance_mm ?? 20);
-  const openWebMm = (2 * n(size.height_mm)) + (2 * n(size.bottom_gusset_each_mm)) + trim;
-  const lanesAcross = openWebMm > 0 ? Math.floor(machineWidth / openWebMm) : 0;
-  const repeatsAlong = n(size.width_mm) > 0 ? Math.floor(machineLength / n(size.width_mm)) : 0;
-  const unitsPerFrame = lanesAcross * repeatsAlong;
-  const webNeededMm = openWebMm * lanesAcross;
-  const webRunMmPerFrame = n(size.width_mm) * repeatsAlong;
-  return { machineWidth, machineLength, trim, openWebMm, lanesAcross, repeatsAlong, unitsPerFrame, webNeededMm, webRunMmPerFrame };
-}
+type CostedComponent = {
+  key: 'main_body' | 'bottom_gusset';
+  material_per_frame: number;
+  process_per_frame: number;
+  pre_commercial_per_frame: number;
+  wastage_per_frame: number;
+  margin_per_frame: number;
+  selling_per_frame: number;
+  total_for_job: number;
+  material_breakdown: Array<Record<string, unknown>>;
+  process_breakdown: Array<Record<string, unknown>>;
+};
 
 type CoreResult = PackagingPricingResultV5 & { _internal?: { primary_run_length_m: number } };
 
@@ -64,90 +64,106 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
   if (!resolvedConstruction) errors.push('Selected Pricing v5 construction is not available.');
   if (resolvedConstruction) errors.push(...resolvedConstruction.validation_errors);
 
-  if (size && size.gusset_production_mode !== 'integrated') {
-    errors.push(`${size.name} requires the Pricing v5 split/conditional production router and is not quoteable in the foundation engine.`);
-  }
-
   const rules = context.template.production_rules_json ?? {};
-  const geometry = size ? integratedGeometry(size, rules) : {
-    machineWidth:0,machineLength:0,trim:0,openWebMm:0,lanesAcross:0,repeatsAlong:0,unitsPerFrame:0,webNeededMm:0,webRunMmPerFrame:0,
-  };
-  if (size && !geometry.unitsPerFrame) errors.push(`The selected size does not fit the ${geometry.machineWidth} × ${geometry.machineLength} mm production profile.`);
+  const route = size ? resolveProductionRouteV5(size, quantity, rules, input.bottom_print_mode) : null;
+  if (route) errors.push(...route.validation_errors);
+
+  const mainComponent = route?.components.find((component)=>component.key==='main_body') ?? null;
+  const primaryRunLengthM = mainComponent?.run_length_m ?? 0;
+  const band = size ? resolveCommercialBandV5(context.bands, size.pricing_bucket, primaryRunLengthM) : null;
+  if (size && !band) errors.push(`No Pricing v5 commercial band is configured for bucket ${size.pricing_bucket}.`);
 
   const innerLadder = Array.isArray(rules.inner_web_ladder) ? rules.inner_web_ladder : [];
   const peLadder = Array.isArray(rules.pe_web_ladder) ? rules.pe_web_ladder : [];
   const outerPrintWebMm = n(rules.outer_print_web_mm ?? 760);
-  const innerWebMm = stockWeb(geometry.webNeededMm, innerLadder);
-  const peWebMm = stockWeb(geometry.webNeededMm, peLadder);
-  if (size && geometry.unitsPerFrame && (!innerWebMm || !peWebMm)) errors.push('A Pricing v5 stock-web rule is missing for this size.');
 
-  const framesExact = geometry.unitsPerFrame ? quantity / geometry.unitsPerFrame : 0;
-  const webRunMPerFrame = geometry.webRunMmPerFrame / 1000;
-  const runLengthM = framesExact * webRunMPerFrame;
+  const adhesive = resolvedConstruction ? requireMaster(context, 'MAT_ADHESIVE', errors) : null;
+  const printMaster = resolvedConstruction ? requireMaster(context, input.print === 'CMYK' ? 'PROC_PRINT_CMYK' : 'PROC_PRINT_CMYKW', errors) : null;
+  const lamination = resolvedConstruction ? requireMaster(context, 'PROC_LAMINATION', errors) : null;
+  const slitting = resolvedConstruction ? requireMaster(context, 'PROC_SLITTING', errors) : null;
+  const pouching = resolvedConstruction ? requireMaster(context, 'PROC_POUCHING', errors) : null;
 
-  let materialPerFrame = 0;
-  const materialBreakdown: Array<Record<string, unknown>> = [];
+  const costedComponents: CostedComponent[] = [];
+  if (route && resolvedConstruction && band && !errors.length) {
+    for (const component of route.components) {
+      const innerWebMm = stockWeb(component.web_needed_mm, innerLadder);
+      const peWebMm = stockWeb(component.web_needed_mm, peLadder);
+      if (!innerWebMm || !peWebMm) {
+        errors.push(`A Pricing v5 stock-web rule is missing for ${component.description}.`);
+        continue;
+      }
 
-  if (resolvedConstruction && !errors.length) {
-    for (const layer of resolvedConstruction.layers) {
-      const web = layer.is_print_layer ? outerPrintWebMm : layer.is_sealant_layer ? peWebMm : innerWebMm;
-      const usage = materialAmount(layer.master, web, geometry.webRunMmPerFrame);
-      materialPerFrame += usage.amount;
-      materialBreakdown.push({
-        layer_position: layer.layer_position,
-        master_id: layer.master.id,
-        code: layer.master.code,
-        name: layer.master.name,
-        snapshotted_rate: n(layer.master.current_rate),
-        usage_g_per_frame: usage.grams,
-        amount_per_frame: usage.amount,
-        web_mm: web,
+      let materialPerFrame = 0;
+      const materialBreakdown: Array<Record<string, unknown>> = [];
+      for (const layer of resolvedConstruction.layers) {
+        const web = layer.is_print_layer ? outerPrintWebMm : layer.is_sealant_layer ? peWebMm : innerWebMm;
+        const usage = materialAmount(layer.master, web, component.web_run_mm_per_frame);
+        materialPerFrame += usage.amount;
+        materialBreakdown.push({
+          component: component.key,
+          layer_position: layer.layer_position,
+          master_id: layer.master.id,
+          code: layer.master.code,
+          name: layer.master.name,
+          snapshotted_rate: n(layer.master.current_rate),
+          usage_g_per_frame: usage.grams,
+          amount_per_frame: usage.amount,
+          web_mm: web,
+        });
+      }
+
+      if (adhesive?.current_rate != null) {
+        const bonds = Math.max(0, resolvedConstruction.construction.layer_count - 1);
+        const gsmPerBond = n(adhesive.metadata?.gsm_per_bond ?? adhesive.gsm);
+        const grams = bonds * gsmPerBond * ((peWebMm * component.web_run_mm_per_frame) / 1_000_000);
+        const amount = grams * n(adhesive.current_rate) / 1000;
+        materialPerFrame += amount;
+        materialBreakdown.push({ component:component.key, master_id:adhesive.id, code:adhesive.code, name:adhesive.name, bonds, usage_g_per_frame:grams, amount_per_frame:amount });
+      }
+
+      const runMPerFrame = component.web_run_mm_per_frame / 1000;
+      let processPerFrame = 0;
+      const processBreakdown: Array<Record<string, unknown>> = [];
+      if (component.apply_printing && printMaster?.current_rate != null) {
+        const amount = processAmount(printMaster, runMPerFrame); processPerFrame += amount;
+        processBreakdown.push({ component:component.key, code:printMaster.code, rate:n(printMaster.current_rate), amount_per_frame:amount });
+      }
+      if (component.apply_lamination && lamination?.current_rate != null) {
+        const schedule = rules.lamination_rate_by_layer_count ?? {};
+        const layerRate = n(schedule[String(resolvedConstruction.construction.layer_count)] ?? lamination.current_rate);
+        const amount = layerRate * runMPerFrame; processPerFrame += amount;
+        processBreakdown.push({ component:component.key, code:lamination.code, base_rate:n(lamination.current_rate), applied_rate:layerRate, amount_per_frame:amount });
+      }
+      if (component.apply_slitting && slitting?.current_rate != null) {
+        const amount = processAmount(slitting, runMPerFrame); processPerFrame += amount;
+        processBreakdown.push({ component:component.key, code:slitting.code, rate:n(slitting.current_rate), amount_per_frame:amount });
+      }
+      if (component.apply_pouching && pouching?.current_rate != null) {
+        const amount = processAmount(pouching, runMPerFrame); processPerFrame += amount;
+        processBreakdown.push({ component:component.key, code:pouching.code, rate:n(pouching.current_rate), amount_per_frame:amount });
+      }
+
+      const preCommercial = materialPerFrame + processPerFrame;
+      const wastagePerFrame = component.apply_wastage ? preCommercial * band.wastage_pct / 100 : 0;
+      const marginPerFrame = component.apply_margin ? band.margin_per_frame : 0;
+      const sellingPerFrame = preCommercial + wastagePerFrame + marginPerFrame;
+      costedComponents.push({
+        key:component.key,
+        material_per_frame:materialPerFrame,
+        process_per_frame:processPerFrame,
+        pre_commercial_per_frame:preCommercial,
+        wastage_per_frame:wastagePerFrame,
+        margin_per_frame:marginPerFrame,
+        selling_per_frame:sellingPerFrame,
+        total_for_job:sellingPerFrame * component.frames_exact,
+        material_breakdown:materialBreakdown,
+        process_breakdown:processBreakdown,
       });
     }
-
-    const adhesive = requireMaster(context, 'MAT_ADHESIVE', errors);
-    if (adhesive && adhesive.current_rate != null) {
-      const bonds = Math.max(0, resolvedConstruction.construction.layer_count - 1);
-      const gsmPerBond = n(adhesive.metadata?.gsm_per_bond ?? adhesive.gsm);
-      const grams = bonds * gsmPerBond * ((peWebMm * geometry.webRunMmPerFrame) / 1_000_000);
-      const amount = grams * n(adhesive.current_rate) / 1000;
-      materialPerFrame += amount;
-      materialBreakdown.push({ master_id: adhesive.id, code: adhesive.code, name: adhesive.name, bonds, usage_g_per_frame: grams, amount_per_frame: amount });
-    }
   }
 
-  let processPerFrame = 0;
-  const processBreakdown: Array<Record<string, unknown>> = [];
-  if (!errors.length && resolvedConstruction) {
-    const printMaster = requireMaster(context, input.print === 'CMYK' ? 'PROC_PRINT_CMYK' : 'PROC_PRINT_CMYKW', errors);
-    const lamination = requireMaster(context, 'PROC_LAMINATION', errors);
-    const slitting = requireMaster(context, 'PROC_SLITTING', errors);
-    const pouching = requireMaster(context, 'PROC_POUCHING', errors);
-
-    if (printMaster?.current_rate != null) {
-      const amount = processAmount(printMaster, webRunMPerFrame); processPerFrame += amount;
-      processBreakdown.push({ code: printMaster.code, rate: n(printMaster.current_rate), amount_per_frame: amount });
-    }
-    if (lamination?.current_rate != null) {
-      const schedule = rules.lamination_rate_by_layer_count ?? {};
-      const layerRate = n(schedule[String(resolvedConstruction.construction.layer_count)] ?? lamination.current_rate);
-      const amount = layerRate * webRunMPerFrame; processPerFrame += amount;
-      processBreakdown.push({ code: lamination.code, base_rate: n(lamination.current_rate), applied_rate: layerRate, amount_per_frame: amount });
-    }
-    for (const master of [slitting,pouching]) if (master?.current_rate != null) {
-      const amount = processAmount(master, webRunMPerFrame); processPerFrame += amount;
-      processBreakdown.push({ code: master.code, rate: n(master.current_rate), amount_per_frame: amount });
-    }
-  }
-
-  const band = size ? resolveCommercialBandV5(context.bands, size.pricing_bucket, runLengthM) : null;
-  if (size && !band) errors.push(`No Pricing v5 commercial band is configured for bucket ${size.pricing_bucket}.`);
-
-  const preCommercial = materialPerFrame + processPerFrame;
-  const wasteCostPerFrame = band ? preCommercial * band.wastage_pct / 100 : 0;
-  const sellingPerFrame = band ? preCommercial + wasteCostPerFrame + band.margin_per_frame : 0;
-  const unitPrice = geometry.unitsPerFrame ? sellingPerFrame / geometry.unitsPerFrame : 0;
-  const productTotal = unitPrice * quantity;
+  const productTotal = costedComponents.reduce((sum,item)=>sum+item.total_for_job,0);
+  const unitPrice = quantity ? productTotal / quantity : 0;
   const gstPct = n(context.template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
 
@@ -156,89 +172,72 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
     template:{id:context.template.id,version:context.template.calculation_version},
     input,
     size,
-    construction: resolvedConstruction ? {
-      id: resolvedConstruction.construction.id,
-      key: resolvedConstruction.construction.construction_key,
-      layer_count: resolvedConstruction.construction.layer_count,
-      layers: materialBreakdown,
+    construction:resolvedConstruction ? {
+      id:resolvedConstruction.construction.id,
+      key:resolvedConstruction.construction.construction_key,
+      layer_count:resolvedConstruction.construction.layer_count,
+      structure_label:resolvedConstruction.structure_label,
     } : null,
-    geometry,
-    processes: processBreakdown,
-    commercial_band: band,
+    route,
+    component_costs:costedComponents,
+    commercial_band:band,
   };
 
   const alternatives: AlternativePriceV5[] = [];
   if (includeAlternatives && !errors.length) {
-    const targets = [quantity, 10000, 15000, 20000].filter((value, index, all) => value > 0 && all.indexOf(value) === index).sort((a,b)=>a-b);
+    const targets = [quantity,10000,15000,20000].filter((value,index,all)=>value>0&&all.indexOf(value)===index).sort((a,b)=>a-b);
     for (const target of targets) {
-      const result = target === quantity ? null : calculateCore(context, { ...input, quantity: target }, false);
-      const source = result ?? null;
-      if (target === quantity) alternatives.push({ quantity, unit_price:round(unitPrice,8), product_total:round(productTotal,2), run_length_m:round(runLengthM,8), wastage_pct:band?.wastage_pct ?? 0, margin_per_frame:band?.margin_per_frame ?? 0 });
-      else if (source?.ok) alternatives.push({
-        quantity: target,
-        unit_price: source.selling_price.unit_price,
-        product_total: source.selling_price.product_total,
-        run_length_m: source.commercial_rules.run_length_m,
-        wastage_pct: source.commercial_rules.wastage_pct,
-        margin_per_frame: source.commercial_rules.margin_per_frame,
+      if (target===quantity) {
+        alternatives.push({ quantity,unit_price:round(unitPrice,8),product_total:round(productTotal,2),run_length_m:round(primaryRunLengthM,8),wastage_pct:band?.wastage_pct??0,margin_per_frame:band?.margin_per_frame??0 });
+        continue;
+      }
+      const result=calculateCore(context,{...input,quantity:target},false);
+      if (result.ok) alternatives.push({
+        quantity:target,unit_price:result.selling_price.unit_price,product_total:result.selling_price.product_total,
+        run_length_m:result.commercial_rules.run_length_m,wastage_pct:result.commercial_rules.wastage_pct,margin_per_frame:result.commercial_rules.margin_per_frame,
       });
     }
   }
 
   return {
-    ok: errors.length === 0,
+    ok:errors.length===0,
     engine_version:5,
     family_id:context.template.family_id,
     template_id:context.template.id,
     template_version:5,
     customer_requirement:{
       size_profile_id:input.size_profile_id,
-      size:size?.name ?? null,
-      dimensions:size ? { width_mm:size.width_mm,height_mm:size.height_mm,bottom_gusset_each_mm:size.bottom_gusset_each_mm } : null,
-      construction_id:input.construction_id,
-      print:input.print,
-      quantity,
-      bottom_print_mode:input.bottom_print_mode ?? null,
+      size:size?.name??null,
+      dimensions:size?{width_mm:size.width_mm,height_mm:size.height_mm,bottom_gusset_each_mm:size.bottom_gusset_each_mm}:null,
+      construction_id:input.construction_id,print:input.print,quantity,bottom_print_mode:input.bottom_print_mode??null,
     },
-    construction: resolvedConstruction ? {
-      id:resolvedConstruction.construction.id,
-      name:resolvedConstruction.construction.name,
-      layer_count:resolvedConstruction.construction.layer_count,
-      structure_label:resolvedConstruction.structure_label,
-    } : null,
+    construction:resolvedConstruction?{
+      id:resolvedConstruction.construction.id,name:resolvedConstruction.construction.name,
+      layer_count:resolvedConstruction.construction.layer_count,structure_label:resolvedConstruction.structure_label,
+    }:null,
     production_route:{
-      route_type:size?.gusset_production_mode ?? null,
-      pricing_bucket:size?.pricing_bucket ?? null,
-      components:size ? [{
-        key:'main_body',description:'Integrated SUP body',web_width_mm:geometry.openWebMm,
-        web_run_mm_per_frame:geometry.webRunMmPerFrame,lanes_across:geometry.lanesAcross,repeats_along:geometry.repeatsAlong,
-        units_per_frame:geometry.unitsPerFrame,frames_exact:framesExact,run_length_m:runLengthM,
-        apply_printing:true,apply_lamination:true,apply_slitting:true,apply_pouching:true,apply_zipper:true,
-        commercial_band_source:'self',apply_wastage:true,apply_margin:true,
-      }] : [],
+      route_type:size?.gusset_production_mode??null,
+      pricing_bucket:size?.pricing_bucket??null,
+      components:(route?.components??[]).map(({web_needed_mm:_internal,...component})=>component),
     },
     commercial_rules:{
-      bucket_no:size?.pricing_bucket ?? null,
-      run_length_m:round(runLengthM,8),
-      band_max_m:band?.run_length_max_m ?? null,
-      wastage_pct:band?.wastage_pct ?? 0,
-      margin_per_frame:band?.margin_per_frame ?? 0,
+      bucket_no:size?.pricing_bucket??null,run_length_m:round(primaryRunLengthM,8),band_max_m:band?.run_length_max_m??null,
+      wastage_pct:band?.wastage_pct??0,margin_per_frame:band?.margin_per_frame??0,
     },
     selling_price:{
-      unit_price:round(unitPrice,8),
-      product_total:round(productTotal,2),currency:context.template.currency,
+      unit_price:round(unitPrice,8),product_total:round(productTotal,2),currency:context.template.currency,
       gst_pct:gstPct,gst:round(gst,2),grand_total_before_freight:round(productTotal+gst,2),
     },
     alternative_quantities:alternatives,
     source_hash:pricingSourceHash(hashPayload),
     validation_errors:errors,
     warnings,
-    _internal:{primary_run_length_m:runLengthM},
+    _internal:{primary_run_length_m:primaryRunLengthM},
   };
 }
 
-export function calculateSupFormulaV5(context: PricingContextV5, input: SupPricingInputV5): PackagingPricingResultV5 {
-  const result = calculateCore(context,input,true);
-  const { _internal: _ignored, ...publicResult } = result;
+export function calculateSupFormulaV5(context: PricingContextV5,input:SupPricingInputV5):PackagingPricingResultV5 {
+  const result=calculateCore(context,input,true);
+  const {_internal:_ignored,...publicResult}=result;
   return publicResult;
 }
