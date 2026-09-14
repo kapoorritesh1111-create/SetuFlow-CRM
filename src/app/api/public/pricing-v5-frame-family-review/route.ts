@@ -37,6 +37,10 @@ function normalizedConstruction(value: unknown) {
     .trim();
 }
 
+function rowFormText(row: any) {
+  return `${String(row?.supply_form ?? '')} ${String(row?.construction_key ?? '')}`.toLowerCase();
+}
+
 function baselineRateForFrames(row: any, framesExact: number, unitsPerFrame: number) {
   const nearest = FRAME_TIERS.reduce((best, item) => (
     Math.abs(item.frames - framesExact) < Math.abs(best.frames - framesExact) ? item : best
@@ -74,34 +78,17 @@ export async function GET(request: NextRequest) {
       const template = await getTemplate(admin as any, templateSlug);
       if (!template) return { template_slug: templateSlug, label: config.label, available: false };
       const context = await loadPricingContextV5(STARK_ORG_ID, template.id, { publishedOnly: false });
-      const { data: baselineTemplate } = await (admin as any)
-        .from('packaging_pricing_templates')
-        .select('id')
-        .eq('organization_id', STARK_ORG_ID)
-        .eq('slug', config.baselineSlug)
-        .maybeSingle();
-      const { data: rows } = baselineTemplate?.id
-        ? await (admin as any)
-            .from('packaging_pricing_matrix_rows')
-            .select('width_mm,height_mm,construction_key,supply_form')
-            .eq('organization_id', STARK_ORG_ID)
-            .eq('template_id', baselineTemplate.id)
-        : { data: [] } as any;
-      const formNeedle = config.supplyForm.includes('roll') ? 'roll' : 'pouch';
-      const filteredRows = (rows ?? []).filter((row: any) => String(row.supply_form ?? row.construction_key ?? '').toLowerCase().includes(formNeedle));
-      const sizeMap = new Map<string, { width_mm: number; height_mm: number }>();
-      filteredRows.forEach((row: any) => {
-        const width = Number(row.width_mm); const height = Number(row.height_mm);
-        if (width > 0 && height > 0) sizeMap.set(`${width}x${height}`, { width_mm: width, height_mm: height });
-      });
       return {
         template_slug: templateSlug,
         label: config.label,
         available: true,
         review_only: true,
+        activation_allowed: false,
         baseline_slug: config.baselineSlug,
+        dimension_entry: 'manual_required',
+        dimension_note: 'The v4 workbook baseline stores construction-level frame rates without width/height rows. Enter width and height to calculate production geometry and compare the matching v4 construction rate with Pricing v5.',
         constructions: context.constructions.map((c: any) => ({ id: c.id, name: c.name, construction_key: c.construction_key, layer_count: c.layer_count })),
-        sizes: [...sizeMap.values()].sort((a, b) => a.width_mm - b.width_mm || a.height_mm - b.height_mm),
+        sizes: [],
       };
     }));
     return NextResponse.json({ ok: true, review_only: true, activation_allowed: false, families }, { headers: { 'Cache-Control': 'private, no-store' } });
@@ -140,6 +127,8 @@ export async function POST(request: NextRequest) {
 
     const context = await loadPricingContextV5(STARK_ORG_ID, template.id, { publishedOnly: false });
     const selectedConstruction = context.constructions.find((c: any) => String(c.id) === String(body.construction_id));
+    if (!selectedConstruction) return NextResponse.json({ ok: false, error: 'review_construction_not_found' }, { status: 400 });
+
     const result = calculateFrameFamilyPriceReviewV5(context, {
       supply_form: config.supplyForm,
       width_mm: width,
@@ -156,6 +145,7 @@ export async function POST(request: NextRequest) {
       .eq('organization_id', STARK_ORG_ID)
       .eq('slug', config.baselineSlug)
       .maybeSingle();
+
     const formNeedle = config.supplyForm.includes('roll') ? 'roll' : 'pouch';
     let baselineRow: any = null;
     if (baselineTemplate?.id) {
@@ -163,14 +153,12 @@ export async function POST(request: NextRequest) {
         .from('packaging_pricing_matrix_rows')
         .select('width_mm,height_mm,construction_key,supply_form,q1_rate_per_frame,q2_rate_per_frame,q3_rate_per_frame,q4_rate_per_frame,q5_rate_per_frame')
         .eq('organization_id', STARK_ORG_ID)
-        .eq('template_id', baselineTemplate.id)
-        .eq('width_mm', width)
-        .eq('height_mm', height);
-      const targetKey = normalizedConstruction(selectedConstruction?.construction_key || selectedConstruction?.name);
-      baselineRow = (candidates ?? []).find((row: any) => {
-        const form = String(row.supply_form ?? row.construction_key ?? '').toLowerCase();
-        return form.includes(formNeedle) && normalizedConstruction(row.construction_key) === targetKey;
-      }) ?? (candidates ?? []).find((row: any) => String(row.supply_form ?? row.construction_key ?? '').toLowerCase().includes(formNeedle)) ?? null;
+        .eq('template_id', baselineTemplate.id);
+      const targetKey = normalizedConstruction(selectedConstruction.construction_key || selectedConstruction.name);
+      const sameForm = (candidates ?? []).filter((row: any) => rowFormText(row).includes(formNeedle));
+      baselineRow = sameForm.find((row: any) => normalizedConstruction(row.construction_key) === targetKey)
+        ?? (candidates ?? []).find((row: any) => normalizedConstruction(row.construction_key) === targetKey)
+        ?? null;
     }
 
     const unitsPerFrame = Number(result.geometry?.units_per_frame || 0);
@@ -190,7 +178,7 @@ export async function POST(request: NextRequest) {
         family_label: config.label,
         baseline_slug: config.baselineSlug,
         baseline_found: Boolean(baselineRow && baselineRate.rate_per_frame != null),
-        construction: selectedConstruction ? { id: selectedConstruction.id, name: selectedConstruction.name, construction_key: selectedConstruction.construction_key } : null,
+        construction: { id: selectedConstruction.id, name: selectedConstruction.name, construction_key: selectedConstruction.construction_key },
         size: { width_mm: width, height_mm: height },
         quantity: Math.floor(quantity),
         requested_frames: baselineRate.requested_frames,
