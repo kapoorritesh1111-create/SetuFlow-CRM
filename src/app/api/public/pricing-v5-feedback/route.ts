@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   const admin = createAdminSupabaseClient();
   if (!admin) return NextResponse.json({ ok: false, error: 'service_unavailable' }, { status: 503 });
 
-  const { error } = await admin.from('pricing_v5_review_feedback').insert({
+  const { error } = await (admin as any).from('pricing_v5_review_feedback').insert({
     reviewer_name: text(body.reviewer_name, 120) ?? 'Anonymous',
     review_mode: reviewMode,
     step_key: text(body.step_key, 80),
