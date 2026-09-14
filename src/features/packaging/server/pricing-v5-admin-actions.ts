@@ -111,7 +111,7 @@ export async function createPackagingConstructionV5(formData:FormData){
   const {data:materials,error:materialError}=await supabase.from('packaging_cost_master_items').select('id,code,item_type,rate_basis,is_active').eq('organization_id',organization.id).in('id',uniqueLayerIds);
   if(materialError) throw new Error(materialError.message);
   if((materials??[]).length!==uniqueLayerIds.length||(materials??[]).some((item:any)=>item.item_type!=='material'||item.rate_basis!=='per_kg'||!item.is_active)) throw new Error('Every construction layer must map to an active per-kg film material.');
-  const materialById=new Map((materials??[]).map((item:any)=>[String(item.id),item]));
+  const materialById=new Map<string,any>((materials??[]).map((item:any)=>[String(item.id),item]));
   const sealant=materialById.get(layerIds[layerIds.length-1]);
   if(!sealant?.code?.startsWith('MAT_PE_')) throw new Error('The final construction layer must be a PE sealant material.');
   const keyBase=slug(text(formData,'construction_key')||name);
