@@ -1,0 +1,25 @@
+name: Pricing v5 review UI lock
+
+on:
+  pull_request:
+    paths:
+      - 'public/pricing-v5-review.html'
+      - 'public/pricing-v5-review.visual-lock.html'
+      - 'scripts/verify-pricing-v5-review-ui-lock.mjs'
+  push:
+    branches: [main]
+    paths:
+      - 'public/pricing-v5-review.html'
+      - 'public/pricing-v5-review.visual-lock.html'
+      - 'scripts/verify-pricing-v5-review-ui-lock.mjs'
+
+jobs:
+  verify-locked-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Pricing v5 review visual baseline
+        run: node scripts/verify-pricing-v5-review-ui-lock.mjs
