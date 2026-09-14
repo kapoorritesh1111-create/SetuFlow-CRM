@@ -40,7 +40,6 @@ begin
     and m.code in ('MAT_PET_12','MAT_CLEAR_PET_12');
 
   -- 9 micron aluminium foil: Admin confirmed INR 550/kg and 24.2 GSM.
-  -- Store GSM directly so the engine uses the confirmed physical value.
   update public.packaging_pricing_cost_rates_v5 r
   set current_rate=550,
       micron_override=9,
@@ -104,7 +103,6 @@ begin
     and m.code='MAT_SATIN_MATT_PET_12';
 
   -- 15 micron Velvet Touch PET: Admin confirmed INR 550/kg and 18 GSM.
-  -- Density override is derived from the confirmed GSM/thickness for consistency.
   update public.packaging_pricing_cost_rates_v5 r
   set current_rate=550,
       micron_override=15,
