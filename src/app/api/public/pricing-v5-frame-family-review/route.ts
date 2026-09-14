@@ -16,12 +16,12 @@ const ALLOWED: Record<string, { supplyForm: FrameFamilySupplyFormV5; baselineSlu
   'stark-3ss-pouch-v5-review': { supplyForm: 'three_side_seal_pouch', baselineSlug: 'stark-3ss-pouch-matrix-v4', label: '3 Side Seal — Pouch Form' },
 };
 
-const QTY_COLUMNS = [
-  { quantity: 500, key: 'q1_rate_per_frame' },
-  { quantity: 1000, key: 'q2_rate_per_frame' },
-  { quantity: 2000, key: 'q3_rate_per_frame' },
-  { quantity: 5000, key: 'q4_rate_per_frame' },
-  { quantity: 10000, key: 'q5_rate_per_frame' },
+const FRAME_TIERS = [
+  { frames: 250, key: 'q1_rate_per_frame' },
+  { frames: 500, key: 'q2_rate_per_frame' },
+  { frames: 1000, key: 'q3_rate_per_frame' },
+  { frames: 2000, key: 'q4_rate_per_frame' },
+  { frames: 3000, key: 'q5_rate_per_frame' },
 ] as const;
 
 function finite(value: unknown) {
@@ -37,12 +37,17 @@ function normalizedConstruction(value: unknown) {
     .trim();
 }
 
-function baselineRateForQuantity(row: any, quantity: number) {
-  const nearest = QTY_COLUMNS.reduce((best, item) => (
-    Math.abs(item.quantity - quantity) < Math.abs(best.quantity - quantity) ? item : best
-  ), QTY_COLUMNS[0]);
+function baselineRateForFrames(row: any, framesExact: number, unitsPerFrame: number) {
+  const nearest = FRAME_TIERS.reduce((best, item) => (
+    Math.abs(item.frames - framesExact) < Math.abs(best.frames - framesExact) ? item : best
+  ), FRAME_TIERS[0]);
   const ratePerFrame = finite(row?.[nearest.key]);
-  return { requested_quantity: quantity, baseline_quantity: nearest.quantity, rate_per_frame: ratePerFrame };
+  return {
+    requested_frames: framesExact,
+    baseline_frames: nearest.frames,
+    baseline_piece_quantity: unitsPerFrame > 0 ? nearest.frames * unitsPerFrame : null,
+    rate_per_frame: ratePerFrame,
+  };
 }
 
 async function getTemplate(admin: any, templateSlug: string) {
@@ -168,8 +173,9 @@ export async function POST(request: NextRequest) {
       }) ?? (candidates ?? []).find((row: any) => String(row.supply_form ?? row.construction_key ?? '').toLowerCase().includes(formNeedle)) ?? null;
     }
 
-    const baselineRate = baselineRateForQuantity(baselineRow, Math.floor(quantity));
     const unitsPerFrame = Number(result.geometry?.units_per_frame || 0);
+    const framesExact = Number(result.frames_exact || 0);
+    const baselineRate = baselineRateForFrames(baselineRow, framesExact, unitsPerFrame);
     const baselineUnitPrice = baselineRate.rate_per_frame != null && unitsPerFrame > 0 ? baselineRate.rate_per_frame / unitsPerFrame : null;
     const v5UnitPrice = finite(result.selling_price?.unit_price);
     const delta = baselineUnitPrice != null && v5UnitPrice != null ? v5UnitPrice - baselineUnitPrice : null;
@@ -187,7 +193,9 @@ export async function POST(request: NextRequest) {
         construction: selectedConstruction ? { id: selectedConstruction.id, name: selectedConstruction.name, construction_key: selectedConstruction.construction_key } : null,
         size: { width_mm: width, height_mm: height },
         quantity: Math.floor(quantity),
-        baseline_quantity: baselineRate.baseline_quantity,
+        requested_frames: baselineRate.requested_frames,
+        baseline_frames: baselineRate.baseline_frames,
+        baseline_piece_quantity: baselineRate.baseline_piece_quantity,
         v4_rate_per_frame: baselineRate.rate_per_frame,
         v4_unit_price: baselineUnitPrice,
         v5_unit_price: v5UnitPrice,
