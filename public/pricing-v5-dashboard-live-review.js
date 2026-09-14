@@ -8,7 +8,7 @@ const QUANTITIES=[5000,10000,15000,20000];
 const CACHE_TTL_MS=30000;
 const q=(s,r=document)=>r.querySelector(s);
 const qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=v=>Number.isFinite(Number(v))?'₹'+Number(v).toFixed(2):'—';
 
 let rows=[];
@@ -62,6 +62,20 @@ async function load(force=false){
   finally{loading=false}
 }
 
+function patchOwnerTruth(){
+  if(!onPage()||!rows.length)return;
+  const page=q('#page');if(!page)return;
+  const points=rows.flatMap(r=>r.prices||[]);
+  const unavailable=points.filter(x=>!x?.ok).length;
+  const approved=rows.reduce((sum,r)=>sum+QUANTITIES.filter(n=>window.PV5DbReview?.decision?.(decisionKey(r,n))==='approved').length,0);
+  const health=q('.card.health',page);
+  if(health)health.innerHTML='<div class="health-title"><div class="metric-icon blue">↗</div><div><h3>Live Pricing Review Status</h3><p>Calculated from the published Pricing v5 engine for the selected construction. No market evidence or approval is assumed.</p></div></div><div class="health-stat"><small>Calculated size rows</small><b>'+rows.length+'</b><span>live v5 rows</span></div><div class="health-stat"><small>Calculated price points</small><b>'+points.length+'</b><span>'+QUANTITIES.map(n=>n.toLocaleString()).join(' / ')+' pcs</span></div><div class="health-stat"><small>Unavailable points</small><b class="'+(unavailable?'up':'down')+'">'+unavailable+'</b><span>'+(unavailable?'require clarification':'all points calculated')+'</span></div><div class="health-stat"><small>Owner-approved points</small><b>'+approved+'</b><span>explicit DB-backed decisions only</span></div>';
+  qa('.dash-bottom .card',page).forEach(card=>{
+    const h=q('.panel-title h3',card)?.textContent||'';
+    if(/Recent Changes & Comments/i.test(h))card.innerHTML='<div class="panel-title"><h3>Owner Review History</h3></div><div class="notice info" style="margin:12px"><b>No sample change history is shown here.</b> Owner decisions and comments are recorded only when explicitly saved during this review.</div>';
+  });
+}
+
 function render(){
   if(!onPage()||!rows.length)return;
   const card=q('#page .dashboard-main .matrix-card');if(!card)return;
@@ -71,6 +85,7 @@ function render(){
   const footer=q('.table-footer',card);if(footer)footer.innerHTML='<span>Showing 8 of '+rows.length+' sizes</span><button class="btn tiny" id="dashFullMatrix">View Full Matrix →</button>';
   qa('[data-dash-review]',card).forEach(b=>b.onclick=()=>openReview(rows.find(r=>String(r.size_profile_id||r.size_key)===String(b.dataset.dashReview))));
   q('#dashFullMatrix')?.addEventListener('click',()=>window.PV5?.go?.('matrix'));
+  patchOwnerTruth();
 }
 
 function openReview(r){
