@@ -30,10 +30,10 @@ export async function listSalesPackagingPricingV5Options(organizationId:string){
   const context=await loadPricingContextV5(organizationId,template.id,{publishedOnly:true});
   const [{data:families},{data:klds}]=await Promise.all([
     db.from('packaging_service_families').select('id,name,slug,is_quoteable,is_active').eq('organization_id',organizationId).eq('id',template.family_id).eq('is_active',true).eq('is_quoteable',true),
-    db.from('packaging_kld_files').select('id,family_id,file_name,version_label,spec_key,is_active').eq('organization_id',organizationId).eq('family_id',template.family_id).eq('is_active',true).order('created_at',{ascending:false}),
+    db.from('packaging_kld_files').select('id,family_id,file_name,file_path,version,spec_key,size_preset_key,product_variation_id,is_active').eq('organization_id',organizationId).eq('family_id',template.family_id).eq('is_active',true).order('created_at',{ascending:false}),
   ]);
   const sizes=context.sizeProfiles.filter((item)=>item.is_active&&item.is_quoteable).map((item)=>({
-    id:item.id,name:item.name,width_mm:item.width_mm,height_mm:item.height_mm,bottom_gusset_each_mm:item.bottom_gusset_each_mm,
+    id:item.id,size_key:item.size_key,name:item.name,width_mm:item.width_mm,height_mm:item.height_mm,bottom_gusset_each_mm:item.bottom_gusset_each_mm,
     pricing_bucket:item.pricing_bucket,gusset_production_mode:item.gusset_production_mode,bottom_registration_mode:item.bottom_registration_mode,
   }));
   const constructions=context.constructions.filter((item)=>item.is_active&&item.is_quoteable).map((item)=>{
