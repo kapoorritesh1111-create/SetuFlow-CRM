@@ -29,14 +29,14 @@ export default async function PackagingPricingV5MatrixPage(){
   });
   const charges=(context.charges??[]).filter((item)=>item.current_rate!=null&&item.application_stage!=='separate_quote_line').map((item)=>({code:item.code,name:item.name}));
   const {data:benchmarks,error:benchmarkError}=await supabase.from('packaging_pricing_competitor_benchmarks_v5')
-    .select('id,family_id,size_profile_id,construction_id,quantity,unit_price,currency,competitor_name,customer_reference,notes,observed_at,created_at')
-    .eq('organization_id',organization.id).order('observed_at',{ascending:false});
+    .select('id,template_id,family_id,size_profile_id,construction_id,quantity,unit_price,currency,competitor_name,customer_reference,notes,observed_at,created_at')
+    .eq('organization_id',organization.id).eq('template_id',template.id).order('observed_at',{ascending:false});
   if(benchmarkError) return <StateMessage title="Competitor benchmarks could not be loaded" description={benchmarkError.message} tone="warning"/>;
 
   return <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Pricing v5 Matrix" tbarAction={<Link href="/admin/packaging-pricing-v5" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">Back to Pricing v5</Link>} tbarChips={[
     {label:`${context.sizeProfiles.length} sizes`,tone:'info'},
     {label:`${constructions.filter((item)=>item.ready).length} ready constructions`,tone:constructions.some((item)=>item.ready)?'ok':'warn'},
-    {label:`${(benchmarks??[]).length} benchmarks`,tone:'info'},
+    {label:`${(benchmarks??[]).length} revision benchmarks`,tone:'info'},
   ]}>
     <PricingV5PriceMatrix data={{template,sizes:context.sizeProfiles,constructions,charges,benchmarks:benchmarks??[]}}/>
   </AdminSettingsShell>;
