@@ -11,12 +11,14 @@ export default function PricingV5PriceMatrix({data}:{data:any}){
   const template=data.template;
   const sizes=data.sizes??[];
   const constructions=data.constructions??[];
+  const charges=data.charges??[];
   const benchmarks=data.benchmarks??[];
+  const hasZipper=charges.some((item:any)=>item.code==='EXTRA_ZIPPER');
   const [sizeId,setSizeId]=useState(sizes[0]?.id??'');
   const [constructionId,setConstructionId]=useState(constructions[0]?.id??'');
   const [print,setPrint]=useState<'CMYK'|'CMYKW'>('CMYKW');
   const [bottomPrintMode,setBottomPrintMode]=useState<'solid_unregistered'|'registered_artwork'|''>('');
-  const [zipper,setZipper]=useState(true);
+  const [zipper,setZipper]=useState(hasZipper);
   const [cells,setCells]=useState<any[]>([]);
   const [error,setError]=useState('');
   const [pending,startTransition]=useTransition();
@@ -29,7 +31,7 @@ export default function PricingV5PriceMatrix({data}:{data:any}){
     if(!template?.id||!sizeId||!constructionId|| (askBottom&&!bottomPrintMode)) return;
     setError('');
     startTransition(async()=>{
-      const response:any=await previewPackagingPricingMatrixV5({templateId:template.id,sizeProfileId:sizeId,constructionId,print,bottomPrintMode:bottomPrintMode||undefined,selectedChargeCodes:zipper?['EXTRA_ZIPPER']:[]});
+      const response:any=await previewPackagingPricingMatrixV5({templateId:template.id,sizeProfileId:sizeId,constructionId,print,bottomPrintMode:bottomPrintMode||undefined,selectedChargeCodes:hasZipper&&zipper?['EXTRA_ZIPPER']:[]});
       setCells(response.cells??[]);
       if(!response.ok) setError(response.error??'Matrix calculation failed.');
     });
@@ -47,7 +49,7 @@ export default function PricingV5PriceMatrix({data}:{data:any}){
         <label className="text-xs font-black text-slate-600">Construction<select value={constructionId} onChange={(e)=>{setConstructionId(e.target.value);setCells([]);}} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-2 text-sm">{constructions.map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
         <label className="text-xs font-black text-slate-600">Print<select value={print} onChange={(e)=>setPrint(e.target.value as 'CMYK'|'CMYKW')} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-2 text-sm"><option>CMYK</option><option>CMYKW</option></select></label>
         {askBottom?<label className="text-xs font-black text-slate-600">Bottom route<select value={bottomPrintMode} onChange={(e)=>setBottomPrintMode(e.target.value as any)} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-2 text-sm"><option value="">Choose</option><option value="solid_unregistered">Solid color</option><option value="registered_artwork">Logo/text/artwork</option></select></label>:<div className="rounded-lg border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase text-slate-400">Route</div><div className="mt-1 text-sm font-black text-slate-800">{size?.gusset_production_mode}</div></div>}
-        <label className="flex items-end gap-2 pb-2 text-sm font-bold text-slate-700"><input type="checkbox" checked={zipper} onChange={(e)=>setZipper(e.target.checked)}/> Include zipper</label>
+        {hasZipper?<label className="flex items-end gap-2 pb-2 text-sm font-bold text-slate-700"><input type="checkbox" checked={zipper} onChange={(e)=>setZipper(e.target.checked)}/> Include zipper</label>:<div className="rounded-lg border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase text-slate-400">Zipper</div><div className="mt-1 text-sm font-black text-slate-500">Not configured</div></div>}
       </div>
       <div className="mt-3 flex items-center gap-3"><button type="button" onClick={run} disabled={pending||(askBottom&&!bottomPrintMode)} className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-black text-white disabled:opacity-40">{pending?'Calculating…':'Run matrix'}</button><span className="text-xs text-slate-500">{construction?.structure_label}</span></div>
       {error?<div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div>:null}
