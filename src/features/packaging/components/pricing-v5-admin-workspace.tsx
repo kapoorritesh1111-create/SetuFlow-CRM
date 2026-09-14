@@ -37,7 +37,7 @@ export default function PricingV5AdminWorkspace({data}:Props){
   const quoteableSizes=data.sizes.filter((item)=>item.is_quoteable).length;
   const quoteableConstructions=data.constructions.filter((item)=>item.is_quoteable).length;
   const missingRates=data.costs.filter((item)=>item.current_rate==null).length;
-  const materialCosts=data.costs.filter((item)=>item.item_type==='material');
+  const materialCosts=data.costs.filter((item)=>item.item_type==='material'&&item.rate_basis==='per_kg');
   const layersByConstruction=useMemo(()=>new Map(data.constructions.map((construction)=>[
     construction.id,data.layers.filter((layer)=>layer.construction_id===construction.id).sort((a,b)=>a.layer_position-b.layer_position),
   ])),[data.constructions,data.layers]);
@@ -112,7 +112,7 @@ export default function PricingV5AdminWorkspace({data}:Props){
           <label className="text-[10px] font-black uppercase text-slate-500">Finish<input name="finish_type" className={`${input} mt-1 w-full`} placeholder="matte / glossy"/></label>
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {[1,2,3,4,5,6].map((position)=><label key={position} className="text-[10px] font-black uppercase text-slate-500">Layer {position}{position<=2?' *':''}<select required={position<=2} name={`layer_${position}`} className={`${input} mt-1 w-full`} defaultValue=""><option value="">{position<=2?'Select material':'Optional'}</option>{materialCosts.map((cost)=><option key={cost.id} value={cost.id}>{cost.name}{cost.current_rate==null?' · rate missing':''}</option>)}</select></label>)}
+          {[1,2,3,4,5,6].map((position)=><label key={position} className="text-[10px] font-black uppercase text-slate-500">Layer {position}{position<=2?' *':''}<select required={position<=2} name={`layer_${position}`} className={`${input} mt-1 w-full`} defaultValue=""><option value="">{position<=2?'Select film':'Optional'}</option>{materialCosts.map((cost)=><option key={cost.id} value={cost.id}>{cost.name}{cost.current_rate==null?' · rate missing':''}</option>)}</select></label>)}
         </div>
         <label className="mt-3 block text-[10px] font-black uppercase text-slate-500">Barrier type<input name="barrier_type" className={`${input} mt-1 w-full md:w-96`} placeholder="high_barrier / clear / silver"/></label>
         <button className={`${btn} mt-4`} type="submit">Create custom construction</button>
