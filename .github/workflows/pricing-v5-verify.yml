@@ -30,3 +30,5 @@ jobs:
         run: npm run typecheck
       - name: Packaging pricing tests
         run: npm run test:packaging
+      - name: Pricing v5 material confirmations
+        run: npx tsx --test tests/packaging/pricing-v5-material-confirmation.test.ts
