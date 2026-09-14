@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const schema=fs.readFileSync('supabase/migrations/20260914013000_s52_pkg_v5_schema.sql','utf8');
 const rateOverrides=fs.readFileSync('supabase/migrations/20260914013050_s52_pkg_v5_rate_overrides.sql','utf8');
+const templateScope=fs.readFileSync('supabase/migrations/20260914013500_s52_pkg_v5_template_scoped_structures.sql','utf8');
 const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5_quote_persistence.sql','utf8');
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
@@ -25,17 +26,30 @@ test('S52-PKG-V5: v5 rate edits are version-scoped and cannot overwrite v4 maste
   assert.match(rateOverrides,/create table if not exists public\.packaging_pricing_cost_rates_v5/i);
   assert.match(rateOverrides,/create table if not exists public\.packaging_pricing_charge_rates_v5/i);
   assert.match(adminActions,/from\('packaging_pricing_cost_rates_v5'\)\.upsert/);
+  assert.match(adminActions,/from\('packaging_pricing_charge_rates_v5'\)\.upsert/);
   assert.doesNotMatch(adminActions,/from\('packaging_cost_master_items'\)\s*\.update\(\{current_rate/);
   assert.match(repository,/from\('packaging_pricing_cost_rates_v5'\)/);
   assert.match(repository,/from\('packaging_pricing_charge_rates_v5'\)/);
 });
 
-test('S52-PKG-V5: published templates are immutable through Admin actions',()=>{
+test('S52-PKG-V5: sizes and constructions are template-scoped for immutable revisions',()=>{
+  assert.match(templateScope,/packaging_size_profiles_v5 add column if not exists template_id/i);
+  assert.match(templateScope,/packaging_constructions_v5 add column if not exists template_id/i);
+  assert.match(templateScope,/packaging_construction_layers_v5 add column if not exists template_id/i);
+  assert.match(repository,/packaging_size_profiles_v5'[\s\S]*\.eq\('template_id',template\.id\)/);
+  assert.match(repository,/packaging_constructions_v5'[\s\S]*\.eq\('template_id',template\.id\)/);
+  assert.match(repository,/packaging_construction_layers_v5'[\s\S]*\.eq\('template_id',template\.id\)/);
+});
+
+test('S52-PKG-V5: published templates are immutable and can be cloned into a new draft revision',()=>{
   assert.match(adminActions,/function requireDraftTemplate/);
   assert.match(adminActions,/data\.status!==['"]draft['"]/);
   assert.match(adminActions,/Published Pricing v5 is immutable/);
-  assert.match(adminActions,/\.eq\('status','draft'\)/);
-  assert.match(adminWorkspace,/Published Pricing v5 is locked against structural and rate edits/);
+  assert.match(adminActions,/export async function clonePackagingTemplateRevisionV5/);
+  assert.match(adminActions,/supersedes_template_id:source\.id/);
+  assert.match(adminActions,/status:'draft'/);
+  assert.match(adminActions,/status:'archived',is_active:false/);
+  assert.match(adminWorkspace,/Create new revision/);
 });
 
 test('S52-PKG-V5: Admin can create a private custom construction but it starts non-quoteable',()=>{
@@ -43,8 +57,16 @@ test('S52-PKG-V5: Admin can create a private custom construction but it starts n
   assert.match(adminActions,/private_custom:true/);
   assert.match(adminActions,/is_quoteable:false/);
   assert.match(adminActions,/final construction layer must be a PE sealant material/i);
+  assert.match(adminActions,/template_id:templateId/);
   assert.match(adminWorkspace,/Create private custom construction/);
   assert.match(adminWorkspace,/Create custom construction/);
+});
+
+test('S52-PKG-V5: Admin can maintain revision-scoped Charge Master overrides',()=>{
+  assert.match(adminActions,/export async function savePackagingChargeRateV5/);
+  assert.match(adminActions,/packaging_charge_master_family_links/);
+  assert.match(adminWorkspace,/Pricing v5 Charge Master overrides/);
+  assert.match(adminWorkspace,/Save charge/);
 });
 
 test('S52-PKG-V5: publish validation enforces workbook catalog and exact run-length schedules',()=>{
