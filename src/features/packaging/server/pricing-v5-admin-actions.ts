@@ -10,7 +10,7 @@ const ADMIN_PATH='/admin/packaging-pricing-v5';
 function text(formData:FormData,key:string){ return String(formData.get(key)??'').trim(); }
 function numberValue(formData:FormData,key:string,label:string,{min=0,max}:{min?:number;max?:number}={}){
   const raw=text(formData,key); const value=Number(raw);
-  if(!raw||!Number.isFinite(value)||value<min||value>max) throw new Error(`${label} is outside the allowed range.`);
+  if(!raw||!Number.isFinite(value)||value<min||(max!=null&&value>max)) throw new Error(`${label} is outside the allowed range.`);
   return value;
 }
 function checked(formData:FormData,key:string){ return ['true','1','on','yes'].includes(text(formData,key).toLowerCase()); }
