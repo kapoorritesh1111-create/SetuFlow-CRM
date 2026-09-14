@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import PricingV5AdminWorkspace from '@/features/packaging/components/pricing-v5-admin-workspace';
@@ -38,7 +39,7 @@ export default async function PackagingPricingV5AdminPage(){
     featureFlag:flag.data??null,
   };
   const missingRates=data.costs.filter((item:any)=>item.current_rate==null).length;
-  return <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Pricing v5" tbarChips={[
+  return <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Pricing v5" tbarAction={<Link href="/admin/packaging-pricing-v5/matrix" className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">Open price matrix</Link>} tbarChips={[
     {label:`${data.sizes.length} sizes`,tone:data.sizes.length===20?'ok':'warn'},
     {label:`${data.constructions.length} constructions`,tone:data.constructions.length===44?'ok':'warn'},
     {label:`${missingRates} missing rates`,tone:missingRates===0?'ok':'warn'},
