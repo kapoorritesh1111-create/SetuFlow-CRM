@@ -1,0 +1,49 @@
+name: Apply Pricing v5 review runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-pricing-v5-review-runtime.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Bring Stark-reference KLD samples from activation branch
+        run: |
+          git fetch origin pricing-v5-activation-ready
+          git checkout origin/pricing-v5-activation-ready -- public/kld/pricing-v5/sup
+      - name: Attach runtime without changing locked visual surface
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('public/pricing-v5-review.html')
+          text = p.read_text()
+          tag = '<script src="/pricing-v5-review-runtime.js"></script>'
+          if tag not in text:
+              if '</body>' not in text:
+                  raise SystemExit('pricing-v5-review.html is missing </body>')
+              text = text.replace('</body>', tag + '</body>')
+              p.write_text(text)
+          PY
+      - name: Verify visual lock
+        run: node scripts/verify-pricing-v5-review-ui-lock.mjs
+      - name: Commit additive runtime wiring and KLD samples
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo 'No changes to apply.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/pricing-v5-review.html public/kld/pricing-v5/sup
+          git commit -m 'Wire locked Akshay review to live pricing and KLD approvals'
+          git push origin HEAD:main
