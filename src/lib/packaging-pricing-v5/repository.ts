@@ -43,7 +43,7 @@ export async function loadPricingContextV5(
       .select('id,code,name,item_type,rate_basis,rate_uom,currency,micron,gsm,density,metadata')
       .eq('organization_id',organizationId).eq('is_active',true),
     db.from('packaging_pricing_cost_rates_v5')
-      .select('cost_master_item_id,current_rate,metadata')
+      .select('cost_master_item_id,current_rate,micron_override,gsm_override,density_override,metadata')
       .eq('organization_id',organizationId).eq('template_id',template.id),
     db.from('packaging_charge_master_items')
       .select('id,code,name,category,basis,application_stage,currency,metadata')
@@ -65,7 +65,7 @@ export async function loadPricingContextV5(
 
   const constructionIds = new Set((constructions.data ?? []).map((item:any)=>item.id));
   const familyChargeIds = new Set((chargeLinks.data ?? []).map((item:any)=>String(item.charge_master_item_id)));
-  const costRateById = new Map((costRates.data ?? []).map((item:any)=>[String(item.cost_master_item_id), item.current_rate]));
+  const costRateById = new Map((costRates.data ?? []).map((item:any)=>[String(item.cost_master_item_id), item]));
   const chargeRateById = new Map((chargeRates.data ?? []).map((item:any)=>[String(item.charge_master_item_id), item.current_rate]));
 
   return {
@@ -73,15 +73,28 @@ export async function loadPricingContextV5(
     sizeProfiles: (sizes.data ?? []).map((item:any)=>({ ...item, width_mm:Number(item.width_mm), height_mm:Number(item.height_mm), bottom_gusset_each_mm:Number(item.bottom_gusset_each_mm), pricing_bucket:Number(item.pricing_bucket) })) as SizeProfileV5[],
     constructions: (constructions.data ?? []).map((item:any)=>({ ...item, layer_count:Number(item.layer_count) })) as ConstructionV5[],
     constructionLayers: (layers.data ?? []).filter((item:any)=>constructionIds.has(item.construction_id)).map((item:any)=>({ ...item, layer_position:Number(item.layer_position) })) as ConstructionLayerV5[],
-    masters: (masters.data ?? []).map((item:any)=>({
-      ...item,
-      current_rate: costRateById.has(String(item.id))
-        ? (costRateById.get(String(item.id))==null?null:Number(costRateById.get(String(item.id))))
-        : null,
-      micron:item.micron==null?null:Number(item.micron),
-      gsm:item.gsm==null?null:Number(item.gsm),
-      density:item.density==null?null:Number(item.density),
-    })) as CostMasterRateV5[],
+    masters: (masters.data ?? []).map((item:any)=>{
+      const override:any=costRateById.get(String(item.id))??null;
+      return {
+        ...item,
+        current_rate: override
+          ? (override.current_rate==null?null:Number(override.current_rate))
+          : null,
+        micron: override?.micron_override!=null
+          ? Number(override.micron_override)
+          : (item.micron==null?null:Number(item.micron)),
+        gsm: override?.gsm_override!=null
+          ? Number(override.gsm_override)
+          : (item.gsm==null?null:Number(item.gsm)),
+        density: override?.density_override!=null
+          ? Number(override.density_override)
+          : (item.density==null?null:Number(item.density)),
+        metadata: {
+          ...(item.metadata && typeof item.metadata==='object' ? item.metadata : {}),
+          ...(override?.metadata && typeof override.metadata==='object' ? override.metadata : {}),
+        },
+      };
+    }) as CostMasterRateV5[],
     charges: (charges.data ?? []).filter((item:any)=>familyChargeIds.has(String(item.id))).map((item:any)=>({
       ...item,
       current_rate: chargeRateById.has(String(item.id))
