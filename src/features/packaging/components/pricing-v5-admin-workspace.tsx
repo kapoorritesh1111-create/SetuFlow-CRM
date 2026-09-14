@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   publishPackagingTemplateV5,
   savePackagingCommercialBandV5,
@@ -25,7 +25,7 @@ const tabs=['Overview','Sizes & Routes','Constructions','Materials & Processes',
 const input='rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none focus:border-teal-500';
 const btn='inline-flex items-center justify-center rounded-lg bg-slate-950 px-3 py-2 text-xs font-extrabold text-white hover:bg-slate-800';
 
-function Pill({children,tone='slate'}:{children:React.ReactNode;tone?:'slate'|'green'|'amber'|'blue'}){
+function Pill({children,tone='slate'}:{children:ReactNode;tone?:'slate'|'green'|'amber'|'blue'}){
   const styles=tone==='green'?'border-emerald-200 bg-emerald-50 text-emerald-700':tone==='amber'?'border-amber-200 bg-amber-50 text-amber-700':tone==='blue'?'border-cyan-200 bg-cyan-50 text-cyan-700':'border-slate-200 bg-slate-50 text-slate-600';
   return <span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-extrabold ${styles}`}>{children}</span>;
 }
@@ -46,7 +46,7 @@ export default function PricingV5AdminWorkspace({data}:Props){
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-600">Pricing v5 · isolated from v4</p>
           <h1 className="mt-1 text-xl font-black text-slate-950">Workbook-backed SUP pricing</h1>
-          <p className="mt-1 max-w-3xl text-sm text-slate-500">20 approved workbook sizes, dynamic construction recipes, five run-length commercial buckets and split-gusset production rules. Sales routing remains controlled by a separate v5 feature flag.</p>
+          <p className="mt-1 max-w-3xl text-sm text-slate-500">20 approved workbook sizes, dynamic construction recipes, five run-length commercial buckets and split-gusset production rules. V5 rates are version-scoped, so changing them here does not change the working v4 module.</p>
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
           <Pill tone={data.template?.status==='published'?'green':'amber'}>{data.template?.status??'No template'}</Pill>
@@ -65,15 +65,15 @@ export default function PricingV5AdminWorkspace({data}:Props){
           ['Workbook sizes',`${data.sizes.length} / 20`,data.sizes.length===20],
           ['Constructions',`${data.constructions.length} / 44`,data.constructions.length===44],
           ['Quoteable sizes',String(quoteableSizes),quoteableSizes>0],
-          ['Missing Master rates',String(missingRates),missingRates===0],
+          ['Missing v5 rates',String(missingRates),missingRates===0],
         ].map(([label,value,ok])=><div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-xs font-bold text-slate-500">{label}</p><p className="mt-2 text-2xl font-black text-slate-950">{value}</p><div className="mt-2"><Pill tone={ok?'green':'amber'}>{ok?'Ready':'Needs attention'}</Pill></div></div>)}
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-black text-slate-950">Safe rollout state</h2>
         <div className="mt-3 grid gap-2 text-sm text-slate-600 md:grid-cols-2">
-          <p>• Existing v4 pricing engine and quote routing remain unchanged.</p>
+          <p>• Existing v4 pricing engine, rates and quote routing remain unchanged.</p>
           <p>• Pricing v5 feature flag starts disabled at 0% rollout.</p>
-          <p>• New workbook sizes and constructions live in v5-only tables.</p>
+          <p>• New workbook sizes, constructions and rate overrides live in v5-only tables.</p>
           <p>• Publishing validates quoteable records before activating the v5 template.</p>
         </div>
         {data.template&&<form action={publishPackagingTemplateV5} className="mt-4 border-t border-slate-100 pt-4">
@@ -109,8 +109,9 @@ export default function PricingV5AdminWorkspace({data}:Props){
     </div>}
 
     {tab==='Materials & Processes'&&<div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <div className="grid grid-cols-[1.5fr_.8fr_.8fr_auto] gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase text-slate-500"><span>Component</span><span>Basis</span><span>Rate</span><span/></div>
-      {data.costs.map((cost)=><form action={savePackagingMasterRateV5} key={cost.id} className="grid grid-cols-[1.5fr_.8fr_.8fr_auto] items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-0"><input type="hidden" name="id" value={cost.id}/><div><p className="text-sm font-black text-slate-900">{cost.name}</p><p className="text-[10px] font-bold text-slate-400">{cost.code}</p></div><span className="text-xs text-slate-500">{cost.rate_basis}</span><input className={input} name="current_rate" defaultValue={cost.current_rate??''} placeholder="Rate required"/><button className={btn}>Save</button></form>)}
+      <div className="border-b border-cyan-100 bg-cyan-50 px-4 py-3 text-xs font-bold text-cyan-800">These are Pricing v5 rate overrides. Saving here does not overwrite the shared v4 Cost Master rate.</div>
+      <div className="grid grid-cols-[1.5fr_.8fr_.8fr_auto] gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase text-slate-500"><span>Component</span><span>Basis</span><span>V5 rate</span><span/></div>
+      {data.costs.map((cost)=><form action={savePackagingMasterRateV5} key={cost.id} className="grid grid-cols-[1.5fr_.8fr_.8fr_auto] items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-0"><input type="hidden" name="id" value={cost.id}/><input type="hidden" name="template_id" value={data.template?.id??''}/><div><p className="text-sm font-black text-slate-900">{cost.name}</p><p className="text-[10px] font-bold text-slate-400">{cost.code}</p></div><span className="text-xs text-slate-500">{cost.rate_basis}</span><input className={input} name="current_rate" defaultValue={cost.current_rate??''} placeholder="Rate required"/><button className={btn}>Save v5 rate</button></form>)}
     </div>}
 
     {tab==='Commercial Buckets'&&<div className="grid gap-4 xl:grid-cols-2">
