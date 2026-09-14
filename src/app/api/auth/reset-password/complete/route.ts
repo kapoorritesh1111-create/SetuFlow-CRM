@@ -42,18 +42,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 });
   }
 
-  const nextAppMetadata = { ...(user.app_metadata ?? {}) } as Record<string, unknown>;
-  delete nextAppMetadata.force_password_change;
-  delete nextAppMetadata.force_password_change_org_id;
-  delete nextAppMetadata.temporary_password_issued_at;
-
+  // Supabase merges app_metadata on update rather than removing omitted keys.
+  // Explicitly null the forced-change fields so a completed reset cannot loop.
   const { error: metadataError } = await admin.auth.admin.updateUserById(user.id, {
-    app_metadata: nextAppMetadata,
+    app_metadata: {
+      force_password_change: null,
+      force_password_change_org_id: null,
+      temporary_password_issued_at: null,
+    },
   });
 
   if (metadataError) {
     return NextResponse.json(
       { ok: false, error: 'Password changed, but first-login completion could not be recorded.' },
+      { status: 500 },
+    );
+  }
+
+  const refreshedUserResult = await admin.auth.admin.getUserById(user.id);
+  const refreshedMetadata = refreshedUserResult.data.user?.app_metadata ?? {};
+  if (refreshedMetadata.force_password_change === true) {
+    return NextResponse.json(
+      { ok: false, error: 'Password changed, but first-login completion could not be verified.' },
       { status: 500 },
     );
   }
