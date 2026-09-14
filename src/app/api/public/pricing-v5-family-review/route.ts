@@ -6,6 +6,11 @@ export const dynamic = 'force-dynamic';
 
 const STARK_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const DEFAULT_REVIEW_QUANTITIES = [500, 1000, 2000, 5000, 10000] as const;
+const REVIEW_BASELINE_SLUGS = [
+  'stark-center-seal-matrix-v4',
+  'stark-3ss-roll-matrix-v4',
+  'stark-3ss-pouch-matrix-v4',
+] as const;
 
 const FAMILY_KEYS = {
   flat_bottom: 'Flat Bottom Pouches',
@@ -53,7 +58,12 @@ export async function GET(request: NextRequest) {
   if (!admin) return NextResponse.json({ ok: false, error: 'service_unavailable' }, { status: 503 });
 
   try {
-    const [{ data: families, error: familyError }, { data: templates, error: templateError }, { data: matrixRows, error: matrixError }] = await Promise.all([
+    const [
+      { data: families, error: familyError },
+      { data: activeTemplates, error: activeTemplateError },
+      { data: reviewTemplates, error: reviewTemplateError },
+      { data: matrixRows, error: matrixError },
+    ] = await Promise.all([
       (admin as any)
         .from('packaging_service_families')
         .select('id,name,slug,pricing_mode,is_active,is_quoteable')
@@ -66,6 +76,12 @@ export async function GET(request: NextRequest) {
         .eq('is_active', true)
         .order('name'),
       (admin as any)
+        .from('packaging_pricing_templates')
+        .select('id,name,slug,status,is_active,calculation_engine_key,currency,family_id')
+        .eq('organization_id', STARK_ORG_ID)
+        .in('slug', [...REVIEW_BASELINE_SLUGS])
+        .order('name'),
+      (admin as any)
         .from('packaging_pricing_matrix_rows')
         .select('id,template_id,supply_form,construction_key,width_mm,height_mm,q1_rate_per_frame,q2_rate_per_frame,q3_rate_per_frame,q4_rate_per_frame,q5_rate_per_frame')
         .eq('organization_id', STARK_ORG_ID)
@@ -73,12 +89,13 @@ export async function GET(request: NextRequest) {
         .order('height_mm'),
     ]);
 
-    if (familyError || templateError || matrixError) {
+    if (familyError || activeTemplateError || reviewTemplateError || matrixError) {
       return NextResponse.json({ ok: false, error: 'family_review_unavailable' }, { status: 503 });
     }
 
     const familyList = Array.isArray(families) ? families : [];
-    const templateList = (Array.isArray(templates) ? templates : []) as TemplateRow[];
+    const activeTemplateList = (Array.isArray(activeTemplates) ? activeTemplates : []) as TemplateRow[];
+    const reviewTemplateList = (Array.isArray(reviewTemplates) ? reviewTemplates : []) as TemplateRow[];
     const rowList = (Array.isArray(matrixRows) ? matrixRows : []) as MatrixRow[];
 
     const compactTemplate = (template: TemplateRow) => {
@@ -86,9 +103,12 @@ export async function GET(request: NextRequest) {
       return {
         id: template.id,
         name: template.name,
+        slug: template.slug,
         status: template.status,
+        is_active: template.is_active,
         engine: template.calculation_engine_key,
         currency: template.currency,
+        review_source: 'v4_migration_baseline',
         quantities: [...DEFAULT_REVIEW_QUANTITIES],
         row_count: rows.length,
         rows: rows.map((row) => ({
@@ -102,10 +122,10 @@ export async function GET(request: NextRequest) {
       };
     };
 
-    const findTemplate = (needle: string) => templateList.find((template) => template.name.toLowerCase().includes(needle));
-    const centerSeal = findTemplate('center seal workbook');
-    const threeRoll = findTemplate('3ss roll form');
-    const threePouch = findTemplate('3ss pouch form');
+    const reviewTemplateBySlug = (slug: string) => reviewTemplateList.find((template) => template.slug === slug);
+    const centerSeal = reviewTemplateBySlug('stark-center-seal-matrix-v4');
+    const threeRoll = reviewTemplateBySlug('stark-3ss-roll-matrix-v4');
+    const threePouch = reviewTemplateBySlug('stark-3ss-pouch-matrix-v4');
     const flatFamily = familyList.find((family: any) => String(family.name).toLowerCase().includes('flat bottom'));
 
     const result = {
@@ -122,35 +142,36 @@ export async function GET(request: NextRequest) {
         name: FAMILY_KEYS.center_seal_roll,
         state: centerSeal ? 'published_baseline' : 'missing',
         template: centerSeal ? compactTemplate(centerSeal) : null,
-        clarification: 'Current Stark Center Seal workbook is one shared matrix baseline and does not yet separate Roll Form from Pouch Form. Review it now, then confirm the v5 migration split and geometry.',
+        clarification: 'Current Stark Center Seal v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing. Review it now, then confirm the v5 Roll Form/Pouch Form split and geometry.',
       },
       center_seal_pouch: {
         key: 'center_seal_pouch',
         name: FAMILY_KEYS.center_seal_pouch,
         state: centerSeal ? 'published_baseline' : 'missing',
         template: centerSeal ? compactTemplate(centerSeal) : null,
-        clarification: 'Current Stark Center Seal workbook is one shared matrix baseline and does not yet separate Roll Form from Pouch Form. Review it now, then confirm the v5 migration split and geometry.',
+        clarification: 'Current Stark Center Seal v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing. Review it now, then confirm the v5 Roll Form/Pouch Form split and geometry.',
       },
       three_side_seal_roll: {
         key: 'three_side_seal_roll',
         name: FAMILY_KEYS.three_side_seal_roll,
         state: threeRoll ? 'published_baseline' : 'missing',
         template: threeRoll ? compactTemplate(threeRoll) : null,
-        clarification: 'This is the current published workbook/matrix baseline for migration review. It is not yet the detailed v5 formula engine.',
+        clarification: 'Current Stark 3SS Roll Form v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing.',
       },
       three_side_seal_pouch: {
         key: 'three_side_seal_pouch',
         name: FAMILY_KEYS.three_side_seal_pouch,
         state: threePouch ? 'published_baseline' : 'missing',
         template: threePouch ? compactTemplate(threePouch) : null,
-        clarification: 'This is the current published workbook/matrix baseline for migration review. It is not yet the detailed v5 formula engine.',
+        clarification: 'Current Stark 3SS Pouch Form v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing.',
       },
     };
 
     return NextResponse.json({
       ok: true,
       source: 'stark_production_configuration',
-      note: 'Matrix rates are the current published workbook baseline and are shown for owner review only. Flat Bottom has no configured pricing and no price is fabricated.',
+      note: 'Active pricing templates are left unchanged. Inactive v4 workbook matrices are exposed here only as migration-review baselines. Flat Bottom has no configured pricing and no price is fabricated.',
+      active_template_count: activeTemplateList.length,
       families: result,
       configured_family_count: Object.values(result).filter((item) => item.state === 'published_baseline').length,
     }, { headers: { 'Cache-Control': 'private, no-store' } });
