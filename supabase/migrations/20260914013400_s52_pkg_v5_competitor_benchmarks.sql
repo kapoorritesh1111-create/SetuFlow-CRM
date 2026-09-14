@@ -24,7 +24,7 @@ create table if not exists public.packaging_pricing_competitor_benchmarks_v5 (
   constraint packaging_pricing_comp_benchmark_size_org_fkey foreign key (organization_id,size_profile_id)
     references public.packaging_size_profiles_v5(organization_id,id) on delete cascade,
   constraint packaging_pricing_comp_benchmark_construction_org_fkey foreign key (organization_id,construction_id)
-    references public.packaging_constructions_v5(organization_id,id) on delete set null,
+    references public.packaging_constructions_v5(organization_id,id) on delete set null (construction_id),
   unique (organization_id,id)
 );
 
