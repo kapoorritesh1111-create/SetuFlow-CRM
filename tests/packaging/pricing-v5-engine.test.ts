@@ -9,6 +9,13 @@ const master = (id:string,code:string,name:string,type:'material'|'process',basi
 });
 
 const bands:any[] = [
+  {pricing_bucket:2,run_length_max_m:250,wastage_pct:25,margin_per_frame:70,sort_order:1},
+  {pricing_bucket:2,run_length_max_m:500,wastage_pct:20,margin_per_frame:70,sort_order:2},
+  {pricing_bucket:2,run_length_max_m:1000,wastage_pct:10,margin_per_frame:60,sort_order:3},
+  {pricing_bucket:2,run_length_max_m:2000,wastage_pct:8,margin_per_frame:50,sort_order:4},
+  {pricing_bucket:2,run_length_max_m:3000,wastage_pct:7,margin_per_frame:40,sort_order:5},
+  {pricing_bucket:2,run_length_max_m:5000,wastage_pct:6,margin_per_frame:30,sort_order:6},
+  {pricing_bucket:2,run_length_max_m:10000,wastage_pct:5,margin_per_frame:25,sort_order:7},
   {pricing_bucket:3,run_length_max_m:250,wastage_pct:25,margin_per_frame:35,sort_order:1},
   {pricing_bucket:3,run_length_max_m:500,wastage_pct:20,margin_per_frame:35,sort_order:2},
   {pricing_bucket:3,run_length_max_m:1000,wastage_pct:10,margin_per_frame:25,sort_order:3},
@@ -16,13 +23,20 @@ const bands:any[] = [
   {pricing_bucket:3,run_length_max_m:3000,wastage_pct:7,margin_per_frame:17,sort_order:5},
   {pricing_bucket:3,run_length_max_m:5000,wastage_pct:6,margin_per_frame:15,sort_order:6},
   {pricing_bucket:3,run_length_max_m:10000,wastage_pct:5,margin_per_frame:13,sort_order:7},
+  {pricing_bucket:5,run_length_max_m:250,wastage_pct:25,margin_per_frame:35,sort_order:1},
+  {pricing_bucket:5,run_length_max_m:500,wastage_pct:20,margin_per_frame:35,sort_order:2},
+  {pricing_bucket:5,run_length_max_m:1000,wastage_pct:10,margin_per_frame:25,sort_order:3},
+  {pricing_bucket:5,run_length_max_m:2000,wastage_pct:8,margin_per_frame:20,sort_order:4},
+  {pricing_bucket:5,run_length_max_m:3000,wastage_pct:7,margin_per_frame:17,sort_order:5},
+  {pricing_bucket:5,run_length_max_m:5000,wastage_pct:6,margin_per_frame:15,sort_order:6},
+  {pricing_bucket:5,run_length_max_m:10000,wastage_pct:5,margin_per_frame:13,sort_order:7},
 ];
 
 const base: PricingContextV5 = {
   template:{
     id:'tpl-v5',family_id:'sup',name:'Stark SUP Formula v5',currency:'INR',calculation_version:5,calculation_engine_key:'sup_formula_v5',status:'draft',
     production_rules_json:{
-      machine_width_mm:740,machine_length_mm:1120,trim_allowance_mm:20,outer_print_web_mm:760,
+      machine_width_mm:740,machine_length_mm:1120,trim_allowance_mm:20,gusset_trim_allowance_mm:3,outer_print_web_mm:760,
       inner_web_ladder:[{required_max_mm:585,stock_web_mm:590},{required_max_mm:660,stock_web_mm:670},{stock_web_mm:770}],
       pe_web_ladder:[{required_max_mm:590,stock_web_mm:595},{required_max_mm:660,stock_web_mm:675},{stock_web_mm:775}],
       lamination_rate_by_layer_count:{'3':5,'4':7.5},
@@ -112,9 +126,73 @@ test('S52-PKG-V5: alternative quantities are independently recalculated',()=>{
   assert.notEqual(q20.unit_price,q5.unit_price);
 });
 
-test('S52-PKG-V5: split/conditional profiles remain fail-closed until production-router batch',()=>{
-  const context:PricingContextV5={...base,sizeProfiles:[{...base.sizeProfiles[0],id:'large',name:'260 x 340',width_mm:260,height_mm:340,bottom_gusset_each_mm:60,pricing_bucket:5,gusset_production_mode:'separate',production_profile_key:'sup_split_gusset_large'}]};
+test('S52-PKG-V5: 260x340 uses separate gusset and inherits the main commercial band',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'large',size_key:'260x340_bg60_60',name:'260 x 340',width_mm:260,height_mm:340,bottom_gusset_each_mm:60,
+    pricing_bucket:5,gusset_production_mode:'separate',production_profile_key:'sup_split_gusset_large',bottom_registration_mode:'not_applicable',
+  }]};
   const result=calculateSupFormulaV5(context,{size_profile_id:'large',construction_id:'c3',print:'CMYKW',quantity:5000});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components.length,2);
+  const body=result.production_route.components.find((item)=>item.key==='main_body')!;
+  const gusset=result.production_route.components.find((item)=>item.key==='bottom_gusset')!;
+  assert.equal(body.web_width_mm,700);
+  assert.equal(body.lanes_across,1);
+  assert.equal(body.repeats_along,4);
+  assert.equal(body.units_per_frame,4);
+  assert.ok(Math.abs(body.run_length_m-1300)<1e-8);
+  assert.equal(gusset.web_width_mm,123);
+  assert.equal(gusset.lanes_across,6);
+  assert.equal(gusset.repeats_along,4);
+  assert.equal(gusset.units_per_frame,24);
+  assert.equal(gusset.apply_pouching,false);
+  assert.equal(gusset.apply_margin,false);
+  assert.equal(gusset.commercial_band_source,'parent');
+  assert.equal(result.commercial_rules.band_max_m,2000);
+  assert.equal(result.commercial_rules.wastage_pct,8);
+  assert.equal(result.commercial_rules.margin_per_frame,20);
+});
+
+test('S52-PKG-V5: 110x170 solid bottom selects split 20-up body route',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'small',size_key:'110x170_bg30_30',name:'110 x 170',width_mm:110,height_mm:170,bottom_gusset_each_mm:30,
+    pricing_bucket:2,gusset_production_mode:'conditional',production_profile_key:'sup_110x170_conditional',bottom_registration_mode:'optional',
+  }]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'small',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'solid_unregistered'});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  const body=result.production_route.components.find((item)=>item.key==='main_body')!;
+  const gusset=result.production_route.components.find((item)=>item.key==='bottom_gusset')!;
+  assert.equal(body.web_width_mm,360);
+  assert.equal(body.lanes_across,2);
+  assert.equal(body.repeats_along,10);
+  assert.equal(body.units_per_frame,20);
+  assert.equal(gusset.web_width_mm,63);
+  assert.equal(gusset.lanes_across,11);
+  assert.equal(gusset.repeats_along,10);
+  assert.equal(gusset.units_per_frame,110);
+});
+
+test('S52-PKG-V5: 110x170 registered artwork selects integrated 10-up route',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'small',size_key:'110x170_bg30_30',name:'110 x 170',width_mm:110,height_mm:170,bottom_gusset_each_mm:30,
+    pricing_bucket:2,gusset_production_mode:'conditional',production_profile_key:'sup_110x170_conditional',bottom_registration_mode:'optional',
+  }]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'small',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'registered_artwork'});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components.length,1);
+  const body=result.production_route.components[0];
+  assert.equal(body.web_width_mm,420);
+  assert.equal(body.lanes_across,1);
+  assert.equal(body.repeats_along,10);
+  assert.equal(body.units_per_frame,10);
+});
+
+test('S52-PKG-V5: conditional size fails closed until bottom-print choice is supplied',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'small',size_key:'110x170_bg30_30',name:'110 x 170',width_mm:110,height_mm:170,bottom_gusset_each_mm:30,
+    pricing_bucket:2,gusset_production_mode:'conditional',production_profile_key:'sup_110x170_conditional',bottom_registration_mode:'optional',
+  }]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'small',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,false);
-  assert.match(result.validation_errors.join(' '),/split\/conditional production router/i);
+  assert.match(result.validation_errors.join(' '),/bottom-print selection/i);
 });
