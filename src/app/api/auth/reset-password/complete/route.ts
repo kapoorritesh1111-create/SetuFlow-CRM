@@ -22,15 +22,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const cookieUserResult = await supabase.auth.getUser();
-  let user = cookieUserResult.data.user;
+  // The reset-password client explicitly sends the recovery session access token.
+  // Prefer that identity over any stale browser cookie that may belong to a
+  // different account on the same device/browser.
+  const bearerToken = getBearerToken(request);
+  let user = null;
+
+  if (bearerToken) {
+    const bearerUserResult = await admin.auth.getUser(bearerToken);
+    user = bearerUserResult.data.user;
+  }
 
   if (!user) {
-    const bearerToken = getBearerToken(request);
-    if (bearerToken) {
-      const bearerUserResult = await admin.auth.getUser(bearerToken);
-      user = bearerUserResult.data.user;
-    }
+    const cookieUserResult = await supabase.auth.getUser();
+    user = cookieUserResult.data.user;
   }
 
   if (!user) {
