@@ -29,7 +29,7 @@ function requireMaster(context: PricingContextV5, code: string, errors: string[]
 function selectedCharges(context: PricingContextV5, codes: string[], errors: string[]): ChargeMasterRateV5[] {
   const unique=[...new Set(codes.filter(Boolean))];
   return unique.map((code)=>{
-    const charge=context.charges.find((item)=>item.code===code)??null;
+    const charge=(context.charges ?? []).find((item)=>item.code===code)??null;
     if(!charge){errors.push(`${code} is not configured in Charge Master.`);return null;}
     if(charge.current_rate==null) errors.push(`${charge.name} needs a rate before it can be quoted.`);
     if(!charge.basis||!charge.application_stage) errors.push(`${charge.name} needs a pricing basis and application stage.`);
