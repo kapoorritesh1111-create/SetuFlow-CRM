@@ -11,13 +11,14 @@ begin
   select id into v_sup from public.packaging_service_families where organization_id=v_org and slug='standup-pouches';
   if v_sup is null then raise exception 'Stand Up Pouches family is required before Pricing v5 can be seeded.'; end if;
 
-  -- Satin Matt and Velvet are genuinely new workbook materials. HoloPET already
-  -- exists in the shared v4 Cost Master and is deliberately reused by v5.
+  -- Satin Matt and Velvet are genuinely new workbook materials. Their v5 commercial
+  -- rates/physical values are applied later through version-scoped v5 overrides.
+  -- HoloPET already exists in the shared v4 Cost Master and is deliberately reused.
   insert into public.packaging_cost_master_items
     (organization_id,code,name,item_type,specification,rate_basis,current_rate,rate_uom,currency,micron,gsm,density,metadata)
   values
-    (v_org,'MAT_SATIN_MATT_PET_12','12 Satin Matt PET','material','12 micron Satin Matt PET','per_kg',null,'kg','INR',12,null,1.4,'{"rate_status":"required","pricing_v5_source":"SUP quote model (2).xlsx"}'::jsonb),
-    (v_org,'MAT_VELVET_PET_15','15 Velvet PET','material','15 micron Velvet Touch PET','per_kg',null,'kg','INR',15,null,1.4,'{"rate_status":"required","pricing_v5_source":"SUP quote model (2).xlsx"}'::jsonb)
+    (v_org,'MAT_SATIN_MATT_PET_12','12 Satin Matt PET','material','12 micron Satin Matt PET','per_kg',null,'kg','INR',12,null,1.4,'{"pricing_v5_rate_source":"version_scoped_override","pricing_v5_source":"SUP quote model (2).xlsx"}'::jsonb),
+    (v_org,'MAT_VELVET_PET_15','15 Velvet PET','material','15 micron Velvet Touch PET','per_kg',null,'kg','INR',15,null,1.4,'{"pricing_v5_rate_source":"version_scoped_override","pricing_v5_source":"SUP quote model (2).xlsx"}'::jsonb)
   on conflict(organization_id,code) do nothing;
 
   insert into public.packaging_pricing_templates
