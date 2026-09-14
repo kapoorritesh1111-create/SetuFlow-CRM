@@ -144,7 +144,7 @@ export type PricingContextV5 = {
   constructions: ConstructionV5[];
   constructionLayers: ConstructionLayerV5[];
   masters: CostMasterRateV5[];
-  charges: ChargeMasterRateV5[];
+  charges?: ChargeMasterRateV5[];
   bands: CommercialBandV5[];
 };
 
