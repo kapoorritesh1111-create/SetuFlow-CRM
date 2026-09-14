@@ -13,7 +13,7 @@ export async function isPackagingPricingV5EnabledForOrg(organizationId:string){
 }
 
 export async function listSalesPackagingPricingV5Options(organizationId:string){
-  const empty={families:[],templates:[],sizes:[],constructions:[],klds:[]};
+  const empty={families:[],templates:[],sizes:[],constructions:[],klds:[],charges:[]};
   const db:any=createServiceRoleClient();
   if(!db) return empty;
   const {data:templates,error}=await db.from('packaging_pricing_templates')
@@ -35,5 +35,8 @@ export async function listSalesPackagingPricingV5Options(organizationId:string){
     if(!resolved||resolved.validation_errors.length) return null;
     return {id:item.id,name:item.name,construction_family_key:item.construction_family_key,finish_type:item.finish_type,barrier_type:item.barrier_type,sealant_code:item.sealant_code,layer_count:item.layer_count,structure_label:resolved.structure_label};
   }).filter(Boolean);
-  return {families:families??[],templates,sizes,constructions,klds:klds??[]};
+  const charges=(context.charges??[])
+    .filter((item)=>item.current_rate!=null&&item.basis&&item.application_stage&&item.application_stage!=='separate_quote_line')
+    .map((item)=>({code:item.code,name:item.name,category:item.category,application_stage:item.application_stage}));
+  return {families:families??[],templates,sizes,constructions,klds:klds??[],charges};
 }
