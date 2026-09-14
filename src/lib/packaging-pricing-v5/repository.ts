@@ -29,7 +29,7 @@ export async function loadPricingContextV5(
   if (templateError) throw new Error(templateError.message);
   if (!template?.id) throw new Error(options.publishedOnly ? 'Published Pricing v5 template was not found.' : 'Pricing v5 template was not found.');
 
-  const [sizes, constructions, layers, masters, charges, chargeLinks, bands] = await Promise.all([
+  const [sizes, constructions, layers, masters, costRates, charges, chargeRates, chargeLinks, bands] = await Promise.all([
     db.from('packaging_size_profiles_v5')
       .select('id,organization_id,family_id,size_key,name,width_mm,height_mm,bottom_gusset_each_mm,pricing_bucket,production_profile_key,gusset_production_mode,bottom_registration_mode,is_active,is_quoteable,sort_order,metadata')
       .eq('organization_id',organizationId).eq('family_id',template.family_id).eq('is_active',true).order('sort_order'),
@@ -40,11 +40,17 @@ export async function loadPricingContextV5(
       .select('id,construction_id,layer_position,role_key,cost_master_item_id,is_print_layer,is_sealant_layer')
       .eq('organization_id',organizationId).order('layer_position'),
     db.from('packaging_cost_master_items')
-      .select('id,code,name,item_type,rate_basis,current_rate,rate_uom,currency,micron,gsm,density,metadata')
+      .select('id,code,name,item_type,rate_basis,rate_uom,currency,micron,gsm,density,metadata')
       .eq('organization_id',organizationId).eq('is_active',true),
+    db.from('packaging_pricing_cost_rates_v5')
+      .select('cost_master_item_id,current_rate,metadata')
+      .eq('organization_id',organizationId).eq('template_id',template.id),
     db.from('packaging_charge_master_items')
-      .select('id,code,name,category,basis,application_stage,current_rate,currency,metadata')
+      .select('id,code,name,category,basis,application_stage,currency,metadata')
       .eq('organization_id',organizationId).eq('is_active',true),
+    db.from('packaging_pricing_charge_rates_v5')
+      .select('charge_master_item_id,current_rate,metadata')
+      .eq('organization_id',organizationId).eq('template_id',template.id),
     db.from('packaging_charge_master_family_links')
       .select('charge_master_item_id,family_id')
       .eq('organization_id',organizationId).eq('family_id',template.family_id),
@@ -53,20 +59,35 @@ export async function loadPricingContextV5(
       .eq('organization_id',organizationId).eq('template_id',template.id).order('pricing_bucket').order('run_length_max_m'),
   ]);
 
-  for (const result of [sizes,constructions,layers,masters,charges,chargeLinks,bands]) {
+  for (const result of [sizes,constructions,layers,masters,costRates,charges,chargeRates,chargeLinks,bands]) {
     if (result.error) throw new Error(result.error.message);
   }
 
   const constructionIds = new Set((constructions.data ?? []).map((item:any)=>item.id));
   const familyChargeIds = new Set((chargeLinks.data ?? []).map((item:any)=>String(item.charge_master_item_id)));
+  const costRateById = new Map((costRates.data ?? []).map((item:any)=>[String(item.cost_master_item_id), item.current_rate]));
+  const chargeRateById = new Map((chargeRates.data ?? []).map((item:any)=>[String(item.charge_master_item_id), item.current_rate]));
 
   return {
     template: template as PricingTemplateV5,
     sizeProfiles: (sizes.data ?? []).map((item:any)=>({ ...item, width_mm:Number(item.width_mm), height_mm:Number(item.height_mm), bottom_gusset_each_mm:Number(item.bottom_gusset_each_mm), pricing_bucket:Number(item.pricing_bucket) })) as SizeProfileV5[],
     constructions: (constructions.data ?? []).map((item:any)=>({ ...item, layer_count:Number(item.layer_count) })) as ConstructionV5[],
     constructionLayers: (layers.data ?? []).filter((item:any)=>constructionIds.has(item.construction_id)).map((item:any)=>({ ...item, layer_position:Number(item.layer_position) })) as ConstructionLayerV5[],
-    masters: (masters.data ?? []).map((item:any)=>({ ...item, current_rate:item.current_rate==null?null:Number(item.current_rate), micron:item.micron==null?null:Number(item.micron), gsm:item.gsm==null?null:Number(item.gsm), density:item.density==null?null:Number(item.density) })) as CostMasterRateV5[],
-    charges: (charges.data ?? []).filter((item:any)=>familyChargeIds.has(String(item.id))).map((item:any)=>({ ...item, current_rate:item.current_rate==null?null:Number(item.current_rate) })) as ChargeMasterRateV5[],
+    masters: (masters.data ?? []).map((item:any)=>({
+      ...item,
+      current_rate: costRateById.has(String(item.id))
+        ? (costRateById.get(String(item.id))==null?null:Number(costRateById.get(String(item.id))))
+        : null,
+      micron:item.micron==null?null:Number(item.micron),
+      gsm:item.gsm==null?null:Number(item.gsm),
+      density:item.density==null?null:Number(item.density),
+    })) as CostMasterRateV5[],
+    charges: (charges.data ?? []).filter((item:any)=>familyChargeIds.has(String(item.id))).map((item:any)=>({
+      ...item,
+      current_rate: chargeRateById.has(String(item.id))
+        ? (chargeRateById.get(String(item.id))==null?null:Number(chargeRateById.get(String(item.id))))
+        : null,
+    })) as ChargeMasterRateV5[],
     bands: (bands.data ?? []).map((item:any)=>({ ...item, pricing_bucket:Number(item.pricing_bucket), run_length_max_m:Number(item.run_length_max_m), wastage_pct:Number(item.wastage_pct), margin_per_frame:Number(item.margin_per_frame), sort_order:Number(item.sort_order) })) as CommercialBandV5[],
   };
 }
