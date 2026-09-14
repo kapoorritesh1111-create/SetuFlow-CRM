@@ -6,12 +6,16 @@ const schema=fs.readFileSync('supabase/migrations/20260914013000_s52_pkg_v5_sche
 const rateOverrides=fs.readFileSync('supabase/migrations/20260914013050_s52_pkg_v5_rate_overrides.sql','utf8');
 const templateScope=fs.readFileSync('supabase/migrations/20260914013500_s52_pkg_v5_template_scoped_structures.sql','utf8');
 const quoteIntegrity=fs.readFileSync('supabase/migrations/20260914013600_s52_pkg_v5_quote_template_integrity.sql','utf8');
+const benchmarkScope=fs.readFileSync('supabase/migrations/20260914013610_s52_pkg_v5_benchmark_revision_scope.sql','utf8');
 const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5_quote_persistence.sql','utf8');
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
+const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts','utf8');
 const adminActions=fs.readFileSync('src/features/packaging/server/pricing-v5-admin-actions.ts','utf8');
+const matrixActions=fs.readFileSync('src/features/packaging/server/pricing-v5-matrix-actions.ts','utf8');
 const adminWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-admin-workspace.tsx','utf8');
+const matrixWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-price-matrix.tsx','utf8');
 const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
 
 test('S52-PKG-V5: v5 uses isolated tables and a separate disabled feature flag',()=>{
@@ -47,6 +51,17 @@ test('S52-PKG-V5: quote lines cannot mix a size from a different template revisi
   assert.match(quoteIntegrity,/s\.template_id=new\.packaging_template_id/);
   assert.match(quoteIntegrity,/s\.family_id=new\.packaging_family_id/);
   assert.match(quoteIntegrity,/before insert or update of packaging_template_id,packaging_size_profile_v5_id,packaging_family_id,calculation_version/i);
+});
+
+test('S52-PKG-V5: competitor benchmarks stay with the exact pricing revision',()=>{
+  assert.match(benchmarkScope,/add column if not exists template_id uuid/i);
+  assert.match(benchmarkScope,/guard_packaging_v5_benchmark_revision/);
+  assert.match(benchmarkScope,/s\.template_id=new\.template_id/);
+  assert.match(benchmarkScope,/c\.template_id=new\.template_id/);
+  assert.match(matrixActions,/template_id:templateId/);
+  assert.match(matrixActions,/loadPricingContextV5\(organization\.id,templateId\)/);
+  assert.match(matrixPage,/\.eq\('template_id',template\.id\)/);
+  assert.match(matrixWorkspace,/name="template_id" value=\{template\.id\}/);
 });
 
 test('S52-PKG-V5: published templates are immutable and can be cloned into a new draft revision',()=>{
