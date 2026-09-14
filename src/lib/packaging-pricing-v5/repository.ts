@@ -74,25 +74,16 @@ export async function loadPricingContextV5(
     constructions: (constructions.data ?? []).map((item:any)=>({ ...item, layer_count:Number(item.layer_count) })) as ConstructionV5[],
     constructionLayers: (layers.data ?? []).filter((item:any)=>constructionIds.has(item.construction_id)).map((item:any)=>({ ...item, layer_position:Number(item.layer_position) })) as ConstructionLayerV5[],
     masters: (masters.data ?? []).map((item:any)=>{
-      const override:any=costRateById.get(String(item.id))??null;
+      const override:any = costRateById.get(String(item.id)) ?? null;
       return {
         ...item,
         current_rate: override
           ? (override.current_rate==null?null:Number(override.current_rate))
           : null,
-        micron: override?.micron_override!=null
-          ? Number(override.micron_override)
-          : (item.micron==null?null:Number(item.micron)),
-        gsm: override?.gsm_override!=null
-          ? Number(override.gsm_override)
-          : (item.gsm==null?null:Number(item.gsm)),
-        density: override?.density_override!=null
-          ? Number(override.density_override)
-          : (item.density==null?null:Number(item.density)),
-        metadata: {
-          ...(item.metadata && typeof item.metadata==='object' ? item.metadata : {}),
-          ...(override?.metadata && typeof override.metadata==='object' ? override.metadata : {}),
-        },
+        micron: override?.micron_override != null ? Number(override.micron_override) : (item.micron==null?null:Number(item.micron)),
+        gsm: override?.gsm_override != null ? Number(override.gsm_override) : (item.gsm==null?null:Number(item.gsm)),
+        density: override?.density_override != null ? Number(override.density_override) : (item.density==null?null:Number(item.density)),
+        metadata: { ...(item.metadata ?? {}), ...(override?.metadata ?? {}) },
       };
     }) as CostMasterRateV5[],
     charges: (charges.data ?? []).filter((item:any)=>familyChargeIds.has(String(item.id))).map((item:any)=>({
