@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const schema=fs.readFileSync('supabase/migrations/20260914013000_s52_pkg_v5_schema.sql','utf8');
+const rateOverrides=fs.readFileSync('supabase/migrations/20260914013050_s52_pkg_v5_rate_overrides.sql','utf8');
 const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5_quote_persistence.sql','utf8');
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts','utf8');
+const adminActions=fs.readFileSync('src/features/packaging/server/pricing-v5-admin-actions.ts','utf8');
+const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
 
 test('S52-PKG-V5: v5 uses isolated tables and a separate disabled feature flag',()=>{
   assert.match(schema,/create table if not exists public\.packaging_size_profiles_v5/i);
@@ -15,6 +18,15 @@ test('S52-PKG-V5: v5 uses isolated tables and a separate disabled feature flag',
   assert.match(schema,/'packaging_pricing_v5'/);
   assert.match(schema,/false\s*,\s*0\s*,\s*array\['b97913cb-3b95-4247-8ced-ffdc0d392d2a'/i);
   assert.doesNotMatch(schema,/update\s+public\.smc_feature_flags[\s\S]*flag_key\s*=\s*'packaging_pricing_v4'/i);
+});
+
+test('S52-PKG-V5: v5 rate edits are version-scoped and cannot overwrite v4 masters',()=>{
+  assert.match(rateOverrides,/create table if not exists public\.packaging_pricing_cost_rates_v5/i);
+  assert.match(rateOverrides,/create table if not exists public\.packaging_pricing_charge_rates_v5/i);
+  assert.match(adminActions,/from\('packaging_pricing_cost_rates_v5'\)\.upsert/);
+  assert.doesNotMatch(adminActions,/from\('packaging_cost_master_items'\)\s*\.update\(\{current_rate/);
+  assert.match(repository,/from\('packaging_pricing_cost_rates_v5'\)/);
+  assert.match(repository,/from\('packaging_pricing_charge_rates_v5'\)/);
 });
 
 test('S52-PKG-V5: v5 quote persistence has its own atomic RPC and snapshot namespace',()=>{
