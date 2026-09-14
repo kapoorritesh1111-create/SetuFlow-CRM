@@ -1,0 +1,177 @@
+'use client';
+
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { previewPackagingPricingV5, savePackagingPricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-actions';
+
+function money(value:unknown,currency='INR'){
+  const amount=Number(value??0);
+  return `${currency} ${Number.isFinite(amount)?amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'0.00'}`;
+}
+
+export default function PricingV5SalesConfigurator({quoteId,leadId,options}:{quoteId:string;leadId:string;options:any}){
+  const router=useRouter();
+  const families=options?.families??[];
+  const templates=options?.templates??[];
+  const sizes=options?.sizes??[];
+  const constructions=options?.constructions??[];
+  const klds=options?.klds??[];
+  const charges=options?.charges??[];
+  const family=families[0]??null;
+  const template=templates[0]??null;
+  const [sizeId,setSizeId]=useState(sizes[0]?.id??'');
+  const [constructionId,setConstructionId]=useState(constructions[0]?.id??'');
+  const [print,setPrint]=useState<'CMYK'|'CMYKW'>('CMYKW');
+  const [quantity,setQuantity]=useState(5000);
+  const [bottomPrintMode,setBottomPrintMode]=useState<'solid_unregistered'|'registered_artwork'|''>('');
+  const [selectedChargeCodes,setSelectedChargeCodes]=useState<string[]>(()=>charges.some((item:any)=>item.code==='EXTRA_ZIPPER')?['EXTRA_ZIPPER']:[]);
+  const [kldFileId,setKldFileId]=useState('');
+  const [preview,setPreview]=useState<any>(null);
+  const [error,setError]=useState('');
+  const [saved,setSaved]=useState('');
+  const [pending,startTransition]=useTransition();
+
+  const size=sizes.find((item:any)=>item.id===sizeId)??sizes[0];
+  const construction=constructions.find((item:any)=>item.id===constructionId)??constructions[0];
+  const askBottomPrint=size?.bottom_registration_mode==='optional'&&size?.gusset_production_mode==='conditional';
+  const canPrice=Boolean(family?.id&&template?.id&&size?.id&&construction?.id&&quantity>0&&(!askBottomPrint||bottomPrintMode));
+  const currency=preview?.selling_price?.currency??template?.currency??'INR';
+
+  useEffect(()=>{
+    if(!sizes.some((item:any)=>item.id===sizeId)) setSizeId(sizes[0]?.id??'');
+    if(!constructions.some((item:any)=>item.id===constructionId)) setConstructionId(constructions[0]?.id??'');
+  },[sizes,constructions,sizeId,constructionId]);
+
+  useEffect(()=>{
+    if(!askBottomPrint) setBottomPrintMode('');
+    setPreview(null);setError('');setSaved('');
+  },[sizeId,askBottomPrint]);
+
+  const alternativeRows=useMemo(()=>preview?.alternative_quantities??[],[preview]);
+
+  function toggleCharge(code:string){
+    setSelectedChargeCodes((current)=>current.includes(code)?current.filter((item)=>item!==code):[...current,code]);
+    setPreview(null);setSaved('');
+  }
+
+  function buildInput(){
+    return {
+      size_profile_id:size?.id??'',
+      construction_id:construction?.id??'',
+      print,
+      quantity,
+      bottom_print_mode:askBottomPrint?bottomPrintMode||undefined:undefined,
+      selected_charge_codes:selectedChargeCodes,
+      kld_file_id:kldFileId||null,
+    } as any;
+  }
+
+  function runPreview(){
+    if(!canPrice) return;
+    setError('');setSaved('');
+    startTransition(async()=>{
+      const response:any=await previewPackagingPricingV5({templateId:template.id,input:buildInput()});
+      setPreview(response.result??null);
+      if(!response.ok) setError(response.error??'Pricing needs attention.');
+    });
+  }
+
+  function saveLine(){
+    if(!canPrice) return;
+    setError('');setSaved('');
+    startTransition(async()=>{
+      const response:any=await savePackagingPricingV5QuoteLine({quoteId,leadId,familyId:family.id,templateId:template.id,input:buildInput()});
+      if(!response.ok){setError(response.error??'Packaging line could not be saved.');return;}
+      setPreview(response.result??preview);
+      setSaved('Packaging line added to this quote.');
+      router.refresh();
+    });
+  }
+
+  if(!family||!template||!sizes.length||!constructions.length) return null;
+
+  return <section className="rounded-2xl border border-teal-200 bg-white p-4 shadow-sm">
+    <div className="flex flex-wrap items-start gap-3">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-700">Packaging Pricing v5</p>
+        <h2 className="mt-1 text-xl font-black text-slate-950">Build a stand-up pouch quote</h2>
+        <p className="mt-1 text-sm font-semibold text-slate-500">Choose the customer requirement. SETU resolves the material structure, production route and approved selling price on the server.</p>
+      </div>
+      <span className="ml-auto rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Published v5 pricing</span>
+    </div>
+
+    <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="text-xs font-black text-slate-600">Pouch size
+            <select value={size?.id??''} onChange={(e)=>setSizeId(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">
+              {sizes.map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Selected dimensions</div>
+            <div className="mt-1 text-sm font-black text-slate-800">{size?.width_mm} × {size?.height_mm} mm · BG {size?.bottom_gusset_each_mm}+{size?.bottom_gusset_each_mm}</div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="text-xs font-black text-slate-600">Material & finish
+            <select value={construction?.id??''} onChange={(e)=>{setConstructionId(e.target.value);setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">
+              {constructions.map((item:any)=><option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+          <label className="text-xs font-black text-slate-600">Printing
+            <select value={print} onChange={(e)=>{setPrint(e.target.value as 'CMYK'|'CMYKW');setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900"><option value="CMYK">CMYK</option><option value="CMYKW">CMYKW</option></select>
+          </label>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Structure selected automatically</div>
+          <div className="mt-1 text-sm font-black text-slate-800">{construction?.structure_label}</div>
+          <p className="mt-1 text-xs text-slate-500">{construction?.layer_count} layers · Sales cannot edit internal material rates or costing assumptions.</p>
+        </div>
+
+        {askBottomPrint?<div className="rounded-xl border border-cyan-200 bg-cyan-50/50 p-3">
+          <div className="text-xs font-black text-slate-700">Printing on the bottom gusset?</div>
+          <p className="mt-1 text-xs text-slate-500">This changes the production route for this pouch size.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <label className={`cursor-pointer rounded-xl border p-3 text-sm font-bold ${bottomPrintMode==='solid_unregistered'?'border-teal-500 bg-white text-teal-800':'border-slate-200 bg-white text-slate-700'}`}><input className="mr-2" type="radio" name="bottom-mode-v5" checked={bottomPrintMode==='solid_unregistered'} onChange={()=>{setBottomPrintMode('solid_unregistered');setPreview(null);}}/>Solid color only</label>
+            <label className={`cursor-pointer rounded-xl border p-3 text-sm font-bold ${bottomPrintMode==='registered_artwork'?'border-teal-500 bg-white text-teal-800':'border-slate-200 bg-white text-slate-700'}`}><input className="mr-2" type="radio" name="bottom-mode-v5" checked={bottomPrintMode==='registered_artwork'} onChange={()=>{setBottomPrintMode('registered_artwork');setPreview(null);}}/>Logo, text or artwork</label>
+          </div>
+        </div>:null}
+
+        {charges.length?<div className="rounded-xl border border-slate-200 p-3">
+          <div className="text-xs font-black text-slate-600">Features</div>
+          <div className="mt-2 grid gap-2 md:grid-cols-2">{charges.map((item:any)=><label key={item.code} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm font-bold text-slate-700"><input type="checkbox" checked={selectedChargeCodes.includes(item.code)} onChange={()=>toggleCharge(item.code)}/><span>{item.name}</span></label>)}</div>
+        </div>:null}
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="text-xs font-black text-slate-600">Quantity
+            <input type="number" min={1} value={quantity} onChange={(e)=>{setQuantity(Math.max(1,Number(e.target.value)));setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"/>
+          </label>
+          <label className="text-xs font-black text-slate-600">KLD / dieline
+            <select value={kldFileId} onChange={(e)=>setKldFileId(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold"><option value="">No KLD selected</option>{klds.map((item:any)=><option key={item.id} value={item.id}>{item.file_name}{item.version_label?` · ${item.version_label}`:''}</option>)}</select>
+          </label>
+        </div>
+
+        {!canPrice?<div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Complete the required selections before calculating the price.</div>:null}
+        {error?<div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div>:null}
+        {saved?<div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{saved}</div>:null}
+        <div className="flex flex-wrap gap-2"><button type="button" disabled={!canPrice||pending} onClick={runPreview} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40">{pending?'Calculating…':'Calculate price'}</button>{preview?.ok?<button type="button" disabled={pending} onClick={saveLine} className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-black text-white disabled:opacity-40">Add to quote</button>:null}</div>
+      </div>
+
+      <aside className="space-y-3">
+        <div className="rounded-2xl bg-slate-950 p-4 text-white">
+          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-300">Customer price</div>
+          {preview?.ok?<><div className="mt-3 text-3xl font-black">{money(preview.selling_price.unit_price,currency)}</div><div className="text-xs font-bold text-white/50">per pouch</div><div className="mt-4 border-t border-white/10 pt-3"><div className="flex justify-between text-xs text-white/60"><span>Order total</span><span className="font-black text-white">{money(preview.selling_price.product_total,currency)}</span></div><div className="mt-2 flex justify-between text-xs text-white/60"><span>GST</span><span>{money(preview.selling_price.gst,currency)}</span></div><div className="mt-2 flex justify-between text-xs text-white/60"><span>Total incl. GST</span><span className="font-black text-white">{money(preview.selling_price.grand_total_before_freight,currency)}</span></div></div></>:<div className="mt-3 text-sm font-bold text-white/55">Calculate to see the approved selling price.</div>}
+        </div>
+
+        {preview?.construction?<div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Quote summary</div><div className="mt-2 text-sm font-black text-slate-900">{preview.construction.name}</div><div className="mt-1 text-xs text-slate-500">{preview.construction.structure_label}</div>{preview.production_route?.components?.length>1?<div className="mt-2 rounded-lg bg-cyan-50 px-2.5 py-2 text-xs font-bold text-cyan-800">SETU automatically applied split-gusset production.</div>:null}</div>:null}
+
+        {alternativeRows.length?<div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Quantity options</div><div className="mt-2 space-y-2">{alternativeRows.map((row:any)=><div key={row.quantity} className={`rounded-lg border p-2.5 ${Number(row.quantity)===quantity?'border-teal-300 bg-teal-50':'border-slate-200'}`}><div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-slate-700">{Number(row.quantity).toLocaleString()} pcs</span><span className="text-xs font-black text-slate-950">{money(row.unit_price,currency)} / pc</span></div><div className="mt-1 text-[11px] text-slate-500">Order {money(row.product_total,currency)}</div></div>)}</div></div>:null}
+
+        {preview?.applied_charges?.length?<div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Selected features</div><div className="mt-2 space-y-1">{preview.applied_charges.map((item:any)=><div key={item.code} className="flex justify-between gap-2 text-xs text-slate-600"><span>{item.name}</span><span className="font-bold">Included</span></div>)}</div></div>:null}
+      </aside>
+    </div>
+  </section>;
+}

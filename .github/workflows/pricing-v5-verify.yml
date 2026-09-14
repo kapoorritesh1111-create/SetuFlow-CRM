@@ -1,0 +1,34 @@
+name: Pricing v5 Verify
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/packaging-pricing-v5/**'
+      - 'src/features/packaging/**pricing-v5**'
+      - 'src/app/(app)/admin/packaging-pricing-v5/**'
+      - 'src/app/(app)/leads/[leadId]/quote/page.tsx'
+      - 'supabase/migrations/*pkg_v5*'
+      - 'tests/packaging/pricing-v5-*.test.ts'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Packaging pricing tests
+        run: npm run test:packaging
+      - name: Pricing v5 material confirmations
+        run: npx tsx --test tests/packaging/pricing-v5-material-confirmation.test.ts
