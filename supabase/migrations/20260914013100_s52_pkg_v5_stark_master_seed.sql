@@ -1,5 +1,5 @@
 -- S52-PKG-V5-002
--- Stark Packmate v5 template, 20 workbook sizes, missing materials, and 5 bucket commercial rules.
+-- Stark Packmate v5 template, 20 workbook sizes, isolated rate snapshot, and 5 bucket commercial rules.
 begin;
 
 do $$
@@ -33,6 +33,26 @@ begin
     production_rules_json=excluded.production_rules_json,quote_config_json=excluded.quote_config_json,updated_at=now();
 
   select id into v_template from public.packaging_pricing_templates where organization_id=v_org and slug='stark-sup-formula-v5';
+
+  -- Snapshot the current shared Master values into the v5 draft. From this point
+  -- Admin edits are version-scoped and cannot alter live v4 pricing.
+  insert into public.packaging_pricing_cost_rates_v5
+    (organization_id,template_id,cost_master_item_id,current_rate,metadata)
+  select v_org,v_template,m.id,m.current_rate,
+         jsonb_build_object('seeded_from','packaging_cost_master_items','seeded_at',now())
+  from public.packaging_cost_master_items m
+  where m.organization_id=v_org and m.is_active=true
+  on conflict(organization_id,template_id,cost_master_item_id) do nothing;
+
+  insert into public.packaging_pricing_charge_rates_v5
+    (organization_id,template_id,charge_master_item_id,current_rate,metadata)
+  select v_org,v_template,c.id,c.current_rate,
+         jsonb_build_object('seeded_from','packaging_charge_master_items','seeded_at',now())
+  from public.packaging_charge_master_items c
+  join public.packaging_charge_master_family_links l
+    on l.organization_id=v_org and l.charge_master_item_id=c.id and l.family_id=v_sup
+  where c.organization_id=v_org and c.is_active=true
+  on conflict(organization_id,template_id,charge_master_item_id) do nothing;
 
   insert into public.packaging_size_profiles_v5
     (organization_id,family_id,size_key,name,width_mm,height_mm,bottom_gusset_each_mm,pricing_bucket,production_profile_key,gusset_production_mode,bottom_registration_mode,is_active,is_quoteable,sort_order,metadata)
