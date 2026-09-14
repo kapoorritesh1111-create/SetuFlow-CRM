@@ -6,10 +6,12 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import WorkflowToast from '@/features/leads/canonical/WorkflowToast';
 import CanonicalQuoteBuilderApprovalQueueV2 from '@/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2';
 import PricingV4SalesConfigurator from '@/features/packaging/components/pricing-v4-sales-configurator';
+import PricingV5SalesConfigurator from '@/features/packaging/components/pricing-v5-sales-configurator';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingFamilies, getPackagingTemplates, getQuoteOptionalCharges, getPackagingSavedSpecs } from '@/lib/packaging/queries';
 import { isPackagingPricingV4EnabledForOrg, listSalesPackagingPricingV4Options } from '@/lib/packaging-pricing/sales-options';
+import { isPackagingPricingV5EnabledForOrg, listSalesPackagingPricingV5Options } from '@/lib/packaging-pricing-v5/sales-options';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -65,10 +67,11 @@ export default async function QuotePage({
   const sortedQuotes = [...data.quotes].sort((a: any, b: any) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')));
   const activeQuote = (quoteId ? sortedQuotes.find((quote: any) => quote.id === quoteId) : null) ?? sortedQuotes[0] ?? null;
 
-  // Legacy packaging data/routing stays intact for flag-first rollback. When v4
-  // is enabled for this org, only the authoritative v4 configurator is shown so
-  // server-derived separate-charge rows cannot be edited by the legacy line UI.
+  // Pricing v5 is additive and has precedence only when its own flag is enabled,
+  // a published/rated v5 model is available, and the quote is editable. If any
+  // v5 gate fails, the existing v4 route is retained unchanged for rollback.
   let packaging: { enabled: boolean; families: any[]; templates: any[]; charges: any[]; savedSpecs: any[] } | null = null;
+  let pricingV5Options: any | null = null;
   let pricingV4Options: any | null = null;
   try {
     const supabase = await createClient();
@@ -82,23 +85,40 @@ export default async function QuotePage({
       ]);
       packaging = { enabled: true, families, templates, charges, savedSpecs };
 
-      const v4Enabled = await isPackagingPricingV4EnabledForOrg(workspace.organization.id);
-      if (v4Enabled && activeQuote && !['sent','accepted','rejected','expired','cancelled','declined'].includes(String(activeQuote.status ?? '').toLowerCase())) {
-        const options = await listSalesPackagingPricingV4Options(workspace.organization.id);
-        if (options.families.length && options.templates.length) pricingV4Options = options;
+      const editableQuote = Boolean(activeQuote && !['sent','accepted','rejected','expired','cancelled','declined'].includes(String(activeQuote.status ?? '').toLowerCase()));
+      if (editableQuote) {
+        const v5Enabled = await isPackagingPricingV5EnabledForOrg(workspace.organization.id);
+        if (v5Enabled) {
+          const options = await listSalesPackagingPricingV5Options(workspace.organization.id);
+          if (options.families.length && options.templates.length && options.sizes.length && options.constructions.length) pricingV5Options = options;
+        }
+
+        if (!pricingV5Options) {
+          const v4Enabled = await isPackagingPricingV4EnabledForOrg(workspace.organization.id);
+          if (v4Enabled) {
+            const options = await listSalesPackagingPricingV4Options(workspace.organization.id);
+            if (options.families.length && options.templates.length) pricingV4Options = options;
+          }
+        }
       }
     }
   } catch {
-    // Legacy packaging/query behavior remains available if v4 is not yet migrated.
+    // A v5 readiness/query failure cannot break quoting. Fall back to the
+    // existing v4/legacy packaging behavior rather than exposing partial v5.
+    pricingV5Options = null;
     pricingV4Options = null;
   }
 
-  const canonicalPackaging = pricingV4Options ? null : packaging;
+  const canonicalPackaging = pricingV5Options || pricingV4Options ? null : packaging;
 
   return (
     <>
       {feedback ? <WorkflowToast kind={feedback.kind} message={feedback.message} /> : null}
-      {pricingV4Options && activeQuote ? (
+      {pricingV5Options && activeQuote ? (
+        <div className="mb-4">
+          <PricingV5SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV5Options} />
+        </div>
+      ) : pricingV4Options && activeQuote ? (
         <div className="mb-4">
           <PricingV4SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV4Options} />
         </div>
