@@ -10,7 +10,11 @@ function next(){const p=currentPage(),i=ORDER.indexOf(p);window.PV5?.go?.(ORDER[
 function setFamily(v){try{localStorage.setItem(FAMILY_KEY,v)}catch(_){};location.reload();}
 function ensureReset(){const ctx=q('#pv5FamilyContext');if(!ctx)return;let b=q('#pv5ReturnSup');if(!b){b=document.createElement('button');b.id='pv5ReturnSup';b.className='btn outline';b.textContent='← Return to Stand Up Pouches';b.style.margin='0 0 12px 0';b.onclick=()=>setFamily('sup');ctx.prepend(b);}}
 function matrixTruth(){const live=q('#liveMatrix');const panel=q('#priceWhy');if(!live||!panel)return;const hasTable=!!live.querySelector('table');const unavailable=/unavailable|loading/i.test(live.textContent||'');if(!hasTable||unavailable){panel.innerHTML='<div class="panel-title"><h3>Price Detail</h3></div><div class="notice info" style="margin:16px">Select a live matrix price after the matrix loads. No approval or cost breakdown is assumed.</div>';}}
-document.addEventListener('change',e=>{const s=e.target;if(!(s instanceof HTMLSelectElement))return;if(labelOf(s).includes('packaging family')){const v=s.value||'sup';e.stopImmediatePropagation();setFamily(v);}},true);
+document.addEventListener('change',e=>{const s=e.target;if(!(s instanceof HTMLSelectElement))return;if(!labelOf(s).includes('packaging family'))return;
+  // Sales Quote owns its own family switcher and must not be reloaded by the global recovery layer.
+  if(s.id==='quoteFamilyReview'||currentPage()==='sales')return;
+  const v=s.value||'sup';e.stopImmediatePropagation();setFamily(v);
+},true);
 document.addEventListener('click',e=>{const b=e.target.closest('button,a');if(!b)return;const t=(b.textContent||'').trim();if(/Continue to Next Section/i.test(t)){e.preventDefault();e.stopImmediatePropagation();next();return;}if(/View Full Matrix/i.test(t)){e.preventDefault();e.stopImmediatePropagation();window.PV5?.go?.('matrix');return;}if(/View Approval Summary/i.test(t)){e.preventDefault();e.stopImmediatePropagation();window.PV5?.go?.('approval');return;}},true);
 function tick(){ensureReset();matrixTruth();qa('#page select').forEach(s=>{s.disabled=false;s.style.pointerEvents='auto';});}
 new MutationObserver(()=>setTimeout(tick,30)).observe(document.documentElement,{childList:true,subtree:true});
