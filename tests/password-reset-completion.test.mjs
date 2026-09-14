@@ -19,10 +19,12 @@ test('password reset completion prefers the explicit recovery access token over 
   assert.match(resetClient, /Authorization: `Bearer \$\{accessToken\}`/);
 });
 
-test('password reset completion only succeeds after forced-change metadata is cleared', () => {
-  assert.match(completionRoute, /delete nextAppMetadata\.force_password_change/);
-  assert.match(completionRoute, /delete nextAppMetadata\.force_password_change_org_id/);
-  assert.match(completionRoute, /delete nextAppMetadata\.temporary_password_issued_at/);
+test('password reset completion explicitly clears and verifies forced-change metadata', () => {
+  assert.match(completionRoute, /force_password_change:\s*null/);
+  assert.match(completionRoute, /force_password_change_org_id:\s*null/);
+  assert.match(completionRoute, /temporary_password_issued_at:\s*null/);
+  assert.match(completionRoute, /admin\.auth\.admin\.getUserById\(user\.id\)/);
+  assert.match(completionRoute, /refreshedMetadata\.force_password_change === true/);
   assert.match(completionRoute, /if \(!admin\)/);
   assert.match(completionRoute, /if \(metadataError\)/);
 });
