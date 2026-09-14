@@ -31,14 +31,14 @@ export async function loadPricingContextV5(
 
   const [sizes, constructions, layers, masters, costRates, charges, chargeRates, chargeLinks, bands] = await Promise.all([
     db.from('packaging_size_profiles_v5')
-      .select('id,organization_id,family_id,size_key,name,width_mm,height_mm,bottom_gusset_each_mm,pricing_bucket,production_profile_key,gusset_production_mode,bottom_registration_mode,is_active,is_quoteable,sort_order,metadata')
-      .eq('organization_id',organizationId).eq('family_id',template.family_id).eq('is_active',true).order('sort_order'),
+      .select('id,organization_id,template_id,family_id,size_key,name,width_mm,height_mm,bottom_gusset_each_mm,pricing_bucket,production_profile_key,gusset_production_mode,bottom_registration_mode,is_active,is_quoteable,sort_order,metadata')
+      .eq('organization_id',organizationId).eq('template_id',template.id).eq('family_id',template.family_id).eq('is_active',true).order('sort_order'),
     db.from('packaging_constructions_v5')
-      .select('id,organization_id,family_id,construction_key,construction_family_key,name,finish_type,barrier_type,sealant_code,layer_count,is_active,is_quoteable,sort_order,metadata')
-      .eq('organization_id',organizationId).eq('family_id',template.family_id).eq('is_active',true).order('sort_order'),
+      .select('id,organization_id,template_id,family_id,construction_key,construction_family_key,name,finish_type,barrier_type,sealant_code,layer_count,is_active,is_quoteable,sort_order,metadata')
+      .eq('organization_id',organizationId).eq('template_id',template.id).eq('family_id',template.family_id).eq('is_active',true).order('sort_order'),
     db.from('packaging_construction_layers_v5')
-      .select('id,construction_id,layer_position,role_key,cost_master_item_id,is_print_layer,is_sealant_layer')
-      .eq('organization_id',organizationId).order('layer_position'),
+      .select('id,template_id,construction_id,layer_position,role_key,cost_master_item_id,is_print_layer,is_sealant_layer')
+      .eq('organization_id',organizationId).eq('template_id',template.id).order('layer_position'),
     db.from('packaging_cost_master_items')
       .select('id,code,name,item_type,rate_basis,rate_uom,currency,micron,gsm,density,metadata')
       .eq('organization_id',organizationId).eq('is_active',true),
