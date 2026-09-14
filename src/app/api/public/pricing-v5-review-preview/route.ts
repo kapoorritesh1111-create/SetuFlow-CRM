@@ -17,6 +17,7 @@ type ReviewBody = {
   print?: unknown;
   selected_charge_codes?: unknown;
   bottom_print_mode?: unknown;
+  route_override?: unknown;
   matrix?: unknown;
 };
 
@@ -28,26 +29,13 @@ function safeCatalog(ctx: PricingContextV5) {
   return {
     template: { id: ctx.template.id, name: ctx.template.name, currency: ctx.template.currency, status: ctx.template.status },
     sizes: ctx.sizeProfiles.filter((s) => s.is_active && s.is_quoteable).map((s) => ({
-      id: s.id,
-      key: s.size_key,
-      name: s.name,
-      width_mm: s.width_mm,
-      height_mm: s.height_mm,
-      bottom_gusset_each_mm: s.bottom_gusset_each_mm,
-      pricing_bucket: s.pricing_bucket,
-      route: s.gusset_production_mode,
-      bottom_registration_mode: s.bottom_registration_mode,
-      sort_order: s.sort_order,
+      id: s.id, key: s.size_key, name: s.name, width_mm: s.width_mm, height_mm: s.height_mm,
+      bottom_gusset_each_mm: s.bottom_gusset_each_mm, pricing_bucket: s.pricing_bucket,
+      route: s.gusset_production_mode, bottom_registration_mode: s.bottom_registration_mode, sort_order: s.sort_order,
     })),
     constructions: ctx.constructions.filter((c) => c.is_active && c.is_quoteable).map((c) => ({
-      id: c.id,
-      key: c.construction_key,
-      family_key: c.construction_family_key,
-      name: c.name,
-      layer_count: c.layer_count,
-      finish_type: c.finish_type,
-      barrier_type: c.barrier_type,
-      sort_order: c.sort_order,
+      id: c.id, key: c.construction_key, family_key: c.construction_family_key, name: c.name,
+      layer_count: c.layer_count, finish_type: c.finish_type, barrier_type: c.barrier_type, sort_order: c.sort_order,
     })),
     charges: (ctx.charges ?? []).filter((c) => c.current_rate != null).map((c) => ({ code: c.code, name: c.name, category: c.category })),
     review_quantities: REVIEW_QUANTITIES,
@@ -63,6 +51,15 @@ function chargeCodes(value: unknown) {
   return value.filter((x): x is string => typeof x === 'string').slice(0, 20);
 }
 
+function contextWithRouteOverride(ctx: PricingContextV5, sizeId: string, override: unknown): PricingContextV5 {
+  const route = override === 'separate' || override === 'integrated' || override === 'conditional' ? override : null;
+  if (!route) return ctx;
+  return {
+    ...ctx,
+    sizeProfiles: ctx.sizeProfiles.map((size) => size.id === sizeId ? { ...size, gusset_production_mode: route } : size),
+  };
+}
+
 function pricingInput(ctx: PricingContextV5, body: ReviewBody, sizeId: string, constructionId: string, quantity: number) {
   const size = ctx.sizeProfiles.find((s) => s.id === sizeId);
   const requested = mode(body.bottom_print_mode);
@@ -75,6 +72,16 @@ function pricingInput(ctx: PricingContextV5, body: ReviewBody, sizeId: string, c
     bottom_print_mode,
     selected_charge_codes: chargeCodes(body.selected_charge_codes),
     kld_file_id: null,
+  };
+}
+
+function reviewDetails(result: ReturnType<typeof calculatePackagingPriceV5>) {
+  return {
+    production_route: result.production_route,
+    commercial_rules: result.commercial_rules,
+    applied_charges: result.applied_charges,
+    validation_errors: result.validation_errors,
+    warnings: result.warnings,
   };
 }
 
@@ -98,9 +105,9 @@ export async function POST(request: NextRequest) {
   catch { return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 }); }
 
   try {
-    const ctx = await context();
-    const allowedSizes = ctx.sizeProfiles.filter((s) => s.is_active && s.is_quoteable);
-    const allowedConstructions = ctx.constructions.filter((c) => c.is_active && c.is_quoteable);
+    const baseCtx = await context();
+    const allowedSizes = baseCtx.sizeProfiles.filter((s) => s.is_active && s.is_quoteable);
+    const allowedConstructions = baseCtx.constructions.filter((c) => c.is_active && c.is_quoteable);
     const constructionId = typeof body.construction_id === 'string' ? body.construction_id : allowedConstructions[0]?.id;
     if (!constructionId || !allowedConstructions.some((c) => c.id === constructionId)) {
       return NextResponse.json({ ok: false, error: 'invalid_construction' }, { status: 400 });
@@ -114,7 +121,7 @@ export async function POST(request: NextRequest) {
         pricing_bucket: size.pricing_bucket,
         route: size.gusset_production_mode,
         prices: REVIEW_QUANTITIES.map((quantity) => {
-          const result = calculatePackagingPriceV5(ctx, pricingInput(ctx, body, size.id, constructionId, quantity));
+          const result = calculatePackagingPriceV5(baseCtx, pricingInput(baseCtx, body, size.id, constructionId, quantity));
           const safe = toSalesPricingResultV5(result);
           return {
             quantity,
@@ -134,8 +141,15 @@ export async function POST(request: NextRequest) {
     if (!sizeId || !allowedSizes.some((s) => s.id === sizeId)) {
       return NextResponse.json({ ok: false, error: 'invalid_size' }, { status: 400 });
     }
+    const ctx = contextWithRouteOverride(baseCtx, sizeId, body.route_override);
     const result = calculatePackagingPriceV5(ctx, pricingInput(ctx, body, sizeId, constructionId, quantity));
-    return NextResponse.json({ ok: result.ok, result: toSalesPricingResultV5(result), error: result.ok ? undefined : result.validation_errors.join(' ') });
+    return NextResponse.json({
+      ok: result.ok,
+      result: toSalesPricingResultV5(result),
+      review_details: reviewDetails(result),
+      route_override: body.route_override || null,
+      error: result.ok ? undefined : result.validation_errors.join(' '),
+    }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'preview_unavailable' }, { status: 503 });
   }
