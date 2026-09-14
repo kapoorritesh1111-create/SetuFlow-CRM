@@ -12,7 +12,7 @@ begin
 
   with family_def as (
     select * from(values
-      ('glossy_clear_window','Glossy clear window','glossy','clear',2,'MAT_PET_12',null::text,null::text,3),
+      ('glossy_clear_window','Glossy clear window','glossy','clear',2,'MAT_CLEAR_PET_12',null::text,null::text,3),
       ('matte_frosted_window','Matte Finish With Frosted Window','matte','clear',3,'MAT_BOPP_MATT_18','MAT_PET_12',null,8),
       ('glossy_metpet','Glossy Finish With Metpet (Silver film)','glossy','silver',3,'MAT_PET_12','MAT_METPET_12',null,13),
       ('matte_metpet','Matt Finish With Metpet (Silver film)','matte','silver',3,'MAT_BOPP_MATT_18','MAT_METPET_12',null,18),
@@ -21,8 +21,8 @@ begin
       ('matte_al_foil','Matt Finish With Aluminium Foil (High barrier)','matte','high_barrier',4,'MAT_BOPP_MATT_18','MAT_PET_12','MAT_AL_FOIL_9',33),
       ('satin_matt_metpet','Satin Matt Finish With Metpet (Silver film)','satin_matt','silver',3,'MAT_SATIN_MATT_PET_12','MAT_METPET_12',null,38),
       ('velvet_matt_metpet','Velvet touch Matt Finish With Metpet (Silver film)','velvet_matt','silver',3,'MAT_VELVET_PET_15','MAT_METPET_12',null,43),
-      ('glossy_holo_metpet','Glossy Finish With Holo Metpet (Holo rainbow film)','glossy','holographic',3,'MAT_PET_12','MAT_HOLO_METPET_12',null,48),
-      ('matte_holo_metpet','Matt Finish With Holo Metpet (Holo rainbow film)','matte','holographic',3,'MAT_BOPP_MATT_18','MAT_HOLO_METPET_12',null,53)
+      ('glossy_holo_metpet','Glossy Finish With Holo Metpet (Holo rainbow film)','glossy','holographic',3,'MAT_PET_12','MAT_HOLOPET_12',null,48),
+      ('matte_holo_metpet','Matt Finish With Holo Metpet (Holo rainbow film)','matte','holographic',3,'MAT_BOPP_MATT_18','MAT_HOLOPET_12',null,53)
     ) as f(family_key,family_name,finish_type,barrier_type,layer_count,l1,l2,l3,source_row)
   ), sealant as (
     select * from(values
@@ -44,7 +44,7 @@ begin
 
   with family_layers as (
     select * from(values
-      ('glossy_clear_window',1,'print_layer','MAT_PET_12',true,false),
+      ('glossy_clear_window',1,'print_layer','MAT_CLEAR_PET_12',true,false),
       ('matte_frosted_window',1,'print_layer','MAT_BOPP_MATT_18',true,false),('matte_frosted_window',2,'middle_layer_1','MAT_PET_12',false,false),
       ('glossy_metpet',1,'print_layer','MAT_PET_12',true,false),('glossy_metpet',2,'middle_layer_1','MAT_METPET_12',false,false),
       ('matte_metpet',1,'print_layer','MAT_BOPP_MATT_18',true,false),('matte_metpet',2,'middle_layer_1','MAT_METPET_12',false,false),
@@ -53,8 +53,8 @@ begin
       ('matte_al_foil',1,'print_layer','MAT_BOPP_MATT_18',true,false),('matte_al_foil',2,'middle_layer_1','MAT_PET_12',false,false),('matte_al_foil',3,'middle_layer_2','MAT_AL_FOIL_9',false,false),
       ('satin_matt_metpet',1,'print_layer','MAT_SATIN_MATT_PET_12',true,false),('satin_matt_metpet',2,'middle_layer_1','MAT_METPET_12',false,false),
       ('velvet_matt_metpet',1,'print_layer','MAT_VELVET_PET_15',true,false),('velvet_matt_metpet',2,'middle_layer_1','MAT_METPET_12',false,false),
-      ('glossy_holo_metpet',1,'print_layer','MAT_PET_12',true,false),('glossy_holo_metpet',2,'middle_layer_1','MAT_HOLO_METPET_12',false,false),
-      ('matte_holo_metpet',1,'print_layer','MAT_BOPP_MATT_18',true,false),('matte_holo_metpet',2,'middle_layer_1','MAT_HOLO_METPET_12',false,false)
+      ('glossy_holo_metpet',1,'print_layer','MAT_PET_12',true,false),('glossy_holo_metpet',2,'middle_layer_1','MAT_HOLOPET_12',false,false),
+      ('matte_holo_metpet',1,'print_layer','MAT_BOPP_MATT_18',true,false),('matte_holo_metpet',2,'middle_layer_1','MAT_HOLOPET_12',false,false)
     ) as x(family_key,layer_position,role_key,material_code,is_print_layer,is_sealant_layer)
   )
   insert into public.packaging_construction_layers_v5
