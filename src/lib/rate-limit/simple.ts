@@ -9,8 +9,8 @@
  * Falls back to allowing the request if:
  *  - Supabase env vars are not configured (local dev)
  *  - Service role key is absent (admin client returns null)
- *  - The rate_limit_hits table does not exist yet
- *  - Any unexpected infrastructure error occurs
+ *  - the rate_limit_hits table does not exist yet
+ *  - any unexpected infrastructure error occurs
  *
  * This means the app never blocks legitimate requests due to a missing
  * rate-limit table — but rate limiting is real in production when
@@ -50,6 +50,24 @@ function createRateLimitClient() {
   return supabase as unknown as SupabaseClient<RateLimitDatabase>;
 }
 
+function effectiveLimitForKey(key: string, requestedLimit: number) {
+  // The Pricing v5 owner-review workspace intentionally performs many read-only
+  // review calls while the owner switches families, constructions, pages and
+  // impact previews. The original 40–120/hour public limits were too low for
+  // this interactive review workflow and could lock a legitimate reviewer out
+  // during a single QA session. Keep rate limiting enabled, but use a larger
+  // floor for Pricing v5 review endpoints. Feedback submission keeps its own
+  // lower abuse-prevention limit and is intentionally excluded here.
+  const isPricingV5OwnerReview =
+    key.startsWith('pricing-v5-review-preview-') ||
+    key.startsWith('pricing-v5-family-review:') ||
+    key.startsWith('pricing-v5-frame-family-review-') ||
+    key.startsWith('pricing-v5-owner-review-state-') ||
+    key.startsWith('pricing-v5-review-rates:');
+
+  return isPricingV5OwnerReview ? Math.max(requestedLimit, 2000) : requestedLimit;
+}
+
 export async function checkRateLimit(
   key: string,
   limit = 10,
@@ -61,6 +79,7 @@ export async function checkRateLimit(
     const supabase = createRateLimitClient();
     if (!supabase) return { allowed: true };
 
+    const effectiveLimit = effectiveLimitForKey(key, limit);
     const now = new Date();
     const windowStart = new Date(now.getTime() - windowMs);
 
@@ -95,7 +114,7 @@ export async function checkRateLimit(
       return { allowed: true };
     }
 
-    if (existing.count >= limit) {
+    if (existing.count >= effectiveLimit) {
       return { allowed: false };
     }
 
