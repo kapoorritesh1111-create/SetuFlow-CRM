@@ -93,7 +93,7 @@ export type PricingTemplateV5 = {
   name: string;
   currency: string;
   calculation_version: 5;
-  calculation_engine_key: 'sup_formula_v5';
+  calculation_engine_key: 'sup_formula_v5' | 'frame_formula_v5';
   status: 'draft' | 'published' | 'archived';
   production_rules_json: Record<string, any>;
   quote_config_json: Record<string, any>;
