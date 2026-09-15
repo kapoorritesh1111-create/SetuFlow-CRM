@@ -103,7 +103,7 @@ export function StarkInboundUxEnhancer() {
         : [];
 
       setReasonOptions(options);
-      setReason(options[0]?.value ?? '');
+      setReason('');
       setMissingInfo(Boolean(overrideSelect));
       setSubmitting(false);
       setModalOpen(true);
@@ -163,7 +163,8 @@ export function StarkInboundUxEnhancer() {
           <label className="mt-5 block text-xs font-black uppercase tracking-[0.12em] text-slate-600">
             Reason required
             <select value={reason} onChange={(event) => setReason(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500">
-              {reasonOptions.length ? reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>) : <option value="">Select a reason</option>}
+              <option value="">Select why this Lead should be created now</option>
+              {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </label>
         ) : null}
