@@ -1,15 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useSearchParams } from 'next/navigation';
-
-type Signature = {
-  fullName: string;
-  phoneNumber: string;
-  emailAddress: string;
-  organizationName: string;
-};
 
 type ReasonOption = { value: string; label: string };
 type AssigneeOption = { value: string; label: string; email?: string | null };
@@ -18,86 +11,68 @@ function clean(value: unknown) {
   return String(value ?? '').trim();
 }
 
-function signatureText(signature: Signature | null) {
-  if (!signature) return '';
-  return [
-    signature.fullName,
-    signature.phoneNumber ? `Phone: ${signature.phoneNumber}` : '',
-    signature.emailAddress ? `Email: ${signature.emailAddress}` : '',
-    signature.organizationName,
-  ].filter(Boolean).join('\n');
-}
-
 export function StarkInboundUxEnhancer() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const enabled = pathname === '/leads/inbound';
-  const [signature, setSignature] = useState<Signature | null>(null);
+  const [assigneesLoaded, setAssigneesLoaded] = useState(false);
   const [canFilterOwners, setCanFilterOwners] = useState(false);
   const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
-  const [signatureHost, setSignatureHost] = useState<HTMLElement | null>(null);
   const [ownerHost, setOwnerHost] = useState<HTMLElement | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [reasonOptions, setReasonOptions] = useState<ReasonOption[]>([]);
   const [reason, setReason] = useState('');
   const [missingInfo, setMissingInfo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const preview = useMemo(() => signatureText(signature), [signature]);
   const selectedOwner = clean(searchParams.get('owner'));
 
   useEffect(() => {
     if (!enabled) return;
     let active = true;
-    void Promise.all([
-      fetch('/api/profile/signature', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null),
-      fetch('/api/interakt/assignees', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null),
-    ]).then(([signaturePayload, assigneePayload]) => {
-      if (!active) return;
-      const next = signaturePayload?.signature;
-      if (next?.fullName && next?.organizationName) setSignature(next as Signature);
-      setCanFilterOwners(Boolean(assigneePayload?.canFilterOwners));
-      setAssignees(Array.isArray(assigneePayload?.assignees) ? assigneePayload.assignees : []);
-    }).catch(() => undefined);
+    void fetch('/api/interakt/assignees', { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => {
+        if (!active) return;
+        const options = Array.isArray(payload?.assignees) ? payload.assignees as AssigneeOption[] : [];
+        setAssignees(options);
+        setCanFilterOwners(Boolean(payload?.canFilterOwners) || options.length > 0);
+        setAssigneesLoaded(true);
+      })
+      .catch(() => { if (active) setAssigneesLoaded(true); });
     return () => { active = false; };
   }, [enabled]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !assigneesLoaded) return;
 
-    const mountHosts = () => {
-      const textareas = Array.from(document.querySelectorAll<HTMLTextAreaElement>('textarea[name="message"]'));
-      const textarea = textareas.find((item) => item.closest('form')?.querySelector('input[name="rowId"]')) ?? textareas[0];
-      if (textarea) {
-        let host = document.getElementById('setu-required-message-signature-host');
-        if (!host || !document.body.contains(host)) {
-          host = document.createElement('div');
-          host.id = 'setu-required-message-signature-host';
-          textarea.insertAdjacentElement('afterend', host);
-        }
-        if (signatureHost !== host) setSignatureHost(host);
+    const syncOwnerControl = () => {
+      const input = document.querySelector<HTMLInputElement>('input[name="owner"]');
+      if (!input) return;
+      const label = input.closest('label');
+      if (!label) return;
+
+      if (!canFilterOwners) {
+        label.style.display = 'none';
+        setOwnerHost(null);
+        return;
       }
 
-      const ownerInput = document.querySelector<HTMLInputElement>('input[name="owner"]');
-      if (ownerInput) {
-        const label = ownerInput.closest('label');
-        if (label) {
-          label.style.display = 'none';
-          let host = document.getElementById('setu-owner-filter-host');
-          if (!host || !document.body.contains(host)) {
-            host = document.createElement('div');
-            host.id = 'setu-owner-filter-host';
-            label.insertAdjacentElement('afterend', host);
-          }
-          if (ownerHost !== host) setOwnerHost(host);
-        }
+      label.style.display = 'none';
+      input.disabled = true;
+      let host = document.getElementById('setu-owner-filter-host');
+      if (!host || !document.body.contains(host)) {
+        host = document.createElement('div');
+        host.id = 'setu-owner-filter-host';
+        label.insertAdjacentElement('afterend', host);
       }
+      setOwnerHost((current) => current === host ? current : host);
     };
 
-    mountHosts();
-    const observer = new MutationObserver(mountHosts);
+    syncOwnerControl();
+    const observer = new MutationObserver(syncOwnerControl);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [enabled, ownerHost, signatureHost]);
+  }, [assigneesLoaded, canFilterOwners, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -142,8 +117,7 @@ export function StarkInboundUxEnhancer() {
   if (!enabled) return null;
 
   function closeModal() {
-    if (submitting) return;
-    setModalOpen(false);
+    if (!submitting) setModalOpen(false);
   }
 
   function confirmCreateLead() {
@@ -162,18 +136,10 @@ export function StarkInboundUxEnhancer() {
 
   return (
     <>
-      {signatureHost && preview ? createPortal(
-        <div className="mt-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-xs text-slate-700">
-          <div className="mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-blue-700">Signature included when sent</div>
-          <div className="whitespace-pre-line leading-5 text-slate-700">{preview}</div>
-        </div>,
-        signatureHost,
-      ) : null}
-
       {ownerHost && canFilterOwners ? createPortal(
         <label className="text-[9px] font-bold uppercase text-slate-500">
           Owner
-          <select key={selectedOwner || 'all'} name="owner" defaultValue={selectedOwner} className="mt-1 block min-w-40 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs normal-case text-slate-900">
+          <select key={selectedOwner || 'all'} name="owner" defaultValue={selectedOwner} className="mt-1 block min-w-44 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs normal-case text-slate-900">
             <option value="">All assigned users</option>
             {assignees.map((assignee) => (
               <option key={clean(assignee.value || assignee.label)} value={clean(assignee.value || assignee.label)}>
@@ -192,11 +158,7 @@ export function StarkInboundUxEnhancer() {
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Create Lead</p>
                 <h2 id="create-lead-modal-title" className="mt-1 text-xl font-black text-slate-950">{missingInfo ? 'Why are we creating this Lead now?' : 'Create this Lead?'}</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {missingInfo
-                    ? 'Required qualification information is still missing. Choose the business reason for moving this inquiry into the Lead pipeline now.'
-                    : 'The required lead information is available. Setu Flow will run duplicate checking before creating the Lead.'}
-                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{missingInfo ? 'Required qualification information is still missing. Choose the business reason for moving this inquiry into the Lead pipeline now.' : 'The required lead information is available. Setu Flow will run duplicate checking before creating the Lead.'}</p>
               </div>
               <button type="button" onClick={closeModal} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-lg font-bold text-slate-500 hover:bg-slate-50" aria-label="Close">×</button>
             </div>
