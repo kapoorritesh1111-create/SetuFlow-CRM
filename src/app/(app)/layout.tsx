@@ -10,6 +10,7 @@ import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-
 import { GlobalGrowthCenterEntry } from '@/features/setu-guru/global-growth-center-entry';
 import { ProductPricingDeepLinkDrawer } from '@/features/products/components/product-pricing-deep-link-drawer';
 import { GlobalCallTracker } from '@/features/leads/components/global-call-tracker';
+import { StarkWhatsAppCallInterceptor } from '@/features/integrations/interakt/components/stark-whatsapp-call-interceptor';
 import { TrialWorkspaceBanner } from '@/features/trial/trial-workspace-banner';
 import { TrialTourProvider } from '@/features/trial/tour-provider';
 import { getTrialCapability } from '@/lib/trial/capability';
@@ -26,6 +27,9 @@ import { unstable_noStore as noStore } from 'next/cache';
 export const dynamic = 'force-dynamic';
 
 import type { ReactNode } from 'react';
+
+const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
+const STARK_PACKMATE_SLUG = 'starkpackmate';
 
 function safeHex(value: unknown, fallback: string) {
   const text = String(value ?? '').trim().toUpperCase();
@@ -87,6 +91,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       : Promise.resolve({ data: null }),
   ]);
   const isPlatformSupport = Boolean((supportResult as any)?.data?.user_id);
+  const isStarkPackmate = workspace.organization.id === STARK_PACKMATE_ORG_ID || String(workspace.organization.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
 
   const myCardSettingsRow = await getMyCardSettingsForUser(workspace.user.id);
   const myCardSettings = toCardSettingsInput(myCardSettingsRow, EMPTY_CARD_SETTINGS);
@@ -114,6 +119,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       {isPlatformSupport ? <SupportModeBadge organizationName={workspace.organization.name} /> : null}
       <SetuGuruFeedbackBridge />
       <GlobalCallTracker />
+      <StarkWhatsAppCallInterceptor enabled={isStarkPackmate} />
       <LeadCoverageRecoveryBoundary />
       <ModuleAccessGuard>{children}</ModuleAccessGuard>
     </>
