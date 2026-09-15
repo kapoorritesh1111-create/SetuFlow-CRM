@@ -99,18 +99,21 @@ export async function GET() {
     .map((profile: any) => {
       const name = clean(profile.full_name) || clean(profile.email);
       const email = clean(profile.email);
-      return { value: name, label: name, email: email || null };
+      const userId = clean(profile.id);
+      return { value: name, label: name, email: email || null, userId };
     })
-    .filter((row: any) => row.value)
+    .filter((row: any) => row.value && row.userId)
     .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
   const [allResult, ...countResults] = await Promise.all([
     baseActiveCount(),
-    ...rawAssignees.map((assignee: any) => baseActiveCount().ilike('interakt_assignee_name', `%${assignee.value}%`)),
+    ...rawAssignees.map((assignee: any) => baseActiveCount().eq('setu_assigned_user_id', assignee.userId)),
   ]);
 
   const assignees = rawAssignees.map((assignee: any, index: number) => ({
-    ...assignee,
+    value: assignee.value,
+    label: assignee.label,
+    email: assignee.email,
     count: Number(countResults[index]?.count ?? 0),
   }));
 
