@@ -90,7 +90,9 @@ export type InboundWorkspaceQuery = {
 export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) {
   const workspace = await requireStark(false);
   const organizationId = workspace.organization.id;
-  const db: any = await createClient();
+  const isPrivilegedViewer = workspace.currentRoles.some((role) => ['owner', 'admin', 'manager'].includes(String(role).toLowerCase()));
+  const db: any = isPrivilegedViewer ? createAdminSupabaseClient() : await createClient();
+  if (!db) throw new Error('Database client unavailable.');
   const pageSize = Math.max(10, Math.min(Number(input.pageSize ?? 15), 50));
   const page = Math.max(1, Number(input.page ?? 1));
   const from = (page - 1) * pageSize;
