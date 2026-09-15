@@ -5,6 +5,7 @@ import { getCurrentWorkspace } from '@/lib/workspace/auth';
 import { resolveUserMailbox } from '@/lib/mail/resolve-user-mailbox';
 import { isMailId } from '@/lib/mail/organization';
 import { plainTextToMailHtml, sanitizeMailHtml } from '@/lib/mail/safe-html';
+import { loadRequiredProfileSignature, profileSignatureHtml, profileSignatureText } from '@/lib/messaging/profile-signature';
 
 export const dynamic = 'force-dynamic';
 const ATTACHMENT_BUCKET = 'setu-mail-attachments';
@@ -80,13 +81,26 @@ export async function POST(request: NextRequest) {
   if (Number(mailboxRate.count ?? 0) >= MAILBOX_BURST_LIMIT) return NextResponse.json({ error: 'This mailbox is sending unusually quickly. Try again shortly.' }, { status: 429 });
   if (Number(orgRate.count ?? 0) >= ORG_HOURLY_LIMIT) return NextResponse.json({ error: 'This organization has reached the Setu Mail hourly safety limit. Try again later.' }, { status: 429 });
 
-  const { data: signature } = includeSignature
-    ? await db.from('mail_signatures').select('text_signature,html_signature').eq('mailbox_id', mailbox.id).eq('user_id', userId).eq('is_default', true).limit(1).maybeSingle()
-    : { data: null };
+  const [{ data: signature }, requiredProfileSignature] = await Promise.all([
+    includeSignature
+      ? db.from('mail_signatures').select('text_signature,html_signature').eq('mailbox_id', mailbox.id).eq('user_id', userId).eq('is_default', true).limit(1).maybeSingle()
+      : Promise.resolve({ data: null }),
+    loadRequiredProfileSignature(admin, {
+      userId,
+      organizationId,
+      fallbackName: workspace.profile?.full_name ?? workspace.profile?.username ?? null,
+      fallbackEmail: workspace.profile?.email ?? workspace.user.email ?? null,
+      fallbackOrganizationName: workspace.organization.name ?? null,
+    }),
+  ]);
   const signatureText = String(signature?.text_signature ?? '').trim();
   const signatureHtml = sanitizeMailHtml(signature?.html_signature) || (signatureText ? plainTextToMailHtml(signatureText) : '');
-  const text = signatureText ? `${rawText}\n\n${signatureText}` : rawText;
-  const html = signatureHtml ? `${cleanBodyHtml}<div data-setu-mail-signature="true" style="margin-top:24px">${signatureHtml}</div>` : cleanBodyHtml;
+  const requiredSignatureText = profileSignatureText(requiredProfileSignature);
+  const requiredSignatureHtml = profileSignatureHtml(requiredProfileSignature);
+  const signatureTextBlocks = [signatureText, requiredSignatureText].filter(Boolean);
+  const signatureHtmlBlocks = [signatureHtml, requiredSignatureHtml].filter(Boolean);
+  const text = signatureTextBlocks.length ? `${rawText}\n\n${signatureTextBlocks.join('\n\n')}` : rawText;
+  const html = signatureHtmlBlocks.length ? `${cleanBodyHtml}<div data-setu-mail-signature="true" style="margin-top:24px">${signatureHtmlBlocks.join('<div style="height:12px"></div>')}</div>` : cleanBodyHtml;
 
   let threadId = String(body?.threadId ?? '').trim() || null;
   let parent: any = null;
@@ -151,7 +165,7 @@ export async function POST(request: NextRequest) {
     body: JSON.stringify({ from, to, ...(cc.length ? { cc } : {}), ...(bcc.length ? { bcc } : {}), subject, text, html, reply_to: mailbox.address, ...(attachments.length ? { attachments } : {}), headers }),
   });
   const provider = await providerResponse.json().catch(() => ({})) as any;
-  const common = { organization_id: organizationId, mailbox_id: mailbox.id, thread_id: thread, direction: 'outbound', from_address: mailbox.address, to_addresses: to, cc_addresses: cc, bcc_addresses: bcc, subject, text_body: text, html_body: html, compose_options: { includeSignature }, is_read: true, folder: 'sent', in_reply_to: parent?.message_id_header ?? null, reference_headers: references };
+  const common = { organization_id: organizationId, mailbox_id: mailbox.id, thread_id: thread, direction: 'outbound', from_address: mailbox.address, to_addresses: to, cc_addresses: cc, bcc_addresses: bcc, subject, text_body: text, html_body: html, compose_options: { includeSignature, requiredProfileSignature: true }, is_read: true, folder: 'sent', in_reply_to: parent?.message_id_header ?? null, reference_headers: references };
   if (!providerResponse.ok) {
     if (!body?.draftId) await db.from('mail_messages').insert({ ...common, status: 'failed' });
     return NextResponse.json({ error: provider?.message || provider?.error?.message || 'Resend rejected the email.' }, { status: 502 });
