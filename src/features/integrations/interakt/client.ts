@@ -186,6 +186,15 @@ function compactPhone(value: string) {
   return value.replace(/[^0-9]/g, '');
 }
 
+function sanitizeTemplateValue(value: string) {
+  return String(value ?? '').replace(/[\t\r\n]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+}
+
+function sanitizeButtonValues(value: Record<string, string[]> | undefined) {
+  if (!value) return undefined;
+  return Object.fromEntries(Object.entries(value).map(([key, values]) => [key, values.map(sanitizeTemplateValue)]));
+}
+
 async function postInteraktMessage(payload: Record<string, unknown>): Promise<InteraktTemplateSendResult> {
   const response = await fetch(INTERAKT_MESSAGE_URL, {
     method: 'POST',
@@ -223,6 +232,10 @@ export async function sendInteraktTemplate(input: InteraktTemplateSendInput): Pr
   if (!countryCode || !phoneNumber) throw new Error('A valid WhatsApp country code and phone number are required.');
   if (!input.templateName.trim()) throw new Error('An approved Interakt template name is required.');
 
+  const bodyValues = (input.bodyValues ?? []).map(sanitizeTemplateValue);
+  const headerValues = (input.headerValues ?? []).map(sanitizeTemplateValue);
+  const buttonValues = sanitizeButtonValues(input.buttonValues);
+
   return postInteraktMessage({
     countryCode,
     phoneNumber,
@@ -230,9 +243,9 @@ export async function sendInteraktTemplate(input: InteraktTemplateSendInput): Pr
     template: {
       name: input.templateName.trim(),
       languageCode: input.languageCode.trim() || 'en',
-      bodyValues: input.bodyValues ?? [],
-      ...(input.headerValues?.length ? { headerValues: input.headerValues } : {}),
-      ...(input.buttonValues && Object.keys(input.buttonValues).length ? { buttonValues: input.buttonValues } : {}),
+      bodyValues,
+      ...(headerValues.length ? { headerValues } : {}),
+      ...(buttonValues && Object.keys(buttonValues).length ? { buttonValues } : {}),
     },
     ...(input.callbackData ? { callbackData: input.callbackData } : {}),
     ...(input.campaignId ? { campaignId: input.campaignId } : {}),
