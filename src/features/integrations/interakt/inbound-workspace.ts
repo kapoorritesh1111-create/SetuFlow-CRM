@@ -5,11 +5,6 @@ import type { InteraktInquiryEvidence, NormalizedInteraktContact } from '@/featu
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
-export {
-  createStarkInteraktLeadOverride,
-  evaluateStarkInteraktPage,
-} from './workspace-v2';
-
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const MANAGEMENT_ROLES = new Set(['owner', 'admin', 'manager']);
@@ -135,7 +130,7 @@ const readInboundRpcCached = unstable_cache(
   { revalidate: 5 },
 );
 
-export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) {
+export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
   const workspace = await requireStark();
   const organizationId = workspace.organization.id;
 

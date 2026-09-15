@@ -5,7 +5,10 @@ import fs from 'node:fs';
 const client = fs.readFileSync('src/features/integrations/interakt/client.ts', 'utf8');
 const server = fs.readFileSync('src/features/integrations/interakt/server.ts', 'utf8');
 const salesMessageActions = fs.readFileSync('src/features/integrations/interakt/sales-message-actions.ts', 'utf8');
-const workspaceV2 = fs.readFileSync('src/features/integrations/interakt/workspace-v2.ts', 'utf8');
+const inboundActions = fs.readFileSync('src/features/integrations/interakt/inbound-actions.ts', 'utf8');
+const inboundWorkspace = fs.readFileSync('src/features/integrations/interakt/inbound-workspace.ts', 'utf8');
+const workspaceCompat = fs.readFileSync('src/features/integrations/interakt/workspace-v2.ts', 'utf8');
+const tsconfig = fs.readFileSync('tsconfig.json', 'utf8');
 const pendingButton = fs.readFileSync('src/features/integrations/interakt/components/pending-submit-button.tsx', 'utf8');
 const reviewActions = fs.readFileSync('src/features/integrations/interakt/review-actions.ts', 'utf8');
 const webhook = fs.readFileSync('src/features/integrations/interakt/webhook.ts', 'utf8');
@@ -16,7 +19,7 @@ const baseMigration = fs.readFileSync('supabase/migrations/20260811093000_intera
 const salesDeskMigration = fs.readFileSync('supabase/migrations/20260811112500_interakt_inbound_sales_desk.sql', 'utf8');
 const companyMigration = fs.readFileSync('supabase/migrations/20260811121500_interakt_company_media_intelligence.sql', 'utf8');
 
-const combinedRuntime = `${client}\n${server}\n${salesMessageActions}\n${workspaceV2}\n${reviewActions}\n${webhook}\n${intelligence}\n${route}\n${inboundPage}`;
+const combinedRuntime = `${client}\n${server}\n${salesMessageActions}\n${inboundActions}\n${inboundWorkspace}\n${reviewActions}\n${webhook}\n${intelligence}\n${route}\n${inboundPage}`;
 
 test('Interakt contacts retrieval uses the documented endpoint and Basic auth', () => {
   assert.match(client, /https:\/\/api\.interakt\.ai\/v1\/public\/apis\/users\//);
@@ -108,20 +111,29 @@ test('sales inbox supports conversation, sales-safe messaging and call logging',
 });
 
 test('lead conversion remains human controlled, duplicate checked and preserves captured requirement', () => {
-  assert.match(workspaceV2, /createStarkInteraktLeadOverride/);
-  assert.match(workspaceV2, /findDuplicateLead/);
-  assert.match(workspaceV2, /\.from\('leads'\)\.insert/);
-  assert.match(workspaceV2, /lead_product_interests/);
-  assert.match(workspaceV2, /interest_type: 'captured_requirement'/);
-  assert.match(workspaceV2, /intake_status: 'qualified'/);
+  assert.match(inboundActions, /createStarkInteraktLeadOverride/);
+  assert.match(inboundActions, /findDuplicateLead/);
+  assert.match(inboundActions, /\.from\('leads'\)\.insert/);
+  assert.match(inboundActions, /lead_product_interests/);
+  assert.match(inboundActions, /interest_type: 'captured_requirement'/);
+  assert.match(inboundActions, /intake_status: 'qualified'/);
   assert.match(inboundPage, /Create Lead/);
   assert.doesNotMatch(webhook, /\.from\(['"]leads['"]\)/);
 });
 
 test('browsing-only contacts stay out of active sales queue', () => {
-  assert.match(workspaceV2, /sales_queue_suppressed/);
-  assert.match(workspaceV2, /browsingHidden/);
+  assert.match(inboundActions, /sales_queue_suppressed/);
+  assert.match(inboundWorkspace, /browsingHidden/);
   assert.match(inboundPage, /browsing hidden/);
+});
+
+test('inbound workspace runtime is canonical and has no tsconfig redirect', () => {
+  assert.match(inboundWorkspace, /stark_inbound_workspace_page/);
+  assert.match(workspaceCompat, /from '\.\/inbound-actions'/);
+  assert.match(workspaceCompat, /from '\.\/inbound-workspace'/);
+  assert.doesNotMatch(workspaceCompat, /lead_intake_staging/);
+  assert.doesNotMatch(tsconfig, /workspace-v2/);
+  assert.equal(fs.existsSync('src/features/integrations/interakt/workspace-v4.ts'), false);
 });
 
 test('active queue hides terminal statuses and incremental sync preserves status', () => {

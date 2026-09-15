@@ -8,7 +8,7 @@ const authenticatedLayout = fs.readFileSync('src/app/(app)/layout.tsx', 'utf8');
 const whatsappActions = fs.readFileSync('src/features/integrations/interakt/sales-message-actions.ts', 'utf8');
 const mailSend = fs.readFileSync('src/app/api/mail/send/route.ts', 'utf8');
 const signatureHelper = fs.readFileSync('src/lib/messaging/profile-signature.ts', 'utf8');
-const createLeadAction = fs.readFileSync('src/features/integrations/interakt/workspace-v2.ts', 'utf8');
+const createLeadAction = fs.readFileSync('src/features/integrations/interakt/inbound-actions.ts', 'utf8');
 
 test('inbound Create Lead requires an override reason when lead blockers exist', () => {
   assert.match(inboundPage, /leadBlockers\.length\s*\?\s*<select name="overrideReason" required/);
