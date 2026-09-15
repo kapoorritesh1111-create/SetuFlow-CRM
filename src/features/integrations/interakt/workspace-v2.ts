@@ -102,7 +102,7 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
   const owner = safeSearch(input.owner);
   const sort = clean(input.sort) || 'recent';
 
-  let query = db.from('lead_intake_staging').select('*', { count: 'exact' })
+  let query = db.from('lead_intake_staging').select('*')
     .eq('organization_id', organizationId)
     .eq('source_provider', SOURCE_PROVIDER)
     .eq('sales_queue_suppressed', false)
@@ -129,8 +129,24 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
   const baseCount = () => db.from('lead_intake_staging').select('id', { count: 'exact', head: true })
     .eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('sales_queue_suppressed', false)
     .not('intake_status', 'in', `(${TERMINAL.join(',')})`);
-  const [{ data, count, error }, totalResult, needsReplyResult, needsInfoResult, readyResult, evaluatedResult, pendingResult, newEvidenceResult, inquiryResult, browsingResult] = await Promise.all([
+
+  let filteredCountQuery = baseCount();
+  if (q) filteredCountQuery = filteredCountQuery.or(`contact_name.ilike.%${q}%,person_name.ilike.%${q}%,company_name.ilike.%${q}%,brand_name.ilike.%${q}%,full_phone_number.ilike.%${q}%`);
+  if (status === 'new') filteredCountQuery = filteredCountQuery.eq('intake_status', 'new');
+  else if (status === 'inquiries') filteredCountQuery = filteredCountQuery.not('last_inbound_at', 'is', null);
+  else if (status === 'needs_info') filteredCountQuery = filteredCountQuery.eq('intake_status', 'needs_info');
+  else if (status === 'ready') filteredCountQuery = filteredCountQuery.eq('intake_status', 'ready_to_qualify');
+  else if (status === 'needs_reply') filteredCountQuery = filteredCountQuery.eq('needs_reply', true);
+  else if (status === 'history_pending') filteredCountQuery = filteredCountQuery.in('historical_backfill_status', ['pending', 'partial', 'not_requested']);
+  if (guru !== 'all') filteredCountQuery = filteredCountQuery.eq('guru_evaluation_status', guru);
+  if (source === 'ctwa') filteredCountQuery = filteredCountQuery.eq('acquisition_type', 'ctwa');
+  else if (source === 'instagram') filteredCountQuery = filteredCountQuery.eq('ad_platform', 'instagram');
+  else if (source === 'whatsapp') filteredCountQuery = filteredCountQuery.eq('channel_source', 'whatsapp');
+  if (owner) filteredCountQuery = filteredCountQuery.ilike('interakt_assignee_name', `%${owner}%`);
+
+  const [{ data, error }, filteredCountResult, totalResult, needsReplyResult, needsInfoResult, readyResult, evaluatedResult, pendingResult, newEvidenceResult, inquiryResult, browsingResult] = await Promise.all([
     query.range(from, to),
+    filteredCountQuery,
     baseCount(),
     baseCount().eq('needs_reply', true),
     baseCount().eq('intake_status', 'needs_info'),
@@ -142,6 +158,7 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
     db.from('lead_intake_staging').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('sales_queue_suppressed', true),
   ]);
   if (error) throw new Error(`Unable to load inbound workspace: ${String(error.message ?? 'unknown database error')}`);
+  if (filteredCountResult.error) throw new Error(`Unable to count inbound workspace: ${String(filteredCountResult.error.message ?? 'unknown database error')}`);
 
   const rows = (data ?? []).map((row: any) => {
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
@@ -156,13 +173,14 @@ export async function readInboundWorkspaceV2(input: InboundWorkspaceQuery = {}) 
     };
   });
 
+  const filteredCount = Number(filteredCountResult.count ?? 0);
   const total = Number(totalResult.count ?? 0);
   return {
     rows,
-    count: Number(count ?? 0),
+    count: filteredCount,
     page,
     pageSize,
-    totalPages: Math.max(1, Math.ceil(Number(count ?? 0) / pageSize)),
+    totalPages: Math.max(1, Math.ceil(filteredCount / pageSize)),
     kpis: {
       active: total,
       needsReply: Number(needsReplyResult.count ?? 0),
