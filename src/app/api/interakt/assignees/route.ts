@@ -9,6 +9,7 @@ const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const MANAGEMENT_ROLES = new Set(['owner', 'admin', 'manager']);
 const SALES_ROLES = new Set(['sales']);
+const TERMINAL = ['qualified', 'duplicate', 'existing_customer', 'not_relevant', 'ignored'];
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
@@ -50,7 +51,7 @@ export async function GET() {
   if (membersError) return NextResponse.json({ error: 'Unable to load Stark Packmate members.' }, { status: 500 });
 
   const memberIds = (members ?? []).map((row: any) => row.id).filter(Boolean);
-  if (!memberIds.length) return NextResponse.json({ canFilterOwners: true, assignees: [] });
+  if (!memberIds.length) return NextResponse.json({ canFilterOwners: true, assignees: [], allCount: 0 });
 
   const { data: roleLinks, error: roleLinksError } = await db
     .from('user_roles')
@@ -78,7 +79,7 @@ export async function GET() {
     .map((row: any) => clean(row.user_id))
     .filter(Boolean);
 
-  if (!salesUserIds.length) return NextResponse.json({ canFilterOwners: true, assignees: [] });
+  if (!salesUserIds.length) return NextResponse.json({ canFilterOwners: true, assignees: [], allCount: 0 });
 
   const { data: profiles, error: profilesError } = await db
     .from('profiles')
@@ -86,7 +87,15 @@ export async function GET() {
     .in('id', salesUserIds);
   if (profilesError) return NextResponse.json({ error: 'Unable to load assigned users.' }, { status: 500 });
 
-  const assignees = (profiles ?? [])
+  const baseActiveCount = () => db
+    .from('lead_intake_staging')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', organization.id)
+    .eq('source_provider', 'interakt')
+    .eq('sales_queue_suppressed', false)
+    .not('intake_status', 'in', `(${TERMINAL.join(',')})`);
+
+  const rawAssignees = (profiles ?? [])
     .map((profile: any) => {
       const name = clean(profile.full_name) || clean(profile.email);
       const email = clean(profile.email);
@@ -95,5 +104,19 @@ export async function GET() {
     .filter((row: any) => row.value)
     .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
-  return NextResponse.json({ canFilterOwners: true, assignees });
+  const [allResult, ...countResults] = await Promise.all([
+    baseActiveCount(),
+    ...rawAssignees.map((assignee: any) => baseActiveCount().ilike('interakt_assignee_name', `%${assignee.value}%`)),
+  ]);
+
+  const assignees = rawAssignees.map((assignee: any, index: number) => ({
+    ...assignee,
+    count: Number(countResults[index]?.count ?? 0),
+  }));
+
+  return NextResponse.json({
+    canFilterOwners: true,
+    assignees,
+    allCount: Number(allResult.count ?? 0),
+  });
 }
