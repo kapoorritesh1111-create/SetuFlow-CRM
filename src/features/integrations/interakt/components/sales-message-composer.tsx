@@ -9,6 +9,7 @@ type Props = { rowId: string; customerName: string; companyName?: string | null;
 type Suggestion = { id: string; label: string; helper: string; message: string };
 type Notice = { tone: 'success' | 'error'; message: string } | null;
 type Attachment = { id: string; fileName: string; mimeType: string; fileSize: number; url: string };
+type Signature = { fullName: string; phoneNumber: string; emailAddress: string; organizationName: string };
 
 const EMOJIS = ['😊','👍','🙏','✨','✅','📎','📦','🎨','💬','❤️','👏','🙂','🤝','🚀','📞','📩'];
 const clean = (value: string | null | undefined) => String(value ?? '').trim();
@@ -37,6 +38,7 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
   const [uploading, setUploading] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
+  const [signature, setSignature] = useState<Signature | null>(null);
   const [isSending, startSending] = useTransition();
   const [isFollowingUp, startFollowingUp] = useTransition();
   const [message, setMessage] = useState(initial);
@@ -45,6 +47,15 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const contextChanged = draftRowId !== rowId;
+
+  useEffect(() => {
+    let active = true;
+    void fetch('/api/profile/signature', { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => { if (active && payload?.signature) setSignature(payload.signature as Signature); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [rowId]);
 
   useEffect(() => {
     if (brochures.length) { setAvailableBrochures(brochures); return; }
@@ -113,14 +124,19 @@ export function SalesMessageComposer({ rowId, customerName, companyName, packagi
 
       <label className="block text-caption font-bold uppercase text-content-muted">Your message<textarea ref={textareaRef} name="message" maxLength={4096} rows={5} value={message} onChange={(event) => { setMessage(event.target.value); setSelectedId(''); setNotice(null); }} placeholder="Type your WhatsApp reply…" className="mt-1 w-full resize-y rounded-ctl border border-line bg-surface-1 px-3 py-2.5 text-small font-medium leading-5 text-content-primary outline-none placeholder:text-content-faint focus:border-brand-500 focus-visible:shadow-focus-ring" /></label>
 
+      <div className="rounded-card border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-small text-slate-700">
+        <p className="text-caption font-black uppercase tracking-[0.12em] text-blue-700">Signature included when sent</p>
+        {signature ? <div className="mt-1 space-y-0.5 leading-5"><p className="font-bold text-slate-900">{signature.fullName}</p>{signature.phoneNumber ? <p>Phone: {signature.phoneNumber}</p> : null}{signature.emailAddress ? <p>Email: {signature.emailAddress}</p> : null}<p>{signature.organizationName}</p></div> : <p className="mt-1 text-caption text-slate-500">Loading sender profile…</p>}
+      </div>
+
       <div className="rounded-card border border-line bg-surface-2 p-2.5"><div className="flex flex-wrap gap-2"><button type="button" onClick={() => setEmojiOpen((value) => !value)} className="rounded-ctl border border-line bg-surface-1 px-3 py-2 text-small font-bold text-content-secondary">😀 Emoji</button><button type="button" disabled={uploading} onClick={() => fileRef.current?.click()} className="rounded-ctl border border-line bg-surface-1 px-3 py-2 text-small font-bold text-content-secondary disabled:opacity-50">{uploading ? 'Uploading…' : '📎 Attach file'}</button><input ref={fileRef} type="file" className="hidden" accept="image/jpeg,image/png,image/webp,application/pdf,.doc,.docx,.xls,.xlsx,.csv" onChange={(event) => { const file = event.target.files?.[0]; if (file) void stageAttachment(file); }} /></div>{emojiOpen ? <div className="mt-2 flex flex-wrap gap-1.5 rounded-ctl border border-line bg-surface-1 p-2">{EMOJIS.map((emoji) => <button key={emoji} type="button" onClick={() => insertEmoji(emoji)} className="h-9 w-9 rounded-lg text-lg hover:bg-surface-2">{emoji}</button>)}</div> : null}{attachment ? <div className="mt-2 flex items-center justify-between gap-3 rounded-ctl border border-success-border bg-success-bg px-3 py-2"><div className="min-w-0"><p className="truncate text-small font-bold text-success-fg">📎 {attachment.fileName}</p><p className="text-caption text-success-fg">Ready to send · {(attachment.fileSize / 1024 / 1024).toFixed(1)} MB</p></div><button type="button" onClick={() => setAttachment(null)} className="text-caption font-bold text-success-fg">Remove</button></div> : null}</div>
 
       {orderedBrochures.length ? <div className="rounded-card border border-line bg-surface-2 px-3 py-2.5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-caption font-bold uppercase text-content-brand">📚 Brochure</p>{recommended ? <p className="mt-1 text-small font-bold text-content-primary">✨ Recommended for this requirement: {recommended.name}</p> : <p className="mt-1 text-caption text-content-muted">Choose a brochure when it helps the conversation.</p>}{selectedBrochure ? <p className="mt-1 text-caption font-semibold text-success-fg">Attached: {selectedBrochure.name}</p> : null}</div><label className="shrink-0 text-caption font-bold uppercase text-content-muted">Change<select value={brochureId} onChange={(event) => { setBrochureTouched(true); setBrochureId(event.target.value); setNotice(null); }} className="mt-1 block h-9 max-w-[220px] rounded-ctl border border-line bg-surface-1 px-2.5 text-caption font-semibold normal-case text-content-primary"><option value="">No brochure</option>{orderedBrochures.map((brochure) => <option key={brochure.id} value={brochure.id}>{brochureRecommended(brochure, productContext) ? 'Recommended · ' : ''}{brochure.name}</option>)}</select></label></div></div> : null}
 
-      <div className="flex items-center justify-between gap-2"><p className="text-caption text-content-faint">Review the customer name, attachment and brochure before sending.</p><span className="text-caption font-bold text-success-fg">{message.length}/4096</span></div>
+      <div className="flex items-center justify-between gap-2"><p className="text-caption text-content-faint">Review the customer name, attachment, brochure and sender signature before sending.</p><span className="text-caption font-bold text-success-fg">{message.length}/4096</span></div>
       <button type="submit" disabled={!canSend || (!message.trim() && !attachment && !brochureId) || isSending || uploading || contextChanged} className="w-full rounded-ctl border border-brand-700 bg-brand-700 px-3 py-2.5 text-small font-bold text-white transition hover:bg-brand-800 focus-visible:shadow-focus-ring disabled:cursor-not-allowed disabled:opacity-50">{sendLabel}</button>
     </form> : null}
 
-    <details className="rounded-card border border-line bg-surface-2 px-3 py-2" open={!replyWindowOpen}><summary className="cursor-pointer text-caption font-bold text-content-secondary">Use approved follow-up</summary><div className="mt-2"><p className="mb-2 text-caption leading-4 text-content-muted">Use Stark Packmate’s approved qualification follow-up template. Brochures and attachments can be added after the customer replies and the free reply window reopens.</p><form onSubmit={submitFollowUp}><input type="hidden" name="rowId" value={rowId} /><input type="hidden" name="draftRowId" value={draftRowId} /><input type="hidden" name="messagePreset" value="qualification_follow_up" /><button type="submit" disabled={!canSend || isFollowingUp || contextChanged} className="w-full rounded-ctl border border-info-border bg-surface-1 px-3 py-2 text-small font-bold text-info-fg transition hover:bg-info-bg focus-visible:shadow-focus-ring disabled:cursor-not-allowed disabled:opacity-50">{isFollowingUp ? 'Sending approved follow-up…' : 'Send approved follow-up'}</button></form></div></details>
+    <details className="rounded-card border border-line bg-surface-2 px-3 py-2" open={!replyWindowOpen}><summary className="cursor-pointer text-caption font-bold text-content-secondary">Use approved follow-up</summary><div className="mt-2"><p className="mb-2 text-caption leading-4 text-content-muted">Use Stark Packmate’s approved qualification follow-up template. The sender profile signature is included automatically.</p><form onSubmit={submitFollowUp}><input type="hidden" name="rowId" value={rowId} /><input type="hidden" name="draftRowId" value={draftRowId} /><input type="hidden" name="messagePreset" value="qualification_follow_up" /><button type="submit" disabled={!canSend || isFollowingUp || contextChanged} className="w-full rounded-ctl border border-info-border bg-surface-1 px-3 py-2 text-small font-bold text-info-fg transition hover:bg-info-bg focus-visible:shadow-focus-ring disabled:cursor-not-allowed disabled:opacity-50">{isFollowingUp ? 'Sending approved follow-up…' : 'Send approved follow-up'}</button></form></div></details>
   </div>;
 }
