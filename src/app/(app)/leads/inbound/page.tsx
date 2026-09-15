@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { InboundConversationPanel } from '@/features/integrations/interakt/components/inbound-conversation-panel';
 import { InboundViewControls } from '@/features/integrations/interakt/components/inbound-view-controls';
+import { OwnerFilterSelect } from '@/features/integrations/interakt/components/owner-filter-select';
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
 import { SalesMessageComposer } from '@/features/integrations/interakt/components/sales-message-composer';
 import { logStarkInteraktCall } from '@/features/integrations/interakt/review-actions';
@@ -352,7 +353,7 @@ function FilterBar({ searchParams }: { searchParams: SearchParams }) {
       <Select name="status" label="Segment" value={searchParams.status || 'all'} options={[["all","All"],["new","New"],["needs_reply","Needs reply"],["needs_info","Needs info"],["ready","Ready"],["history_pending","History pending"]]} />
       <Select name="guru" label="Setu Guru" value={searchParams.guru || 'all'} options={[["all","All"],["evaluated","Evaluated"],["new_evidence","New evidence"],["partial_history","History pending"],["pending","Pending"]]} />
       <Select name="source" label="Source" value={searchParams.source || 'all'} options={[["all","All"],["ctwa","CTWA"],["instagram","Instagram"],["whatsapp","WhatsApp"]]} />
-      <label className="text-[9px] font-bold uppercase text-slate-500">Owner<input name="owner" defaultValue={searchParams.owner || ''} placeholder="Any owner" className="mt-1 block w-32 rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case" /></label>
+      <OwnerFilterSelect value={searchParams.owner || ''} />
       <Select name="sort" label="Sort" value={searchParams.sort || 'recent'} options={[["recent","Most recent"],["oldest","Oldest"],["score","Highest score"],["name","Name A-Z"]]} />
       <button className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white">Apply</button>
       <Link prefetch={false} href={`/leads/inbound?view=${searchParams.view === 'list' ? 'list' : 'review'}`} className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-500">Clear</Link>
