@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createCatalogBrochureShare } from '@/features/catalog-brochures/server';
 import { sendInteraktTemplate, sendInteraktText } from '@/features/integrations/interakt/client';
 import { env } from '@/lib/env';
+import { appendProfileSignatureText, loadRequiredProfileSignature, profileSignatureText } from '@/lib/messaging/profile-signature';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
@@ -56,6 +57,16 @@ async function requireStarkSalesAccess() {
   if (!isStark || !workspace.user || !organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
   if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales permission is required to message this customer.');
   return workspace;
+}
+
+async function loadSenderSignature(db: any, workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>) {
+  return loadRequiredProfileSignature(db, {
+    userId: workspace.user!.id,
+    organizationId: workspace.organization!.id,
+    fallbackName: workspace.profile?.full_name ?? workspace.profile?.username ?? null,
+    fallbackEmail: workspace.profile?.email ?? workspace.user?.email ?? null,
+    fallbackOrganizationName: workspace.organization?.name ?? null,
+  });
 }
 
 function salesFollowUpContext(row: any) {
@@ -206,6 +217,7 @@ async function performStarkInteraktSalesText(formData: FormData) {
   if (!replyWindowOpen(row.last_inbound_at)) throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');
 
   const attachment = await loadAttachmentShare(db, organizationId, attachmentId, { intakeId: row.id });
+  const senderSignature = await loadSenderSignature(db, workspace);
   let brochureShare: { id: string; url: string; brochureName: string } | null = null;
   const parts = [originalMessage].filter(Boolean);
   if (brochureId) {
@@ -213,10 +225,10 @@ async function performStarkInteraktSalesText(formData: FormData) {
     parts.push(`View our ${brochureShare.brochureName} catalog: ${brochureShare.url}`);
   }
   if (attachment) parts.push(`Attachment — ${attachment.fileName}: ${attachment.url}`);
-  const message = parts.join('\n\n');
+  const message = appendProfileSignatureText(parts.join('\n\n'), senderSignature);
   if (message.length > 4096) {
     await discardUnsentBrochureShare(db, organizationId, brochureShare?.id);
-    throw new Error('This message is too long after adding the brochure or attachment link.');
+    throw new Error('This message is too long after adding the brochure, attachment link and sender signature.');
   }
 
   const mode = attachment ? (brochureShare ? 'attachment_brochure' : 'attachment') : (brochureShare ? 'brochure' : 'free_text');
@@ -239,7 +251,7 @@ export async function sendStarkInteraktSalesText(formData: FormData): Promise<Sa
     const hasBrochure = Boolean(clean(formData.get('brochureId')));
     const hasAttachment = Boolean(clean(formData.get('attachmentId')));
     await performStarkInteraktSalesText(formData);
-    return { ok: true, message: hasAttachment && hasBrochure ? 'WhatsApp message, brochure and attachment sent.' : hasAttachment ? 'WhatsApp message and attachment sent.' : hasBrochure ? 'WhatsApp message and brochure sent.' : 'WhatsApp message sent.' };
+    return { ok: true, message: hasAttachment && hasBrochure ? 'WhatsApp message, brochure, attachment and profile signature sent.' : hasAttachment ? 'WhatsApp message, attachment and profile signature sent.' : hasBrochure ? 'WhatsApp message, brochure and profile signature sent.' : 'WhatsApp message and profile signature sent.' };
   } catch (error) {
     return { ok: false, message: safeSalesError(error) };
   }
@@ -263,6 +275,7 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
     await persistResolvedRecipient(db, workspace.organization!.id, row, recipient);
 
     const attachment = await loadAttachmentShare(db, workspace.organization!.id, attachmentId, { leadId });
+    const senderSignature = await loadSenderSignature(db, workspace);
     let brochureShare: { id: string; url: string; brochureName: string } | null = null;
     const parts = [originalMessage].filter(Boolean);
     if (brochureId) {
@@ -270,10 +283,10 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
       parts.push(`View our ${brochureShare.brochureName} catalog: ${brochureShare.url}`);
     }
     if (attachment) parts.push(`Attachment — ${attachment.fileName}: ${attachment.url}`);
-    const message = parts.join('\n\n');
+    const message = appendProfileSignatureText(parts.join('\n\n'), senderSignature);
     if (message.length > 4096) {
       await discardUnsentBrochureShare(db, workspace.organization!.id, brochureShare?.id);
-      throw new Error('WhatsApp message is too long after adding the brochure or attachment link.');
+      throw new Error('WhatsApp message is too long after adding the brochure, attachment link and sender signature.');
     }
 
     const mode = attachment ? (brochureShare ? 'attachment_brochure' : 'attachment') : (brochureShare ? 'brochure' : 'free_text');
@@ -289,7 +302,7 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
     await recordOutboundMessage({ db, workspace, row, result, messageType: 'Text', messageText: message, callbackData, attachment, payload: { mode, message, lead_id: leadId, brochure_id: brochureId || null, brochure_share_id: brochureShare?.id ?? null, brochure_url: brochureShare?.url ?? null, attachment_id: attachment?.id ?? null, attachment_name: attachment?.fileName ?? null, attachment_url: attachment?.url ?? null, attachment_mime_type: attachment?.mimeType ?? null } });
     await markAttachmentSent(db, workspace.organization!.id, attachment, result.id);
     revalidatePath(`/leads/${leadId}`);
-    return { ok: true, message: attachment && brochureShare ? 'WhatsApp message, brochure and attachment sent and added to the customer timeline.' : attachment ? 'WhatsApp message and attachment sent and added to the customer timeline.' : brochureShare ? 'WhatsApp message and brochure sent and added to the customer timeline.' : 'WhatsApp message sent and added to the customer timeline.' };
+    return { ok: true, message: attachment && brochureShare ? 'WhatsApp message, brochure, attachment and profile signature sent and added to the customer timeline.' : attachment ? 'WhatsApp message, attachment and profile signature sent and added to the customer timeline.' : brochureShare ? 'WhatsApp message, brochure and profile signature sent and added to the customer timeline.' : 'WhatsApp message and profile signature sent and added to the customer timeline.' };
   } catch (error) {
     return { ok: false, message: safeSalesError(error) };
   }
@@ -307,12 +320,13 @@ export async function sendStarkLeadWhatsAppTemplate(formData: FormData): Promise
     const recipient = resolveWhatsAppRecipient(row);
     await persistResolvedRecipient(db, workspace.organization!.id, row, recipient);
     const customerName = clean(row.person_name || row.contact_name) || 'Customer';
-    const context = salesFollowUpContext(row);
+    const senderSignature = await loadSenderSignature(db, workspace);
+    const context = `${salesFollowUpContext(row)}\n\n${profileSignatureText(senderSignature)}`;
     const callbackData = JSON.stringify({ source: 'setu_flow_lead_detail', intake_id: row.id, lead_id: leadId, actor_user_id: workspace.user!.id, mode: 'template_restart' });
     const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context], callbackData });
-    await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: 'WhatsApp approved follow-up', callbackData, payload: { mode: 'template_restart', lead_id: leadId, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context] } });
+    await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { mode: 'template_restart', lead_id: leadId, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context] } });
     revalidatePath(`/leads/${leadId}`);
-    return { ok: true, message: 'Approved WhatsApp follow-up sent. Free-text messaging will reopen after the customer replies.' };
+    return { ok: true, message: 'Approved WhatsApp follow-up sent with profile signature. Free-text messaging will reopen after the customer replies.' };
   } catch (error) {
     return { ok: false, message: safeSalesError(error) };
   }
@@ -354,17 +368,18 @@ async function performStarkInteraktSalesFollowUp(formData: FormData) {
   const recipient = resolveWhatsAppRecipient(row);
   await persistResolvedRecipient(db, organizationId, row, recipient);
   const customerName = clean(row.person_name || row.contact_name) || 'Customer';
-  const context = salesFollowUpContext(row);
+  const senderSignature = await loadSenderSignature(db, workspace);
+  const context = `${salesFollowUpContext(row)}\n\n${profileSignatureText(senderSignature)}`;
   const callbackData = JSON.stringify({ source: 'setu_flow_inbound_sales', intake_id: row.id, actor_user_id: workspace.user!.id, mode: 'template_restart' });
   const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context], callbackData });
-  await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: 'WhatsApp approved follow-up', callbackData, payload: { templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context] } });
+  await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context] } });
   revalidatePath(INBOUND_PATH);
 }
 
 export async function sendStarkInteraktSalesFollowUp(formData: FormData): Promise<SalesMessageActionResult> {
   try {
     await performStarkInteraktSalesFollowUp(formData);
-    return { ok: true, message: 'Approved WhatsApp follow-up sent.' };
+    return { ok: true, message: 'Approved WhatsApp follow-up sent with profile signature.' };
   } catch (error) {
     return { ok: false, message: safeSalesError(error) };
   }
