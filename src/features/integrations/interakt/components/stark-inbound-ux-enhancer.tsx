@@ -64,6 +64,8 @@ export function StarkInboundUxEnhancer() {
         host.className = 'mt-2 rounded-b-xl border border-t-0 border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600';
         textarea.insertAdjacentElement('afterend', host);
       }
+      if (host.dataset.preview === preview) return;
+      host.dataset.preview = preview;
       host.innerHTML = '';
       const title = document.createElement('div');
       title.className = 'mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-blue-700';
@@ -110,6 +112,15 @@ export function StarkInboundUxEnhancer() {
     document.addEventListener('click', openCreateLeadModal, true);
     return () => document.removeEventListener('click', openCreateLeadModal, true);
   }, [enabled]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !submitting) setModalOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [modalOpen, submitting]);
 
   if (!enabled || !modalOpen) return null;
 
