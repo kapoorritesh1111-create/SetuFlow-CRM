@@ -58,21 +58,24 @@ export async function GET() {
     .in('organization_member_id', memberIds);
   if (roleLinksError) return NextResponse.json({ error: 'Unable to load Stark Packmate roles.' }, { status: 500 });
 
-  const roleIds = Array.from(new Set((roleLinks ?? []).map((row: any) => row.role_id).filter(Boolean)));
+  const roleIds = Array.from(new Set<string>((roleLinks ?? []).map((row: any) => clean(row.role_id)).filter(Boolean)));
   const { data: roles, error: rolesError } = roleIds.length
     ? await db.from('roles').select('id,name').in('id', roleIds)
     : { data: [], error: null };
   if (rolesError) return NextResponse.json({ error: 'Unable to load Stark Packmate roles.' }, { status: 500 });
 
-  const roleNameById = new Map((roles ?? []).map((row: any) => [row.id, clean(row.name).toLowerCase()]));
-  const salesMemberIds = new Set(
+  const roleNameById = new Map<string, string>(
+    (roles ?? []).map((row: any) => [clean(row.id), clean(row.name).toLowerCase()] as [string, string]),
+  );
+  const salesMemberIds = new Set<string>(
     (roleLinks ?? [])
-      .filter((row: any) => SALES_ROLES.has(roleNameById.get(row.role_id) ?? ''))
-      .map((row: any) => row.organization_member_id),
+      .filter((row: any) => SALES_ROLES.has(roleNameById.get(clean(row.role_id)) ?? ''))
+      .map((row: any) => clean(row.organization_member_id))
+      .filter(Boolean),
   );
   const salesUserIds = (members ?? [])
-    .filter((row: any) => salesMemberIds.has(row.id))
-    .map((row: any) => row.user_id)
+    .filter((row: any) => salesMemberIds.has(clean(row.id)))
+    .map((row: any) => clean(row.user_id))
     .filter(Boolean);
 
   if (!salesUserIds.length) return NextResponse.json({ canFilterOwners: true, assignees: [] });
