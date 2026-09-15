@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 type Signature = {
@@ -34,6 +35,8 @@ export function StarkInboundUxEnhancer() {
   const [signature, setSignature] = useState<Signature | null>(null);
   const [canFilterOwners, setCanFilterOwners] = useState(false);
   const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
+  const [signatureHost, setSignatureHost] = useState<HTMLElement | null>(null);
+  const [ownerHost, setOwnerHost] = useState<HTMLElement | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [reasonOptions, setReasonOptions] = useState<ReasonOption[]>([]);
   const [reason, setReason] = useState('');
@@ -59,86 +62,42 @@ export function StarkInboundUxEnhancer() {
   }, [enabled]);
 
   useEffect(() => {
-    if (!enabled || !preview) return;
-
-    const ensureSignaturePreview = () => {
-      const textareas = Array.from(document.querySelectorAll<HTMLTextAreaElement>('textarea[name="message"]'));
-      const textarea = textareas.find((item) => item.closest('form')?.querySelector('input[name="rowId"]')) ?? textareas[0];
-      if (!textarea) return;
-      let host = document.getElementById('setu-required-message-signature');
-      if (!host) {
-        host = document.createElement('div');
-        host.id = 'setu-required-message-signature';
-        host.className = 'mt-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-xs text-slate-700';
-        textarea.insertAdjacentElement('afterend', host);
-      }
-      if (host.dataset.preview === preview) return;
-      host.dataset.preview = preview;
-      host.innerHTML = '';
-      const title = document.createElement('div');
-      title.className = 'mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-blue-700';
-      title.textContent = 'Signature included when sent';
-      const body = document.createElement('div');
-      body.className = 'whitespace-pre-line leading-5 text-slate-700';
-      body.textContent = preview;
-      host.append(title, body);
-    };
-
-    ensureSignaturePreview();
-    const observer = new MutationObserver(ensureSignaturePreview);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [enabled, preview]);
-
-  useEffect(() => {
     if (!enabled) return;
 
-    const syncOwnerFilter = () => {
-      const input = document.querySelector<HTMLInputElement>('input[name="owner"]');
-      const existing = document.querySelector<HTMLSelectElement>('select[data-setu-owner-filter="true"]');
-
-      if (!canFilterOwners) {
-        if (input) {
-          const label = input.closest('label');
-          if (label) label.style.display = 'none';
+    const mountHosts = () => {
+      const textareas = Array.from(document.querySelectorAll<HTMLTextAreaElement>('textarea[name="message"]'));
+      const textarea = textareas.find((item) => item.closest('form')?.querySelector('input[name="rowId"]')) ?? textareas[0];
+      if (textarea) {
+        let host = document.getElementById('setu-required-message-signature-host');
+        if (!host || !document.body.contains(host)) {
+          host = document.createElement('div');
+          host.id = 'setu-required-message-signature-host';
+          textarea.insertAdjacentElement('afterend', host);
         }
-        if (existing) existing.closest('label')?.remove();
-        return;
+        if (signatureHost !== host) setSignatureHost(host);
       }
 
-      if (existing) {
-        if (existing.value !== selectedOwner) existing.value = selectedOwner;
-        return;
+      const ownerInput = document.querySelector<HTMLInputElement>('input[name="owner"]');
+      if (ownerInput) {
+        const label = ownerInput.closest('label');
+        if (label) {
+          label.style.display = 'none';
+          let host = document.getElementById('setu-owner-filter-host');
+          if (!host || !document.body.contains(host)) {
+            host = document.createElement('div');
+            host.id = 'setu-owner-filter-host';
+            label.insertAdjacentElement('afterend', host);
+          }
+          if (ownerHost !== host) setOwnerHost(host);
+        }
       }
-      if (!input) return;
-
-      const label = input.closest('label');
-      if (!label) return;
-      const select = document.createElement('select');
-      select.name = 'owner';
-      select.dataset.setuOwnerFilter = 'true';
-      select.className = input.className || 'mt-1 block w-40 rounded-xl border border-slate-200 px-3 py-2 text-xs';
-
-      const allOption = document.createElement('option');
-      allOption.value = '';
-      allOption.textContent = 'All assigned users';
-      select.appendChild(allOption);
-
-      for (const assignee of assignees) {
-        const option = document.createElement('option');
-        option.value = clean(assignee.value || assignee.label);
-        option.textContent = assignee.email ? `${assignee.label} · ${assignee.email}` : assignee.label;
-        select.appendChild(option);
-      }
-      select.value = selectedOwner;
-      input.replaceWith(select);
     };
 
-    syncOwnerFilter();
-    const observer = new MutationObserver(syncOwnerFilter);
+    mountHosts();
+    const observer = new MutationObserver(mountHosts);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [assignees, canFilterOwners, enabled, selectedOwner]);
+  }, [enabled, ownerHost, signatureHost]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -180,7 +139,7 @@ export function StarkInboundUxEnhancer() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [modalOpen, submitting]);
 
-  if (!enabled || !modalOpen) return null;
+  if (!enabled) return null;
 
   function closeModal() {
     if (submitting) return;
@@ -202,36 +161,63 @@ export function StarkInboundUxEnhancer() {
   }
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="create-lead-modal-title" onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
-      <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Create Lead</p>
-            <h2 id="create-lead-modal-title" className="mt-1 text-xl font-black text-slate-950">{missingInfo ? 'Why are we creating this Lead now?' : 'Create this Lead?'}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {missingInfo
-                ? 'Required qualification information is still missing. Choose the business reason for moving this inquiry into the Lead pipeline now.'
-                : 'The required lead information is available. Setu Flow will run duplicate checking before creating the Lead.'}
-            </p>
+    <>
+      {signatureHost && preview ? createPortal(
+        <div className="mt-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-xs text-slate-700">
+          <div className="mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-blue-700">Signature included when sent</div>
+          <div className="whitespace-pre-line leading-5 text-slate-700">{preview}</div>
+        </div>,
+        signatureHost,
+      ) : null}
+
+      {ownerHost && canFilterOwners ? createPortal(
+        <label className="text-[9px] font-bold uppercase text-slate-500">
+          Owner
+          <select key={selectedOwner || 'all'} name="owner" defaultValue={selectedOwner} className="mt-1 block min-w-40 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs normal-case text-slate-900">
+            <option value="">All assigned users</option>
+            {assignees.map((assignee) => (
+              <option key={clean(assignee.value || assignee.label)} value={clean(assignee.value || assignee.label)}>
+                {assignee.email ? `${assignee.label} · ${assignee.email}` : assignee.label}
+              </option>
+            ))}
+          </select>
+        </label>,
+        ownerHost,
+      ) : null}
+
+      {modalOpen ? (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="create-lead-modal-title" onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Create Lead</p>
+                <h2 id="create-lead-modal-title" className="mt-1 text-xl font-black text-slate-950">{missingInfo ? 'Why are we creating this Lead now?' : 'Create this Lead?'}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {missingInfo
+                    ? 'Required qualification information is still missing. Choose the business reason for moving this inquiry into the Lead pipeline now.'
+                    : 'The required lead information is available. Setu Flow will run duplicate checking before creating the Lead.'}
+                </p>
+              </div>
+              <button type="button" onClick={closeModal} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-lg font-bold text-slate-500 hover:bg-slate-50" aria-label="Close">×</button>
+            </div>
+
+            {missingInfo ? (
+              <label className="mt-5 block text-xs font-black uppercase tracking-[0.12em] text-slate-600">
+                Reason required
+                <select value={reason} onChange={(event) => setReason(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500">
+                  <option value="">Select why this Lead should be created now</option>
+                  {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+            ) : null}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={closeModal} className="h-11 rounded-xl border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancel</button>
+              <button type="button" disabled={submitting || (missingInfo && !reason)} onClick={confirmCreateLead} className="h-11 rounded-xl bg-slate-950 px-5 text-sm font-black text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{submitting ? 'Creating…' : 'Create Lead'}</button>
+            </div>
           </div>
-          <button type="button" onClick={closeModal} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-lg font-bold text-slate-500 hover:bg-slate-50" aria-label="Close">×</button>
         </div>
-
-        {missingInfo ? (
-          <label className="mt-5 block text-xs font-black uppercase tracking-[0.12em] text-slate-600">
-            Reason required
-            <select value={reason} onChange={(event) => setReason(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500">
-              <option value="">Select why this Lead should be created now</option>
-              {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </label>
-        ) : null}
-
-        <div className="mt-6 flex justify-end gap-3">
-          <button type="button" onClick={closeModal} className="h-11 rounded-xl border border-slate-300 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button type="button" disabled={submitting || (missingInfo && !reason)} onClick={confirmCreateLead} className="h-11 rounded-xl bg-slate-950 px-5 text-sm font-black text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{submitting ? 'Creating…' : 'Create Lead'}</button>
-        </div>
-      </div>
-    </div>
+      ) : null}
+    </>
   );
 }
