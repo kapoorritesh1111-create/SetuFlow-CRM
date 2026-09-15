@@ -1,8 +1,7 @@
 'use client';
 
-import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 export const INBOUND_COLUMN_OPTIONS = [
   ['contact', 'Contact'],
@@ -19,14 +18,12 @@ export const INBOUND_COLUMN_OPTIONS = [
 ] as const;
 
 const DEFAULT_COLUMNS = ['contact', 'phone', 'company', 'requirement', 'source', 'guru', 'score', 'last_activity'];
-type AssigneeOption = { value: string; label: string; email?: string | null };
 
 const premiumStyles = `
   main:has(.setu-inbound-controls) { background: linear-gradient(180deg, #f8fbff 0%, #f8fafc 260px, #f8fafc 100%); }
   .setu-inbound-controls { isolation: isolate; }
   .setu-inbound-controls button, .setu-inbound-controls summary { transition: all 160ms ease; }
   .setu-inbound-controls summary:hover { border-color:#bfdbfe; box-shadow:0 5px 16px rgba(15,23,42,.07); }
-  main:has(.setu-inbound-controls) input[name="owner"] { display:none!important; }
   main:has(.setu-inbound-controls) table { width:100%; border-spacing:0; font-variant-numeric:tabular-nums; }
   main:has(.setu-inbound-controls) thead { position:sticky; top:0; z-index:8; box-shadow:inset 0 -1px 0 #e2e8f0; }
   main:has(.setu-inbound-controls) thead th { height:46px; background:rgba(248,250,252,.97)!important; backdrop-filter:blur(10px); color:#475569!important; font-size:10px!important; letter-spacing:.08em!important; }
@@ -56,51 +53,16 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentPage = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
-  const currentOwner = searchParams.get('owner') ?? '';
   const initial = useMemo(() => {
     const requested = String(columns ?? '').split(',').filter(Boolean);
     return requested.length ? requested : DEFAULT_COLUMNS;
   }, [columns]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>(initial);
-  const [canFilterOwners, setCanFilterOwners] = useState(false);
-  const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
-  const [ownerHost, setOwnerHost] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void fetch('/api/interakt/assignees', { cache: 'no-store' })
-      .then((response) => response.ok ? response.json() : null)
-      .then((payload) => {
-        if (!active) return;
-        setCanFilterOwners(Boolean(payload?.canFilterOwners));
-        setAssignees(Array.isArray(payload?.assignees) ? payload.assignees : []);
-      })
-      .catch(() => {
-        if (active) { setCanFilterOwners(false); setAssignees([]); }
-      });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    if (!canFilterOwners) return;
-    const input = document.querySelector<HTMLInputElement>('input[name="owner"]');
-    const label = input?.closest('label');
-    if (!input || !label) return;
-    let host = label.querySelector<HTMLElement>('[data-setu-owner-filter-host="true"]');
-    if (!host) {
-      host = document.createElement('div');
-      host.dataset.setuOwnerFilterHost = 'true';
-      input.insertAdjacentElement('afterend', host);
-    }
-    setOwnerHost(host);
-    return () => setOwnerHost(null);
-  }, [canFilterOwners]);
 
   function updateParam(key: string, value: string | null) {
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value); else params.delete(key);
     if (key === 'view') params.delete('review');
-    if (key === 'owner') { params.set('page', '1'); params.delete('review'); }
     router.push(`/leads/inbound?${params.toString()}`);
   }
 
@@ -120,17 +82,9 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
     updateParam('columns', next.join(','));
   }
 
-  const ownerSelect = canFilterOwners ? (
-    <select value={currentOwner} onChange={(event) => updateParam('owner', event.target.value || null)} className="mt-1 block w-40 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs normal-case text-slate-900">
-      <option value="">All assigned users</option>
-      {assignees.map((assignee) => <option key={`${assignee.value}|${assignee.email ?? ''}`} value={assignee.value || assignee.label}>{assignee.label}{assignee.email ? ` · ${assignee.email}` : ''}</option>)}
-    </select>
-  ) : null;
-
   return (
     <div className="setu-inbound-controls flex flex-wrap items-center gap-2">
       <style dangerouslySetInnerHTML={{ __html: premiumStyles }} />
-      {ownerHost && ownerSelect ? createPortal(ownerSelect, ownerHost) : null}
 
       {view === 'list' ? (
         <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Current list page">
