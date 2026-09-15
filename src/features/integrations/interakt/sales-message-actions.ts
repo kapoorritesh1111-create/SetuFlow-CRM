@@ -30,9 +30,8 @@ const replyWindowOpen = (v: unknown) => {
 };
 
 function approvedFollowUpTemplate() {
-  const templateName = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE);
+  const templateName = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE) || 'qualification_follow_up';
   const languageCode = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE_LANGUAGE) || 'en';
-  if (!templateName) throw new Error('No approved Stark Packmate WhatsApp follow-up template is configured yet. Add the approved Interakt template in Admin → Integrations before restarting this conversation.');
   return { templateName, languageCode };
 }
 
