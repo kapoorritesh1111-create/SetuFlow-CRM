@@ -1,5 +1,6 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -25,7 +26,7 @@ const premiumStyles = `
   .setu-inbound-controls { isolation: isolate; }
   .setu-inbound-controls button, .setu-inbound-controls summary { transition: all 160ms ease; }
   .setu-inbound-controls summary:hover { border-color:#bfdbfe; box-shadow:0 5px 16px rgba(15,23,42,.07); }
-  main:has(.setu-inbound-controls) label:has(input[name="owner"]) { display:none!important; }
+  main:has(.setu-inbound-controls) input[name="owner"] { display:none!important; }
   main:has(.setu-inbound-controls) table { width:100%; border-spacing:0; font-variant-numeric:tabular-nums; }
   main:has(.setu-inbound-controls) thead { position:sticky; top:0; z-index:8; box-shadow:inset 0 -1px 0 #e2e8f0; }
   main:has(.setu-inbound-controls) thead th { height:46px; background:rgba(248,250,252,.97)!important; backdrop-filter:blur(10px); color:#475569!important; font-size:10px!important; letter-spacing:.08em!important; }
@@ -63,6 +64,7 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
   const [selectedColumns, setSelectedColumns] = useState<string[]>(initial);
   const [canFilterOwners, setCanFilterOwners] = useState(false);
   const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
+  const [ownerHost, setOwnerHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -78,6 +80,21 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
       });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!canFilterOwners) return;
+    const input = document.querySelector<HTMLInputElement>('input[name="owner"]');
+    const label = input?.closest('label');
+    if (!input || !label) return;
+    let host = label.querySelector<HTMLElement>('[data-setu-owner-filter-host="true"]');
+    if (!host) {
+      host = document.createElement('div');
+      host.dataset.setuOwnerFilterHost = 'true';
+      input.insertAdjacentElement('afterend', host);
+    }
+    setOwnerHost(host);
+    return () => setOwnerHost(null);
+  }, [canFilterOwners]);
 
   function updateParam(key: string, value: string | null) {
     const params = new URLSearchParams(searchParams.toString());
@@ -103,19 +120,17 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
     updateParam('columns', next.join(','));
   }
 
-  return (
-    <div className="setu-inbound-controls flex flex-wrap items-end gap-2">
-      <style dangerouslySetInnerHTML={{ __html: premiumStyles }} />
+  const ownerSelect = canFilterOwners ? (
+    <select value={currentOwner} onChange={(event) => updateParam('owner', event.target.value || null)} className="mt-1 block w-40 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs normal-case text-slate-900">
+      <option value="">All assigned users</option>
+      {assignees.map((assignee) => <option key={`${assignee.value}|${assignee.email ?? ''}`} value={assignee.value || assignee.label}>{assignee.label}{assignee.email ? ` · ${assignee.email}` : ''}</option>)}
+    </select>
+  ) : null;
 
-      {canFilterOwners ? (
-        <label className="text-[9px] font-bold uppercase text-slate-500">
-          Owner
-          <select value={currentOwner} onChange={(event) => updateParam('owner', event.target.value || null)} className="mt-1 block min-w-44 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs normal-case text-slate-900">
-            <option value="">All assigned users</option>
-            {assignees.map((assignee) => <option key={assignee.value || assignee.label} value={assignee.value || assignee.label}>{assignee.label}{assignee.email ? ` · ${assignee.email}` : ''}</option>)}
-          </select>
-        </label>
-      ) : null}
+  return (
+    <div className="setu-inbound-controls flex flex-wrap items-center gap-2">
+      <style dangerouslySetInnerHTML={{ __html: premiumStyles }} />
+      {ownerHost && ownerSelect ? createPortal(ownerSelect, ownerHost) : null}
 
       {view === 'list' ? (
         <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Current list page">
