@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 type Signature = {
   fullName: string;
@@ -11,6 +11,7 @@ type Signature = {
 };
 
 type ReasonOption = { value: string; label: string };
+type AssigneeOption = { value: string; label: string; email?: string | null };
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
@@ -28,26 +29,32 @@ function signatureText(signature: Signature | null) {
 
 export function StarkInboundUxEnhancer() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const enabled = pathname === '/leads/inbound';
   const [signature, setSignature] = useState<Signature | null>(null);
+  const [canFilterOwners, setCanFilterOwners] = useState(false);
+  const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [reasonOptions, setReasonOptions] = useState<ReasonOption[]>([]);
   const [reason, setReason] = useState('');
   const [missingInfo, setMissingInfo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const preview = useMemo(() => signatureText(signature), [signature]);
+  const selectedOwner = clean(searchParams.get('owner'));
 
   useEffect(() => {
     if (!enabled) return;
     let active = true;
-    void fetch('/api/profile/signature', { cache: 'no-store' })
-      .then((response) => response.ok ? response.json() : null)
-      .then((payload) => {
-        if (!active) return;
-        const next = payload?.signature;
-        if (next?.fullName && next?.organizationName) setSignature(next as Signature);
-      })
-      .catch(() => undefined);
+    void Promise.all([
+      fetch('/api/profile/signature', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null),
+      fetch('/api/interakt/assignees', { cache: 'no-store' }).then((response) => response.ok ? response.json() : null),
+    ]).then(([signaturePayload, assigneePayload]) => {
+      if (!active) return;
+      const next = signaturePayload?.signature;
+      if (next?.fullName && next?.organizationName) setSignature(next as Signature);
+      setCanFilterOwners(Boolean(assigneePayload?.canFilterOwners));
+      setAssignees(Array.isArray(assigneePayload?.assignees) ? assigneePayload.assignees : []);
+    }).catch(() => undefined);
     return () => { active = false; };
   }, [enabled]);
 
@@ -55,13 +62,14 @@ export function StarkInboundUxEnhancer() {
     if (!enabled || !preview) return;
 
     const ensureSignaturePreview = () => {
-      const textarea = document.querySelector<HTMLTextAreaElement>('#message-customer textarea[name="message"]');
+      const textareas = Array.from(document.querySelectorAll<HTMLTextAreaElement>('textarea[name="message"]'));
+      const textarea = textareas.find((item) => item.closest('form')?.querySelector('input[name="rowId"]')) ?? textareas[0];
       if (!textarea) return;
       let host = document.getElementById('setu-required-message-signature');
       if (!host) {
         host = document.createElement('div');
         host.id = 'setu-required-message-signature';
-        host.className = 'mt-2 rounded-b-xl border border-t-0 border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600';
+        host.className = 'mt-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5 text-xs text-slate-700';
         textarea.insertAdjacentElement('afterend', host);
       }
       if (host.dataset.preview === preview) return;
@@ -81,6 +89,56 @@ export function StarkInboundUxEnhancer() {
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [enabled, preview]);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const syncOwnerFilter = () => {
+      const input = document.querySelector<HTMLInputElement>('input[name="owner"]');
+      const existing = document.querySelector<HTMLSelectElement>('select[data-setu-owner-filter="true"]');
+
+      if (!canFilterOwners) {
+        if (input) {
+          const label = input.closest('label');
+          if (label) label.style.display = 'none';
+        }
+        if (existing) existing.closest('label')?.remove();
+        return;
+      }
+
+      if (existing) {
+        if (existing.value !== selectedOwner) existing.value = selectedOwner;
+        return;
+      }
+      if (!input) return;
+
+      const label = input.closest('label');
+      if (!label) return;
+      const select = document.createElement('select');
+      select.name = 'owner';
+      select.dataset.setuOwnerFilter = 'true';
+      select.className = input.className || 'mt-1 block w-40 rounded-xl border border-slate-200 px-3 py-2 text-xs';
+
+      const allOption = document.createElement('option');
+      allOption.value = '';
+      allOption.textContent = 'All assigned users';
+      select.appendChild(allOption);
+
+      for (const assignee of assignees) {
+        const option = document.createElement('option');
+        option.value = clean(assignee.value || assignee.label);
+        option.textContent = assignee.email ? `${assignee.label} · ${assignee.email}` : assignee.label;
+        select.appendChild(option);
+      }
+      select.value = selectedOwner;
+      input.replaceWith(select);
+    };
+
+    syncOwnerFilter();
+    const observer = new MutationObserver(syncOwnerFilter);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [assignees, canFilterOwners, enabled, selectedOwner]);
 
   useEffect(() => {
     if (!enabled) return;
