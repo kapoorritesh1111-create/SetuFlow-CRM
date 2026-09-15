@@ -31,21 +31,23 @@ export async function GET() {
 
   const { data, error } = await db
     .from('lead_intake_staging')
-    .select('setu_assigned_name,setu_assigned_email')
+    .select('setu_assigned_name,setu_assigned_email,interakt_assignee_name')
     .eq('organization_id', organization.id)
     .eq('source_provider', 'interakt')
     .eq('sales_queue_suppressed', false)
-    .not('intake_status', 'in', `(${TERMINAL.join(',')})`);
+    .not('intake_status', 'in', `(${TERMINAL.join(',')})`)
+    .or('setu_assigned_name.not.is.null,setu_assigned_email.not.is.null,interakt_assignee_name.not.is.null')
+    .limit(1000);
 
   if (error) return NextResponse.json({ error: 'Unable to load assigned users.' }, { status: 500 });
 
   const unique = new Map<string, { value: string; label: string; email: string | null }>();
   for (const row of data ?? []) {
-    const name = clean(row.setu_assigned_name);
+    const name = clean(row.setu_assigned_name) || clean(row.interakt_assignee_name);
     const email = clean(row.setu_assigned_email);
     const value = name || email;
     if (!value) continue;
-    const key = value.toLowerCase();
+    const key = `${name.toLowerCase()}|${email.toLowerCase()}`;
     if (!unique.has(key)) unique.set(key, { value, label: name || email, email: email || null });
   }
 
