@@ -74,7 +74,7 @@ export async function sendPackagingQuoteCustomerPackage(input: { leadId: string;
     const existingMeta = quote.industry_metadata ?? {};
     const token = String(existingMeta.customer_review_token || '').trim() || `${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
     const now = new Date().toISOString();
-    const reviewUrl = `${appOrigin()}/quote-review/${token}`;
+    const reviewUrl = `${appOrigin()}/public/quote-review/${token}`;
     const subject = `Stark Packmate quote ${quote.quote_number ?? ''} — review package`;
     const html = `<div style="font-family:Arial,sans-serif;max-width:660px;margin:auto;color:#0f172a"><div style="padding:22px;border:1px solid #e2e8f0;border-radius:18px"><p style="font-size:12px;font-weight:800;letter-spacing:.12em;color:#0f766e;text-transform:uppercase;margin:0 0 8px">Stark Packmate</p><h2 style="margin:0 0 10px">Your packaging quote is ready</h2><p style="color:#475569">Hello ${escapeHtml(lead?.contact_name || lead?.company_name || 'there')},</p><p style="color:#475569">We prepared your quote package in one place. Review the commercial quote, the sample KLD/dieline and the requested product reference before design proceeds.</p><p style="margin:24px 0"><a href="${reviewUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#0f766e;color:white;text-decoration:none;font-weight:800">Review Quote Package</a></p><p style="font-size:12px;color:#94a3b8">This secure link is for your quote package. No login is required.</p></div></div>`;
     const sent = await sendEmail(email, subject, html);
@@ -142,7 +142,7 @@ export async function sendPackagingProofReviewEmail(input: { quoteLineItemId: st
     const email = String(lead?.email || '').trim().toLowerCase();
     if (!email) return { ok: false, error: 'The lead does not have a customer email address.' };
 
-    const reviewUrl = `${appOrigin()}/proof-approval/${proof.approval_token}`;
+    const reviewUrl = `${appOrigin()}/public/proof-approval/${proof.approval_token}`;
     const subject = `Stark Packmate design proof v${proof.version} — approval requested`;
     const html = `<div style="font-family:Arial,sans-serif;max-width:660px;margin:auto;color:#0f172a"><div style="padding:22px;border:1px solid #e2e8f0;border-radius:18px"><p style="font-size:12px;font-weight:800;letter-spacing:.12em;color:#0f766e;text-transform:uppercase;margin:0 0 8px">Stark Packmate</p><h2 style="margin:0 0 10px">Your design proof is ready</h2><p style="color:#475569">Hello ${escapeHtml(lead?.contact_name || lead?.company_name || 'there')},</p><p style="color:#475569">Please review proof v${proof.version}. You can approve it or request changes and add comments from the review page.</p><p style="margin:24px 0"><a href="${reviewUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#0f766e;color:white;text-decoration:none;font-weight:800">Review Design Proof</a></p><p style="font-size:12px;color:#94a3b8">No login is required. If a newer proof is uploaded, this link will automatically be superseded.</p></div></div>`;
     const sent = await sendEmail(email, subject, html);
