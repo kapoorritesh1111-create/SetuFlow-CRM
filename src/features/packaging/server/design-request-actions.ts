@@ -31,7 +31,7 @@ export async function getDesignRequestQuoteState(leadId: string, quoteId?: strin
     const canRequest = hasWorkspaceRole(currentRoles, REQUEST_ROLES);
     const { data: quotes, error: quoteError } = await supabase
       .from('quotes')
-      .select('id, quote_number, status, updated_at')
+      .select('id, quote_number, status, updated_at, industry_metadata')
       .eq('organization_id', organizationId)
       .eq('lead_id', leadId)
       .not('status', 'in', '(rejected,expired,cancelled,declined)')
