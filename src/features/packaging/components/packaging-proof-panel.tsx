@@ -80,7 +80,7 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
         return;
       }
       if (!('email' in response)) { setError('Could not confirm customer delivery.'); return; }
-      setSuccess(`Design proof v${proof.version} sent to ${response.email}. The customer can approve it or request changes from the secure review page.`);
+      setSuccess(`Design proof v${proof.version} sent to ${response.email}. The secure review link remains available below for viewing, copying or resharing.`);
     });
   };
 
@@ -117,19 +117,17 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
                         <p className="truncate text-xs font-semibold text-content-primary">v{proof.version} — {proof.file_name}</p>
                         {index === 0 ? <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">Current</span> : null}
                       </div>
-                      <p className="text-[11px] text-content-muted">
-                        {packagingDesignSourceLabel(proof.design_source)} · {new Date(proof.uploaded_at).toLocaleDateString()}
-                        {proof.review_comment ? ` · “${proof.review_comment}”` : ''}
-                      </p>
+                      <p className="text-[11px] text-content-muted">{packagingDesignSourceLabel(proof.design_source)} · {new Date(proof.uploaded_at).toLocaleDateString()}{proof.review_comment ? ` · “${proof.review_comment}”` : ''}</p>
                     </div>
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusTone(proof.status)}`}>{proof.status}</span>
                   </div>
-                  {index === 0 && proof.status !== 'approved' ? (
+                  {index === 0 ? (
                     <div className="mt-2 flex flex-wrap gap-2 border-t border-line pt-2">
-                      <button onClick={() => shareReview(proof)} disabled={pending} className="rounded-ctl bg-brand-600 px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50">{pending ? 'Sending…' : 'Send for review'}</button>
-                      <button onClick={() => emailReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">Open Email</button>
-                      <button onClick={() => whatsappReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">WhatsApp</button>
-                      <button onClick={() => copyLink(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">{copiedFor === proof.id ? 'Copied!' : 'Copy link'}</button>
+                      {proof.status !== 'approved' ? <button onClick={() => shareReview(proof)} disabled={pending} className="rounded-ctl bg-brand-600 px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50">{pending ? 'Sending…' : 'Send / resend for review'}</button> : null}
+                      {proof.status !== 'approved' ? <button onClick={() => emailReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">Open Email</button> : null}
+                      {proof.status !== 'approved' ? <button onClick={() => whatsappReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">WhatsApp</button> : null}
+                      <a href={`/public/proof-approval/${proof.approval_token}`} target="_blank" rel="noopener noreferrer" className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">View review link ↗</a>
+                      <button onClick={() => copyLink(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">{copiedFor === proof.id ? 'Copied!' : 'Copy / reshare link'}</button>
                     </div>
                   ) : null}
                 </li>
@@ -138,17 +136,11 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
           ) : (!loading ? <p className="text-xs text-content-muted">No design file uploaded yet.</p> : null)}
 
           <form action={handleUpload} className="mt-3 grid gap-2 border-t border-line pt-3 sm:grid-cols-[190px_minmax(0,1fr)_auto] sm:items-end">
-            <label className="text-[11px] font-semibold text-content-muted">
-              Artwork source
-              <select value={designSource} onChange={(event: ChangeEvent<HTMLSelectElement>) => setDesignSource(event.target.value as PackagingDesignSource)} className="mt-1 w-full rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-xs text-content-primary">
-                <option value="design_team">Design Team proof</option>
-                <option value="customer_provided">Customer artwork / adapted proof</option>
-              </select>
-            </label>
+            <label className="text-[11px] font-semibold text-content-muted">Artwork source<select value={designSource} onChange={(event: ChangeEvent<HTMLSelectElement>) => setDesignSource(event.target.value as PackagingDesignSource)} className="mt-1 w-full rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-xs text-content-primary"><option value="design_team">Design Team proof</option><option value="customer_provided">Customer artwork / adapted proof</option></select></label>
             <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" required className="text-xs" />
             <button type="submit" disabled={pending} className="rounded-ctl bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{pending ? 'Uploading…' : 'Upload proof'}</button>
           </form>
-          <p className="mt-2 text-[11px] text-content-muted">Every final proof requires customer approval before Printing. “Send for review” now emails the secure review link directly to the customer; WhatsApp and copy-link remain available as alternate channels.</p>
+          <p className="mt-2 text-[11px] text-content-muted">Every final proof requires customer approval before Printing. The current proof keeps a permanent View / Copy / Reshare link so Sales or Design can reopen it from the lead at any time.</p>
         </div>
       ) : null}
     </div>
