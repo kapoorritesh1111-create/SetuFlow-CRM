@@ -30,15 +30,15 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     .maybeSingle();
   if (error || !attachment?.id) return NextResponse.json({ error: 'Attachment not found.' }, { status: 404 });
 
+  const legacyUrl = String(attachment.legacy_file_url || '').trim();
+  if (legacyUrl.startsWith('https://') || legacyUrl.startsWith('http://')) return NextResponse.redirect(legacyUrl, 302);
+  if (legacyUrl.startsWith('/')) return NextResponse.redirect(new URL(legacyUrl, request.nextUrl.origin), 302);
+
   if (attachment.storage_path) {
     const { data, error: signError } = await admin.storage.from('lead-attachments').createSignedUrl(attachment.storage_path, 60 * 10);
     if (signError || !data?.signedUrl) return NextResponse.json({ error: 'Could not open this attachment.' }, { status: 500 });
     return NextResponse.redirect(data.signedUrl, 302);
   }
-
-  const legacyUrl = String(attachment.legacy_file_url || '').trim();
-  if (legacyUrl.startsWith('https://') || legacyUrl.startsWith('http://')) return NextResponse.redirect(legacyUrl, 302);
-  if (legacyUrl.startsWith('/')) return NextResponse.redirect(new URL(legacyUrl, request.nextUrl.origin), 302);
 
   return NextResponse.json({ error: 'This attachment does not have an accessible file.' }, { status: 404 });
 }
