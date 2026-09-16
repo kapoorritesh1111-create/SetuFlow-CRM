@@ -13,6 +13,7 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
   const [success, setSuccess] = useState('');
   const [openLineId, setOpenLineId] = useState<string | null>(null);
   const [copiedQuote, setCopiedQuote] = useState(false);
+  const [copiedDesign, setCopiedDesign] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const load = () => {
@@ -41,7 +42,7 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
         return;
       }
       if (!('email' in response)) { setError('Could not confirm customer delivery.'); return; }
-      setSuccess(`Quote package sent to ${response.email}. The secure customer review link remains available below for viewing, copying or resharing.`);
+      setSuccess(`Quote package sent to ${response.email}. The secure quote review link remains available below for viewing, copying or resharing.`);
       load();
     });
   };
@@ -53,25 +54,33 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
     setTimeout(() => setCopiedQuote(false), 1800);
   };
 
+  const copyDesignLink = async (line: any) => {
+    const designToken = String(line.designRequest?.customer_review_token || '');
+    if (!designToken || typeof window === 'undefined') return;
+    await navigator.clipboard?.writeText(`${window.location.origin}/public/design-review/${designToken}`);
+    setCopiedDesign(line.id);
+    setTimeout(() => setCopiedDesign(null), 1800);
+  };
+
   return (
     <section className="mb-4 rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 via-white to-emerald-50 p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">Customer package + Design & KLD handoff</p>
-          <h2 className="mt-1 text-lg font-black text-slate-950">Send, view or reshare the quote package — then move into design</h2>
-          <p className="mt-1 max-w-3xl text-sm font-semibold text-slate-500">The customer receives the commercial quote, sample KLD, product brochure, customer artwork/design files and a quote approval/revision action in one secure page.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">Quote Review + Design Collaboration</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Two separate customer links for two separate decisions</h2>
+          <p className="mt-1 max-w-3xl text-sm font-semibold text-slate-500">Quote Review is for commercial approval. Design Collaboration is the persistent customer workspace for artwork, KLD, proof revisions and final design approval — and can start before or after the quote is approved.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={sendCustomerPackage} disabled={pending} className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white shadow-sm disabled:opacity-50">{pending ? 'Sending…' : token ? 'Resend Customer Package' : 'Send Customer Package'}</button>
+          <button type="button" onClick={sendCustomerPackage} disabled={pending} className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white shadow-sm disabled:opacity-50">{pending ? 'Sending…' : token ? 'Resend Quote Review' : 'Send Quote Review'}</button>
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-right"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Quote</div><div className="text-sm font-black text-slate-800">{state.quote.quote_number ?? 'Current quote'}</div></div>
         </div>
       </div>
 
       {token ? (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-white p-3">
-          <div className="mr-auto min-w-0"><div className="text-[10px] font-black uppercase tracking-wide text-emerald-700">Customer review link</div><div className="truncate text-xs font-semibold text-slate-500">{quoteReviewUrl || 'Secure link available'}</div></div>
+          <div className="mr-auto min-w-0"><div className="text-[10px] font-black uppercase tracking-wide text-emerald-700">Quote Review link · commercial approval</div><div className="truncate text-xs font-semibold text-slate-500">{quoteReviewUrl || 'Secure link available'}</div></div>
           <a href={`/public/quote-review/${token}`} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">View quote link ↗</a>
-          <button type="button" onClick={copyQuoteLink} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">{copiedQuote ? 'Copied!' : 'Copy / reshare link'}</button>
+          <button type="button" onClick={copyQuoteLink} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">{copiedQuote ? 'Copied!' : 'Copy quote link'}</button>
         </div>
       ) : null}
 
@@ -83,6 +92,8 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
           const requested = Boolean(line.designRequest?.requested);
           const expanded = openLineId === line.id;
           const status = String(line.designRequest?.status || '').replaceAll('_', ' ');
+          const designToken = String(line.designRequest?.customer_review_token || '');
+          const designReviewUrl = designToken && typeof window !== 'undefined' ? `${window.location.origin}/public/design-review/${designToken}` : '';
           return (
             <div key={line.id} className="rounded-2xl border border-slate-200 bg-white p-3">
               <div className="flex items-start justify-between gap-3">
@@ -95,13 +106,24 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
 
               {requested ? <div className="mt-2 rounded-xl bg-slate-50 p-2 text-[11px] font-semibold text-slate-600">Status: {status || 'requested'}{line.designRequest.requested_at ? ` · Requested ${new Date(line.designRequest.requested_at).toLocaleString()}` : ''}{line.designRequest.due_date ? ` · Due ${line.designRequest.due_date}` : ''}{line.designRequest.notes ? ` · ${line.designRequest.notes}` : ''}</div> : null}
 
+              {requested && designToken ? (
+                <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50 p-3">
+                  <div className="text-[10px] font-black uppercase tracking-wide text-violet-700">Design Collaboration link · artwork & proof workflow</div>
+                  <div className="mt-1 truncate text-[11px] font-semibold text-slate-500">{designReviewUrl || 'Secure design link available'}</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <a href={`/public/design-review/${designToken}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-violet-700 px-3 py-2 text-xs font-black text-white">Open design workspace ↗</a>
+                    <button type="button" onClick={() => copyDesignLink(line)} className="rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-black text-violet-800">{copiedDesign === line.id ? 'Copied!' : 'Copy / reshare design link'}</button>
+                  </div>
+                </div>
+              ) : null}
+
               {expanded ? (
                 <form className="mt-3 grid gap-2 border-t border-slate-100 pt-3" action={(formData) => {
                   setError(''); setSuccess('');
                   startTransition(async () => {
                     const response = await requestPackagingDesign({ leadId, quoteId: state.quote.id, quoteLineItemId: line.id, dueDate: String(formData.get('dueDate') ?? ''), notes: String(formData.get('notes') ?? '') });
                     if (!response.ok) { setError(response.error ?? 'Could not request design.'); return; }
-                    setSuccess('Design request sent to the Design Team. The job is now visible in the Design Dashboard.');
+                    setSuccess('Design request sent. A separate persistent Design Collaboration link is now available for the customer, independent of quote approval.');
                     setOpenLineId(null); load();
                   });
                 }}>
