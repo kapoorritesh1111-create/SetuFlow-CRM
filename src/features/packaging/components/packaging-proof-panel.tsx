@@ -20,7 +20,7 @@ function statusTone(status: string) {
 
 function reviewUrl(proof: PackagingDesignProof) {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return `${origin}/proof-approval/${proof.approval_token}`;
+  return `${origin}/public/proof-approval/${proof.approval_token}`;
 }
 
 export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quoteLineItemId: string; leadId: string }) {
