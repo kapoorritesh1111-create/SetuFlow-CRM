@@ -21,9 +21,10 @@ describe('packaging design readiness', () => {
     });
   });
 
-  test('customer-provided artwork is production-ready unless rejected', () => {
+  test('customer artwork still requires final customer approval', () => {
+    assert.equal(derivePackagingDesignReadiness(proof({ status: 'pending', design_source: 'customer_provided' })).status, 'in_review');
+    assert.equal(derivePackagingDesignReadiness(proof({ status: 'pending', design_source: 'customer_provided' })).ready, false);
     assert.equal(derivePackagingDesignReadiness(proof({ status: 'approved', design_source: 'customer_provided' })).ready, true);
-    assert.equal(derivePackagingDesignReadiness(proof({ status: 'pending', design_source: 'customer_provided' })).ready, true);
     assert.equal(derivePackagingDesignReadiness(proof({ status: 'rejected', design_source: 'customer_provided' })).status, 'revision_required');
   });
 
