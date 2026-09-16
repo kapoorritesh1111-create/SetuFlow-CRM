@@ -28,6 +28,7 @@ function showStatus(msg,kind='info'){const h=host();if(h)h.innerHTML='<div class
 function cacheKey(c){return 'pv5-dashboard-matrix:'+String(c)}
 function readCache(c){try{const raw=JSON.parse(sessionStorage.getItem(cacheKey(c))||'null');if(!raw||Date.now()-Number(raw.saved_at||0)>CACHE_TTL_MS)return null;return Array.isArray(raw.rows)?raw.rows:null}catch(_){return null}}
 function writeCache(c,nextRows){try{sessionStorage.setItem(cacheKey(c),JSON.stringify({saved_at:Date.now(),rows:nextRows}))}catch(_){}}
+function rowById(id){return rows.find(r=>String(r.size_profile_id||r.size_key)===String(id))||null}
 
 async function fetchMatrix(c){
   const cached=readCache(c);
@@ -81,22 +82,31 @@ function render(){
   const card=q('#page .dashboard-main .matrix-card');if(!card)return;
   const title=q('.panel-title h3',card);if(title)title.innerHTML='Pricing Matrix — Stand-Up Pouch <small>(live Pricing v5 calculation)</small>';
   const display=rows.slice(0,8),wrap=q('.table-wrap',card);if(!wrap)return;
-  wrap.innerHTML='<table class="table pricing"><thead><tr><th>Size (mm)</th>'+QUANTITIES.map(n=>'<th>'+n.toLocaleString()+'</th>').join('')+'<th>Status</th><th>Actions</th></tr></thead><tbody>'+display.map(r=>{const st=rowStatus(r);return'<tr><td><b>'+esc(r.size_name||r.size_key||'—')+'</b></td>'+QUANTITIES.map(n=>{const x=(r.prices||[]).find(p=>Number(p.quantity)===n);return'<td>'+(x?.ok?money(x.unit_price):'<span title="Pricing requires clarification">Unavailable</span>')+'</td>'}).join('')+'<td><span class="status"><span class="dot '+st[1]+'"></span>'+st[0]+'</span></td><td><button class="btn tiny" data-dash-review="'+esc(r.size_profile_id||r.size_key)+'">Review</button></td></tr>'}).join('')+'</tbody></table>';
-  const footer=q('.table-footer',card);if(footer)footer.innerHTML='<span>Showing 8 of '+rows.length+' sizes</span><button class="btn tiny" id="dashFullMatrix">View Full Matrix →</button>';
-  qa('[data-dash-review]',card).forEach(b=>b.onclick=()=>openReview(rows.find(r=>String(r.size_profile_id||r.size_key)===String(b.dataset.dashReview))));
-  q('#dashFullMatrix')?.addEventListener('click',()=>window.PV5?.go?.('matrix'));
+  wrap.innerHTML='<table class="table pricing"><thead><tr><th>Size (mm)</th>'+QUANTITIES.map(n=>'<th>'+n.toLocaleString()+'</th>').join('')+'<th>Status</th><th>Actions</th></tr></thead><tbody>'+display.map(r=>{const st=rowStatus(r);return'<tr><td><b>'+esc(r.size_name||r.size_key||'—')+'</b></td>'+QUANTITIES.map(n=>{const x=(r.prices||[]).find(p=>Number(p.quantity)===n);return'<td>'+(x?.ok?money(x.unit_price):'<span title="Pricing requires clarification">Unavailable</span>')+'</td>'}).join('')+'<td><span class="status"><span class="dot '+st[1]+'"></span>'+st[0]+'</span></td><td><button type="button" class="btn tiny" data-dash-review="'+esc(r.size_profile_id||r.size_key)+'">Review</button></td></tr>'}).join('')+'</tbody></table>';
+  const footer=q('.table-footer',card);if(footer)footer.innerHTML='<span>Showing 8 of '+rows.length+' sizes</span><button type="button" class="btn tiny" id="dashFullMatrix">View Full Matrix →</button>';
   patchOwnerTruth();
 }
 
+function ensureModal(){
+  let modal=q('#modal'),body=q('#modalBody');
+  if(modal&&body)return{modal,body};
+  modal=document.createElement('div');modal.id='modal';modal.className='modal';
+  body=document.createElement('div');body.id='modalBody';body.className='modal-card';
+  modal.appendChild(body);document.body.appendChild(modal);
+  modal.addEventListener('click',e=>{if(e.target===modal)closeReview()});
+  return{modal,body};
+}
+function closeReview(){const modal=q('#modal');if(!modal)return;modal.classList.remove('open');modal.style.display='none'}
+
 function openReview(r){
   if(!r)return;
-  const modal=q('#modal'),body=q('#modalBody');if(!modal||!body)return;
-  body.innerHTML='<div class="modal-head"><div><h3>Dashboard Price Review</h3><p>'+esc(r.size_name||r.size_key||'Selected size')+'</p></div><button class="btn outline" id="dashReviewClose">× Close</button></div><div class="modal-body"><div class="notice info"><b>What you are approving:</b> the calculated Pricing v5 selling price for this size, selected construction and quantity. No family is activated from this review.</div><div class="table-wrap"><table class="table"><thead><tr><th>Quantity</th><th>Calculated Price</th><th>Owner Decision</th><th>Action</th></tr></thead><tbody>'+QUANTITIES.map(n=>{const x=(r.prices||[]).find(p=>Number(p.quantity)===n),d=window.PV5DbReview?.decision?.(decisionKey(r,n))||'pending';return'<tr><td>'+n.toLocaleString()+'</td><td>'+(x?.ok?money(x.unit_price):'<b>Unavailable</b>')+'</td><td>'+esc(d==='approved'?'Owner Approved':d==='needs_change'?'Needs Change':'Pending')+'</td><td>'+(x?.ok?'<button class="btn tiny success" data-dash-decision="approved" data-qty="'+n+'">Approve</button> <button class="btn tiny danger" data-dash-decision="needs_change" data-qty="'+n+'">Needs Change</button>':'<button class="btn tiny" data-dash-unavailable="'+n+'">Clarify why unavailable</button>')+'</td></tr>'}).join('')+'</tbody></table></div><label class="field"><span>Owner comment / required change</span><textarea id="dashReviewComment" rows="3" placeholder="Required for Needs Change"></textarea></label><div style="margin-top:10px"><button class="btn outline" id="dashGoMatrix">Open Full Price Matrix</button></div></div>';
+  const {modal,body}=ensureModal();
+  body.innerHTML='<div class="modal-head"><div><h3>Dashboard Price Review</h3><p>'+esc(r.size_name||r.size_key||'Selected size')+'</p></div><button type="button" class="btn outline" id="dashReviewClose">× Close</button></div><div class="modal-body"><div class="notice info"><b>What you are approving:</b> the calculated Pricing v5 selling price for this size, selected construction and quantity. No family is activated from this review.</div><div class="table-wrap"><table class="table"><thead><tr><th>Quantity</th><th>Calculated Price</th><th>Owner Decision</th><th>Action</th></tr></thead><tbody>'+QUANTITIES.map(n=>{const x=(r.prices||[]).find(p=>Number(p.quantity)===n),d=window.PV5DbReview?.decision?.(decisionKey(r,n))||'pending';return'<tr><td>'+n.toLocaleString()+'</td><td>'+(x?.ok?money(x.unit_price):'<b>Unavailable</b>')+'</td><td>'+esc(d==='approved'?'Owner Approved':d==='needs_change'?'Needs Change':'Pending')+'</td><td>'+(x?.ok?'<button type="button" class="btn tiny success" data-dash-decision="approved" data-qty="'+n+'">Approve</button> <button type="button" class="btn tiny danger" data-dash-decision="needs_change" data-qty="'+n+'">Needs Change</button>':'<button type="button" class="btn tiny" data-dash-unavailable="'+n+'">Clarify why unavailable</button>')+'</td></tr>'}).join('')+'</tbody></table></div><label class="field"><span>Owner comment / required change</span><textarea id="dashReviewComment" rows="3" placeholder="Required for Needs Change"></textarea></label><div style="margin-top:10px"><button type="button" class="btn outline" id="dashGoMatrix">Open Full Price Matrix</button></div></div>';
   modal.classList.add('open');modal.style.display='flex';
-  q('#dashReviewClose').onclick=()=>{modal.classList.remove('open');modal.style.display='none'};
-  q('#dashGoMatrix').onclick=()=>{q('#dashReviewClose').click();window.PV5?.go?.('matrix')};
-  qa('[data-dash-decision]',body).forEach(b=>b.onclick=async()=>{if(!window.PV5DbReview)return alert('Review state is still loading.');const dec=b.dataset.dashDecision,comment=(q('#dashReviewComment')?.value||'').trim();if(dec==='needs_change'&&!comment)return alert('Please enter what needs to change.');await window.PV5DbReview.save(decisionKey(r,Number(b.dataset.qty)),dec,{size_profile_id:r.size_profile_id,size_name:r.size_name,construction_id:constructionId,quantity:Number(b.dataset.qty),comment});q('#dashReviewClose').click();render()});
-  qa('[data-dash-unavailable]',body).forEach(b=>b.onclick=()=>{q('#dashReviewClose').click();window.PV5?.go?.('matrix')});
+  q('#dashReviewClose',body)?.addEventListener('click',closeReview);
+  q('#dashGoMatrix',body)?.addEventListener('click',()=>{closeReview();window.PV5?.go?.('matrix')});
+  qa('[data-dash-decision]',body).forEach(b=>b.addEventListener('click',async()=>{if(!window.PV5DbReview)return alert('Review state is still loading.');const dec=b.dataset.dashDecision,comment=(q('#dashReviewComment',body)?.value||'').trim();if(dec==='needs_change'&&!comment)return alert('Please enter what needs to change.');await window.PV5DbReview.save(decisionKey(r,Number(b.dataset.qty)),dec,{size_profile_id:r.size_profile_id,size_name:r.size_name,construction_id:constructionId,quantity:Number(b.dataset.qty),comment});closeReview();render()}));
+  qa('[data-dash-unavailable]',body).forEach(b=>b.addEventListener('click',()=>{closeReview();window.PV5?.go?.('matrix')}));
 }
 
 function mount(){
@@ -119,7 +129,21 @@ function waitForInitialDashboard(){
 }
 
 function wireNavigation(){
-  document.addEventListener('click',e=>{const nav=e.target?.closest?.('[data-page],.nav-item,.top-nav button,.side-nav button');if(nav)setTimeout(()=>mount(),0)},true);
+  document.addEventListener('click',e=>{
+    const review=e.target?.closest?.('[data-dash-review]');
+    if(review&&onPage()){
+      e.preventDefault();e.stopPropagation();
+      const row=rowById(review.dataset.dashReview);
+      if(row)openReview(row);
+      return;
+    }
+    const full=e.target?.closest?.('#dashFullMatrix');
+    if(full&&onPage()){
+      e.preventDefault();e.stopPropagation();window.PV5?.go?.('matrix');return;
+    }
+    const nav=e.target?.closest?.('[data-page],.nav-item,.top-nav button,.side-nav button');
+    if(nav)setTimeout(()=>mount(),0);
+  },true);
   if(window.PV5?.go&&!window.PV5.__dashboardWrapped){
     const original=window.PV5.go;
     window.PV5.go=function(page){const out=original.apply(this,arguments);if(page==='dashboard')setTimeout(()=>mount(),0);return out};
