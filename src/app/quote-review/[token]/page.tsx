@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import QuoteDecisionForm from './quote-decision-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,9 +28,10 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   if (quoteError || !quotes?.[0]) notFound();
   const quote = quotes[0];
 
-  const [{ data: lead }, { data: lines }] = await Promise.all([
+  const [{ data: lead }, { data: lines }, { data: attachments }] = await Promise.all([
     admin.from('leads').select('company_name,contact_name').eq('id', quote.lead_id).eq('organization_id', quote.organization_id).maybeSingle(),
     admin.from('quote_line_items').select('id,line_type,product_id,quantity,unit_price,currency,notes,input_snapshot_json,packaging_family_id,packaging_product_variation_id,packaging_kld_file_id').eq('quote_id', quote.id).order('created_at'),
+    admin.from('lead_attachments').select('id,file_name,mime_type,attachment_type,created_at').eq('lead_id', quote.lead_id).eq('organization_id', quote.organization_id).order('created_at', { ascending: true }),
   ]);
 
   const productIds = (lines ?? []).map((l: any) => l.product_id).filter(Boolean);
@@ -50,6 +52,8 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   const byKld = new Map<string, any>((klds ?? []).map((r: any) => [String(r.id), r]));
   const currency = quote.display_currency || quote.currency || 'INR';
   const total = (lines ?? []).reduce((sum: number, line: any) => sum + Number(line.quantity || 0) * Number(line.unit_price || 0), 0);
+  const meta = quote.industry_metadata ?? {};
+  const artworkAttachments = (attachments ?? []).filter((a: any) => ['artwork', 'customer_artwork', 'design_in_progress', 'design', 'proof'].includes(String(a.attachment_type || '').toLowerCase()));
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950 sm:px-6 lg:px-8">
@@ -59,12 +63,9 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Stark Packmate</p>
               <h1 className="mt-2 text-3xl font-black">Your Packaging Quote Package</h1>
-              <p className="mt-2 max-w-2xl text-sm font-semibold text-slate-300">Everything you need to review before design proceeds: commercial quote, sample KLD and requested product reference.</p>
+              <p className="mt-2 max-w-2xl text-sm font-semibold text-slate-300">Review the commercial quote, sample KLD, product brochure, your submitted artwork and any design-in-progress files. Approve and sign, or request a quote revision below.</p>
             </div>
-            <div className="rounded-2xl bg-white/10 px-4 py-3 text-right">
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-300">Quote</div>
-              <div className="text-lg font-black">{quote.quote_number || 'Current quote'}</div>
-            </div>
+            <div className="rounded-2xl bg-white/10 px-4 py-3 text-right"><div className="text-xs font-bold uppercase tracking-wide text-slate-300">Quote</div><div className="text-lg font-black">{quote.quote_number || 'Current quote'}</div></div>
           </div>
         </header>
 
@@ -89,33 +90,13 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               return (
                 <article key={line.id} className="rounded-2xl border border-slate-200 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-lg font-black">{name}</h3>
-                      <p className="mt-1 text-sm font-semibold text-slate-500">{snapshot.spec_summary || line.notes || family?.description || product?.description || 'Packaging specification as quoted.'}</p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
-                        {variation?.capacity_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.capacity_label}</span> : null}
-                        {variation?.dimension_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.dimension_label}</span> : null}
-                        {input.finish ? <span className="rounded-full bg-slate-100 px-3 py-1">Finish: {label(input.finish)}</span> : null}
-                        {input.zipper ? <span className="rounded-full bg-slate-100 px-3 py-1">Zipper</span> : null}
-                        {input.print_colors ? <span className="rounded-full bg-slate-100 px-3 py-1">{input.print_colors}-color print</span> : null}
-                      </div>
-                    </div>
+                    <div className="min-w-0 flex-1"><h3 className="text-lg font-black">{name}</h3><p className="mt-1 text-sm font-semibold text-slate-500">{snapshot.spec_summary || line.notes || family?.description || product?.description || 'Packaging specification as quoted.'}</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">{variation?.capacity_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.capacity_label}</span> : null}{variation?.dimension_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.dimension_label}</span> : null}{input.finish ? <span className="rounded-full bg-slate-100 px-3 py-1">Finish: {label(input.finish)}</span> : null}{input.zipper ? <span className="rounded-full bg-slate-100 px-3 py-1">Zipper</span> : null}{input.print_colors ? <span className="rounded-full bg-slate-100 px-3 py-1">{input.print_colors}-color print</span> : null}</div></div>
                     <div className="text-right"><div className="text-sm font-bold text-slate-500">{Number(line.quantity || 0).toLocaleString()} pcs × {money(line.unit_price, line.currency || currency)}</div><div className="mt-1 text-lg font-black">{money(lineTotal, line.currency || currency)}</div></div>
                   </div>
 
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-2xl bg-cyan-50 p-4">
-                      <p className="text-xs font-black uppercase tracking-wide text-cyan-700">02 · Sample KLD / Dieline</p>
-                      <p className="mt-1 text-sm font-black">{kld?.file_name || 'KLD selected for this product'}</p>
-                      <p className="mt-1 text-xs font-semibold text-slate-500">Use this as the sample structural layout for artwork placement and design review.</p>
-                      {kld?.public_token ? <a className="mt-3 inline-flex rounded-xl bg-cyan-700 px-3 py-2 text-xs font-black text-white" href={`/api/public/packaging-kld/${kld.public_token}`}>View sample KLD</a> : <span className="mt-3 inline-flex rounded-xl bg-slate-200 px-3 py-2 text-xs font-black text-slate-500">KLD preview coming from Design</span>}
-                    </div>
-                    <div className="rounded-2xl bg-emerald-50 p-4">
-                      <p className="text-xs font-black uppercase tracking-wide text-emerald-700">03 · Product Brochure / Reference</p>
-                      <p className="mt-1 text-sm font-black">{product?.name || variation?.name || family?.name || 'Requested packaging product'}</p>
-                      <p className="mt-1 text-xs font-semibold text-slate-600">{product?.description || family?.description || `Reference for ${variation?.capacity_label || 'the requested size'} packaging configuration, dimensions, finish and printing requirements.`}</p>
-                      {product?.image_url ? <img src={product.image_url} alt="Product reference" className="mt-3 h-28 w-full rounded-xl object-cover" /> : <div className="mt-3 rounded-xl border border-dashed border-emerald-300 bg-white/70 p-3 text-xs font-semibold text-slate-500">Product reference is generated from your requested packaging specification. Final artwork is reviewed separately before printing.</div>}
-                    </div>
+                    <div className="rounded-2xl bg-cyan-50 p-4"><p className="text-xs font-black uppercase tracking-wide text-cyan-700">02 · Sample KLD / Dieline</p><p className="mt-1 text-sm font-black">{kld?.file_name || 'KLD selected for this product'}</p><p className="mt-1 text-xs font-semibold text-slate-500">Structural layout for artwork placement and design review.</p>{kld?.public_token ? <a target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex rounded-xl bg-cyan-700 px-3 py-2 text-xs font-black text-white" href={`/api/public/packaging-kld/${kld.public_token}`}>Open sample KLD ↗</a> : <span className="mt-3 inline-flex rounded-xl bg-slate-200 px-3 py-2 text-xs font-black text-slate-500">KLD preview coming from Design</span>}</div>
+                    <div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-black uppercase tracking-wide text-emerald-700">03 · Product Brochure</p><p className="mt-1 text-sm font-black">{product?.name || variation?.name || family?.name || 'Requested packaging product'}</p><p className="mt-1 text-xs font-semibold text-slate-600">Open the customer-safe product brochure/reference with the requested dimensions, finish, print and feature details.</p><a target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex rounded-xl bg-emerald-700 px-3 py-2 text-xs font-black text-white" href={`/public/quote-review/${token}/brochure/${line.id}`}>Open product brochure ↗</a></div>
                   </div>
                 </article>
               );
@@ -124,11 +105,21 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
           {quote.notes_customer ? <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">{quote.notes_customer}</div> : null}
         </section>
 
-        <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 sm:p-6">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">What happens next</p>
-          <h2 className="mt-1 text-xl font-black">Design approval comes next</h2>
-          <p className="mt-2 text-sm font-semibold text-slate-600">Once Stark Packmate prepares the final design on the selected KLD, you will receive a separate secure design-review link. From there you can approve the proof or request changes with comments. Printing stays blocked until the final proof is approved.</p>
+        <section className="rounded-3xl border border-violet-200 bg-white p-5 shadow-sm sm:p-6">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">04 · Customer Artwork & Design Progress</p>
+          <h2 className="mt-1 text-xl font-black">Files shared during this process</h2>
+          <p className="mt-2 text-sm font-semibold text-slate-600">Your artwork and in-progress design references stay with the quote so everyone reviews the same files. Every file opens in a new tab.</p>
+          {artworkAttachments.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{artworkAttachments.map((attachment: any) => <a key={attachment.id} target="_blank" rel="noopener noreferrer" href={`/api/public/quote-attachment/${token}/${attachment.id}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-violet-300 hover:bg-violet-50"><div className="text-[10px] font-black uppercase tracking-wide text-violet-600">{label(attachment.attachment_type || 'Artwork')}</div><div className="mt-1 text-sm font-black text-slate-900">{attachment.file_name}</div><div className="mt-2 text-xs font-bold text-slate-500">Open attachment ↗</div></a>)}</div> : <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-500">No customer artwork or in-progress design file has been attached to this lead yet.</div>}
         </section>
+
+        <section className="rounded-3xl border border-emerald-200 bg-white p-5 shadow-sm sm:p-6">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">05 · Your Quote Decision</p>
+          <h2 className="mt-1 text-xl font-black">Approve & sign, or request a revision</h2>
+          <p className="mt-2 text-sm font-semibold text-slate-600">Approve the commercial quote by typing the authorized signer name, or send Sales the exact revision you need. Your response is recorded against this quote and Sales is notified.</p>
+          <QuoteDecisionForm token={token} initialDecision={meta.customer_quote_decision ?? null} initialSigner={meta.customer_quote_signer_name ?? null} initialComment={meta.customer_quote_revision_comment ?? null} initialReviewedAt={meta.customer_quote_decision_at ?? null} />
+        </section>
+
+        <section className="rounded-3xl border border-cyan-200 bg-cyan-50 p-5 sm:p-6"><p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">What happens next</p><h2 className="mt-1 text-xl font-black">Design approval is a separate checkpoint</h2><p className="mt-2 text-sm font-semibold text-slate-600">After the quote is approved, Stark Packmate prepares the design on the selected KLD. You then receive a separate secure design-review link where you can approve the proof or request design changes. Printing remains blocked until the final design proof is approved.</p></section>
       </div>
     </main>
   );
