@@ -32,7 +32,11 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
     setError(''); setSuccess('');
     startTransition(async () => {
       const response = await sendPackagingQuoteCustomerPackage({ leadId, quoteId: state.quote.id });
-      if (!response.ok) { setError(response.error ?? 'Could not send the customer quote package.'); return; }
+      if (!response.ok) {
+        setError(('error' in response ? response.error : null) ?? 'Could not send the customer quote package.');
+        return;
+      }
+      if (!('email' in response)) { setError('Could not confirm customer delivery.'); return; }
       setSuccess(`Quote package sent to ${response.email}. The customer can review the quote, sample KLD and product reference from one secure link.`);
       load();
     });
