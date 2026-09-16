@@ -75,7 +75,11 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
     setError(null); setSuccess(null);
     startTransition(async () => {
       const response = await sendPackagingProofReviewEmail({ quoteLineItemId, proofId: proof.id });
-      if (!response.ok) { setError(response.error ?? 'Could not send the design review.'); return; }
+      if (!response.ok) {
+        setError(('error' in response ? response.error : null) ?? 'Could not send the design review.');
+        return;
+      }
+      if (!('email' in response)) { setError('Could not confirm customer delivery.'); return; }
       setSuccess(`Design proof v${proof.version} sent to ${response.email}. The customer can approve it or request changes from the secure review page.`);
     });
   };
