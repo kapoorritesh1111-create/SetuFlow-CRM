@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { checkRateLimit, publicRateLimitKey } from '@/lib/rate-limit/simple';
 import { getPackagingProofByToken } from '@/lib/packaging/queries';
+import { sendWebPushToUsers } from '@/lib/notifications/web-push';
 
 /**
  * Public proof approve/reject endpoint.
@@ -61,12 +62,16 @@ export async function POST(request: NextRequest) {
 
   const { data: quote, error: quoteError } = await admin
     .from('quotes')
-    .select('id, lead_id')
+    .select('id, lead_id, quote_number')
     .eq('id', line.quote_id)
     .eq('organization_id', proof.organization_id)
     .maybeSingle();
   if (quoteError) return NextResponse.json({ error: quoteError.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'The linked quote is not available.' }, { status: 404 });
+
+  const { data: lead } = quote.lead_id
+    ? await admin.from('leads').select('company_name').eq('id', quote.lead_id).eq('organization_id', proof.organization_id).maybeSingle()
+    : { data: null };
 
   const comment = String(body.comment ?? '').slice(0, 2000);
   const now = new Date().toISOString();
@@ -77,15 +82,50 @@ export async function POST(request: NextRequest) {
     .eq('approval_token', token);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  if (decision === 'approved') {
-    const snapshot = line.input_snapshot_json ?? {};
-    const input = snapshot.input ?? {};
-    if (input.artwork_status !== 'print_ready') {
-      await admin
-        .from('quote_line_items')
-        .update({ input_snapshot_json: { ...snapshot, input: { ...input, artwork_status: 'print_ready' } } })
-        .eq('id', line.id)
-        .eq('quote_id', quote.id);
+  const snapshot = line.input_snapshot_json ?? {};
+  const input = snapshot.input ?? {};
+  const designRequest = snapshot.design_request ?? {};
+  const assignedDesignerId = String(designRequest.assigned_to ?? '').trim() || null;
+  const nextSnapshot = {
+    ...snapshot,
+    input: decision === 'approved' ? { ...input, artwork_status: 'print_ready' } : input,
+    design_request: {
+      ...designRequest,
+      status: decision === 'approved' ? 'approved' : 'changes_requested',
+      customer_reviewed_at: now,
+      customer_review_comment: comment || null,
+      customer_review_decision: decision,
+    },
+  };
+  await admin.from('quote_line_items').update({ input_snapshot_json: nextSnapshot }).eq('id', line.id).eq('quote_id', quote.id);
+
+  if (assignedDesignerId) {
+    const title = decision === 'approved' ? 'Design approved by customer' : 'Customer requested design changes';
+    const company = lead?.company_name || 'Customer';
+    const bodyText = decision === 'approved'
+      ? `${company} approved proof v${proof.version}${quote.quote_number ? ` for ${quote.quote_number}` : ''}. The approved artwork can move toward production.`
+      : `${company} requested changes to proof v${proof.version}${comment ? `: ${comment}` : '.'}`;
+    const actionUrl = `/design-queue?lineId=${line.id}`;
+    const { error: notificationError } = await admin.from('notifications').insert({
+      organization_id: proof.organization_id,
+      user_id: assignedDesignerId,
+      type: 'approval_request',
+      title,
+      body: bodyText,
+      icon: decision === 'approved' ? 'badge-check' : 'rotate-ccw',
+      priority: 'high',
+      entity_type: 'approval',
+      entity_id: proof.id,
+      entity_ref: quote.quote_number || `Proof v${proof.version}`,
+      action_url: actionUrl,
+      channels_sent: ['in_app', 'push'],
+    });
+    if (!notificationError) {
+      try {
+        await sendWebPushToUsers(admin, [assignedDesignerId], { title, body: bodyText, action_url: actionUrl, priority: 'high', type: 'approval_request' }, proof.organization_id);
+      } catch {
+        // In-app notification remains authoritative if push is unavailable.
+      }
     }
   }
 
@@ -94,5 +134,5 @@ export async function POST(request: NextRequest) {
   revalidatePath('/orders');
   if (quote.lead_id) revalidatePath(`/leads/${quote.lead_id}/quote`);
 
-  return NextResponse.json({ ok: true, status: decision });
+  return NextResponse.json({ ok: true, status: decision, designerNotified: Boolean(assignedDesignerId) });
 }
