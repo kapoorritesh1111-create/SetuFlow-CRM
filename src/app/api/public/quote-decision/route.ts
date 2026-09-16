@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       related_id: quote.id,
       communication_type: 'quote_message',
       direction: 'inbound',
-      channel: 'web',
+      channel: 'system',
       subject: title,
       body: bodyText,
       summary: bodyText,
