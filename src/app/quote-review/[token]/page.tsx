@@ -44,10 +44,10 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
     kldIds.length ? admin.from('packaging_kld_files').select('id,file_name,public_token,spec_key').in('id', kldIds) : Promise.resolve({ data: [] }),
   ]);
 
-  const byProduct = new Map((products ?? []).map((r: any) => [r.id, r]));
-  const byFamily = new Map((families ?? []).map((r: any) => [r.id, r]));
-  const byVariation = new Map((variations ?? []).map((r: any) => [r.id, r]));
-  const byKld = new Map((klds ?? []).map((r: any) => [r.id, r]));
+  const byProduct = new Map<string, any>((products ?? []).map((r: any) => [String(r.id), r]));
+  const byFamily = new Map<string, any>((families ?? []).map((r: any) => [String(r.id), r]));
+  const byVariation = new Map<string, any>((variations ?? []).map((r: any) => [String(r.id), r]));
+  const byKld = new Map<string, any>((klds ?? []).map((r: any) => [String(r.id), r]));
   const currency = quote.display_currency || quote.currency || 'INR';
   const total = (lines ?? []).reduce((sum: number, line: any) => sum + Number(line.quantity || 0) * Number(line.unit_price || 0), 0);
 
@@ -80,10 +80,10 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
             {(lines ?? []).map((line: any, index: number) => {
               const snapshot = line.input_snapshot_json ?? {};
               const input = snapshot.input ?? {};
-              const product = line.product_id ? byProduct.get(line.product_id) : null;
-              const family = line.packaging_family_id ? byFamily.get(line.packaging_family_id) : null;
-              const variation = line.packaging_product_variation_id ? byVariation.get(line.packaging_product_variation_id) : null;
-              const kld = line.packaging_kld_file_id ? byKld.get(line.packaging_kld_file_id) : null;
+              const product = line.product_id ? byProduct.get(String(line.product_id)) : null;
+              const family = line.packaging_family_id ? byFamily.get(String(line.packaging_family_id)) : null;
+              const variation = line.packaging_product_variation_id ? byVariation.get(String(line.packaging_product_variation_id)) : null;
+              const kld = line.packaging_kld_file_id ? byKld.get(String(line.packaging_kld_file_id)) : null;
               const name = product?.name || variation?.name || family?.name || line.notes || `Packaging item ${index + 1}`;
               const lineTotal = Number(line.quantity || 0) * Number(line.unit_price || 0);
               return (
