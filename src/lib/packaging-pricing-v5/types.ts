@@ -138,6 +138,28 @@ export type AlternativePriceV5 = {
   margin_per_frame: number;
 };
 
+export type PricingCostBreakdownValuesV5 = {
+  material_cost: number;
+  printing_cost: number;
+  lamination_cost: number;
+  slitting_cost: number;
+  pouch_making_cost: number;
+  zipper_cost: number;
+  other_process_cost: number;
+  base_production_cost: number;
+  waste_cost: number;
+  margin_cost: number;
+  additional_charges_cost: number;
+  final_price: number;
+};
+
+export type PricingCostBreakdownV5 = {
+  currency: string;
+  per_unit: PricingCostBreakdownValuesV5;
+  totals_for_job: PricingCostBreakdownValuesV5;
+  reconciliation_delta: number;
+};
+
 export type PricingContextV5 = {
   template: PricingTemplateV5;
   sizeProfiles: SizeProfileV5[];
@@ -179,6 +201,7 @@ export type PackagingPricingResultV5 = {
     application_stage: string;
     amount: number;
   }>;
+  cost_breakdown: PricingCostBreakdownV5;
   selling_price: {
     unit_price: number;
     product_total: number;

@@ -32,6 +32,7 @@ export function toSalesPricingResultV5(result: PackagingPricingResultV5) {
       })),
     },
     applied_charges: result.applied_charges,
+    cost_breakdown: result.cost_breakdown,
     selling_price: result.selling_price,
     alternative_quantities: result.alternative_quantities,
     source_hash: result.source_hash,
