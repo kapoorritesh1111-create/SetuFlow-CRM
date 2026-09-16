@@ -56,20 +56,12 @@ export type PackagingDesignReadiness = {
 export function derivePackagingDesignReadiness(
   proof: Pick<PackagingDesignProof, 'id' | 'status' | 'design_source'> | null | undefined,
 ): PackagingDesignReadiness {
-  if (!proof) {
-    return { ready: false, status: 'required', source: null, proofStatus: null, proofId: null };
-  }
+  if (!proof) return { ready: false, status: 'required', source: null, proofStatus: null, proofId: null };
 
-  const source: PackagingDesignSource = proof.design_source === 'customer_provided'
-    ? 'customer_provided'
-    : 'design_team';
+  const source: PackagingDesignSource = proof.design_source === 'customer_provided' ? 'customer_provided' : 'design_team';
 
   if (proof.status === 'rejected') {
     return { ready: false, status: 'revision_required', source, proofStatus: proof.status, proofId: proof.id };
-  }
-
-  if (source === 'customer_provided') {
-    return { ready: true, status: 'ready', source, proofStatus: proof.status, proofId: proof.id };
   }
 
   if (proof.status === 'approved') {
@@ -87,7 +79,7 @@ export function packagingDesignStatusLabel(status: PackagingDesignStatus): strin
 }
 
 export function packagingDesignSourceLabel(source: PackagingDesignSource | null): string {
-  if (source === 'customer_provided') return 'Customer provided';
+  if (source === 'customer_provided') return 'Customer artwork';
   if (source === 'design_team') return 'Design team';
   return 'Not selected';
 }

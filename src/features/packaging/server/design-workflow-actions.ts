@@ -25,13 +25,7 @@ async function context() {
   if (!(await isPackagingOrganization(organizationId, supabase))) {
     throw new Error('Packaging design and dispatch workflows are only available for Packaging vertical organizations.');
   }
-  return {
-    workspace,
-    supabase,
-    organizationId,
-    userId: workspace.user.id,
-    currentRoles: workspace.currentRoles ?? [],
-  };
+  return { workspace, supabase, organizationId, userId: workspace.user.id, currentRoles: workspace.currentRoles ?? [] };
 }
 
 async function requireLineInOrganization(
@@ -56,19 +50,10 @@ async function requireLineInOrganization(
   if (quoteError) throw new Error(quoteError.message);
   if (!quote?.id) throw new Error('This quote line does not belong to your organization.');
 
-  return {
-    id: line.id,
-    quote_id: line.quote_id,
-    lead_id: quote.lead_id ?? null,
-    quote_status: quote.status ?? 'draft',
-  };
+  return { id: line.id, quote_id: line.quote_id, lead_id: quote.lead_id ?? null, quote_status: quote.status ?? 'draft' };
 }
 
-async function latestDesignProof(
-  client: any,
-  organizationId: string,
-  quoteLineItemId: string,
-): Promise<PackagingDesignProof | null> {
+async function latestDesignProof(client: any, organizationId: string, quoteLineItemId: string): Promise<PackagingDesignProof | null> {
   const { data, error } = await client
     .from('packaging_proofs')
     .select('id, organization_id, quote_line_item_id, version, file_path, file_name, mime_type, uploaded_by, uploaded_at, status, reviewed_at, review_comment, approval_token, token_expires_at, design_source')
@@ -107,9 +92,7 @@ export async function uploadPackagingDesignProof(
     const { supabase, organizationId, userId } = await context();
     const quoteLineItemId = String(formData.get('quoteLineItemId') ?? '').trim();
     const leadId = String(formData.get('leadId') ?? '').trim();
-    const source: PackagingDesignSource = formData.get('designSource') === 'customer_provided'
-      ? 'customer_provided'
-      : 'design_team';
+    const source: PackagingDesignSource = formData.get('designSource') === 'customer_provided' ? 'customer_provided' : 'design_team';
     const file = formData.get('file');
 
     if (!quoteLineItemId) return { ok: false, error: 'Missing quote line.' };
@@ -131,9 +114,8 @@ export async function uploadPackagingDesignProof(
       .upload(path, bytes, { contentType: file.type, upsert: false });
     if (uploadError) return { ok: false, error: uploadError.message };
 
-    const now = new Date().toISOString();
     const approvalToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
-    const initialStatus = source === 'customer_provided' ? 'approved' : 'pending';
+    const initialStatus = 'pending';
     const { error: insertError } = await admin.from('packaging_proofs').insert({
       organization_id: organizationId,
       quote_line_item_id: quoteLineItemId,
@@ -143,8 +125,8 @@ export async function uploadPackagingDesignProof(
       mime_type: file.type,
       uploaded_by: userId,
       status: initialStatus,
-      reviewed_at: source === 'customer_provided' ? now : null,
-      review_comment: source === 'customer_provided' ? 'Customer-provided final design.' : null,
+      reviewed_at: null,
+      review_comment: null,
       approval_token: approvalToken,
       design_source: source,
     });
@@ -160,11 +142,7 @@ export async function uploadPackagingDesignProof(
     if (revalidateLeadId) revalidatePath(`/leads/${revalidateLeadId}/quote`);
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://setuflowcrm.com';
-    return {
-      ok: true,
-      status: initialStatus,
-      approvalUrl: source === 'design_team' ? `${origin}/proof-approval/${approvalToken}` : undefined,
-    };
+    return { ok: true, status: initialStatus, approvalUrl: `${origin}/proof-approval/${approvalToken}` };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Could not upload this design.' };
   }
@@ -180,20 +158,13 @@ export async function advancePackagingProductionStageWithDesignGate(
     if (!hasWorkspaceRole(currentRoles, PRODUCTION_STAGE_WRITE_ROLES)) {
       return { ok: false, error: 'Only Design and Operations team members can update production stage.' };
     }
-    if (!PRODUCTION_STAGES.some((stage) => stage.key === toStage)) {
-      return { ok: false, error: 'Unknown production stage.' };
-    }
+    if (!PRODUCTION_STAGES.some((stage) => stage.key === toStage)) return { ok: false, error: 'Unknown production stage.' };
 
     await requireLineInOrganization(supabase, organizationId, quoteLineItemId);
     if (productionStageRequiresReadyDesign(toStage)) {
-      const readiness = derivePackagingDesignReadiness(
-        await latestDesignProof(supabase, organizationId, quoteLineItemId),
-      );
+      const readiness = derivePackagingDesignReadiness(await latestDesignProof(supabase, organizationId, quoteLineItemId));
       if (!readiness.ready) {
-        return {
-          ok: false,
-          error: 'A final design is required before Printing or any later production stage. Upload customer-provided artwork, or upload a Design Team proof and have it approved.',
-        };
+        return { ok: false, error: 'A customer-approved final proof is required before Printing or any later production stage.' };
       }
     }
 

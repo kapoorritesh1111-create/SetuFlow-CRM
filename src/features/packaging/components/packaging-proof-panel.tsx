@@ -17,6 +17,11 @@ function statusTone(status: string) {
   return 'bg-warning-bg text-warning-fg';
 }
 
+function reviewUrl(proof: PackagingDesignProof) {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${origin}/proof-approval/${proof.approval_token}`;
+}
+
 export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quoteLineItemId: string; leadId: string }) {
   const [open, setOpen] = useState(false);
   const [proofs, setProofs] = useState<PackagingDesignProof[] | null>(null);
@@ -53,19 +58,40 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
     startTransition(async () => {
       const response = await uploadPackagingDesignProof(formData);
       if (!response.ok) { setError(response.error ?? 'Upload failed.'); return; }
-      setSuccess(designSource === 'customer_provided'
-        ? 'Customer-provided design recorded. Production can proceed after pre-press.'
-        : 'Design Team proof uploaded. Share the approval link before Printing.');
+      setSuccess('Proof uploaded. Send this version to the customer for approval before Printing.');
       load();
     });
   };
 
-  const copyLink = (proof: PackagingDesignProof) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const url = `${origin}/proof-approval/${proof.approval_token}`;
-    navigator.clipboard?.writeText(url);
+  const copyLink = async (proof: PackagingDesignProof) => {
+    const url = reviewUrl(proof);
+    await navigator.clipboard?.writeText(url);
     setCopiedFor(proof.id);
     setTimeout(() => setCopiedFor(null), 2000);
+  };
+
+  const shareReview = async (proof: PackagingDesignProof) => {
+    const url = reviewUrl(proof);
+    const text = `Your Stark Packmate packaging proof v${proof.version} is ready for review. Approve it or request changes here: ${url}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Packaging design review', text, url }); return; } catch { /* user cancelled or share unavailable */ }
+    }
+    await navigator.clipboard?.writeText(url);
+    setCopiedFor(proof.id);
+    setTimeout(() => setCopiedFor(null), 2000);
+  };
+
+  const emailReview = (proof: PackagingDesignProof) => {
+    const url = reviewUrl(proof);
+    const subject = encodeURIComponent('Your packaging design is ready for review');
+    const body = encodeURIComponent(`Your Stark Packmate packaging proof v${proof.version} is ready.\n\nPlease review, approve, or request changes here:\n${url}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  const whatsappReview = (proof: PackagingDesignProof) => {
+    const url = reviewUrl(proof);
+    const text = encodeURIComponent(`Your Stark Packmate packaging proof v${proof.version} is ready for review. Approve it or request changes here: ${url}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -80,23 +106,29 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
           {success ? <p className="mb-2 rounded-ctl bg-success-bg px-2 py-1.5 text-xs font-medium text-success-fg">{success}</p> : null}
           {proofs?.length ? (
             <ul className="space-y-2">
-              {proofs.map((proof) => (
-                <li key={proof.id} className="flex flex-wrap items-center justify-between gap-2 rounded-ctl border border-line bg-surface-1 p-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-content-primary">v{proof.version} — {proof.file_name}</p>
-                    <p className="text-[11px] text-content-muted">
-                      {packagingDesignSourceLabel(proof.design_source)} · {new Date(proof.uploaded_at).toLocaleDateString()}
-                      {proof.review_comment ? ` · "${proof.review_comment}"` : ''}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
+              {proofs.map((proof, index) => (
+                <li key={proof.id} className="rounded-ctl border border-line bg-surface-1 p-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-xs font-semibold text-content-primary">v{proof.version} — {proof.file_name}</p>
+                        {index === 0 ? <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">Current</span> : null}
+                      </div>
+                      <p className="text-[11px] text-content-muted">
+                        {packagingDesignSourceLabel(proof.design_source)} · {new Date(proof.uploaded_at).toLocaleDateString()}
+                        {proof.review_comment ? ` · “${proof.review_comment}”` : ''}
+                      </p>
+                    </div>
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusTone(proof.status)}`}>{proof.status}</span>
-                    {proof.design_source !== 'customer_provided' ? (
-                      <button onClick={() => copyLink(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">
-                        {copiedFor === proof.id ? 'Copied!' : 'Copy approval link'}
-                      </button>
-                    ) : null}
                   </div>
+                  {index === 0 && proof.status !== 'approved' ? (
+                    <div className="mt-2 flex flex-wrap gap-2 border-t border-line pt-2">
+                      <button onClick={() => shareReview(proof)} className="rounded-ctl bg-brand-600 px-2.5 py-1.5 text-[11px] font-semibold text-white">Send for review</button>
+                      <button onClick={() => emailReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">Email</button>
+                      <button onClick={() => whatsappReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">WhatsApp</button>
+                      <button onClick={() => copyLink(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">{copiedFor === proof.id ? 'Copied!' : 'Copy link'}</button>
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -104,24 +136,16 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
 
           <form action={handleUpload} className="mt-3 grid gap-2 border-t border-line pt-3 sm:grid-cols-[190px_minmax(0,1fr)_auto] sm:items-end">
             <label className="text-[11px] font-semibold text-content-muted">
-              Design source
-              <select
-                value={designSource}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => setDesignSource(event.target.value as PackagingDesignSource)}
-                className="mt-1 w-full rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-xs text-content-primary"
-              >
-                <option value="design_team">Design Team</option>
-                <option value="customer_provided">Customer provided</option>
+              Artwork source
+              <select value={designSource} onChange={(event: ChangeEvent<HTMLSelectElement>) => setDesignSource(event.target.value as PackagingDesignSource)} className="mt-1 w-full rounded-ctl border border-line bg-surface-1 px-2 py-1.5 text-xs text-content-primary">
+                <option value="design_team">Design Team proof</option>
+                <option value="customer_provided">Customer artwork / adapted proof</option>
               </select>
             </label>
             <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" required className="text-xs" />
-            <button type="submit" disabled={pending} className="rounded-ctl bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
-              {pending ? 'Uploading…' : 'Upload design'}
-            </button>
+            <button type="submit" disabled={pending} className="rounded-ctl bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{pending ? 'Uploading…' : 'Upload proof'}</button>
           </form>
-          <p className="mt-2 text-[11px] text-content-muted">
-            Customer-provided artwork is immediately production-ready. Design Team work requires buyer approval before Printing. PDF, PNG, JPEG, or WEBP, up to 15MB.
-          </p>
+          <p className="mt-2 text-[11px] text-content-muted">Every final proof now requires customer approval before Printing. Uploading customer artwork records the source; it does not bypass proof approval. PDF, PNG, JPEG, or WEBP, up to 15MB.</p>
         </div>
       ) : null}
     </div>
