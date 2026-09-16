@@ -15,6 +15,9 @@ export type PackagingDesignRequest = {
   due_date?: string | null;
   notes?: string | null;
   status?: string | null;
+  assigned_to?: string | null;
+  assigned_at?: string | null;
+  assigned_by?: string | null;
 } | null;
 
 export type PackagingDesignQueueItem = {
