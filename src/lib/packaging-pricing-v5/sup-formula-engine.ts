@@ -8,6 +8,8 @@ import type {
   CostMasterRateV5,
   PackagingPricingResultV5,
   PricingContextV5,
+  PricingCostBreakdownV5,
+  PricingCostBreakdownValuesV5,
   SupPricingInputV5,
 } from './types';
 
@@ -87,6 +89,7 @@ function afterCoreChargeTotal(charge:ChargeMasterRateV5,quantity:number,coreTota
 
 type CostedComponent = {
   key: 'main_body' | 'bottom_gusset';
+  frames_exact: number;
   material_per_frame: number;
   process_per_frame: number;
   production_extras_per_frame: number;
@@ -101,6 +104,50 @@ type CostedComponent = {
 };
 
 type CoreResult = PackagingPricingResultV5 & { _internal?: { primary_run_length_m: number } };
+
+function zeroBreakdown(): PricingCostBreakdownValuesV5 {
+  return {
+    material_cost:0,printing_cost:0,lamination_cost:0,slitting_cost:0,pouch_making_cost:0,zipper_cost:0,
+    other_process_cost:0,base_production_cost:0,waste_cost:0,margin_cost:0,additional_charges_cost:0,final_price:0,
+  };
+}
+
+function buildCostBreakdown(
+  currency:string,
+  quantity:number,
+  components:CostedComponent[],
+  appliedChargeTotals:Map<string,{charge:ChargeMasterRateV5;amount:number}>,
+  productTotal:number,
+):PricingCostBreakdownV5 {
+  const totals=zeroBreakdown();
+  for(const component of components){
+    totals.material_cost+=component.material_per_frame*component.frames_exact;
+    totals.waste_cost+=component.wastage_per_frame*component.frames_exact;
+    totals.margin_cost+=component.margin_per_frame*component.frames_exact;
+    for(const row of component.process_breakdown){
+      const code=String(row.code??'');
+      const amount=n(row.amount_per_frame)*component.frames_exact;
+      if(code.startsWith('PROC_PRINT_')) totals.printing_cost+=amount;
+      else if(code==='PROC_LAMINATION') totals.lamination_cost+=amount;
+      else if(code==='PROC_SLITTING') totals.slitting_cost+=amount;
+      else if(code==='PROC_POUCHING') totals.pouch_making_cost+=amount;
+      else totals.other_process_cost+=amount;
+    }
+  }
+  for(const {charge,amount} of appliedChargeTotals.values()){
+    if(charge.code==='EXTRA_ZIPPER') totals.zipper_cost+=amount;
+    else totals.additional_charges_cost+=amount;
+  }
+  totals.base_production_cost=totals.material_cost+totals.printing_cost+totals.lamination_cost+totals.slitting_cost+totals.pouch_making_cost+totals.zipper_cost+totals.other_process_cost;
+  totals.final_price=productTotal;
+  const divisor=quantity||1;
+  const perUnit=zeroBreakdown();
+  (Object.keys(perUnit) as Array<keyof PricingCostBreakdownValuesV5>).forEach((key)=>{perUnit[key]=round(totals[key]/divisor,8);});
+  const roundedTotals=zeroBreakdown();
+  (Object.keys(roundedTotals) as Array<keyof PricingCostBreakdownValuesV5>).forEach((key)=>{roundedTotals[key]=round(totals[key],2);});
+  const reconciled=perUnit.base_production_cost+perUnit.waste_cost+perUnit.margin_cost+perUnit.additional_charges_cost;
+  return {currency,per_unit:perUnit,totals_for_job:roundedTotals,reconciliation_delta:round(perUnit.final_price-reconciled,8)};
+}
 
 function calculateCore(context: PricingContextV5, input: SupPricingInputV5, includeAlternatives: boolean): CoreResult {
   const errors: string[] = [];
@@ -217,6 +264,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
       const sellingPerFrame = preCommercial + wastagePerFrame + marginPerFrame;
       costedComponents.push({
         key:component.key,
+        frames_exact:component.frames_exact,
         material_per_frame:materialPerFrame,
         process_per_frame:processPerFrame,
         production_extras_per_frame:productionExtrasPerFrame,
@@ -244,6 +292,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
   const gstPct = n(context.template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
   const appliedCharges=[...appliedChargeTotals.values()].map(({charge,amount})=>({code:charge.code,name:charge.name,application_stage:String(charge.application_stage),amount:round(amount,2)}));
+  const costBreakdown=buildCostBreakdown(context.template.currency,quantity,costedComponents,appliedChargeTotals,productTotal);
 
   const hashPayload = {
     engine_version:5,
@@ -260,6 +309,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
     component_costs:costedComponents,
     commercial_band:band,
     applied_charges:appliedCharges,
+    cost_breakdown:costBreakdown,
   };
 
   const alternatives: AlternativePriceV5[] = [];
@@ -305,6 +355,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
       wastage_pct:band?.wastage_pct??0,margin_per_frame:band?.margin_per_frame??0,
     },
     applied_charges:appliedCharges,
+    cost_breakdown:costBreakdown,
     selling_price:{
       unit_price:round(unitPrice,8),product_total:round(productTotal,2),currency:context.template.currency,
       gst_pct:gstPct,gst:round(gst,2),grand_total_before_freight:round(productTotal+gst,2),
