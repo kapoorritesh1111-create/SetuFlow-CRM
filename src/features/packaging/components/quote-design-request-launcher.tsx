@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getDesignRequestQuoteState, requestPackagingDesign } from '@/features/packaging/server/design-request-actions';
-import { sendPackagingQuoteCustomerPackage } from '@/features/packaging/server/customer-review-actions';
+import { sendPackagingDesignCollaborationEmail, sendPackagingQuoteCustomerPackage } from '@/features/packaging/server/customer-review-actions';
 
 export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string }) {
   const searchParams = useSearchParams();
@@ -42,8 +42,21 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
         return;
       }
       if (!('email' in response)) { setError('Could not confirm customer delivery.'); return; }
-      setSuccess(`Quote package sent to ${response.email}. The secure quote review link remains available below for viewing, copying or resharing.`);
+      setSuccess(`Quote Review sent to ${response.email}. The commercial review link remains available below for viewing, copying or resharing.`);
       load();
+    });
+  };
+
+  const sendDesignCollaboration = (line: any) => {
+    setError(''); setSuccess('');
+    startTransition(async () => {
+      const response = await sendPackagingDesignCollaborationEmail({ quoteLineItemId: line.id });
+      if (!response.ok) {
+        setError(('error' in response ? response.error : null) ?? 'Could not send the Design Collaboration link.');
+        return;
+      }
+      if (!('email' in response)) { setError('Could not confirm customer delivery.'); return; }
+      setSuccess(`Design Collaboration sent to ${response.email}. This same customer link stays active through all design revisions.`);
     });
   };
 
@@ -111,7 +124,8 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
                   <div className="text-[10px] font-black uppercase tracking-wide text-violet-700">Design Collaboration link · artwork & proof workflow</div>
                   <div className="mt-1 truncate text-[11px] font-semibold text-slate-500">{designReviewUrl || 'Secure design link available'}</div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <a href={`/public/design-review/${designToken}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-violet-700 px-3 py-2 text-xs font-black text-white">Open design workspace ↗</a>
+                    <button type="button" onClick={() => sendDesignCollaboration(line)} disabled={pending} className="rounded-xl bg-violet-700 px-3 py-2 text-xs font-black text-white disabled:opacity-50">{pending ? 'Sending…' : 'Send / resend to customer'}</button>
+                    <a href={`/public/design-review/${designToken}`} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-black text-violet-800">Open design workspace ↗</a>
                     <button type="button" onClick={() => copyDesignLink(line)} className="rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-black text-violet-800">{copiedDesign === line.id ? 'Copied!' : 'Copy / reshare design link'}</button>
                   </div>
                 </div>
