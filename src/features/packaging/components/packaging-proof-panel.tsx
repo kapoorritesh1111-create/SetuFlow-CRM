@@ -10,6 +10,7 @@ import {
   listPackagingDesignProofs,
   uploadPackagingDesignProof,
 } from '@/features/packaging/server/design-workflow-actions';
+import { sendPackagingProofReviewEmail } from '@/features/packaging/server/customer-review-actions';
 
 function statusTone(status: string) {
   if (status === 'approved') return 'bg-success-bg text-success-fg';
@@ -19,7 +20,7 @@ function statusTone(status: string) {
 
 function reviewUrl(proof: PackagingDesignProof) {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return `${origin}/proof-approval/${proof.approval_token}`;
+  return `${origin}/public/proof-approval/${proof.approval_token}`;
 }
 
 export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quoteLineItemId: string; leadId: string }) {
@@ -71,14 +72,16 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
   };
 
   const shareReview = async (proof: PackagingDesignProof) => {
-    const url = reviewUrl(proof);
-    const text = `Your Stark Packmate packaging proof v${proof.version} is ready for review. Approve it or request changes here: ${url}`;
-    if (navigator.share) {
-      try { await navigator.share({ title: 'Packaging design review', text, url }); return; } catch { /* user cancelled or share unavailable */ }
-    }
-    await navigator.clipboard?.writeText(url);
-    setCopiedFor(proof.id);
-    setTimeout(() => setCopiedFor(null), 2000);
+    setError(null); setSuccess(null);
+    startTransition(async () => {
+      const response = await sendPackagingProofReviewEmail({ quoteLineItemId, proofId: proof.id });
+      if (!response.ok) {
+        setError(('error' in response ? response.error : null) ?? 'Could not send the design review.');
+        return;
+      }
+      if (!('email' in response)) { setError('Could not confirm customer delivery.'); return; }
+      setSuccess(`Design proof v${proof.version} sent to ${response.email}. The customer can approve it or request changes from the secure review page.`);
+    });
   };
 
   const emailReview = (proof: PackagingDesignProof) => {
@@ -123,8 +126,8 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
                   </div>
                   {index === 0 && proof.status !== 'approved' ? (
                     <div className="mt-2 flex flex-wrap gap-2 border-t border-line pt-2">
-                      <button onClick={() => shareReview(proof)} className="rounded-ctl bg-brand-600 px-2.5 py-1.5 text-[11px] font-semibold text-white">Send for review</button>
-                      <button onClick={() => emailReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">Email</button>
+                      <button onClick={() => shareReview(proof)} disabled={pending} className="rounded-ctl bg-brand-600 px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50">{pending ? 'Sending…' : 'Send for review'}</button>
+                      <button onClick={() => emailReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">Open Email</button>
                       <button onClick={() => whatsappReview(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">WhatsApp</button>
                       <button onClick={() => copyLink(proof)} className="rounded-ctl border border-line bg-surface-app px-2 py-1 text-[11px] font-semibold text-content-primary">{copiedFor === proof.id ? 'Copied!' : 'Copy link'}</button>
                     </div>
@@ -145,7 +148,7 @@ export default function PackagingProofPanel({ quoteLineItemId, leadId }: { quote
             <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" required className="text-xs" />
             <button type="submit" disabled={pending} className="rounded-ctl bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{pending ? 'Uploading…' : 'Upload proof'}</button>
           </form>
-          <p className="mt-2 text-[11px] text-content-muted">Every final proof now requires customer approval before Printing. Uploading customer artwork records the source; it does not bypass proof approval. PDF, PNG, JPEG, or WEBP, up to 15MB.</p>
+          <p className="mt-2 text-[11px] text-content-muted">Every final proof requires customer approval before Printing. “Send for review” now emails the secure review link directly to the customer; WhatsApp and copy-link remain available as alternate channels.</p>
         </div>
       ) : null}
     </div>

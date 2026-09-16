@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getDesignRequestQuoteState, requestPackagingDesign } from '@/features/packaging/server/design-request-actions';
+import { sendPackagingQuoteCustomerPackage } from '@/features/packaging/server/customer-review-actions';
 
 export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string }) {
   const searchParams = useSearchParams();
@@ -27,17 +28,34 @@ export default function QuoteDesignRequestLauncher({ leadId }: { leadId: string 
   const lines = useMemo(() => state?.lines ?? [], [state]);
   if (!state || !state.quote || !lines.length) return null;
 
+  const sendCustomerPackage = () => {
+    setError(''); setSuccess('');
+    startTransition(async () => {
+      const response = await sendPackagingQuoteCustomerPackage({ leadId, quoteId: state.quote.id });
+      if (!response.ok) {
+        setError(('error' in response ? response.error : null) ?? 'Could not send the customer quote package.');
+        return;
+      }
+      if (!('email' in response)) { setError('Could not confirm customer delivery.'); return; }
+      setSuccess(`Quote package sent to ${response.email}. The customer can review the quote, sample KLD and product reference from one secure link.`);
+      load();
+    });
+  };
+
   return (
     <section className="mb-4 rounded-2xl border border-cyan-200 bg-gradient-to-r from-cyan-50 via-white to-emerald-50 p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">Design & KLD handoff</p>
-          <h2 className="mt-1 text-lg font-black text-slate-950">Start design while the quote is moving</h2>
-          <p className="mt-1 max-w-3xl text-sm font-semibold text-slate-500">Sales sends the selected packaging line, KLD context and artwork status to the Design Team. The quote remains the commercial source of truth.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">Customer package + Design & KLD handoff</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Send the quote package, then move straight into design</h2>
+          <p className="mt-1 max-w-3xl text-sm font-semibold text-slate-500">The customer receives one secure page with the commercial quote, sample KLD and product reference. Sales then hands the selected packaging line, KLD context and artwork status to Design.</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-right">
-          <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Quote</div>
-          <div className="text-sm font-black text-slate-800">{state.quote.quote_number ?? 'Current quote'}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={sendCustomerPackage} disabled={pending} className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white shadow-sm disabled:opacity-50">{pending ? 'Sending…' : 'Send Customer Package'}</button>
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-right">
+            <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Quote</div>
+            <div className="text-sm font-black text-slate-800">{state.quote.quote_number ?? 'Current quote'}</div>
+          </div>
         </div>
       </div>
 
