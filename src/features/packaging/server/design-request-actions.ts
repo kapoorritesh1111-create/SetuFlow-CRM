@@ -14,7 +14,12 @@ type DesignRequestMeta = {
   due_date: string | null;
   notes: string | null;
   status: 'new_request';
+  customer_review_token: string;
 };
+
+function newDesignReviewToken() {
+  return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+}
 
 async function context() {
   const workspace = await requireWorkspace();
@@ -104,14 +109,17 @@ export async function requestPackagingDesign(input: { leadId: string; quoteId: s
     if (!line?.id) return { ok: false, error: 'Quote line was not found.' };
 
     const snapshot = line.input_snapshot_json ?? {};
+    const existingRequest = snapshot.design_request ?? {};
     const now = new Date().toISOString();
+    const customerReviewToken = String(existingRequest.customer_review_token || '').trim() || newDesignReviewToken();
     const designRequest: DesignRequestMeta = {
       requested: true,
-      requested_at: now,
-      requested_by: userId,
+      requested_at: existingRequest.requested_at || now,
+      requested_by: existingRequest.requested_by || userId,
       due_date: input.dueDate?.trim() || null,
       notes: input.notes?.trim().slice(0, 1000) || null,
       status: 'new_request',
+      customer_review_token: customerReviewToken,
     };
 
     const { error: updateError } = await supabase
@@ -123,7 +131,8 @@ export async function requestPackagingDesign(input: { leadId: string; quoteId: s
 
     revalidatePath(`/leads/${input.leadId}/quote`);
     revalidatePath('/design-queue');
-    return { ok: true, requestedAt: now };
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://setuflowcrm.com';
+    return { ok: true, requestedAt: now, customerReviewToken, designReviewUrl: `${origin}/public/design-review/${customerReviewToken}` };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : 'Could not request design.' };
   }
