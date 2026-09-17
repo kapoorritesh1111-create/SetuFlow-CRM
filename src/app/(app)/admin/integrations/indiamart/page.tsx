@@ -9,16 +9,7 @@ import { syncIndiaMartOrganization, testIndiaMartConnection } from '@/features/i
 import { createClient } from '@/lib/supabase/server';
 import { isSetuInternalOrganization, requireAdminWorkspace } from '@/lib/workspace/auth';
 import { nextTenMinuteSyncAt } from '../next-sync-time';
-
-function displayTime(timestamp?: string | null) {
-  if (!timestamp) return 'No activity yet';
-  return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(timestamp));
-}
-
-function displayWindow(start?: string | null, end?: string | null) {
-  if (!start || !end) return 'No completed pull yet';
-  return `${displayTime(start)} → ${displayTime(end)}`;
-}
+import { SystemTime, SystemTimeZone } from '../system-time';
 
 async function testConnection(): Promise<void> {
   'use server';
@@ -85,19 +76,6 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
   const { data: event } = integration?.id
     ? await db.from('integration_events').select('event_type,status,payload,created_at,processed_at').eq('integration_id', integration.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
     : { data: null };
-  const { data: timePreference } = workspace.user?.id
-    ? await db.from('calendar_preferences').select('timezone').eq('organization_id', organization.id).eq('user_id', workspace.user.id).maybeSingle()
-    : { data: null };
-
-  const systemTimeZone = String(timePreference?.timezone || 'UTC');
-  const displayTime = (timestamp?: string | null) => {
-    if (!timestamp) return 'No activity yet';
-    return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: systemTimeZone }).format(new Date(timestamp));
-  };
-  const displayWindow = (start?: string | null, end?: string | null) => {
-    if (!start || !end) return 'No completed pull yet';
-    return `${displayTime(start)} → ${displayTime(end)}`;
-  };
 
   const config = (integration?.configuration ?? {}) as Record<string, unknown>;
   const validated = Boolean(config.connection_validated);
@@ -147,9 +125,9 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
                   ? `IndiaMART returned ${lastFetched} ${lastFetched === 1 ? 'enquiry' : 'enquiries'} for the last completed pull.`
                   : 'Run Sync now once to establish the first verified pull result.'}
               </p>
-              {hasCompletedPull && <p className="mt-1 text-xs font-medium text-slate-500">Window: {displayWindow(lastWindowStart, lastWindowEnd)}</p>}
-              <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-500'}`}>{active && nextSyncAt ? `Next automatic sync: ${displayTime(nextSyncAt)}` : 'Next automatic sync: paused'}</p>
-              <p className="mt-1 text-[11px] font-semibold text-slate-400">System timezone: {systemTimeZone}</p>
+              {hasCompletedPull && <p className="mt-1 text-xs font-medium text-slate-500">Window: <SystemTime timestamp={lastWindowStart} /> → <SystemTime timestamp={lastWindowEnd} /></p>}
+              <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-500'}`}>{active && nextSyncAt ? <>Next automatic sync: <SystemTime timestamp={nextSyncAt} /></> : 'Next automatic sync: paused'}</p>
+              <p className="mt-1 text-[11px] font-semibold text-slate-400">System timezone: <SystemTimeZone /></p>
             </div>
             <div className="grid min-w-full grid-cols-3 gap-2 lg:min-w-[360px]">
               <div className="rounded-2xl bg-white p-3 text-center shadow-sm"><p className="text-2xl font-black text-slate-950">{hasCompletedPull ? lastFetched : '—'}</p><p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Fetched</p></div>
@@ -165,24 +143,24 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Credential</p><StatusBadge label={credential ? 'Ready' : 'Missing'} tone={credential ? 'success' : 'warning'} dot={false} /></div>
             <p className="mt-3 text-xs text-slate-500">{credential?.key_hint ?? 'No IndiaMART CRM key saved'}</p>
-            <p className="mt-1 text-xs text-slate-400">Updated {displayTime(credential?.updated_at)}</p>
+            <p className="mt-1 text-xs text-slate-400">Updated <SystemTime timestamp={credential?.updated_at} /></p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Live API</p><StatusBadge label={validated ? 'Validated' : 'Not tested'} tone={validated ? 'success' : 'warning'} dot={false} /></div>
             <p className="mt-3 text-xs text-slate-500">Last validation</p>
-            <p className="mt-1 text-xs font-semibold text-slate-700">{displayTime(String(config.connection_validated_at ?? ''))}</p>
+            <p className="mt-1 text-xs font-semibold text-slate-700"><SystemTime timestamp={String(config.connection_validated_at ?? '')} /></p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Automatic polling</p><StatusBadge label={active ? 'Active' : 'Paused'} tone={active ? 'success' : 'warning'} dot={false} /></div>
             <p className="mt-3 text-xs text-slate-500">Schedule</p>
             <p className="mt-1 text-xs font-semibold text-slate-700">Every 10 minutes</p>
-            <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-400'}`}>{active && nextSyncAt ? `Next: ${displayTime(nextSyncAt)}` : 'Next: paused'}</p>
-            <p className="mt-1 text-[11px] text-slate-400">{systemTimeZone}</p>
+            <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-400'}`}>{active && nextSyncAt ? <>Next: <SystemTime timestamp={nextSyncAt} /></> : 'Next: paused'}</p>
+            <p className="mt-1 text-[11px] text-slate-400"><SystemTimeZone /></p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Last successful pull</p><StatusBadge label={hasCompletedPull ? 'Verified' : 'None'} tone={hasCompletedPull ? 'success' : 'warning'} dot={false} /></div>
             <p className="mt-3 text-xs text-slate-500">Completed</p>
-            <p className="mt-1 text-xs font-semibold text-slate-700">{displayTime(lastSyncAt)}</p>
+            <p className="mt-1 text-xs font-semibold text-slate-700"><SystemTime timestamp={lastSyncAt} /></p>
           </div>
         </div>
       </SectionCard>
@@ -202,18 +180,18 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           {event ? <>
             <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold text-slate-950">{event.event_type === 'lead_pull' ? 'Lead pull' : event.event_type === 'connection_test' ? 'Connection test' : event.event_type}</p><StatusBadge label={event.status} tone={event.status === 'success' || event.status === 'processed' ? 'success' : event.status === 'failed' || event.status === 'error' ? 'danger' : 'warning'} dot={false} /></div>
-            <p className="mt-2 text-xs text-slate-500">{displayTime(event.processed_at ?? event.created_at)}</p>
+            <p className="mt-2 text-xs text-slate-500"><SystemTime timestamp={event.processed_at ?? event.created_at} /></p>
             <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-5">
               <div><dt className="text-slate-400">Fetched</dt><dd className="mt-1 font-bold text-slate-800">{String(event.payload?.fetched ?? event.payload?.records_seen ?? '—')}</dd></div>
               <div><dt className="text-slate-400">New</dt><dd className="mt-1 font-bold text-slate-800">{String(event.payload?.inserted ?? '—')}</dd></div>
               <div><dt className="text-slate-400">Updated</dt><dd className="mt-1 font-bold text-slate-800">{String(event.payload?.updated ?? '—')}</dd></div>
-              <div><dt className="text-slate-400">Window start</dt><dd className="mt-1 font-bold text-slate-800">{event.payload?.window_start ? displayTime(String(event.payload.window_start)) : '—'}</dd></div>
-              <div><dt className="text-slate-400">Window end</dt><dd className="mt-1 font-bold text-slate-800">{event.payload?.window_end ? displayTime(String(event.payload.window_end)) : '—'}</dd></div>
+              <div><dt className="text-slate-400">Window start</dt><dd className="mt-1 font-bold text-slate-800">{event.payload?.window_start ? <SystemTime timestamp={String(event.payload.window_start)} /> : '—'}</dd></div>
+              <div><dt className="text-slate-400">Window end</dt><dd className="mt-1 font-bold text-slate-800">{event.payload?.window_end ? <SystemTime timestamp={String(event.payload.window_end)} /> : '—'}</dd></div>
             </dl>
           </> : hasCompletedPull ? <>
             <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold text-slate-950">Last verified pull</p><StatusBadge label="success" tone="success" dot={false} /></div>
-            <p className="mt-2 text-xs text-slate-500">{displayTime(lastSyncAt)}</p>
-            <p className="mt-3 text-sm text-slate-700">IndiaMART returned <span className="font-extrabold">{lastFetched}</span> enquiries for {displayWindow(lastWindowStart, lastWindowEnd)}.</p>
+            <p className="mt-2 text-xs text-slate-500"><SystemTime timestamp={lastSyncAt} /></p>
+            <p className="mt-3 text-sm text-slate-700">IndiaMART returned <span className="font-extrabold">{lastFetched}</span> enquiries for <SystemTime timestamp={lastWindowStart} /> → <SystemTime timestamp={lastWindowEnd} />.</p>
             <p className="mt-1 text-xs text-slate-500">Audit event logging was unavailable for this historical pull; the persisted sync checkpoint is shown instead.</p>
           </> : <p className="text-sm text-slate-500">No verified IndiaMART API activity has completed yet.</p>}
         </div>
