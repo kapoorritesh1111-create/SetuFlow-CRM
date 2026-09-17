@@ -1,16 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { SystemTime } from '@/components/ui/system-time';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { listUserMailboxes } from '@/lib/mail/resolve-user-mailbox';
 
 export const dynamic = 'force-dynamic';
-
-function when(value: string | null) {
-  if (!value) return '';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-}
 
 export default async function MailMessagePage({ params }: { params: { id: string } }) {
   const workspace = await requireWorkspace();
@@ -42,7 +37,7 @@ export default async function MailMessagePage({ params }: { params: { id: string
       </div>
       <div className="border-b border-slate-100 px-5 py-4 text-sm">
         <div className="font-bold text-slate-900">{peer}</div>
-        <div className="mt-1 text-xs text-slate-500">{message.direction === 'inbound' ? `To ${(message.to_addresses ?? []).join(', ')}` : `From ${message.from_address}`}{when(timestamp) ? ` · ${when(timestamp)}` : ''}</div>
+        <div className="mt-1 text-xs text-slate-500">{message.direction === 'inbound' ? `To ${(message.to_addresses ?? []).join(', ')}` : `From ${message.from_address}`}{timestamp ? <> · <SystemTime timestamp={timestamp} /></> : null}</div>
         {(message.cc_addresses ?? []).length ? <div className="mt-1 text-xs text-slate-400">Cc {(message.cc_addresses ?? []).join(', ')}</div> : null}
       </div>
       <div className="whitespace-pre-wrap break-words px-5 py-6 text-sm leading-7 text-slate-700">{message.text_body || 'No plain-text message body was provided.'}</div>
