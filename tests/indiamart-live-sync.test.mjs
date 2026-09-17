@@ -16,6 +16,7 @@ const vercel = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
 const credentialMigration = fs.readFileSync('supabase/migrations/20260917143000_indiamart_service_credential_read.sql', 'utf8');
 const providerMigration = fs.readFileSync('supabase/migrations/20260917192000_stark_inbound_provider_channel_filters.sql', 'utf8');
 const compatibilityMigration = fs.readFileSync('supabase/migrations/20260917193000_stark_inbound_provider_compat.sql', 'utf8');
+const assignmentMigration = fs.readFileSync('supabase/migrations/20260917194000_stark_indiamart_sales_assignment.sql', 'utf8');
 
 test('IndiaMART adapter uses server-side Vault credential and official pull-v2 endpoint', () => {
   assert.match(adapter, /mapi\.indiamart\.com\/wservce\/crm\/crmListing\/v2/);
@@ -64,6 +65,23 @@ test('Stark inbound workspace can switch between all, Interakt and IndiaMART wit
   assert.match(providerMigration, /p_provider text default 'all'/);
   assert.match(providerMigration, /s\.source_provider = p_provider/);
   assert.match(compatibilityMigration, /p_source, 'all'\) not in \('interakt','indiamart'\)/);
+});
+
+test('IndiaMART rows are assigned to the Stark sales pool before sales scoping', () => {
+  assert.match(assignmentMigration, /v_provider not in \('interakt', 'indiamart'\)/);
+  assert.match(assignmentMigration, /v_provider = 'interakt'/);
+  assert.match(assignmentMigration, /Fallback for unassigned Interakt and all new IndiaMART enquiries/);
+  assert.match(assignmentMigration, /before insert or update of interakt_assignee_name, source_provider/);
+  assert.match(assignmentMigration, /s\.source_provider = 'indiamart'/);
+});
+
+test('IndiaMART product and enquiry text participate in Setu Guru assessment', () => {
+  for (const source of [workspace, inboundActions]) {
+    assert.match(source, /traits\.query_product_name/);
+    assert.match(source, /traits\.query_message/);
+    assert.match(source, /packagingType: row\.packaging_type \|\| indiaMartProduct/);
+    assert.match(source, /inboundMessageTexts: indiaMartMessage \? \[indiaMartMessage\]/);
+  }
 });
 
 test('inbound records are visibly and persistently attributed to their provider', () => {
