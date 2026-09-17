@@ -134,7 +134,7 @@ export async function readStarkInboundAssignmentManager(input: { q?: string } = 
 
   let query = db
     .from('lead_intake_staging')
-    .select('id, contact_name, person_name, company_name, full_phone_number, intake_status, last_inbound_at, source_modified_at, setu_assigned_user_id, setu_assigned_invitation_id, setu_assigned_email, setu_assigned_name, qualified_lead_id')
+    .select('id, source_provider, contact_name, person_name, company_name, full_phone_number, intake_status, last_inbound_at, source_modified_at, setu_assigned_user_id, setu_assigned_invitation_id, setu_assigned_email, setu_assigned_name, qualified_lead_id')
     .eq('organization_id', organization.id)
     .in('source_provider', SUPPORTED_PROVIDERS)
     .eq('sales_queue_suppressed', false)
