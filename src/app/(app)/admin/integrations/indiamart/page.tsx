@@ -18,31 +18,33 @@ async function testConnection(): Promise<void> {
   'use server';
   const { organization } = await requireAdminWorkspace();
   if (!organization) return;
+  let result: Awaited<ReturnType<typeof testIndiaMartConnection>>;
   try {
-    const result = await testIndiaMartConnection(organization.id);
-    revalidatePath('/admin/integrations');
-    revalidatePath('/admin/integrations/indiamart');
-    redirect(`/admin/integrations/indiamart?notice=test-ok&count=${result.recordsSeen}`);
+    result = await testIndiaMartConnection(organization.id);
   } catch (error) {
     const message = encodeURIComponent(error instanceof Error ? error.message : 'IndiaMART connection test failed.');
     redirect(`/admin/integrations/indiamart?notice=test-failed&message=${message}`);
   }
+  revalidatePath('/admin/integrations');
+  revalidatePath('/admin/integrations/indiamart');
+  redirect(`/admin/integrations/indiamart?notice=test-ok&count=${result.recordsSeen}`);
 }
 
 async function syncNow(): Promise<void> {
   'use server';
   const { organization } = await requireAdminWorkspace();
   if (!organization) return;
+  let result: Awaited<ReturnType<typeof syncIndiaMartOrganization>>;
   try {
-    const result = await syncIndiaMartOrganization(organization.id, { activateAfterSuccess: true, lookbackMinutes: 24 * 60 });
-    revalidatePath('/admin/integrations');
-    revalidatePath('/admin/integrations/indiamart');
-    revalidatePath('/leads/inbound');
-    redirect(`/admin/integrations/indiamart?notice=sync-ok&fetched=${result.fetched}&inserted=${result.inserted}&updated=${result.updated}`);
+    result = await syncIndiaMartOrganization(organization.id, { activateAfterSuccess: true, lookbackMinutes: 24 * 60 });
   } catch (error) {
     const message = encodeURIComponent(error instanceof Error ? error.message : 'IndiaMART synchronization failed.');
     redirect(`/admin/integrations/indiamart?notice=sync-failed&message=${message}`);
   }
+  revalidatePath('/admin/integrations');
+  revalidatePath('/admin/integrations/indiamart');
+  revalidatePath('/leads/inbound');
+  redirect(`/admin/integrations/indiamart?notice=sync-ok&fetched=${result.fetched}&inserted=${result.inserted}&updated=${result.updated}`);
 }
 
 async function pauseSync(): Promise<void> {
@@ -145,7 +147,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
         </div>
       </SectionCard>
 
-      <div className="pb-8"><a href="/admin/integrations" className="text-sm font-semibold text-slate-600 hover:text-slate-950">← Back to Integrations & API</a></div>
+      <div className="flex flex-wrap gap-4 pb-8"><a href="/admin/integrations" className="text-sm font-semibold text-slate-600 hover:text-slate-950">← Back to Integrations & API</a><a href="/leads/inbound?source=indiamart" className="text-sm font-semibold text-orange-700 hover:text-orange-900">View IndiaMART inbound leads →</a></div>
     </AdminSettingsShell>
   );
 }
