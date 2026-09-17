@@ -14,6 +14,11 @@ function displayTime(timestamp?: string | null) {
   return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(timestamp));
 }
 
+function displayWindow(start?: string | null, end?: string | null) {
+  if (!start || !end) return 'No completed pull yet';
+  return `${displayTime(start)} → ${displayTime(end)}`;
+}
+
 async function testConnection(): Promise<void> {
   'use server';
   const { organization } = await requireAdminWorkspace();
@@ -83,19 +88,27 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
   const config = (integration?.configuration ?? {}) as Record<string, unknown>;
   const validated = Boolean(config.connection_validated);
   const active = Boolean(integration?.is_active && config.sync_enabled);
+  const lastSyncAt = String(config.last_successful_sync_at ?? '');
+  const lastWindowStart = String(config.last_window_start ?? '');
+  const lastWindowEnd = String(config.last_window_end ?? '');
+  const lastFetched = Number(config.last_fetched_count ?? 0);
+  const lastInserted = Number(config.last_inserted_count ?? 0);
+  const lastUpdated = Number(config.last_updated_count ?? 0);
+  const hasCompletedPull = Boolean(lastSyncAt && lastWindowStart && lastWindowEnd);
   const notice = params?.notice;
+
   let stateMessage: React.ReactNode = null;
-  if (notice === 'test-ok') stateMessage = <StateMessage tone="success" title="IndiaMART connection validated" description={`Live API responded successfully. ${params?.count ?? '0'} enquiries were visible in the validation window.`} />;
+  if (notice === 'test-ok') stateMessage = <StateMessage tone="success" title="Connection test passed" description={`IndiaMART responded successfully. Test window: last 30 minutes. ${params?.count ?? '0'} enquiries returned. This test does not import leads.`} />;
   if (notice === 'test-failed') stateMessage = <StateMessage tone="danger" title="IndiaMART connection test failed" description={params?.message ?? 'Review the CRM key and IndiaMART API access.'} />;
-  if (notice === 'sync-ok') stateMessage = <StateMessage tone="success" title="IndiaMART sync completed and enabled" description={`${params?.fetched ?? '0'} fetched · ${params?.inserted ?? '0'} new · ${params?.updated ?? '0'} existing updated. Automatic polling is now enabled.`} />;
-  if (notice === 'sync-failed') stateMessage = <StateMessage tone="danger" title="IndiaMART sync failed" description={params?.message ?? 'No automatic sync was enabled.'} />;
+  if (notice === 'sync-ok') stateMessage = <StateMessage tone="success" title="Sync completed" description={`${params?.fetched ?? '0'} fetched · ${params?.inserted ?? '0'} new · ${params?.updated ?? '0'} updated. Automatic polling remains enabled.`} />;
+  if (notice === 'sync-failed') stateMessage = <StateMessage tone="danger" title="IndiaMART sync failed" description={params?.message ?? 'The pull did not complete successfully.'} />;
   if (notice === 'paused') stateMessage = <StateMessage tone="warning" title="IndiaMART sync paused" description="The credential remains stored, but scheduled pulling is disabled." />;
 
   return (
     <AdminSettingsShell active="integrations" organizationName={organization.name} internalTools={internalTools} sectionTitle="Integrations & API">
       <AdminPageHero
         title="IndiaMART inbound leads"
-        description="Validate the live IndiaMART CRM API, pull enquiries into the governed inbound workspace, and monitor synchronization."
+        description="See exactly what IndiaMART returned, when the last pull ran, and whether automatic polling is active."
         badge={organization.name}
         stats={[
           { label: 'Credential', value: credential ? 'Ready' : 'Missing', tone: credential ? 'success' : 'warning' },
@@ -106,8 +119,32 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
 
       {stateMessage}
 
-      <SectionCard title="Connection status" eyebrow="IndiaMART CRM API v2" description="The API key stays encrypted in Supabase Vault. Tests and pulls happen server-side only.">
-        <div className="grid gap-4 lg:grid-cols-3">
+      <SectionCard title="Current status" eyebrow="At a glance" description="This is the operational truth for the IndiaMART connection.">
+        <div className={`rounded-3xl border p-5 ${hasCompletedPull ? 'border-emerald-200 bg-emerald-50/70' : 'border-amber-200 bg-amber-50/70'}`}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-lg font-extrabold text-slate-950">{hasCompletedPull ? 'Last IndiaMART pull completed' : 'No verified pull has completed yet'}</p>
+                <StatusBadge label={active ? 'Automatic sync active' : 'Automatic sync paused'} tone={active ? 'success' : 'warning'} dot={false} />
+              </div>
+              <p className="mt-2 text-sm text-slate-600">
+                {hasCompletedPull
+                  ? `IndiaMART returned ${lastFetched} ${lastFetched === 1 ? 'enquiry' : 'enquiries'} for the last completed pull.`
+                  : 'Run Sync now once to establish the first verified pull result.'}
+              </p>
+              {hasCompletedPull && <p className="mt-1 text-xs font-medium text-slate-500">Window: {displayWindow(lastWindowStart, lastWindowEnd)}</p>}
+            </div>
+            <div className="grid min-w-full grid-cols-3 gap-2 lg:min-w-[360px]">
+              <div className="rounded-2xl bg-white p-3 text-center shadow-sm"><p className="text-2xl font-black text-slate-950">{hasCompletedPull ? lastFetched : '—'}</p><p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Fetched</p></div>
+              <div className="rounded-2xl bg-white p-3 text-center shadow-sm"><p className="text-2xl font-black text-slate-950">{hasCompletedPull ? lastInserted : '—'}</p><p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">New</p></div>
+              <div className="rounded-2xl bg-white p-3 text-center shadow-sm"><p className="text-2xl font-black text-slate-950">{hasCompletedPull ? lastUpdated : '—'}</p><p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Updated</p></div>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Connection health" eyebrow="IndiaMART CRM API v2" description="The API key remains encrypted in Supabase Vault and is only used server-side.">
+        <div className="grid gap-4 lg:grid-cols-4">
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Credential</p><StatusBadge label={credential ? 'Ready' : 'Missing'} tone={credential ? 'success' : 'warning'} dot={false} /></div>
             <p className="mt-3 text-xs text-slate-500">{credential?.key_hint ?? 'No IndiaMART CRM key saved'}</p>
@@ -115,39 +152,55 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Live API</p><StatusBadge label={validated ? 'Validated' : 'Not tested'} tone={validated ? 'success' : 'warning'} dot={false} /></div>
-            <p className="mt-3 text-xs text-slate-500">Last validation {displayTime(String(config.connection_validated_at ?? ''))}</p>
+            <p className="mt-3 text-xs text-slate-500">Last validation</p>
+            <p className="mt-1 text-xs font-semibold text-slate-700">{displayTime(String(config.connection_validated_at ?? ''))}</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Automatic sync</p><StatusBadge label={active ? 'Active' : 'Paused'} tone={active ? 'success' : 'warning'} dot={false} /></div>
-            <p className="mt-3 text-xs text-slate-500">Last successful sync {displayTime(String(config.last_successful_sync_at ?? ''))}</p>
+            <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Automatic polling</p><StatusBadge label={active ? 'Active' : 'Paused'} tone={active ? 'success' : 'warning'} dot={false} /></div>
+            <p className="mt-3 text-xs text-slate-500">Schedule</p>
+            <p className="mt-1 text-xs font-semibold text-slate-700">Every 10 minutes</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Last successful pull</p><StatusBadge label={hasCompletedPull ? 'Verified' : 'None'} tone={hasCompletedPull ? 'success' : 'warning'} dot={false} /></div>
+            <p className="mt-3 text-xs text-slate-500">Completed</p>
+            <p className="mt-1 text-xs font-semibold text-slate-700">{displayTime(lastSyncAt)}</p>
           </div>
         </div>
       </SectionCard>
 
-      <SectionCard title="Controls" eyebrow="Safe activation" description="Test first. Sync Now performs a real pull and only enables recurring sync after that pull succeeds.">
+      <SectionCard title="Actions" eyebrow="What do you want to do?" description={active ? 'Automatic sync is already active. You only need Run sync now when you want an immediate pull.' : 'Run a pull to enable automatic polling after the request succeeds.'}>
         <div className="grid gap-3 sm:grid-cols-3">
+          <form action={syncNow}><button disabled={!credential} className="min-h-12 w-full rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{active ? 'Run sync now' : 'Sync now & enable'}</button></form>
           <form action={testConnection}><button disabled={!credential} className="min-h-12 w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Test connection</button></form>
-          <form action={syncNow}><button disabled={!credential} className="min-h-12 w-full rounded-2xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Sync now & enable</button></form>
-          <form action={pauseSync}><button disabled={!integration} className="min-h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Pause sync</button></form>
+          <form action={pauseSync}><button disabled={!integration || !active} className="min-h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Pause automatic sync</button></form>
+        </div>
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
+          <span className="font-bold text-slate-800">Test connection</span> checks API access for the last 30 minutes and never imports leads. <span className="font-bold text-slate-800">Run sync now</span> performs a real pull immediately. Automatic polling continues every 10 minutes while sync is active.
         </div>
       </SectionCard>
 
       <SectionCard title="Latest activity" eyebrow="Audit trail" description="Provider responses are summarized here; credentials are never written to the event payload.">
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           {event ? <>
-            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold text-slate-950">{event.event_type}</p><StatusBadge label={event.status} tone={event.status === 'success' ? 'success' : 'warning'} dot={false} /></div>
+            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold text-slate-950">{event.event_type === 'lead_pull' ? 'Lead pull' : event.event_type === 'connection_test' ? 'Connection test' : event.event_type}</p><StatusBadge label={event.status} tone={event.status === 'success' || event.status === 'processed' ? 'success' : event.status === 'failed' || event.status === 'error' ? 'danger' : 'warning'} dot={false} /></div>
             <p className="mt-2 text-xs text-slate-500">{displayTime(event.processed_at ?? event.created_at)}</p>
-            <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-4">
+            <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-5">
               <div><dt className="text-slate-400">Fetched</dt><dd className="mt-1 font-bold text-slate-800">{String(event.payload?.fetched ?? event.payload?.records_seen ?? '—')}</dd></div>
               <div><dt className="text-slate-400">New</dt><dd className="mt-1 font-bold text-slate-800">{String(event.payload?.inserted ?? '—')}</dd></div>
               <div><dt className="text-slate-400">Updated</dt><dd className="mt-1 font-bold text-slate-800">{String(event.payload?.updated ?? '—')}</dd></div>
-              <div><dt className="text-slate-400">Provider</dt><dd className="mt-1 font-bold text-slate-800">IndiaMART</dd></div>
+              <div><dt className="text-slate-400">Window start</dt><dd className="mt-1 font-bold text-slate-800">{event.payload?.window_start ? displayTime(String(event.payload.window_start)) : '—'}</dd></div>
+              <div><dt className="text-slate-400">Window end</dt><dd className="mt-1 font-bold text-slate-800">{event.payload?.window_end ? displayTime(String(event.payload.window_end)) : '—'}</dd></div>
             </dl>
-          </> : <p className="text-sm text-slate-500">No IndiaMART API activity has been recorded yet.</p>}
+          </> : hasCompletedPull ? <>
+            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold text-slate-950">Last verified pull</p><StatusBadge label="success" tone="success" dot={false} /></div>
+            <p className="mt-2 text-xs text-slate-500">{displayTime(lastSyncAt)}</p>
+            <p className="mt-3 text-sm text-slate-700">IndiaMART returned <span className="font-extrabold">{lastFetched}</span> enquiries for {displayWindow(lastWindowStart, lastWindowEnd)}.</p>
+            <p className="mt-1 text-xs text-slate-500">Audit event logging was unavailable for this historical pull; the persisted sync checkpoint is shown instead.</p>
+          </> : <p className="text-sm text-slate-500">No verified IndiaMART API activity has completed yet.</p>}
         </div>
       </SectionCard>
 
-      <div className="flex flex-wrap gap-4 pb-8"><a href="/admin/integrations" className="text-sm font-semibold text-slate-600 hover:text-slate-950">← Back to Integrations & API</a><a href="/leads/inbound?source=indiamart" className="text-sm font-semibold text-orange-700 hover:text-orange-900">View IndiaMART inbound leads →</a></div>
+      <div className="flex flex-wrap gap-4 pb-8"><a href="/admin/integrations" className="text-sm font-semibold text-slate-600 hover:text-slate-950">← Back to Integrations & API</a><a href="/leads/inbound?provider=indiamart" className="text-sm font-semibold text-orange-700 hover:text-orange-900">View IndiaMART inbound leads →</a></div>
     </AdminSettingsShell>
   );
 }
