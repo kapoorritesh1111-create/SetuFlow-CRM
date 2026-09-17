@@ -58,13 +58,28 @@ function contactFromRow(row: any): NormalizedInteraktContact {
 }
 
 function evidenceFromRow(row: any): InteraktInquiryEvidence {
+  const traits = row.traits && typeof row.traits === 'object' ? row.traits : {};
+  const indiaMartProduct = clean(traits.query_product_name);
+  const indiaMartMessage = clean(traits.query_message);
   return {
-    personName: row.person_name, companyName: row.company_name, packagingType: row.packaging_type, pouchType: row.pouch_type,
-    quantityText: row.quantity_text, dimensionsPrint: row.dimensions_print, deliveryLocation: row.delivery_location,
-    buyingTimeline: row.buying_timeline, industry: row.industry, firstInquiryAt: row.first_inquiry_at,
-    lastInboundAt: row.last_inbound_at, channelSource: row.channel_source, acquisitionType: row.acquisition_type,
-    adNetwork: row.ad_network, adPlatform: row.ad_platform, adUrl: row.ad_url,
-    workflowAnswerCount: [row.company_name, row.packaging_type, row.pouch_type, row.quantity_text, row.industry].filter(Boolean).length,
+    personName: row.person_name,
+    companyName: row.company_name,
+    packagingType: row.packaging_type || indiaMartProduct || null,
+    pouchType: row.pouch_type,
+    quantityText: row.quantity_text,
+    dimensionsPrint: row.dimensions_print,
+    deliveryLocation: row.delivery_location,
+    buyingTimeline: row.buying_timeline,
+    industry: row.industry,
+    firstInquiryAt: row.first_inquiry_at,
+    lastInboundAt: row.last_inbound_at,
+    channelSource: row.channel_source,
+    acquisitionType: row.acquisition_type,
+    adNetwork: row.ad_network,
+    adPlatform: row.ad_platform,
+    adUrl: row.ad_url,
+    inboundMessageTexts: indiaMartMessage ? [indiaMartMessage] : [],
+    workflowAnswerCount: [row.company_name, row.packaging_type || indiaMartProduct, row.pouch_type, row.quantity_text, row.industry, indiaMartMessage].filter(Boolean).length,
   };
 }
 
