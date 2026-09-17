@@ -10,7 +10,7 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
-const SOURCE_PROVIDER = 'interakt';
+const SUPPORTED_PROVIDERS = ['interakt', 'indiamart'] as const;
 const INBOUND_PATH = '/leads/inbound';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
 
@@ -23,13 +23,17 @@ type StarkWorkspace = WorkspaceAccess & {
 function clean(value: unknown) { return String(value ?? '').trim(); }
 function nullable(value: unknown) { const text = clean(value); return text || null; }
 function nowIso() { return new Date().toISOString(); }
+function isSupportedProvider(value: unknown): value is (typeof SUPPORTED_PROVIDERS)[number] {
+  return SUPPORTED_PROVIDERS.includes(clean(value).toLowerCase() as (typeof SUPPORTED_PROVIDERS)[number]);
+}
+function providerLabel(value: unknown) { return clean(value).toLowerCase() === 'indiamart' ? 'IndiaMART' : 'Interakt'; }
 
 async function requireStarkWriteAccess(): Promise<StarkWorkspace> {
   const workspace = await requireWorkspace();
   const organization = workspace.organization;
   const user = workspace.user;
   const isStark = organization?.id === STARK_PACKMATE_ORG_ID || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
-  if (!isStark || !user || !organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
+  if (!isStark || !user || !organization) throw new Error('This inbound lead workspace is restricted to Stark Packmate.');
   if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Manager, Admin or Owner permission is required.');
   return { ...workspace, organization, user } as StarkWorkspace;
 }
@@ -54,13 +58,28 @@ function contactFromRow(row: any): NormalizedInteraktContact {
 }
 
 function evidenceFromRow(row: any): InteraktInquiryEvidence {
+  const traits = row.traits && typeof row.traits === 'object' ? row.traits : {};
+  const indiaMartProduct = clean(traits.query_product_name);
+  const indiaMartMessage = clean(traits.query_message);
   return {
-    personName: row.person_name, companyName: row.company_name, packagingType: row.packaging_type, pouchType: row.pouch_type,
-    quantityText: row.quantity_text, dimensionsPrint: row.dimensions_print, deliveryLocation: row.delivery_location,
-    buyingTimeline: row.buying_timeline, industry: row.industry, firstInquiryAt: row.first_inquiry_at,
-    lastInboundAt: row.last_inbound_at, channelSource: row.channel_source, acquisitionType: row.acquisition_type,
-    adNetwork: row.ad_network, adPlatform: row.ad_platform, adUrl: row.ad_url,
-    workflowAnswerCount: [row.company_name, row.packaging_type, row.pouch_type, row.quantity_text, row.industry].filter(Boolean).length,
+    personName: row.person_name,
+    companyName: row.company_name,
+    packagingType: row.packaging_type || indiaMartProduct || null,
+    pouchType: row.pouch_type,
+    quantityText: row.quantity_text,
+    dimensionsPrint: row.dimensions_print,
+    deliveryLocation: row.delivery_location,
+    buyingTimeline: row.buying_timeline,
+    industry: row.industry,
+    firstInquiryAt: row.first_inquiry_at,
+    lastInboundAt: row.last_inbound_at,
+    channelSource: row.channel_source,
+    acquisitionType: row.acquisition_type,
+    adNetwork: row.ad_network,
+    adPlatform: row.ad_platform,
+    adUrl: row.ad_url,
+    inboundMessageTexts: indiaMartMessage ? [indiaMartMessage] : [],
+    workflowAnswerCount: [row.company_name, row.packaging_type || indiaMartProduct, row.pouch_type, row.quantity_text, row.industry, indiaMartMessage].filter(Boolean).length,
   };
 }
 
@@ -72,12 +91,12 @@ export async function evaluateStarkInteraktPage(formData: FormData): Promise<voi
   const rawIds = clean(formData.get('rowIds'));
   const ids = rawIds.split(',').map((item) => item.trim()).filter(Boolean).slice(0, 50);
   if (!ids.length) return;
-  const { data: rows, error } = await db.from('lead_intake_staging').select('*').eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).in('id', ids);
+  const { data: rows, error } = await db.from('lead_intake_staging').select('*').eq('organization_id', organizationId).in('source_provider', [...SUPPORTED_PROVIDERS]).in('id', ids);
   if (error) throw new Error(`Unable to load inquiries for Setu Guru: ${String(error.message ?? 'unknown database error')}`);
   const now = nowIso();
   for (const row of rows ?? []) {
     if (row.sales_queue_suppressed) continue;
-    const hasConversationEvidence = Boolean(row.first_inquiry_at || row.last_inbound_at || row.packaging_type || row.pouch_type || row.quantity_text || row.industry || row.company_intelligence_updated_at);
+    const hasConversationEvidence = Boolean(row.first_inquiry_at || row.last_inbound_at || row.packaging_type || row.pouch_type || row.quantity_text || row.industry || row.company_intelligence_updated_at || row.traits?.query_product_name || row.traits?.query_message);
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
     if (!hasConversationEvidence) {
       await db.from('lead_intake_staging').update({
@@ -94,7 +113,7 @@ export async function evaluateStarkInteraktPage(formData: FormData): Promise<voi
     await db.from('lead_intake_inquiries').update({
       guru_evaluation_status: 'evaluated', guru_evaluated_at: now, guru_last_evidence_at: evidenceAt,
       guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.leadBlockers,
-      guru_evaluation: { reason: assessment.scoreReason, next_step: assessment.nextStep, source: assessment.source.label, lead_blockers: assessment.leadBlockers, later_enrichment: assessment.laterEnrichment },
+      guru_evaluation: { reason: assessment.scoreReason, next_step: assessment.nextStep, source: providerLabel(row.source_provider), lead_blockers: assessment.leadBlockers, later_enrichment: assessment.laterEnrichment },
       updated_at: now,
     }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
   }
@@ -125,8 +144,8 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   const overrideReason = nullable(formData.get('overrideReason'));
   if (!rowId) throw new Error('Inbound inquiry is required.');
 
-  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('id', rowId).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
-  if (error || !row?.id) throw new Error('Inbound inquiry not found.');
+  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('id', rowId).eq('organization_id', organizationId).maybeSingle();
+  if (error || !row?.id || !isSupportedProvider(row.source_provider)) throw new Error('Inbound inquiry not found.');
   if (row.qualified_lead_id) redirect(`/leads/${row.qualified_lead_id}`);
   if (row.sales_queue_suppressed) throw new Error('This contact is browsing only. Wait for meaningful requirement details before creating a Lead.');
 
@@ -143,15 +162,21 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   const { data: pipeline } = await db.from('pipelines').select('id, pipeline_stages(id,name,sort_order)').eq('organization_id', organizationId).eq('lead_type', 'buyer').eq('is_default', true).maybeSingle();
   const stages = Array.isArray(pipeline?.pipeline_stages) ? pipeline.pipeline_stages : [];
   const firstStage = [...stages].sort((a: any, b: any) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0))[0] ?? null;
-  const sourceLabel = [row.ad_network === 'meta' ? 'Meta' : null, row.acquisition_type === 'ctwa' ? 'CTWA' : null, row.ad_platform ? String(row.ad_platform) : null].filter(Boolean).join(' · ') || 'Interakt';
-  const needs = [row.packaging_type, row.pouch_type, row.quantity_text, row.dimensions_print].filter(Boolean).join(' · ');
-  const companyName = row.company_name || row.contact_name || row.person_name || 'Inbound WhatsApp inquiry';
-  const productInterestLabel = row.pouch_type || row.packaging_type || null;
+  const provider = clean(row.source_provider).toLowerCase();
+  const sourceLabel = provider === 'indiamart'
+    ? 'IndiaMART'
+    : ([row.ad_network === 'meta' ? 'Meta' : null, row.acquisition_type === 'ctwa' ? 'CTWA' : null, row.ad_platform ? String(row.ad_platform) : null].filter(Boolean).join(' · ') || 'Interakt');
+  const indiaMartProduct = provider === 'indiamart' ? clean(row.traits?.query_product_name) : '';
+  const indiaMartMessage = provider === 'indiamart' ? clean(row.traits?.query_message) : '';
+  const needs = [row.packaging_type, row.pouch_type, row.quantity_text, row.dimensions_print, indiaMartProduct || null].filter(Boolean).join(' · ');
+  const companyName = row.company_name || row.contact_name || row.person_name || `${providerLabel(provider)} inbound inquiry`;
+  const productInterestLabel = row.pouch_type || row.packaging_type || indiaMartProduct || null;
   const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
   const notes = [
     row.qualification_notes,
     row.brand_name ? `Brand: ${row.brand_name}` : null,
     `Inbound source: ${sourceLabel}`,
+    indiaMartMessage ? `IndiaMART enquiry: ${indiaMartMessage}` : null,
     row.ad_url ? `Ad URL: ${row.ad_url}` : null,
     row.delivery_location ? `Delivery: ${row.delivery_location}` : null,
     row.buying_timeline ? `Buying timeline: ${row.buying_timeline}` : null,
@@ -160,7 +185,7 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
     `Setu Guru at conversion: ${assessment.score}/100 · ${assessment.bandLabel}`,
     assessment.leadBlockers.length ? `Sales handoff blockers at conversion: ${assessment.leadBlockers.join(', ')}` : null,
     assessment.laterEnrichment.length ? `Can collect during quote preparation: ${assessment.laterEnrichment.join(', ')}` : null,
-    `Interakt intake: ${row.id}`,
+    `${providerLabel(provider)} intake: ${row.id}`,
   ].filter(Boolean).join('\n');
   const now = nowIso();
 
@@ -170,12 +195,13 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
     contact_name: row.person_name || row.contact_name, email: row.email, phone: row.full_phone_number,
     whatsapp_number: row.full_phone_number, product_type: productInterestLabel,
     products_or_needs: needs || null, pipeline_id: pipeline?.id ?? null, stage_id: firstStage?.id ?? null,
-    source_type: 'interakt', source_label: sourceLabel, notes, last_contacted_at: row.last_inbound_at,
+    source_type: provider, source_label: sourceLabel, notes, last_contacted_at: row.last_inbound_at,
     industry_metadata: {
-      inbound_provider: 'interakt', intake_id: row.id, acquisition_type: row.acquisition_type, ad_network: row.ad_network,
+      inbound_provider: provider, intake_id: row.id, acquisition_type: row.acquisition_type, ad_network: row.ad_network,
       ad_platform: row.ad_platform, ad_url: row.ad_url, meta_campaign_id: row.meta_campaign_id,
       meta_adset_id: row.meta_adset_id, meta_ad_id: row.meta_ad_id, packaging_type: row.packaging_type,
       pouch_type: row.pouch_type, quantity_text: row.quantity_text, brand_name: row.brand_name,
+      indiamart_query_product: indiaMartProduct || null, indiamart_query_message: indiaMartMessage || null,
       setu_guru_score_at_conversion: assessment.score, setu_guru_band_at_conversion: assessment.bandLabel,
       setu_guru_missing_at_conversion: assessment.leadBlockers,
       setu_guru_lead_blockers_at_conversion: assessment.leadBlockers,
@@ -196,8 +222,9 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
       label: productInterestLabel,
       interest_type: 'captured_requirement',
       source_context: {
-        source: 'interakt_inbound', intake_id: row.id, packaging_type: row.packaging_type,
+        source: `${provider}_inbound`, intake_id: row.id, packaging_type: row.packaging_type,
         pouch_type: row.pouch_type, quantity_text: row.quantity_text, industry: row.industry,
+        indiamart_query_product: indiaMartProduct || null,
         quantity_is_advisory: true, moq_override_allowed: true,
       },
     });

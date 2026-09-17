@@ -15,6 +15,7 @@ const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const INBOUND_PATH = '/leads/inbound';
 const SOURCE_PROVIDER = 'interakt';
+const SUPPORTED_INBOUND_PROVIDERS = ['interakt', 'indiamart'];
 const SOURCE_ACCOUNT = 'stark-packmate';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
 const TERMINAL_INBOUND_STATUSES = new Set(['qualified', 'duplicate', 'existing_customer', 'not_relevant', 'ignored']);
@@ -38,7 +39,7 @@ async function requireStarkPackmateAccess(write = false) {
   const workspace = await requireWorkspace();
   const org = workspace.organization;
   const isStark = org?.id === STARK_PACKMATE_ORG_ID || String(org?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
-  if (!isStark || !workspace.user || !workspace.membership || !workspace.organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
+  if (!isStark || !workspace.user || !workspace.membership || !workspace.organization) throw new Error('This inbound connector is restricted to Stark Packmate.');
   if (write && !workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Manager, Admin or Owner permission is required.');
   return workspace;
 }
@@ -132,7 +133,7 @@ export async function updateStarkInteraktIntakeStatus(formData: FormData): Promi
   const status = clean(formData.get('status'));
   if (!rowId || !ALLOWED_INTAKE_STATUSES.has(status)) throw new Error('Unsupported inbound status.');
   const { error } = await admin.from('lead_intake_staging').update({ intake_status: status, updated_at: nowIso() })
-    .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER);
+    .eq('id', rowId).eq('organization_id', workspace.organization!.id).in('source_provider', SUPPORTED_INBOUND_PROVIDERS);
   if (error) throw new Error(`Unable to update inbound status: ${String(error.message ?? 'unknown database error')}`);
   revalidatePath(INBOUND_PATH);
 }
@@ -185,7 +186,7 @@ export async function saveStarkInteraktQualification(formData: FormData): Promis
     updated_at: nowIso(),
   };
   const { data: current, error: loadError } = await db.from('lead_intake_staging').select('*')
-    .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
+    .eq('id', rowId).eq('organization_id', workspace.organization!.id).in('source_provider', SUPPORTED_INBOUND_PROVIDERS).maybeSingle();
   if (loadError || !current?.id) throw new Error('Inbound inquiry not found.');
   const merged = { ...current, ...patch };
   const score = assessInteraktContact(contactFromRow(merged), new Date(), evidenceFromRow(merged)).score;
@@ -194,7 +195,7 @@ export async function saveStarkInteraktQualification(formData: FormData): Promis
     ...(brandName && brandName === current.proposed_brand_name ? { proposed_brand_name: null } : {}),
   };
   const { error } = await db.from('lead_intake_staging').update({ ...patch, ...confirmationPatch, qualification_score: score })
-    .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER);
+    .eq('id', rowId).eq('organization_id', workspace.organization!.id).in('source_provider', SUPPORTED_INBOUND_PROVIDERS);
   if (error) throw new Error(`Unable to save qualification: ${String(error.message ?? 'unknown database error')}`);
   revalidatePath(INBOUND_PATH);
 }
@@ -208,7 +209,7 @@ export async function acceptStarkInteraktCompanySuggestion(formData: FormData): 
   if (!rowId || !['company', 'brand'].includes(kind)) throw new Error('A valid company intelligence suggestion is required.');
 
   const { data: row, error: loadError } = await db.from('lead_intake_staging').select('*')
-    .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
+    .eq('id', rowId).eq('organization_id', workspace.organization!.id).in('source_provider', SUPPORTED_INBOUND_PROVIDERS).maybeSingle();
   if (loadError || !row?.id) throw new Error('Inbound inquiry not found.');
 
   const proposed = kind === 'company' ? row.proposed_company_name : row.proposed_brand_name;
@@ -219,7 +220,7 @@ export async function acceptStarkInteraktCompanySuggestion(formData: FormData): 
   const merged = { ...row, ...patch };
   const score = assessInteraktContact(contactFromRow(merged), new Date(), evidenceFromRow(merged)).score;
   const { error } = await db.from('lead_intake_staging').update({ ...patch, qualification_score: score })
-    .eq('id', rowId).eq('organization_id', workspace.organization!.id).eq('source_provider', SOURCE_PROVIDER);
+    .eq('id', rowId).eq('organization_id', workspace.organization!.id).in('source_provider', SUPPORTED_INBOUND_PROVIDERS);
   if (error) throw new Error(`Unable to confirm Setu Guru ${kind} suggestion: ${String(error.message ?? 'unknown database error')}`);
   revalidatePath(INBOUND_PATH);
 }

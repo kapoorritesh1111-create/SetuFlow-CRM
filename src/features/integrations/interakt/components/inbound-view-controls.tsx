@@ -53,6 +53,8 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentPage = Math.max(1, Number(searchParams.get('page') ?? '1') || 1);
+  const providerFilter = String(searchParams.get('provider') ?? '').toLowerCase();
+  const provider = providerFilter === 'interakt' || providerFilter === 'indiamart' ? providerFilter : 'all';
   const initial = useMemo(() => {
     const requested = String(columns ?? '').split(',').filter(Boolean);
     return requested.length ? requested : DEFAULT_COLUMNS;
@@ -63,6 +65,10 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value); else params.delete(key);
     if (key === 'view') params.delete('review');
+    if (key === 'provider') {
+      params.delete('page');
+      params.delete('review');
+    }
     router.push(`/leads/inbound?${params.toString()}`);
   }
 
@@ -85,6 +91,12 @@ export function InboundViewControls({ view = 'review', columns }: { view?: strin
   return (
     <div className="setu-inbound-controls flex flex-wrap items-center gap-2">
       <style dangerouslySetInnerHTML={{ __html: premiumStyles }} />
+
+      <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Inbound lead provider">
+        <button type="button" onClick={() => updateParam('provider', null)} className={`rounded-lg px-3 py-1.5 text-[10px] font-black ${provider === 'all' ? 'bg-slate-950 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}>All inbound</button>
+        <button type="button" onClick={() => updateParam('provider', 'interakt')} className={`rounded-lg px-3 py-1.5 text-[10px] font-black ${provider === 'interakt' ? 'bg-emerald-50 text-emerald-800 shadow-sm ring-1 ring-emerald-200' : 'text-slate-500 hover:bg-emerald-50/60 hover:text-emerald-800'}`}>Interakt</button>
+        <button type="button" onClick={() => updateParam('provider', 'indiamart')} className={`rounded-lg px-3 py-1.5 text-[10px] font-black ${provider === 'indiamart' ? 'bg-orange-50 text-orange-800 shadow-sm ring-1 ring-orange-200' : 'text-slate-500 hover:bg-orange-50/60 hover:text-orange-800'}`}>IndiaMART</button>
+      </div>
 
       {view === 'list' ? (
         <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm" aria-label="Current list page">

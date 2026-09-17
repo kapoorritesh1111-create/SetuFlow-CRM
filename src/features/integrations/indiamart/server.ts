@@ -261,7 +261,11 @@ export async function testIndiaMartConnection(organizationId: string) {
       connection_validated_at: now,
       connection_validated: true,
     };
-    await admin.from('integrations').update({ configuration: nextConfiguration, updated_at: now }).eq('id', integration.id);
+    const { error: integrationUpdateError } = await admin
+      .from('integrations')
+      .update({ configuration: nextConfiguration, updated_at: now })
+      .eq('id', integration.id);
+    if (integrationUpdateError) throw new Error(`Unable to persist IndiaMART connection status: ${integrationUpdateError.message}`);
     await writeEvent(admin, integration.id, 'connection_test', 'success', {
       provider: PROVIDER,
       api_code: response.code,
@@ -335,7 +339,7 @@ export async function syncIndiaMartOrganization(
       last_updated_count: updated,
     };
 
-    await admin
+    const { error: integrationUpdateError } = await admin
       .from('integrations')
       .update({
         configuration: nextConfiguration,
@@ -343,6 +347,7 @@ export async function syncIndiaMartOrganization(
         updated_at: now,
       })
       .eq('id', integration.id);
+    if (integrationUpdateError) throw new Error(`Unable to persist IndiaMART sync checkpoint: ${integrationUpdateError.message}`);
 
     await writeEvent(admin, integration.id, 'lead_pull', 'success', {
       provider: PROVIDER,
