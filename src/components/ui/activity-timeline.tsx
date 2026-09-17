@@ -1,4 +1,4 @@
-import { formatDateTime } from '@/lib/utils';
+import { SystemTime } from '@/components/ui/system-time';
 import type { ActivityEvent } from '@/lib/activity-timeline';
 
 function formatMetadata(event: ActivityEvent) {
@@ -31,7 +31,7 @@ export function ActivityTimeline({ events, emptyLabel = 'No activity yet.' }: { 
                 <p className="font-semibold text-slate-900">{event.title}</p>
                 {event.actor ? <p className="mt-1 text-xs text-slate-500">Actor: {event.actor}</p> : null}
               </div>
-              <p className="rounded-full border border-slate-200 bg-slate-50/90 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">{formatDateTime(event.timestamp)}</p>
+              <p className="rounded-full border border-slate-200 bg-slate-50/90 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500"><SystemTime timestamp={event.timestamp} compact /></p>
             </div>
             {metadataLine ? <p className="mt-2 text-xs text-slate-500">{metadataLine}</p> : null}
           </article>
