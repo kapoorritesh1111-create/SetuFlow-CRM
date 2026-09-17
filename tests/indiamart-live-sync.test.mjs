@@ -4,12 +4,14 @@ import test from 'node:test';
 
 const adapter = fs.readFileSync('src/features/integrations/indiamart/server.ts', 'utf8');
 const admin = fs.readFileSync('src/app/(app)/admin/integrations/indiamart/page.tsx', 'utf8');
+const adminHub = fs.readFileSync('src/app/(app)/admin/integrations/page.tsx', 'utf8');
 const cron = fs.readFileSync('src/app/api/cron/indiamart-sync/route.ts', 'utf8');
 const controls = fs.readFileSync('src/features/integrations/interakt/components/inbound-view-controls.tsx', 'utf8');
 const workspace = fs.readFileSync('src/features/integrations/interakt/inbound-workspace.ts', 'utf8');
 const inboundActions = fs.readFileSync('src/features/integrations/interakt/inbound-actions.ts', 'utf8');
 const sharedActions = fs.readFileSync('src/features/integrations/interakt/server.ts', 'utf8');
 const callActions = fs.readFileSync('src/features/integrations/interakt/review-actions.ts', 'utf8');
+const inboundPage = fs.readFileSync('src/app/(app)/leads/inbound/page.tsx', 'utf8');
 const vercel = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
 const credentialMigration = fs.readFileSync('supabase/migrations/20260917143000_indiamart_service_credential_read.sql', 'utf8');
 const providerMigration = fs.readFileSync('supabase/migrations/20260917190000_stark_inbound_multi_provider.sql', 'utf8');
@@ -43,6 +45,12 @@ test('successful admin actions redirect outside the provider-call catch block', 
   assert.match(syncAction, /try\s*\{[\s\S]*syncIndiaMartOrganization[\s\S]*\}\s*catch[\s\S]*redirect\(`\/admin\/integrations\/indiamart\?notice=sync-ok/);
 });
 
+test('connection and sync do not report success unless integration metadata is persisted', () => {
+  assert.match(adapter, /Unable to persist IndiaMART connection status/);
+  assert.match(adapter, /Unable to persist IndiaMART sync checkpoint/);
+  assert.match(adapter, /integrationUpdateError/);
+});
+
 test('Stark inbound workspace can switch between all, Interakt and IndiaMART', () => {
   assert.match(controls, /All inbound/);
   assert.match(controls, />Interakt</);
@@ -59,6 +67,9 @@ test('inbound records are visibly and persistently attributed to their provider'
   assert.match(inboundActions, /source_type: provider/);
   assert.match(inboundActions, /inbound_provider: provider/);
   assert.match(inboundActions, /IndiaMART enquiry/);
+  assert.match(inboundPage, /function ProviderBadge/);
+  assert.match(inboundPage, /IndiaMART marketplace enquiry|Marketplace enquiry/);
+  assert.match(inboundPage, /!selectedIsIndiaMart \? <a href="#message-customer"/);
 });
 
 test('shared Stark inbound review actions accept both supported providers while WhatsApp send remains Interakt-only', () => {
@@ -68,6 +79,12 @@ test('shared Stark inbound review actions accept both supported providers while 
   assert.match(sharedActions, /acceptStarkInteraktCompanySuggestion[\s\S]*in\('source_provider', SUPPORTED_INBOUND_PROVIDERS\)/);
   assert.match(sharedActions, /sendStarkInteraktTemplate[\s\S]*eq\('source_provider', SOURCE_PROVIDER\)/);
   assert.match(callActions, /source_provider', SUPPORTED_PROVIDERS/);
+});
+
+test('IndiaMART controls are reachable from the main Integrations page', () => {
+  assert.match(adminHub, /href="\/admin\/integrations\/indiamart"/);
+  assert.match(adminHub, /Manage IndiaMART connection/);
+  assert.match(adminHub, /href="\/leads\/inbound\?source=indiamart"/);
 });
 
 test('scheduled sync is protected and runs every ten minutes', () => {
