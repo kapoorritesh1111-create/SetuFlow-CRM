@@ -1,4 +1,4 @@
-import { formatDateTime } from '@/lib/utils';
+import { SystemTime } from '@/components/ui/system-time';
 import type { QuoteHistoryItem } from '@/features/quotes/types/workspace';
 
 export function QuoteHistoryList({ items }: { items: QuoteHistoryItem[] }) {
@@ -12,7 +12,7 @@ export function QuoteHistoryList({ items }: { items: QuoteHistoryItem[] }) {
         <div key={item.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-            <span className="text-xs text-slate-500">{item.happenedAt ? formatDateTime(item.happenedAt) : 'No timestamp'}</span>
+            <span className="text-xs text-slate-500">{item.happenedAt ? <SystemTime timestamp={item.happenedAt} /> : 'No timestamp'}</span>
           </div>
           <p className="mt-2 text-sm text-slate-600">{item.detail}</p>
         </div>
