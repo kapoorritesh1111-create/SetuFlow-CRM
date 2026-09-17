@@ -34,13 +34,17 @@ function safeSearch(value: unknown) {
   return clean(value).replace(/[,%()]/g, ' ').replace(/\s+/g, ' ').slice(0, 80);
 }
 
+function providerLabel(value: unknown) {
+  return clean(value).toLowerCase() === 'indiamart' ? 'IndiaMART' : 'Interakt';
+}
+
 async function requireStark(): Promise<StarkWorkspace> {
   const workspace = await requireWorkspace();
   const organization = workspace.organization;
   const user = workspace.user;
   const isStark = organization?.id === STARK_PACKMATE_ORG_ID || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
   if (!isStark || !user || !organization || !workspace.membership) {
-    throw new Error('This Interakt connector is restricted to Stark Packmate.');
+    throw new Error('This inbound lead workspace is restricted to Stark Packmate.');
   }
   return { ...workspace, organization, user } as StarkWorkspace;
 }
@@ -173,11 +177,13 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
   const rows = (payload.rows ?? []).map((row: any) => {
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
     const setuAssignee = clean(row.setu_assigned_name || row.setu_assigned_email) || 'Unassigned';
+    const provider = providerLabel(row.source_provider);
     return {
       ...row,
       computed_score: row.qualification_score ?? assessment.score,
       computed_band: assessment.bandLabel,
-      computed_source: `${assessment.source.label} · Assigned to ${setuAssignee}`,
+      computed_source: `${provider} · ${assessment.source.label} · Assigned to ${setuAssignee}`,
+      provider_label: provider,
       missing_fields: assessment.leadBlockers,
       lead_blockers: assessment.leadBlockers,
       later_enrichment: assessment.laterEnrichment,
