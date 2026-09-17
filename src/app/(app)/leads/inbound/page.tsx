@@ -24,7 +24,7 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
-const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
 const DEFAULT_LIST_COLUMNS = ['contact', 'phone', 'company', 'requirement', 'source', 'guru', 'score', 'last_activity'];
 
 type SearchParams = {
