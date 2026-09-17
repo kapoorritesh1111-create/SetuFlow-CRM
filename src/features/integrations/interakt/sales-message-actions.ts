@@ -13,7 +13,7 @@ const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const SOURCE_PROVIDER = 'interakt';
 const INBOUND_PATH = '/leads/inbound';
-const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
 const WHATSAPP_REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 type SalesMessageActionResult = { ok: true; message: string } | { ok: false; message: string };
@@ -54,7 +54,7 @@ async function requireStarkSalesAccess() {
   const organization = workspace.organization;
   const isStark = organization?.id === STARK_PACKMATE_ORG_ID || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
   if (!isStark || !workspace.user || !organization) throw new Error('This Interakt connector is restricted to Stark Packmate.');
-  if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales permission is required to message this customer.');
+  if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales or Field Sales permission is required to message this customer.');
   return workspace;
 }
 
