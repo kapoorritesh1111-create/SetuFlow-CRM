@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { createHash } from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
@@ -7,6 +8,7 @@ export const dynamic = 'force-dynamic';
 const ORGANIZATION_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const ENDPOINT = 'https://mapi.indiamart.com/wservce/crm/crmListing/v2/';
 const PROVIDER = 'indiamart';
+const PROBE_TOKEN_SHA256 = '04dfc14832870a90852ddad6fa4840af1b89498f2aa28e6fce83f0902811da6a';
 
 function pad(value: number) {
   return String(value).padStart(2, '0');
@@ -28,7 +30,13 @@ function text(value: unknown) {
   return normalized || null;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const suppliedToken = request.nextUrl.searchParams.get('token') ?? '';
+  const suppliedHash = createHash('sha256').update(suppliedToken).digest('hex');
+  if (suppliedHash !== PROBE_TOKEN_SHA256) {
+    return NextResponse.json({ ok: false, error: 'not found' }, { status: 404 });
+  }
+
   const admin = createServiceRoleClient();
   if (!admin) return NextResponse.json({ ok: false, error: 'service role unavailable' }, { status: 500 });
 
