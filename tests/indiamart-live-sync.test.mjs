@@ -14,7 +14,8 @@ const callActions = fs.readFileSync('src/features/integrations/interakt/review-a
 const inboundPage = fs.readFileSync('src/app/(app)/leads/inbound/page.tsx', 'utf8');
 const vercel = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
 const credentialMigration = fs.readFileSync('supabase/migrations/20260917143000_indiamart_service_credential_read.sql', 'utf8');
-const providerMigration = fs.readFileSync('supabase/migrations/20260917190000_stark_inbound_multi_provider.sql', 'utf8');
+const providerMigration = fs.readFileSync('supabase/migrations/20260917192000_stark_inbound_provider_channel_filters.sql', 'utf8');
+const compatibilityMigration = fs.readFileSync('supabase/migrations/20260917193000_stark_inbound_provider_compat.sql', 'utf8');
 
 test('IndiaMART adapter uses server-side Vault credential and official pull-v2 endpoint', () => {
   assert.match(adapter, /mapi\.indiamart\.com\/wservce\/crm\/crmListing\/v2/);
@@ -51,19 +52,23 @@ test('connection and sync do not report success unless integration metadata is p
   assert.match(adapter, /integrationUpdateError/);
 });
 
-test('Stark inbound workspace can switch between all, Interakt and IndiaMART', () => {
+test('Stark inbound workspace can switch between all, Interakt and IndiaMART without overwriting channel filters', () => {
   assert.match(controls, /All inbound/);
   assert.match(controls, />Interakt</);
   assert.match(controls, />IndiaMART</);
-  assert.match(controls, /updateParam\('source', 'interakt'\)/);
-  assert.match(controls, /updateParam\('source', 'indiamart'\)/);
-  assert.match(providerMigration, /source_provider in \('interakt', 'indiamart'\)/);
-  assert.match(providerMigration, /s\.source_provider = p_source/);
+  assert.match(controls, /updateParam\('provider', 'interakt'\)/);
+  assert.match(controls, /updateParam\('provider', 'indiamart'\)/);
+  assert.match(workspace, /p_provider: provider/);
+  assert.match(inboundPage, /provider: searchParams\.provider/);
+  assert.match(inboundPage, /name="provider" value=\{searchParams\.provider\}/);
+  assert.match(providerMigration, /p_provider text default 'all'/);
+  assert.match(providerMigration, /s\.source_provider = p_provider/);
+  assert.match(compatibilityMigration, /p_source, 'all'\) not in \('interakt','indiamart'\)/);
 });
 
 test('inbound records are visibly and persistently attributed to their provider', () => {
   assert.match(workspace, /providerLabel\(row\.source_provider\)/);
-  assert.match(workspace, /computed_source: `\$\{provider\}/);
+  assert.match(workspace, /computed_source: `\$\{providerName\}/);
   assert.match(inboundActions, /source_type: provider/);
   assert.match(inboundActions, /inbound_provider: provider/);
   assert.match(inboundActions, /IndiaMART enquiry/);
