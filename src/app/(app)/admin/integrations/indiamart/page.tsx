@@ -85,6 +85,19 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
   const { data: event } = integration?.id
     ? await db.from('integration_events').select('event_type,status,payload,created_at,processed_at').eq('integration_id', integration.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
     : { data: null };
+  const { data: timePreference } = workspace.user?.id
+    ? await db.from('calendar_preferences').select('timezone').eq('organization_id', organization.id).eq('user_id', workspace.user.id).maybeSingle()
+    : { data: null };
+
+  const systemTimeZone = String(timePreference?.timezone || 'UTC');
+  const displayTime = (timestamp?: string | null) => {
+    if (!timestamp) return 'No activity yet';
+    return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: systemTimeZone }).format(new Date(timestamp));
+  };
+  const displayWindow = (start?: string | null, end?: string | null) => {
+    if (!start || !end) return 'No completed pull yet';
+    return `${displayTime(start)} → ${displayTime(end)}`;
+  };
 
   const config = (integration?.configuration ?? {}) as Record<string, unknown>;
   const validated = Boolean(config.connection_validated);
@@ -136,6 +149,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
               </p>
               {hasCompletedPull && <p className="mt-1 text-xs font-medium text-slate-500">Window: {displayWindow(lastWindowStart, lastWindowEnd)}</p>}
               <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-500'}`}>{active && nextSyncAt ? `Next automatic sync: ${displayTime(nextSyncAt)}` : 'Next automatic sync: paused'}</p>
+              <p className="mt-1 text-[11px] font-semibold text-slate-400">System timezone: {systemTimeZone}</p>
             </div>
             <div className="grid min-w-full grid-cols-3 gap-2 lg:min-w-[360px]">
               <div className="rounded-2xl bg-white p-3 text-center shadow-sm"><p className="text-2xl font-black text-slate-950">{hasCompletedPull ? lastFetched : '—'}</p><p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Fetched</p></div>
@@ -163,6 +177,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
             <p className="mt-3 text-xs text-slate-500">Schedule</p>
             <p className="mt-1 text-xs font-semibold text-slate-700">Every 10 minutes</p>
             <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-400'}`}>{active && nextSyncAt ? `Next: ${displayTime(nextSyncAt)}` : 'Next: paused'}</p>
+            <p className="mt-1 text-[11px] text-slate-400">{systemTimeZone}</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Last successful pull</p><StatusBadge label={hasCompletedPull ? 'Verified' : 'None'} tone={hasCompletedPull ? 'success' : 'warning'} dot={false} /></div>
