@@ -1,8 +1,8 @@
 'use client';
 
+import { SystemTime } from '@/components/ui/system-time';
 import type { AuditEventRecord } from '@/lib/auditLog';
 import { getAuditEventCategory, getAuditEventLabel, getAuditEventSummary } from '@/lib/adminAuditEvents';
-import { formatDateTime } from '@/lib/utils';
 
 function pretty(value: unknown) {
   return JSON.stringify(value ?? {}, null, 2);
@@ -42,7 +42,7 @@ export function AuditHistoryDrawer({
           </div>
           <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Timestamp</p>
-            <p className="mt-2 text-sm font-medium text-slate-900">{formatDateTime(event.created_at)}</p>
+            <p className="mt-2 text-sm font-medium text-slate-900"><SystemTime timestamp={event.created_at} /></p>
           </div>
           <div className="rounded-panel border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Actor</p>
