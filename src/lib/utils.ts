@@ -5,7 +5,10 @@ function formatWithIntl(
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...options }).format(date);
+  // Intentionally do not force UTC here. In browser-rendered UI this uses the
+  // user's actual system timezone. Server-only callers that need a specific
+  // zone must pass it explicitly at their display boundary.
+  return new Intl.DateTimeFormat('en-US', options).format(date);
 }
 
 export function cn(...classes: Array<string | false | null | undefined>) {
