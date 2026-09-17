@@ -12,6 +12,7 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const SOURCE_PROVIDER = 'interakt';
+const SUPPORTED_INBOUND_PROVIDERS = ['interakt', 'indiamart'];
 const INBOUND_PATH = '/leads/inbound';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
 const WHATSAPP_REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -77,40 +78,60 @@ function salesFollowUpContext(row: any) {
 function resolveWhatsAppRecipient(row: any) {
   const raw = safeObject(row.raw_payload);
   const customer = safeObject(raw.customer);
-  let countryCode = clean(row.country_code) || clean(customer.country_code);
-  let phoneNumber = clean(row.phone_number) || clean(customer.phone_number);
   const fullPhone = clean(row.full_phone_number) || clean(customer.channel_phone_number);
   const fullDigits = phoneDigits(fullPhone);
-  const countryDigits = phoneDigits(countryCode);
-  const localDigits = phoneDigits(phoneNumber);
-  if (!phoneNumber && countryDigits && fullDigits.startsWith(countryDigits) && fullDigits.length > countryDigits.length) phoneNumber = fullDigits.slice(countryDigits.length);
-  if (!countryCode && localDigits && fullDigits.endsWith(localDigits) && fullDigits.length > localDigits.length) {
-    const prefix = fullDigits.slice(0, fullDigits.length - localDigits.length);
-    if (prefix.length >= 1 && prefix.length <= 3) countryCode = `+${prefix}`;
+  const storedCountry = clean(row.country_code) || clean(customer.country_code);
+  const storedPhone = clean(row.phone_number) || clean(customer.phone_number);
+  const storedCountryDigits = phoneDigits(storedCountry);
+  const storedPhoneDigits = phoneDigits(storedPhone);
+  const isoCountryDialCode: Record<string, string> = { IN: '91', US: '1', CA: '1', GB: '44', AE: '971' };
+  const isoDial = isoCountryDialCode[storedCountry.toUpperCase()] || '';
+
+  if (fullDigits.length === 12 && fullDigits.startsWith('91')) {
+    return { countryCode: '+91', phoneNumber: fullDigits.slice(2) };
   }
-  if (!countryCode && !phoneNumber && fullDigits.length === 12 && fullDigits.startsWith('91')) {
-    countryCode = '+91';
-    phoneNumber = fullDigits.slice(2);
+  if (fullDigits.length === 11 && fullDigits.startsWith('1')) {
+    return { countryCode: '+1', phoneNumber: fullDigits.slice(1) };
   }
-  if (!countryCode || !phoneNumber) throw new Error('This customer does not have a complete WhatsApp number in Interakt.');
-  return { countryCode, phoneNumber };
+
+  const countryDigits = storedCountryDigits || isoDial;
+  if (countryDigits && storedPhoneDigits) {
+    const local = storedPhoneDigits.startsWith(countryDigits) && storedPhoneDigits.length > countryDigits.length
+      ? storedPhoneDigits.slice(countryDigits.length)
+      : storedPhoneDigits;
+    return { countryCode: `+${countryDigits}`, phoneNumber: local };
+  }
+
+  if (isoDial && storedPhoneDigits) {
+    return { countryCode: `+${isoDial}`, phoneNumber: storedPhoneDigits.startsWith(isoDial) ? storedPhoneDigits.slice(isoDial.length) : storedPhoneDigits };
+  }
+
+  if (fullDigits && storedPhoneDigits && fullDigits.endsWith(storedPhoneDigits)) {
+    const prefix = fullDigits.slice(0, fullDigits.length - storedPhoneDigits.length);
+    if (prefix.length >= 1 && prefix.length <= 3) return { countryCode: `+${prefix}`, phoneNumber: storedPhoneDigits };
+  }
+
+  if (storedPhoneDigits.length === 10) return { countryCode: '+91', phoneNumber: storedPhoneDigits };
+  throw new Error('This customer does not have a complete WhatsApp number.');
 }
 
 async function loadInboundRow(db: any, organizationId: string, rowId: string) {
-  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('id', rowId).eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).maybeSingle();
+  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('id', rowId).eq('organization_id', organizationId).in('source_provider', SUPPORTED_INBOUND_PROVIDERS).maybeSingle();
   if (error || !row?.id) throw new Error('Inbound inquiry not found.');
   return row;
 }
 
 async function loadLeadInboundRow(db: any, organizationId: string, leadId: string) {
-  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).eq('qualified_lead_id', leadId).order('last_inbound_at', { ascending: false }).limit(1).maybeSingle();
-  if (error || !row?.id) throw new Error('This lead does not have a linked Interakt conversation.');
+  const { data: row, error } = await db.from('lead_intake_staging').select('*').eq('organization_id', organizationId).in('source_provider', SUPPORTED_INBOUND_PROVIDERS).eq('qualified_lead_id', leadId).order('last_inbound_at', { ascending: false }).limit(1).maybeSingle();
+  if (error || !row?.id) throw new Error('This lead does not have a linked inbound conversation.');
   return row;
 }
 
 async function persistResolvedRecipient(db: any, organizationId: string, row: any, recipient: { countryCode: string; phoneNumber: string }) {
-  if (clean(row.country_code) && clean(row.phone_number)) return;
-  await db.from('lead_intake_staging').update({ country_code: clean(row.country_code) || recipient.countryCode, phone_number: clean(row.phone_number) || recipient.phoneNumber, updated_at: new Date().toISOString() }).eq('id', row.id).eq('organization_id', organizationId);
+  const countryCode = clean(recipient.countryCode);
+  const phoneNumber = clean(recipient.phoneNumber);
+  if (clean(row.country_code) === countryCode && clean(row.phone_number) === phoneNumber) return;
+  await db.from('lead_intake_staging').update({ country_code: countryCode, phone_number: phoneNumber, updated_at: new Date().toISOString() }).eq('id', row.id).eq('organization_id', organizationId);
 }
 
 async function discardUnsentBrochureShare(db: any, organizationId: string, shareId: string | null | undefined) {
