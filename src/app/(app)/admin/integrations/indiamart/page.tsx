@@ -8,6 +8,7 @@ import { KitCompatSectionCard as SectionCard } from '@/features/admin/components
 import { syncIndiaMartOrganization, testIndiaMartConnection } from '@/features/integrations/indiamart/server';
 import { createClient } from '@/lib/supabase/server';
 import { isSetuInternalOrganization, requireAdminWorkspace } from '@/lib/workspace/auth';
+import { nextTenMinuteSyncAt } from '../next-sync-time';
 
 function displayTime(timestamp?: string | null) {
   if (!timestamp) return 'No activity yet';
@@ -89,6 +90,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
   const validated = Boolean(config.connection_validated);
   const active = Boolean(integration?.is_active && config.sync_enabled);
   const lastSyncAt = String(config.last_successful_sync_at ?? '');
+  const nextSyncAt = nextTenMinuteSyncAt(Date.now(), active);
   const lastWindowStart = String(config.last_window_start ?? '');
   const lastWindowEnd = String(config.last_window_end ?? '');
   const lastFetched = Number(config.last_fetched_count ?? 0);
@@ -108,7 +110,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
     <AdminSettingsShell active="integrations" organizationName={organization.name} internalTools={internalTools} sectionTitle="Integrations & API">
       <AdminPageHero
         title="IndiaMART inbound leads"
-        description="See exactly what IndiaMART returned, when the last pull ran, and whether automatic polling is active."
+        description="See exactly what IndiaMART returned, when the last pull ran, when the next pull is due, and whether automatic polling is active."
         badge={organization.name}
         stats={[
           { label: 'Credential', value: credential ? 'Ready' : 'Missing', tone: credential ? 'success' : 'warning' },
@@ -133,6 +135,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
                   : 'Run Sync now once to establish the first verified pull result.'}
               </p>
               {hasCompletedPull && <p className="mt-1 text-xs font-medium text-slate-500">Window: {displayWindow(lastWindowStart, lastWindowEnd)}</p>}
+              <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-500'}`}>{active && nextSyncAt ? `Next automatic sync: ${displayTime(nextSyncAt)}` : 'Next automatic sync: paused'}</p>
             </div>
             <div className="grid min-w-full grid-cols-3 gap-2 lg:min-w-[360px]">
               <div className="rounded-2xl bg-white p-3 text-center shadow-sm"><p className="text-2xl font-black text-slate-950">{hasCompletedPull ? lastFetched : '—'}</p><p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Fetched</p></div>
@@ -159,6 +162,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Automatic polling</p><StatusBadge label={active ? 'Active' : 'Paused'} tone={active ? 'success' : 'warning'} dot={false} /></div>
             <p className="mt-3 text-xs text-slate-500">Schedule</p>
             <p className="mt-1 text-xs font-semibold text-slate-700">Every 10 minutes</p>
+            <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-400'}`}>{active && nextSyncAt ? `Next: ${displayTime(nextSyncAt)}` : 'Next: paused'}</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Last successful pull</p><StatusBadge label={hasCompletedPull ? 'Verified' : 'None'} tone={hasCompletedPull ? 'success' : 'warning'} dot={false} /></div>
