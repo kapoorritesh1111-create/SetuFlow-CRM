@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { checkRateLimit, publicRateLimitKey } from '@/lib/rate-limit/simple';
 
 export const dynamic = 'force-dynamic';
@@ -12,9 +13,20 @@ function cleanText(value: unknown, max = 5000) {
   return t ? t.slice(0, max) : null;
 }
 
+async function requireAuthenticatedUser() {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return user;
+}
+
 export async function GET(request: NextRequest) {
   const limit = await checkRateLimit(publicRateLimitKey('pricing-v5-owner-review-state-get', request), 240, 60 * 60 * 1000);
   if (!limit.allowed) return NextResponse.json({ ok:false, error:'too_many_requests' }, { status:429 });
+
+  const user = await requireAuthenticatedUser();
+  if (!user) return NextResponse.json({ ok:false, error:'authentication_required' }, { status:401 });
+
   const admin = createAdminSupabaseClient();
   if (!admin) return NextResponse.json({ ok:false, error:'service_unavailable' }, { status:503 });
   const { data, error } = await (admin as any)
@@ -29,6 +41,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const limit = await checkRateLimit(publicRateLimitKey('pricing-v5-owner-review-state-post', request), 240, 60 * 60 * 1000);
   if (!limit.allowed) return NextResponse.json({ ok:false, error:'too_many_requests' }, { status:429 });
+
+  const user = await requireAuthenticatedUser();
+  if (!user) return NextResponse.json({ ok:false, error:'authentication_required' }, { status:401 });
+
   const admin = createAdminSupabaseClient();
   if (!admin) return NextResponse.json({ ok:false, error:'service_unavailable' }, { status:503 });
   const body = await request.json().catch(() => ({}));
@@ -37,7 +53,7 @@ export async function POST(request: NextRequest) {
   if (!reviewKey) return NextResponse.json({ ok:false, error:'review_key_required' }, { status:400 });
   if (!DECISIONS.has(decision)) return NextResponse.json({ ok:false, error:'invalid_decision' }, { status:400 });
   const valueJson = body.value_json && typeof body.value_json === 'object' && !Array.isArray(body.value_json) ? body.value_json : {};
-  const reviewerName = cleanText(body.reviewer_name, 120) || 'Stark Packmate Owner';
+  const reviewerName = cleanText(body.reviewer_name, 120) || user.email || 'Authenticated reviewer';
   const now = new Date().toISOString();
   const { data, error } = await (admin as any)
     .from('pricing_v5_owner_review_state')
