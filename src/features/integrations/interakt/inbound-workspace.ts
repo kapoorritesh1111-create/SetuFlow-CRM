@@ -127,8 +127,8 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
   const organizationId = workspace.organization.id;
   const roles = workspace.currentRoles.map((role) => String(role).toLowerCase());
   const canSeeAll = Boolean(workspace.canAccessAdmin) || roles.some((role) => MANAGEMENT_ROLES.has(role));
-  const isSales = roles.includes('sales');
-  if (!canSeeAll && !isSales) throw new Error('Sales, Manager, Admin or Owner permission is required.');
+  const isSales = roles.includes('sales') || roles.includes('field_sales');
+  if (!canSeeAll && !isSales) throw new Error('Sales, Field Sales, Manager, Admin or Owner permission is required.');
 
   const scopedUserId = canSeeAll ? null : workspace.user.id;
   const pageSize = Math.max(10, Math.min(Number(input.pageSize ?? 15), 50));

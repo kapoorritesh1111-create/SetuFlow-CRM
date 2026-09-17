@@ -12,7 +12,7 @@ const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const SUPPORTED_PROVIDERS = ['interakt', 'indiamart'] as const;
 const INBOUND_PATH = '/leads/inbound';
-const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
 
 type WorkspaceAccess = Awaited<ReturnType<typeof requireWorkspace>>;
 type StarkWorkspace = WorkspaceAccess & {
@@ -34,7 +34,7 @@ async function requireStarkWriteAccess(): Promise<StarkWorkspace> {
   const user = workspace.user;
   const isStark = organization?.id === STARK_PACKMATE_ORG_ID || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
   if (!isStark || !user || !organization) throw new Error('This inbound lead workspace is restricted to Stark Packmate.');
-  if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Manager, Admin or Owner permission is required.');
+  if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Field Sales, Manager, Admin or Owner permission is required.');
   return { ...workspace, organization, user } as StarkWorkspace;
 }
 
@@ -134,6 +134,45 @@ async function findDuplicateLead(db: any, organizationId: string, email: string 
   return null;
 }
 
+async function resolveInboundLeadOwnerUserId(db: any, organizationId: string, row: any) {
+  const assignedUserId = clean(row.setu_assigned_user_id);
+  if (!assignedUserId) {
+    throw new Error('Assign this inbound inquiry to an active Sales or Field Sales user before creating a Setu Lead.');
+  }
+
+  const { data: member, error: memberError } = await db
+    .from('organization_members')
+    .select('id,user_id,is_active')
+    .eq('organization_id', organizationId)
+    .eq('user_id', assignedUserId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (memberError || !member?.id) {
+    throw new Error('The assigned inbound owner is not an active Stark Packmate user. Reassign the inquiry before creating a Lead.');
+  }
+
+  const { data: roleLinks, error: roleLinkError } = await db
+    .from('user_roles')
+    .select('role_id')
+    .eq('organization_member_id', member.id);
+  if (roleLinkError) throw new Error('Unable to validate the assigned sales owner.');
+
+  const roleIds = (roleLinks ?? []).map((link: any) => link.role_id).filter(Boolean);
+  const { data: roles, error: rolesError } = roleIds.length
+    ? await db.from('roles').select('id,name').in('id', roleIds)
+    : { data: [], error: null };
+  if (rolesError) throw new Error('Unable to validate the assigned sales owner.');
+
+  const eligibleRole = (roles ?? []).some((role: any) => ['sales', 'field_sales'].includes(clean(role.name).toLowerCase()));
+  const { data: profile } = await db.from('profiles').select('id,email,full_name').eq('id', assignedUserId).maybeSingle();
+  const supportLike = /^support@/i.test(clean(profile?.email)) || /^support@/i.test(clean(profile?.full_name));
+  if (!eligibleRole || supportLike) {
+    throw new Error('The inbound owner must be an active Sales or Field Sales user. Support accounts cannot own converted leads.');
+  }
+
+  return assignedUserId;
+}
+
 export async function createStarkInteraktLeadOverride(formData: FormData): Promise<void> {
   const workspace = await requireStarkWriteAccess();
   const organizationId = workspace.organization.id;
@@ -188,16 +227,17 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
     `${providerLabel(provider)} intake: ${row.id}`,
   ].filter(Boolean).join('\n');
   const now = nowIso();
+  const leadOwnerUserId = await resolveInboundLeadOwnerUserId(db, organizationId, row);
 
   const { data: lead, error: leadError } = await db.from('leads').insert({
-    organization_id: organizationId, lead_type: 'buyer', owner_user_id: userId,
+    organization_id: organizationId, lead_type: 'buyer', owner_user_id: leadOwnerUserId,
     created_by: userId, updated_by: userId, company_name: companyName,
     contact_name: row.person_name || row.contact_name, email: row.email, phone: row.full_phone_number,
     whatsapp_number: row.full_phone_number, product_type: productInterestLabel,
     products_or_needs: needs || null, pipeline_id: pipeline?.id ?? null, stage_id: firstStage?.id ?? null,
     source_type: provider, source_label: sourceLabel, notes, last_contacted_at: row.last_inbound_at,
     industry_metadata: {
-      inbound_provider: provider, intake_id: row.id, acquisition_type: row.acquisition_type, ad_network: row.ad_network,
+      inbound_provider: provider, intake_id: row.id, inbound_assigned_user_id: leadOwnerUserId, inbound_assigned_name: row.setu_assigned_name ?? null, acquisition_type: row.acquisition_type, ad_network: row.ad_network,
       ad_platform: row.ad_platform, ad_url: row.ad_url, meta_campaign_id: row.meta_campaign_id,
       meta_adset_id: row.meta_adset_id, meta_ad_id: row.meta_ad_id, packaging_type: row.packaging_type,
       pouch_type: row.pouch_type, quantity_text: row.quantity_text, brand_name: row.brand_name,

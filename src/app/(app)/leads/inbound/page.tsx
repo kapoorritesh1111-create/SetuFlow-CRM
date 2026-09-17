@@ -10,11 +10,11 @@ import { SalesMessageComposer } from '@/features/integrations/interakt/component
 import { logStarkInteraktCall } from '@/features/integrations/interakt/review-actions';
 import {
   acceptStarkInteraktCompanySuggestion,
-  readStarkInteraktConversation,
   refreshStarkInteraktStaging,
   saveStarkInteraktQualification,
   updateStarkInteraktIntakeStatus,
 } from '@/features/integrations/interakt/server';
+import { readSharedInboundConversation } from '@/features/integrations/interakt/shared-inbound-conversation';
 import {
   createStarkInteraktLeadOverride,
   evaluateStarkInteraktPage,
@@ -24,7 +24,8 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
-const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
+const MANAGER_ROLES = new Set(['owner', 'admin', 'manager']);
 const DEFAULT_LIST_COLUMNS = ['contact', 'phone', 'company', 'requirement', 'source', 'guru', 'score', 'last_activity'];
 
 type SearchParams = {
@@ -59,7 +60,6 @@ type ConversationMessage = {
 type WorkflowAnswer = { id: string; question_text: string; answer_text: string | null; answered_at: string | null };
 type CompanyEvidenceEntry = { company_name?: string | null; brand_name?: string | null; confidence?: number; evidence?: string };
 type NormalizedAnswer = WorkflowAnswer & { key: string; label: string };
-type IndiaMartDetail = { label: string; value: string };
 
 function timeAgo(value: string | null | undefined) {
   if (!value) return 'History pending';
@@ -89,36 +89,6 @@ function scoreClass(score: number) {
 
 function isCtwa(row: any) { return String(row?.acquisition_type ?? '').trim().toLowerCase() === 'ctwa'; }
 function isIndiaMart(row: any) { return String(row?.source_provider ?? '').trim().toLowerCase() === 'indiamart'; }
-
-function normalizeWhatsAppNumber(value: unknown) {
-  let digits = String(value ?? '').replace(/\D/g, '');
-  if (digits.startsWith('00')) digits = digits.slice(2);
-  if (digits.length === 10) digits = `91${digits}`;
-  return digits.length >= 8 ? digits : '';
-}
-
-function buildIndiaMartWhatsAppHref(phone: unknown, customerName: string, product: unknown) {
-  const digits = normalizeWhatsAppNumber(phone);
-  if (!digits) return null;
-  const name = String(customerName || 'there').trim();
-  const requirement = String(product ?? '').trim();
-  const text = `Hi ${name}, this is Stark Packmate. We received your IndiaMART enquiry${requirement ? ` for ${requirement}` : ''}. I would be happy to help with your packaging requirement.`;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
-}
-
-function parseIndiaMartMessage(value: unknown) {
-  const normalized = String(value ?? '').replace(/<br\s*\/?\s*>/gi, '\n').replace(/\r/g, '').trim();
-  const details: IndiaMartDetail[] = [];
-  const notes: string[] = [];
-  for (const rawLine of normalized.split('\n')) {
-    const line = rawLine.replace(/\s+/g, ' ').trim();
-    if (!line) continue;
-    const match = line.match(/^([^:]{2,80})\s*:\s*(.+)$/);
-    if (match) details.push({ label: match[1].trim(), value: match[2].trim() });
-    else notes.push(line);
-  }
-  return { details, notes };
-}
 
 function CtwaHotLeadBadge({ compact = false }: { compact?: boolean }) {
   return <span className={`inline-flex items-center whitespace-nowrap rounded-full border border-orange-300 bg-orange-100 font-black text-orange-800 shadow-sm ${compact ? 'px-2 py-0.5 text-[9px]' : 'px-2.5 py-1 text-[10px]'}`}>🔥 CTWA Hot Lead</span>;
@@ -196,35 +166,34 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   if (!isStark) return <WorkspaceState eyebrow="Leads · Inbound" title="Inbound connector not enabled" description="The inbound qualification workspace is currently enabled for Stark Packmate." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
 
   const canWorkInbound = workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)));
+  const canManageAssignments = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase()));
   const view = searchParams.view === 'list' ? 'list' : 'review';
   const page = Math.max(1, Number(searchParams.page ?? '1') || 1);
   const workspaceData = await readInboundWorkspaceV2({ page, pageSize: view === 'list' ? 30 : 15, q: searchParams.q, status: searchParams.status, guru: searchParams.guru, source: searchParams.source, provider: searchParams.provider, owner: searchParams.owner, sort: searchParams.sort });
   const rows = workspaceData.rows as any[];
 
   if (view === 'list') {
-    return <div className="space-y-3 pb-8"><Header canWorkInbound={canWorkInbound} /><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /><FilterBar searchParams={searchParams} /><ListView rows={rows} workspaceData={workspaceData} searchParams={searchParams} canWorkInbound={canWorkInbound} /></div>;
+    return <div className="space-y-3 pb-8"><Header canWorkInbound={canWorkInbound} canManageAssignments={canManageAssignments} /><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /><FilterBar searchParams={searchParams} /><ListView rows={rows} workspaceData={workspaceData} searchParams={searchParams} canWorkInbound={canWorkInbound} /></div>;
   }
 
   const requestedId = String(searchParams.review ?? '').trim();
   const selected = rows.find((row) => row.id === requestedId) ?? rows[0] ?? null;
-  const conversation = selected ? await readStarkInteraktConversation(selected.id) : { messages: [], answers: [], error: null };
+  const conversation = selected ? await readSharedInboundConversation(selected.id) : { messages: [], answers: [], error: null };
   const messages = (conversation.messages ?? []) as ConversationMessage[];
   const compactAnswers = normalizeWorkflowAnswers((conversation.answers ?? []) as WorkflowAnswer[]);
   const latestEvidence = selected?.company_evidence?.latest as CompanyEvidenceEntry | undefined;
   const currentGuru = selected ? guruLabel(selected.guru_evaluation_status) : guruLabel(null);
 
-  if (!selected) return <div className="space-y-4"><Header canWorkInbound={canWorkInbound} /><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /><FilterBar searchParams={searchParams} /><WorkspaceState eyebrow="Leads · Inbound" title="No matching inbound records" description="Try changing the current filters or syncing the selected inbound provider." primaryActionHref="/leads/inbound" primaryActionLabel="Clear filters" /></div>;
+  if (!selected) return <div className="space-y-4"><Header canWorkInbound={canWorkInbound} canManageAssignments={canManageAssignments} /><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /><FilterBar searchParams={searchParams} /><WorkspaceState eyebrow="Leads · Inbound" title="No matching inbound records" description="Try changing the current filters or syncing the selected inbound provider." primaryActionHref="/leads/inbound" primaryActionLabel="Clear filters" /></div>;
 
   const leadBlockers = (selected.lead_blockers ?? selected.missing_fields ?? []) as string[];
   const laterEnrichment = (selected.later_enrichment ?? []) as string[];
   const selectedIsIndiaMart = isIndiaMart(selected);
-  const whatsappReplyWindowOpen = !selectedIsIndiaMart && withinWhatsAppReplyWindow(selected.last_inbound_at);
+  const latestWhatsAppInboundAt = [...messages].reverse().find((message) => message.direction === 'inbound' && message.event_type !== 'indiamart_enquiry')?.received_at ?? null;
+  const whatsappReplyWindowOpen = withinWhatsAppReplyWindow(selectedIsIndiaMart ? latestWhatsAppInboundAt : selected.last_inbound_at);
   const customerName = selected.person_name || selected.contact_name || 'Customer';
   const selectedIsCtwa = isCtwa(selected);
   const indiaMartProduct = selectedIsIndiaMart ? selected.traits?.query_product_name : null;
-  const indiaMartMessage = selectedIsIndiaMart ? selected.traits?.query_message : null;
-  const indiaMartInquiry = parseIndiaMartMessage(indiaMartMessage);
-  const indiaMartWhatsAppHref = selectedIsIndiaMart ? buildIndiaMartWhatsAppHref(selected.full_phone_number, customerName, indiaMartProduct) : null;
   const summaryRows: Array<[string, unknown, boolean]> = [
     ['Company', selected.company_name, true], ['Brand', selected.brand_name, false],
     ['Packaging', selected.packaging_type || indiaMartProduct, !selected.pouch_type],
@@ -235,7 +204,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   ];
 
   return <div className="space-y-3 pb-8">
-    <Header canWorkInbound={canWorkInbound} />
+    <Header canWorkInbound={canWorkInbound} canManageAssignments={canManageAssignments} />
     <Kpis kpis={workspaceData.kpis} searchParams={searchParams} />
     <FilterBar searchParams={searchParams} />
 
@@ -262,16 +231,16 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
 
       <main className={`min-w-0 rounded-2xl border bg-white shadow-sm ${selectedIsCtwa ? 'border-orange-200 ring-1 ring-orange-100' : 'border-slate-200'}`}>
         <header className={`sticky top-0 z-10 rounded-t-2xl border-b px-5 py-4 backdrop-blur ${selectedIsCtwa ? 'border-orange-100 bg-orange-50/95' : 'border-slate-100 bg-white/95'}`}>
-          <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">{selected.person_name || selected.contact_name || 'Unnamed contact'}</h2><ProviderBadge row={selected} />{selectedIsCtwa ? <CtwaHotLeadBadge /> : null}<span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100 · {selected.computed_band}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${currentGuru.className}`}>{currentGuru.icon} {currentGuru.label}</span></div><p className="mt-1 text-xs text-slate-500">{selectedIsIndiaMart ? 'IndiaMART enquiry' : selected.computed_source}{selected.company_name ? ` · ${selected.company_name}` : ''}{selected.first_inquiry_at ? <> · First inquiry <SystemTime timestamp={selected.first_inquiry_at} compact /></> : selectedIsIndiaMart ? null : ' · Historical chat backfill pending'}</p>{selected.interakt_assignee_name && !selectedIsIndiaMart ? <p className="mt-1 text-[11px] text-slate-500">Assigned in Interakt to <strong className="text-slate-700">{selected.interakt_assignee_name}</strong></p> : null}{selectedIsIndiaMart && selected.setu_assigned_name ? <p className="mt-1 text-[11px] text-slate-500">Assigned to <strong className="text-slate-700">{selected.setu_assigned_name}</strong></p> : null}</div><div className="flex flex-wrap gap-2">{selected.full_phone_number ? <a href={`tel:${selected.full_phone_number}`} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">☎ Call</a> : null}{indiaMartWhatsAppHref && canWorkInbound ? <a href={indiaMartWhatsAppHref} target="_blank" rel="noreferrer" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">WhatsApp</a> : !selectedIsIndiaMart ? <a href="#message-customer" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">💬 Message</a> : null}<a href="#create-lead" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">＋ Create Lead</a></div></div>
+          <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">{selected.person_name || selected.contact_name || 'Unnamed contact'}</h2><ProviderBadge row={selected} />{selectedIsCtwa ? <CtwaHotLeadBadge /> : null}<span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100 · {selected.computed_band}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${currentGuru.className}`}>{currentGuru.icon} {currentGuru.label}</span></div><p className="mt-1 text-xs text-slate-500">{selectedIsIndiaMart ? 'IndiaMART enquiry' : selected.computed_source}{selected.company_name ? ` · ${selected.company_name}` : ''}{selected.first_inquiry_at ? <> · First inquiry <SystemTime timestamp={selected.first_inquiry_at} compact /></> : selectedIsIndiaMart ? null : ' · Historical chat backfill pending'}</p>{selected.setu_assigned_name ? <p className="mt-1 text-[11px] text-slate-500">Setu owner <strong className="text-slate-700">{selected.setu_assigned_name}</strong>{selected.interakt_assignee_name && selected.interakt_assignee_name !== selected.setu_assigned_name ? <span> · Interakt: {selected.interakt_assignee_name}</span> : null}</p> : selected.interakt_assignee_name ? <p className="mt-1 text-[11px] text-slate-500">Interakt assignee <strong className="text-slate-700">{selected.interakt_assignee_name}</strong></p> : null}</div><div className="flex flex-wrap gap-2">{selected.full_phone_number ? <a href={`tel:${selected.full_phone_number}`} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">☎ Call</a> : null}<a href="#message-customer" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">💬 Message</a><a href="#create-lead" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">＋ Create Lead</a></div></div>
         </header>
 
         <div className="space-y-4 px-5 py-5">
           {!selected.first_inquiry_at && !selectedIsIndiaMart ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><p className="text-xs font-bold text-amber-900">Historical conversation is not backfilled yet</p><p className="mt-1 text-[11px] leading-5 text-amber-800">This contact may have rich history in Interakt. Setu Flow is not treating missing historical evidence as a negative qualification decision.</p></div> : null}
-          {conversation.error && !selectedIsIndiaMart ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{conversation.error}</p> : null}
-          {selectedIsIndiaMart ? <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 bg-gradient-to-r from-orange-50 to-white px-5 py-4"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><ProviderBadge row={selected} /><span className="text-[10px] font-black uppercase tracking-[0.14em] text-orange-700">Buyer enquiry</span></div><span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-500 shadow-sm">Marketplace lead</span></div><h3 className="mt-3 text-lg font-black text-slate-950">{indiaMartProduct || 'IndiaMART buyer enquiry'}</h3>{indiaMartInquiry.notes.length ? <p className="mt-1 text-sm leading-6 text-slate-600">{indiaMartInquiry.notes.join(' · ')}</p> : null}</div>{indiaMartInquiry.details.length ? <dl className="grid gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-3">{indiaMartInquiry.details.map((item) => <div key={`${item.label}-${item.value}`} className="bg-white px-5 py-4"><dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{item.label}</dt><dd className="mt-1 text-sm font-bold text-slate-800">{item.value}</dd></div>)}</dl> : indiaMartMessage ? <div className="px-5 py-4 text-sm leading-6 text-slate-700">{String(indiaMartMessage).replace(/<br\s*\/?\s*>/gi, ' · ')}</div> : null}<div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-4">{indiaMartWhatsAppHref && canWorkInbound ? <a href={indiaMartWhatsAppHref} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700">WhatsApp customer</a> : null}{selected.full_phone_number ? <a href={`tel:${selected.full_phone_number}`} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50">Call customer</a> : null}{!selected.full_phone_number ? <span className="text-xs font-semibold text-amber-700">No phone number was supplied with this enquiry.</span> : <span className="text-xs text-slate-500">Contact the buyer directly, then qualify the opportunity when ready.</span>}</div></section> : <InboundConversationPanel messages={messages} customerName={customerName} captured={{ companyName: selected.company_name, brandName: selected.brand_name, packagingType: selected.packaging_type, pouchType: selected.pouch_type, quantityText: selected.quantity_text, industry: selected.industry, dimensionsPrint: selected.dimensions_print, deliveryLocation: selected.delivery_location, buyingTimeline: selected.buying_timeline }} evidenceAnswers={compactAnswers.map((answer) => ({ label: answer.label, value: answer.answer_text || '—' }))} />}
+          {conversation.error ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{conversation.error}</p> : null}
+          <InboundConversationPanel messages={messages} customerName={customerName} captured={{ companyName: selected.company_name, brandName: selected.brand_name, packagingType: selected.packaging_type || indiaMartProduct, pouchType: selected.pouch_type, quantityText: selected.quantity_text, industry: selected.industry, dimensionsPrint: selected.dimensions_print, deliveryLocation: selected.delivery_location, buyingTimeline: selected.buying_timeline }} evidenceAnswers={compactAnswers.map((answer) => ({ label: answer.label, value: answer.answer_text || '—' }))} />
           <section id="message-customer" className="grid gap-3 lg:grid-cols-2">
-            {selectedIsIndiaMart ? <details className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4" open><summary className="cursor-pointer text-xs font-black text-emerald-900">WhatsApp follow-up</summary><div className="mt-4">{indiaMartWhatsAppHref && canWorkInbound ? <><p className="text-xs leading-5 text-slate-600">Open WhatsApp with a professional first-response message already prepared. You can edit it before sending.</p><a href={indiaMartWhatsAppHref} target="_blank" rel="noreferrer" className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-xs font-black text-white hover:bg-emerald-700">Open WhatsApp</a></> : <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs font-semibold text-amber-800">WhatsApp becomes available when the enquiry has a usable phone number and you have sales access.</p>}</div></details> : <details className="rounded-xl border border-slate-200 bg-white p-4" open><summary className="cursor-pointer text-xs font-black text-slate-800">💬 Message customer</summary><div className="mt-4"><SalesMessageComposer rowId={selected.id} customerName={customerName} companyName={selected.company_name} packagingType={selected.packaging_type} pouchType={selected.pouch_type} quantityText={selected.quantity_text} replyWindowOpen={whatsappReplyWindowOpen} canSend={canWorkInbound} /></div></details>}
-            <details className="rounded-xl border border-slate-200 bg-white p-4" open={selectedIsIndiaMart}><summary className="cursor-pointer text-xs font-black text-slate-800">☎ Log a call</summary><form action={logStarkInteraktCall} className="mt-4 space-y-3"><input type="hidden" name="rowId" value={selected.id} /><div className="grid grid-cols-2 gap-2"><select name="disposition" className="rounded-xl border border-slate-200 px-3 py-2 text-xs"><option>Connected</option><option>No answer</option><option>Call back requested</option><option>Wrong number</option></select><input name="duration" placeholder="Duration, e.g. 4 min" className="rounded-xl border border-slate-200 px-3 py-2 text-xs" /></div><textarea name="notes" rows={4} placeholder="Call notes" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Log call" pendingLabel="Saving call…" className="w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white" /></form></details>
+            <details className="rounded-xl border border-slate-200 bg-white p-4" open><summary className="cursor-pointer text-xs font-black text-slate-800">💬 Message customer</summary><div className="mt-4"><SalesMessageComposer rowId={selected.id} customerName={customerName} companyName={selected.company_name} packagingType={selected.packaging_type || indiaMartProduct} pouchType={selected.pouch_type} quantityText={selected.quantity_text} replyWindowOpen={whatsappReplyWindowOpen} canSend={canWorkInbound} /></div></details>
+            <details className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-xs font-black text-slate-800">☎ Log a call</summary><form action={logStarkInteraktCall} className="mt-4 space-y-3"><input type="hidden" name="rowId" value={selected.id} /><div className="grid grid-cols-2 gap-2"><select name="disposition" className="rounded-xl border border-slate-200 px-3 py-2 text-xs"><option>Connected</option><option>No answer</option><option>Call back requested</option><option>Wrong number</option></select><input name="duration" placeholder="Duration, e.g. 4 min" className="rounded-xl border border-slate-200 px-3 py-2 text-xs" /></div><textarea name="notes" rows={4} placeholder="Call notes" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Log call" pendingLabel="Saving call…" className="w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white" /></form></details>
           </section>
         </div>
       </main>
@@ -295,16 +264,16 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
           {canWorkInbound && selected.guru_evaluation_status !== 'evaluated' ? <form action={evaluateStarkInteraktPage} className="mt-3"><input type="hidden" name="rowIds" value={selected.id} /><PendingSubmitButton idleLabel="✨ Evaluate this inquiry" pendingLabel="Evaluating inquiry…" pendingDetail="Setu Guru is reviewing the latest captured evidence" className="w-full rounded-lg border border-emerald-300 bg-white px-3 py-2 text-[10px] font-bold text-emerald-800" /></form> : null}
         </section>
 
-        <section id="create-lead" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-600">Sales decision</h3><p className="mt-2 text-xs font-bold text-slate-950">Create Lead</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Setu Guru advises; the salesperson decides. Duplicate checking always runs. Captured packaging is carried into quote preparation.</p><form action={createStarkInteraktLeadOverride} className="mt-3 space-y-2"><input type="hidden" name="rowId" value={selected.id} />{leadBlockers.length ? <select name="overrideReason" required className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs"><option value="">Why create now?</option><option>Customer confirmed by phone</option><option>Sufficient information to proceed</option><option>Existing relationship</option><option>Salesperson judgement</option></select> : <input type="hidden" name="overrideReason" value="Sales handoff requirements satisfied" />}<PendingSubmitButton disabled={!canWorkInbound} idleLabel="＋ Create Lead" pendingLabel="Creating Lead…" pendingDetail="Checking duplicates and carrying the captured requirement into the Lead" className="w-full rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white" /></form><div className="mt-2 grid grid-cols-2 gap-2"><form action={updateStarkInteraktIntakeStatus}><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="needs_info" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Needs info" pendingLabel="Saving…" className="w-full rounded-lg border border-amber-200 px-2 py-2 text-[10px] font-bold text-amber-700" /></form><form action={updateStarkInteraktIntakeStatus}><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="nurture" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Nurture" pendingLabel="Saving…" className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600" /></form></div></section>
+        <section id="create-lead" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-600">Sales decision</h3><p className="mt-2 text-xs font-bold text-slate-950">Create Lead</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Setu Guru advises; the salesperson decides. Duplicate checking always runs. The assigned Sales / Field Sales owner carries into the permanent Setu Lead, and captured packaging is carried into quote preparation.</p><form action={createStarkInteraktLeadOverride} className="mt-3 space-y-2"><input type="hidden" name="rowId" value={selected.id} />{leadBlockers.length ? <select name="overrideReason" required className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs"><option value="">Why create now?</option><option>Customer confirmed by phone</option><option>Sufficient information to proceed</option><option>Existing relationship</option><option>Salesperson judgement</option></select> : <input type="hidden" name="overrideReason" value="Sales handoff requirements satisfied" />}<PendingSubmitButton disabled={!canWorkInbound} idleLabel="＋ Create Lead" pendingLabel="Creating Lead…" pendingDetail="Checking duplicates and carrying the captured requirement into the Lead" className="w-full rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white" /></form><div className="mt-2 grid grid-cols-2 gap-2"><form action={updateStarkInteraktIntakeStatus}><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="needs_info" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Needs info" pendingLabel="Saving…" className="w-full rounded-lg border border-amber-200 px-2 py-2 text-[10px] font-bold text-amber-700" /></form><form action={updateStarkInteraktIntakeStatus}><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="nurture" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Nurture" pendingLabel="Saving…" className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600" /></form></div></section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">Source</h3><div className="mt-3 space-y-2 text-xs">{[['Provider', selected.provider_label || (selectedIsIndiaMart ? 'IndiaMART' : 'Interakt')], ['Channel', selected.channel_source || (selectedIsIndiaMart ? 'IndiaMART' : 'WhatsApp')], ['Acquisition', selected.acquisition_type], ['Platform', selected.ad_platform], ['Owner', selected.interakt_assignee_name || selected.setu_assigned_name]].map(([label,value]) => <div key={label} className="flex justify-between gap-3"><span className="text-slate-500">{label}</span><strong className="text-right text-slate-800">{value || '—'}</strong></div>)}</div>{selected.ad_url ? <a href={selected.ad_url} target="_blank" rel="noreferrer" className="mt-3 block rounded-lg bg-violet-50 px-3 py-2 text-[10px] font-bold text-violet-700">Open Meta ad ↗</a> : null}<details className="mt-3"><summary className="cursor-pointer text-[10px] font-bold text-slate-500">Technical attribution</summary><div className="mt-2 space-y-1 text-[9px] text-slate-500"><p>Campaign: {selected.meta_campaign_id || '—'}</p><p>Ad set: {selected.meta_adset_id || '—'}</p><p>Ad: {selected.meta_ad_id || '—'}</p></div></details></section>
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">Source</h3><div className="mt-3 space-y-2 text-xs">{[['Provider', selected.provider_label || (selectedIsIndiaMart ? 'IndiaMART' : 'Interakt')], ['Channel', selected.channel_source || (selectedIsIndiaMart ? 'IndiaMART' : 'WhatsApp')], ['Acquisition', selected.acquisition_type], ['Platform', selected.ad_platform], ['Owner', selected.setu_assigned_name || selected.interakt_assignee_name]].map(([label,value]) => <div key={label} className="flex justify-between gap-3"><span className="text-slate-500">{label}</span><strong className="text-right text-slate-800">{value || '—'}</strong></div>)}</div>{selected.ad_url ? <a href={selected.ad_url} target="_blank" rel="noreferrer" className="mt-3 block rounded-lg bg-violet-50 px-3 py-2 text-[10px] font-bold text-violet-700">Open Meta ad ↗</a> : null}<details className="mt-3"><summary className="cursor-pointer text-[10px] font-bold text-slate-500">Technical attribution</summary><div className="mt-2 space-y-1 text-[9px] text-slate-500"><p>Campaign: {selected.meta_campaign_id || '—'}</p><p>Ad set: {selected.meta_adset_id || '—'}</p><p>Ad: {selected.meta_ad_id || '—'}</p></div></details></section>
       </aside>
     </div>
   </div>;
 }
 
-function Header({ canWorkInbound }: { canWorkInbound: boolean }) {
-  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div><div className="flex items-center gap-2"><span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">Inbound</span><h1 className="text-lg font-black text-slate-950">Sales Inbox</h1></div><p className="mt-1 text-xs text-slate-500">Review Interakt and IndiaMART buyer inquiries, qualify them, and move the right opportunities into the permanent Lead pipeline.</p></div><div className="flex items-center gap-2"><Link prefetch={false} href="/leads" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Lead Queue</Link>{canWorkInbound ? <form action={refreshStarkInteraktStaging}><PendingSubmitButton idleLabel="↻ Sync Interakt" pendingLabel="Syncing Interakt…" pendingDetail="Checking Interakt for new or updated contacts" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white" /></form> : null}</div></div>;
+function Header({ canWorkInbound, canManageAssignments }: { canWorkInbound: boolean; canManageAssignments: boolean }) {
+  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div><div className="flex items-center gap-2"><span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">Inbound</span><h1 className="text-lg font-black text-slate-950">Sales Inbox</h1></div><p className="mt-1 text-xs text-slate-500">Review Interakt and IndiaMART buyer inquiries, qualify them, and move the right opportunities into the permanent Lead pipeline.</p></div><div className="flex items-center gap-2"><Link prefetch={false} href="/leads" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Lead Queue</Link>{canManageAssignments ? <Link prefetch={false} href="/leads/inbound/assignments" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Manage assignments</Link> : null}{canWorkInbound ? <form action={refreshStarkInteraktStaging}><PendingSubmitButton idleLabel="↻ Sync Interakt" pendingLabel="Syncing Interakt…" pendingDetail="Checking Interakt for new or updated contacts" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white" /></form> : null}</div></div>;
 }
 
 function Kpis({ kpis, searchParams }: { kpis: any; searchParams: SearchParams }) {

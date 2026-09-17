@@ -17,7 +17,7 @@ const INBOUND_PATH = '/leads/inbound';
 const SOURCE_PROVIDER = 'interakt';
 const SUPPORTED_INBOUND_PROVIDERS = ['interakt', 'indiamart'];
 const SOURCE_ACCOUNT = 'stark-packmate';
-const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
 const TERMINAL_INBOUND_STATUSES = new Set(['qualified', 'duplicate', 'existing_customer', 'not_relevant', 'ignored']);
 const ALLOWED_INTAKE_STATUSES = new Set([
   'new', 'staged', 'reviewed', 'needs_info', 'ready_to_qualify', 'nurture', 'not_relevant',
@@ -40,7 +40,7 @@ async function requireStarkPackmateAccess(write = false) {
   const org = workspace.organization;
   const isStark = org?.id === STARK_PACKMATE_ORG_ID || String(org?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
   if (!isStark || !workspace.user || !workspace.membership || !workspace.organization) throw new Error('This inbound connector is restricted to Stark Packmate.');
-  if (write && !workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Manager, Admin or Owner permission is required.');
+  if (write && !workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Field Sales, Manager, Admin or Owner permission is required.');
   return workspace;
 }
 

@@ -10,7 +10,7 @@ const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const SUPPORTED_PROVIDERS = ['interakt', 'indiamart'];
 const INBOUND_PATH = '/leads/inbound';
-const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales']);
+const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
@@ -23,7 +23,7 @@ async function requireStarkPackmateSalesAccess() {
   const isStark = organization?.id === STARK_PACKMATE_ORG_ID
     || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
   if (!isStark || !user || !organization) throw new Error('This inbound connector is restricted to Stark Packmate.');
-  if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Manager, Admin or Owner permission is required.');
+  if (!workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)))) throw new Error('Sales, Field Sales, Manager, Admin or Owner permission is required.');
   return { workspace, organization, user };
 }
 

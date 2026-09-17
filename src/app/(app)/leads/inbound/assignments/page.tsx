@@ -39,14 +39,14 @@ export default async function InboundAssignmentsPage({ searchParams = {} }: { se
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500"><Link href="/leads" className="hover:text-slate-900">Leads</Link><span>›</span><Link href="/leads/inbound" className="hover:text-slate-900">Inbound</Link><span>›</span><span>Assignments</span></div>
           <h1 className="mt-2 text-2xl font-black text-slate-950">Manage inbound assignments</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">Owners and Managers can move an inbound inquiry to another eligible Sales user. Every change is written to the audit log.</p>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600">Owners and Managers can move an inbound inquiry to an eligible Sales or Field Sales user. Support accounts are never eligible. Every change is written to the audit log.</p>
         </div>
         <Link href="/leads/inbound" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50">← Back to Inbound</Link>
       </div>
 
       <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-sm font-black text-blue-950">Eligible Sales pool</p><p className="mt-1 text-xs text-blue-800">Active Sales users can receive and work leads immediately. Pending Sales seats may receive inbound inquiries and ownership resolves when the invitation is accepted.</p></div>
+          <div><p className="text-sm font-black text-blue-950">Eligible Sales / Field Sales pool</p><p className="mt-1 text-xs text-blue-800">Active Sales and Field Sales users can be selected here. Automatic inbound routing stays with Sales only; Field Sales is available for deliberate reassignment. Support accounts are excluded.</p></div>
           <div className="flex flex-wrap gap-2">{data.assignees.map((assignee) => <span key={assignee.key} className="rounded-full border border-blue-200 bg-white px-3 py-1.5 text-[11px] font-bold text-blue-900">{assignee.name}{assignee.status === 'pending' ? ' · Pending' : ' · Active'}</span>)}</div>
         </div>
       </section>
@@ -61,12 +61,13 @@ export default async function InboundAssignmentsPage({ searchParams = {} }: { se
         <div className="border-b border-slate-100 px-4 py-3"><p className="text-sm font-black text-slate-900">Inbound ownership</p><p className="mt-0.5 text-[11px] text-slate-500">Showing up to 250 active inbound inquiries{q ? ` matching “${q}”` : ''}.</p></div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-100 text-left">
-            <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500"><tr><th className="px-4 py-3">Contact</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Current owner</th><th className="px-4 py-3">Last inbound</th><th className="px-4 py-3">Reassign</th></tr></thead>
+            <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-[0.08em] text-slate-500"><tr><th className="px-4 py-3">Contact</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Company</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Current owner</th><th className="px-4 py-3">Last inbound</th><th className="px-4 py-3">Reassign</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
               {data.rows.map((row: any) => {
                 const currentKey = row.setu_assigned_user_id ? `user:${row.setu_assigned_user_id}` : row.setu_assigned_invitation_id ? `invite:${row.setu_assigned_invitation_id}` : '';
                 return <tr key={row.id} className="align-top hover:bg-slate-50/60">
                   <td className="px-4 py-3"><Link href={`/leads/inbound?review=${row.id}`} className="text-sm font-bold text-slate-950 hover:text-blue-700">{row.person_name || row.contact_name || 'Unnamed contact'}</Link><p className="mt-0.5 text-[11px] text-slate-500">{row.full_phone_number || 'No phone'}</p></td>
+                  <td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${row.source_provider === 'indiamart' ? 'bg-orange-50 text-orange-800' : 'bg-emerald-50 text-emerald-800'}`}>{row.source_provider === 'indiamart' ? 'IndiaMART' : 'Interakt'}</span></td>
                   <td className="px-4 py-3 text-xs font-semibold text-slate-700">{row.company_name || 'Not confirmed'}</td>
                   <td className="px-4 py-3"><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-700">{row.intake_status || 'new'}</span></td>
                   <td className="px-4 py-3"><p className="text-xs font-bold text-slate-800">{row.setu_assigned_name || 'Unassigned'}</p>{row.setu_assigned_email ? <p className="mt-0.5 text-[10px] text-slate-500">{row.setu_assigned_email}</p> : null}</td>
@@ -83,7 +84,7 @@ export default async function InboundAssignmentsPage({ searchParams = {} }: { se
                   </td>
                 </tr>;
               })}
-              {!data.rows.length ? <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">No active inbound inquiries match this search.</td></tr> : null}
+              {!data.rows.length ? <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">No active inbound inquiries match this search.</td></tr> : null}
             </tbody>
           </table>
         </div>

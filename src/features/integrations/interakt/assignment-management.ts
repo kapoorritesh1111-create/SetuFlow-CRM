@@ -7,7 +7,7 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
-const SOURCE_PROVIDER = 'interakt';
+const SUPPORTED_PROVIDERS = ['interakt', 'indiamart'];
 const TERMINAL = ['qualified', 'duplicate', 'existing_customer', 'not_relevant', 'ignored'];
 const MANAGER_ROLES = new Set(['owner', 'manager', 'admin']);
 
@@ -45,8 +45,8 @@ async function loadEligibleSalesAssignees(organizationId: string): Promise<Sales
   const { data: salesRoles, error: roleError } = await db
     .from('roles')
     .select('id, name, organization_id')
-    .ilike('name', 'sales');
-  if (roleError) throw new Error(`Unable to load Sales role: ${String(roleError.message ?? 'unknown database error')}`);
+    .in('name', ['sales', 'field_sales']);
+  if (roleError) throw new Error(`Unable to load Sales / Field Sales roles: ${String(roleError.message ?? 'unknown database error')}`);
 
   const salesRoleIds = (salesRoles ?? [])
     .filter((role: any) => !role.organization_id || role.organization_id === organizationId)
@@ -120,7 +120,9 @@ async function loadEligibleSalesAssignees(organizationId: string): Promise<Sales
       };
     });
 
-  return [...active, ...pending].sort((a, b) => a.name.localeCompare(b.name));
+  return [...active, ...pending]
+    .filter((item) => !/^support@/i.test(item.email) && !/^support@/i.test(item.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function readStarkInboundAssignmentManager(input: { q?: string } = {}) {
@@ -132,9 +134,9 @@ export async function readStarkInboundAssignmentManager(input: { q?: string } = 
 
   let query = db
     .from('lead_intake_staging')
-    .select('id, contact_name, person_name, company_name, full_phone_number, intake_status, last_inbound_at, source_modified_at, setu_assigned_user_id, setu_assigned_invitation_id, setu_assigned_email, setu_assigned_name, qualified_lead_id')
+    .select('id, source_provider, contact_name, person_name, company_name, full_phone_number, intake_status, last_inbound_at, source_modified_at, setu_assigned_user_id, setu_assigned_invitation_id, setu_assigned_email, setu_assigned_name, qualified_lead_id')
     .eq('organization_id', organization.id)
-    .eq('source_provider', SOURCE_PROVIDER)
+    .in('source_provider', SUPPORTED_PROVIDERS)
     .eq('sales_queue_suppressed', false)
     .not('intake_status', 'in', `(${TERMINAL.join(',')})`)
     .order('last_inbound_at', { ascending: false, nullsFirst: false })
@@ -162,19 +164,19 @@ export async function reassignStarkInboundLead(formData: FormData): Promise<void
 
   const assignees = await loadEligibleSalesAssignees(organization.id);
   const target = assignees.find((item) => item.key === targetKey);
-  if (!target) throw new Error('Selected salesperson is not an eligible Stark Packmate Sales user.');
+  if (!target) throw new Error('Selected assignee is not an eligible Stark Packmate Sales or Field Sales user.');
 
   const { data: row, error: rowError } = await db
     .from('lead_intake_staging')
     .select('id, setu_assigned_user_id, setu_assigned_invitation_id, setu_assigned_email, setu_assigned_name, qualified_lead_id')
     .eq('id', rowId)
     .eq('organization_id', organization.id)
-    .eq('source_provider', SOURCE_PROVIDER)
+    .in('source_provider', SUPPORTED_PROVIDERS)
     .maybeSingle();
   if (rowError || !row?.id) throw new Error('Inbound lead was not found.');
 
   if (row.qualified_lead_id && target.kind === 'invitation') {
-    throw new Error('A qualified Lead can only be assigned to an active Sales user.');
+    throw new Error('A qualified Lead can only be assigned to an active Sales or Field Sales user.');
   }
 
   const previous = {
