@@ -9,6 +9,7 @@ import { KitCompatSectionCard as SectionCard } from '@/features/admin/components
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { isSetuInternalOrganization, requireAdminWorkspace } from '@/lib/workspace/auth';
+import { nextTenMinuteSyncAt } from './next-sync-time';
 
 const PREVIEW_COOKIE = 'setuflow_integration_api_key_preview';
 const API_SCOPES = [
@@ -192,6 +193,7 @@ export default async function AdminIntegrationsPage({ searchParams }: { searchPa
   const indiaMartIssue = providerIssue(indiaMartEvent);
   const indiaMartActive = Boolean(indiaMartIntegration?.is_active && indiaMartConfig.sync_enabled);
   const indiaMartLastSync = String(indiaMartConfig.last_successful_sync_at ?? indiaMartEvent?.processed_at ?? indiaMartEvent?.created_at ?? '');
+  const indiaMartNextSync = nextTenMinuteSyncAt(now, indiaMartActive);
   const mailboxes = (mailboxesResult.data ?? []) as MailboxRow[];
   const domains = (domainsResult.data ?? []) as DomainRow[];
   const mailEnabled = Boolean(mailGrantResult.data?.enabled);
@@ -258,7 +260,7 @@ export default async function AdminIntegrationsPage({ searchParams }: { searchPa
                   <div className="flex items-start justify-between gap-3"><div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-orange-100 text-xl">🇮🇳</div><div><h3 className="text-base font-black text-slate-950">IndiaMART</h3><p className="text-xs text-slate-500">Marketplace lead capture</p></div></div><StatusBadge label={indiaMartHealth.label} tone={indiaMartHealth.tone} dot={false} /></div>
                   <div className="mt-5 grid grid-cols-3 gap-2"><div className={metricClass}><p className="text-xl font-black text-slate-950">{indiaMartToday.count ?? 0}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">24 hours</p></div><div className={metricClass}><p className="text-xl font-black text-slate-950">{indiaMart7d.count ?? 0}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">7 days</p></div><div className={metricClass}><p className="text-xl font-black text-slate-950">{indiaMart30d.count ?? 0}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">30 days</p></div></div>
                   {indiaMartIssue ? <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900"><span className="font-bold">Needs attention.</span> {indiaMartIssue}</div> : null}
-                  <div className="mt-5 flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Last successful sync</p><p className="mt-1 text-xs font-semibold text-slate-700">{displayTime(indiaMartLastSync)}</p><p className="mt-1 text-[11px] text-slate-400">{indiaMartActive ? 'Automatic sync is on' : 'Automatic sync is off'} · {indiaMartTotal.count ?? 0} currently loaded</p></div><div className="flex gap-2"><a href="/leads/inbound?provider=indiamart" className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800 hover:bg-orange-100">View leads</a><a href="/admin/integrations/indiamart" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800">Manage →</a></div></div>
+                  <div className="mt-5 flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Last successful sync</p><p className="mt-1 text-xs font-semibold text-slate-700">{displayTime(indiaMartLastSync)}</p><p className={`mt-1 text-[11px] font-semibold ${indiaMartActive ? 'text-emerald-700' : 'text-slate-400'}`}>{indiaMartActive && indiaMartNextSync ? `Next sync ${displayTime(indiaMartNextSync)}` : 'Next sync paused'}</p><p className="mt-1 text-[11px] text-slate-400">{indiaMartActive ? 'Automatic sync is on' : 'Automatic sync is off'} · {indiaMartTotal.count ?? 0} currently loaded</p></div><div className="flex gap-2"><a href="/leads/inbound?provider=indiamart" className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800 hover:bg-orange-100">View leads</a><a href="/admin/integrations/indiamart" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800">Manage →</a></div></div>
                 </article>
               </div>
             </SectionCard>
