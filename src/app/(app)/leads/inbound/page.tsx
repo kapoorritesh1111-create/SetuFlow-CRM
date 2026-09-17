@@ -95,8 +95,17 @@ function isCtwa(row: any) {
   return String(row?.acquisition_type ?? '').trim().toLowerCase() === 'ctwa';
 }
 
+function isIndiaMart(row: any) {
+  return String(row?.source_provider ?? '').trim().toLowerCase() === 'indiamart';
+}
+
 function CtwaHotLeadBadge({ compact = false }: { compact?: boolean }) {
   return <span className={`inline-flex items-center whitespace-nowrap rounded-full border border-orange-300 bg-orange-100 font-black text-orange-800 shadow-sm ${compact ? 'px-2 py-0.5 text-[9px]' : 'px-2.5 py-1 text-[10px]'}`}>🔥 CTWA Hot Lead</span>;
+}
+
+function ProviderBadge({ row, compact = false }: { row: any; compact?: boolean }) {
+  const indiaMart = isIndiaMart(row);
+  return <span className={`inline-flex items-center whitespace-nowrap rounded-full border font-black ${compact ? 'px-2 py-0.5 text-[9px]' : 'px-2.5 py-1 text-[10px]'} ${indiaMart ? 'border-orange-200 bg-orange-50 text-orange-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{indiaMart ? 'IndiaMART' : 'Interakt'}</span>;
 }
 
 function guruLabel(status: string | null | undefined) {
@@ -167,7 +176,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   const workspace = await getWorkspaceAccess();
   if (!workspace.membership || !workspace.organization) return <WorkspaceState eyebrow="Leads · Inbound" title="Workspace membership needed" description="Sign in to your organization to review inbound inquiries." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
   const isStark = workspace.organization.id === STARK_PACKMATE_ORG_ID || String(workspace.organization.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
-  if (!isStark) return <WorkspaceState eyebrow="Leads · Inbound" title="Inbound connector not enabled" description="The Interakt qualification workspace is currently enabled for Stark Packmate." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
+  if (!isStark) return <WorkspaceState eyebrow="Leads · Inbound" title="Inbound connector not enabled" description="The inbound qualification workspace is currently enabled for Stark Packmate." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
 
   const canWorkInbound = workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)));
   const view = searchParams.view === 'list' ? 'list' : 'review';
@@ -192,18 +201,21 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   const latestEvidence = selected?.company_evidence?.latest as CompanyEvidenceEntry | undefined;
   const currentGuru = selected ? guruLabel(selected.guru_evaluation_status) : guruLabel(null);
 
-  if (!selected) return <div className="space-y-4"><Header canWorkInbound={canWorkInbound} /><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /><FilterBar searchParams={searchParams} /><WorkspaceState eyebrow="Leads · Inbound" title="No matching inbound records" description="Try changing the current filters or sync Interakt contacts." primaryActionHref="/leads/inbound" primaryActionLabel="Clear filters" /></div>;
+  if (!selected) return <div className="space-y-4"><Header canWorkInbound={canWorkInbound} /><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /><FilterBar searchParams={searchParams} /><WorkspaceState eyebrow="Leads · Inbound" title="No matching inbound records" description="Try changing the current filters or syncing the selected inbound provider." primaryActionHref="/leads/inbound" primaryActionLabel="Clear filters" /></div>;
 
   const leadBlockers = (selected.lead_blockers ?? selected.missing_fields ?? []) as string[];
   const laterEnrichment = (selected.later_enrichment ?? []) as string[];
-  const whatsappReplyWindowOpen = withinWhatsAppReplyWindow(selected.last_inbound_at);
+  const selectedIsIndiaMart = isIndiaMart(selected);
+  const whatsappReplyWindowOpen = !selectedIsIndiaMart && withinWhatsAppReplyWindow(selected.last_inbound_at);
   const customerName = selected.person_name || selected.contact_name || 'Customer';
   const selectedIsCtwa = isCtwa(selected);
+  const indiaMartProduct = selectedIsIndiaMart ? selected.traits?.query_product_name : null;
+  const indiaMartMessage = selectedIsIndiaMart ? selected.traits?.query_message : null;
   const summaryRows: Array<[string, unknown, boolean]> = [
     ['Company', selected.company_name, true],
     ['Brand', selected.brand_name, false],
-    ['Packaging', selected.packaging_type, !selected.pouch_type],
-    ['Pouch type', selected.pouch_type, !selected.packaging_type],
+    ['Packaging', selected.packaging_type || indiaMartProduct, !selected.pouch_type],
+    ['Pouch type', selected.pouch_type, !selected.packaging_type && !indiaMartProduct],
     ['Quantity', selected.quantity_text, false],
     ['Industry', selected.industry, false],
     ['Dimensions / print', selected.dimensions_print, false],
@@ -230,15 +242,16 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
             const guru = guruLabel(row.guru_evaluation_status);
             const historyPending = !row.first_inquiry_at && !row.last_inbound_at;
             const ctwa = isCtwa(row);
+            const requirement = row.pouch_type || row.packaging_type || (isIndiaMart(row) ? row.traits?.query_product_name : null) || (historyPending ? 'Contact synced · history pending' : 'Requirement not captured');
             const queueClass = active
               ? (ctwa ? 'bg-orange-50 ring-1 ring-inset ring-orange-300' : 'bg-blue-50 ring-1 ring-inset ring-blue-200')
               : (ctwa ? 'bg-orange-50/55 hover:bg-orange-100/70' : 'hover:bg-slate-50');
             return <Link prefetch={false} key={row.id} href={paramsHref(searchParams, { review: row.id })} className={`block px-4 py-3.5 transition ${queueClass}`}>
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0"><p className="truncate text-sm font-bold text-slate-950">{row.person_name || row.contact_name || row.company_name || 'Unnamed contact'}</p><p className="mt-0.5 truncate text-[11px] text-slate-500">{row.company_name || row.brand_name || (historyPending ? 'Historical conversation not backfilled yet' : 'Company not confirmed')}</p></div>
+                <div className="min-w-0"><div className="flex min-w-0 items-center gap-1.5"><p className="truncate text-sm font-bold text-slate-950">{row.person_name || row.contact_name || row.company_name || 'Unnamed contact'}</p><ProviderBadge row={row} compact /></div><p className="mt-0.5 truncate text-[11px] text-slate-500">{row.company_name || row.brand_name || (historyPending ? 'Historical conversation not backfilled yet' : 'Company not confirmed')}</p></div>
                 <div className="shrink-0 text-right"><p className="text-[10px] font-semibold text-slate-500">{timeAgo(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p><span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-black ${scoreClass(Number(row.computed_score ?? 0))}`}>{row.computed_score ?? 0}</span></div>
               </div>
-              <p className="mt-2 truncate text-xs font-medium text-slate-700">{row.pouch_type || row.packaging_type || (historyPending ? 'Contact synced · history pending' : 'Requirement not captured')}{row.quantity_text ? ` · ${row.quantity_text}` : ''}</p>
+              <p className="mt-2 truncate text-xs font-medium text-slate-700">{requirement}{row.quantity_text ? ` · ${row.quantity_text}` : ''}</p>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div className="flex flex-wrap items-center gap-1.5">{ctwa ? <CtwaHotLeadBadge compact /> : null}<span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-bold ${guru.className}`}>{guru.icon} {guru.label}</span></div>{row.needs_reply ? <span className="text-[9px] font-black uppercase text-rose-600">Needs reply</span> : null}</div>
             </Link>;
           })}
@@ -250,19 +263,19 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
         <header className={`sticky top-0 z-10 rounded-t-2xl border-b px-5 py-4 backdrop-blur ${selectedIsCtwa ? 'border-orange-100 bg-orange-50/95' : 'border-slate-100 bg-white/95'}`}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">{selected.person_name || selected.contact_name || 'Unnamed contact'}</h2>{selectedIsCtwa ? <CtwaHotLeadBadge /> : null}<span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100 · {selected.computed_band}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${currentGuru.className}`}>{currentGuru.icon} {currentGuru.label}</span></div>
+              <div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">{selected.person_name || selected.contact_name || 'Unnamed contact'}</h2><ProviderBadge row={selected} />{selectedIsCtwa ? <CtwaHotLeadBadge /> : null}<span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100 · {selected.computed_band}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${currentGuru.className}`}>{currentGuru.icon} {currentGuru.label}</span></div>
               <p className="mt-1 text-xs text-slate-500">{selected.computed_source}{selected.company_name ? ` · ${selected.company_name}` : ''}{selected.first_inquiry_at ? ` · First inquiry ${formatDateTime(selected.first_inquiry_at)}` : ' · Historical chat backfill pending'}</p>
-              {selected.interakt_assignee_name ? <p className="mt-1 text-[11px] text-slate-500">Assigned in Interakt to <strong className="text-slate-700">{selected.interakt_assignee_name}</strong></p> : null}
+              {selected.interakt_assignee_name && !selectedIsIndiaMart ? <p className="mt-1 text-[11px] text-slate-500">Assigned in Interakt to <strong className="text-slate-700">{selected.interakt_assignee_name}</strong></p> : null}
             </div>
-            <div className="flex flex-wrap gap-2">{selected.full_phone_number ? <a href={`tel:${selected.full_phone_number}`} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">☎ Call</a> : null}<a href="#message-customer" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">💬 Message</a><a href="#create-lead" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">＋ Create Lead</a></div>
+            <div className="flex flex-wrap gap-2">{selected.full_phone_number ? <a href={`tel:${selected.full_phone_number}`} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">☎ Call</a> : null}{!selectedIsIndiaMart ? <a href="#message-customer" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">💬 Message</a> : null}<a href="#create-lead" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">＋ Create Lead</a></div>
           </div>
         </header>
 
         <div className="space-y-4 px-5 py-5">
-          {!selected.first_inquiry_at ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><p className="text-xs font-bold text-amber-900">Historical conversation is not backfilled yet</p><p className="mt-1 text-[11px] leading-5 text-amber-800">This contact may have rich history in Interakt. Setu Flow is not treating missing historical evidence as a negative qualification decision.</p></div> : null}
+          {!selected.first_inquiry_at && !selectedIsIndiaMart ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><p className="text-xs font-bold text-amber-900">Historical conversation is not backfilled yet</p><p className="mt-1 text-[11px] leading-5 text-amber-800">This contact may have rich history in Interakt. Setu Flow is not treating missing historical evidence as a negative qualification decision.</p></div> : null}
           {conversation.error ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{conversation.error}</p> : null}
 
-          <InboundConversationPanel
+          {selectedIsIndiaMart ? <section className="rounded-xl border border-orange-200 bg-orange-50/70 p-4"><div className="flex flex-wrap items-center gap-2"><ProviderBadge row={selected} /><p className="text-xs font-black text-orange-950">Marketplace enquiry</p></div><p className="mt-2 text-sm font-bold text-slate-900">{indiaMartProduct || 'IndiaMART buyer enquiry'}</p>{indiaMartMessage ? <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-700">{indiaMartMessage}</p> : null}<p className="mt-3 text-[10px] leading-4 text-orange-800">This lead came from IndiaMART, not the Interakt WhatsApp inbox. Use the contact details to call or follow up through the appropriate channel, then qualify it into the Lead pipeline.</p></section> : <InboundConversationPanel
             messages={messages}
             customerName={customerName}
             captured={{
@@ -277,14 +290,14 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
               buyingTimeline: selected.buying_timeline,
             }}
             evidenceAnswers={compactAnswers.map((answer) => ({ label: answer.label, value: answer.answer_text || '—' }))}
-          />
+          />}
 
-          <section id="message-customer" className="grid gap-3 lg:grid-cols-2">
-            <details className="rounded-xl border border-slate-200 bg-white p-4" open>
+          <section id="message-customer" className={`grid gap-3 ${selectedIsIndiaMart ? '' : 'lg:grid-cols-2'}`}>
+            {!selectedIsIndiaMart ? <details className="rounded-xl border border-slate-200 bg-white p-4" open>
               <summary className="cursor-pointer text-xs font-black text-slate-800">💬 Message customer</summary>
               <div className="mt-4"><SalesMessageComposer rowId={selected.id} customerName={customerName} companyName={selected.company_name} packagingType={selected.packaging_type} pouchType={selected.pouch_type} quantityText={selected.quantity_text} replyWindowOpen={whatsappReplyWindowOpen} canSend={canWorkInbound} /></div>
-            </details>
-            <details className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-xs font-black text-slate-800">☎ Log a call</summary><form action={logStarkInteraktCall} className="mt-4 space-y-3"><input type="hidden" name="rowId" value={selected.id} /><div className="grid grid-cols-2 gap-2"><select name="disposition" className="rounded-xl border border-slate-200 px-3 py-2 text-xs"><option>Connected</option><option>No answer</option><option>Call back requested</option><option>Wrong number</option></select><input name="duration" placeholder="Duration, e.g. 4 min" className="rounded-xl border border-slate-200 px-3 py-2 text-xs" /></div><textarea name="notes" rows={4} placeholder="Call notes" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Log call" pendingLabel="Saving call…" className="w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white" /></form></details>
+            </details> : null}
+            <details className="rounded-xl border border-slate-200 bg-white p-4" open={selectedIsIndiaMart}><summary className="cursor-pointer text-xs font-black text-slate-800">☎ Log a call</summary><form action={logStarkInteraktCall} className="mt-4 space-y-3"><input type="hidden" name="rowId" value={selected.id} /><div className="grid grid-cols-2 gap-2"><select name="disposition" className="rounded-xl border border-slate-200 px-3 py-2 text-xs"><option>Connected</option><option>No answer</option><option>Call back requested</option><option>Wrong number</option></select><input name="duration" placeholder="Duration, e.g. 4 min" className="rounded-xl border border-slate-200 px-3 py-2 text-xs" /></div><textarea name="notes" rows={4} placeholder="Call notes" className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Log call" pendingLabel="Saving call…" className="w-full rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white" /></form></details>
           </section>
         </div>
       </main>
@@ -292,10 +305,10 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
       <aside className="sticky top-3 space-y-3">
         <section className={`rounded-2xl border p-4 shadow-sm ${selectedIsCtwa ? 'border-orange-200 bg-orange-50/70' : 'border-slate-200 bg-white'}`}>
           <div className="flex items-center justify-between"><h3 className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">Lead summary</h3><span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100</span></div>
-          {selectedIsCtwa ? <div className="mt-3"><CtwaHotLeadBadge /></div> : null}
+          <div className="mt-3 flex flex-wrap gap-2"><ProviderBadge row={selected} />{selectedIsCtwa ? <CtwaHotLeadBadge /> : null}</div>
           <div className="mt-3 space-y-2 text-xs">{summaryRows.map(([label, value, required]) => { const display = summaryValue(value, required); return <div key={label} className="flex items-start justify-between gap-3"><span className="text-slate-500">{label}</span><span className={`max-w-[170px] text-right font-semibold ${display.className}`}>{display.text}</span></div>; })}</div>
           {selected.quantity_text ? <p className="mt-3 rounded-lg bg-blue-50 px-2.5 py-2 text-[10px] leading-4 text-blue-700">Quantity is sales context, not a gate. Small runs can be samples/prototypes; Sales decides whether to proceed.</p> : null}
-          <details className="mt-3 border-t border-slate-100 pt-3"><summary className="cursor-pointer text-[11px] font-bold text-blue-600">Edit qualification details</summary><form action={saveStarkInteraktQualification} className="mt-3 space-y-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="reviewed" />{[['companyName','Company',selected.company_name],['brandName','Brand',selected.brand_name],['packagingType','Packaging',selected.packaging_type],['pouchType','Pouch type',selected.pouch_type],['quantityText','Quantity / requirement size',selected.quantity_text],['dimensionsPrint','Dimensions / print',selected.dimensions_print],['deliveryLocation','Delivery location',selected.delivery_location],['buyingTimeline','Buying timeline',selected.buying_timeline],['industry','Industry',selected.industry]].map(([name,label,value]) => <label key={name} className="block text-[9px] font-bold uppercase text-slate-500">{label}<input name={name} defaultValue={value || ''} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs normal-case text-slate-800" /></label>)}<input type="hidden" name="personName" value={selected.person_name || selected.contact_name || ''} /><textarea name="qualificationNotes" defaultValue={selected.qualification_notes || ''} placeholder="Qualification notes" rows={3} className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Save details" pendingLabel="Saving…" className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white" /></form></details>
+          <details className="mt-3 border-t border-slate-100 pt-3"><summary className="cursor-pointer text-[11px] font-bold text-blue-600">Edit qualification details</summary><form action={saveStarkInteraktQualification} className="mt-3 space-y-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="reviewed" />{[['companyName','Company',selected.company_name],['brandName','Brand',selected.brand_name],['packagingType','Packaging',selected.packaging_type || indiaMartProduct],['pouchType','Pouch type',selected.pouch_type],['quantityText','Quantity / requirement size',selected.quantity_text],['dimensionsPrint','Dimensions / print',selected.dimensions_print],['deliveryLocation','Delivery location',selected.delivery_location],['buyingTimeline','Buying timeline',selected.buying_timeline],['industry','Industry',selected.industry]].map(([name,label,value]) => <label key={name} className="block text-[9px] font-bold uppercase text-slate-500">{label}<input name={name} defaultValue={value || ''} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs normal-case text-slate-800" /></label>)}<input type="hidden" name="personName" value={selected.person_name || selected.contact_name || ''} /><textarea name="qualificationNotes" defaultValue={selected.qualification_notes || ''} placeholder="Qualification notes" rows={3} className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Save details" pendingLabel="Saving…" className="w-full rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white" /></form></details>
         </section>
 
         {(selected.proposed_company_name || selected.proposed_brand_name || latestEvidence) ? <section className="rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-violet-700">✨ Setu Guru identity evidence</h3>{selected.proposed_company_name ? <div className="mt-3"><p className="text-[10px] text-violet-600">Suggested company</p><p className="text-sm font-black text-violet-950">{selected.proposed_company_name}</p>{canWorkInbound ? <form action={acceptStarkInteraktCompanySuggestion} className="mt-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="kind" value="company" /><PendingSubmitButton idleLabel="Use this company" pendingLabel="Saving…" className="rounded-lg bg-white px-2.5 py-1.5 text-[10px] font-bold text-violet-700" /></form> : null}</div> : null}{selected.proposed_brand_name ? <div className="mt-3"><p className="text-[10px] text-violet-600">Suggested brand</p><p className="text-sm font-black text-violet-950">{selected.proposed_brand_name}</p>{canWorkInbound ? <form action={acceptStarkInteraktCompanySuggestion} className="mt-2"><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="kind" value="brand" /><PendingSubmitButton idleLabel="Use this brand" pendingLabel="Saving…" className="rounded-lg bg-white px-2.5 py-1.5 text-[10px] font-bold text-violet-700" /></form> : null}</div> : null}{latestEvidence?.evidence ? <p className="mt-3 text-[10px] leading-4 text-violet-700">Evidence: {latestEvidence.evidence}</p> : null}</section> : null}
@@ -314,14 +327,14 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
           <div className="mt-2 grid grid-cols-2 gap-2"><form action={updateStarkInteraktIntakeStatus}><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="needs_info" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Needs info" pendingLabel="Saving…" className="w-full rounded-lg border border-amber-200 px-2 py-2 text-[10px] font-bold text-amber-700" /></form><form action={updateStarkInteraktIntakeStatus}><input type="hidden" name="rowId" value={selected.id} /><input type="hidden" name="status" value="nurture" /><PendingSubmitButton disabled={!canWorkInbound} idleLabel="Nurture" pendingLabel="Saving…" className="w-full rounded-lg border border-slate-200 px-2 py-2 text-[10px] font-bold text-slate-600" /></form></div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">Source</h3><div className="mt-3 space-y-2 text-xs">{[['Channel', selected.channel_source || 'WhatsApp'], ['Acquisition', selected.acquisition_type], ['Platform', selected.ad_platform], ['Owner', selected.interakt_assignee_name]].map(([label,value]) => <div key={label} className="flex justify-between gap-3"><span className="text-slate-500">{label}</span><strong className="text-right text-slate-800">{value || '—'}</strong></div>)}</div>{selected.ad_url ? <a href={selected.ad_url} target="_blank" rel="noreferrer" className="mt-3 block rounded-lg bg-violet-50 px-3 py-2 text-[10px] font-bold text-violet-700">Open Meta ad ↗</a> : null}<details className="mt-3"><summary className="cursor-pointer text-[10px] font-bold text-slate-500">Technical attribution</summary><div className="mt-2 space-y-1 text-[9px] text-slate-500"><p>Campaign: {selected.meta_campaign_id || '—'}</p><p>Ad set: {selected.meta_adset_id || '—'}</p><p>Ad: {selected.meta_ad_id || '—'}</p></div></details></section>
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">Source</h3><div className="mt-3 space-y-2 text-xs">{[['Provider', selected.provider_label || (selectedIsIndiaMart ? 'IndiaMART' : 'Interakt')], ['Channel', selected.channel_source || (selectedIsIndiaMart ? 'IndiaMART' : 'WhatsApp')], ['Acquisition', selected.acquisition_type], ['Platform', selected.ad_platform], ['Owner', selected.interakt_assignee_name || selected.setu_assigned_name]].map(([label,value]) => <div key={label} className="flex justify-between gap-3"><span className="text-slate-500">{label}</span><strong className="text-right text-slate-800">{value || '—'}</strong></div>)}</div>{selected.ad_url ? <a href={selected.ad_url} target="_blank" rel="noreferrer" className="mt-3 block rounded-lg bg-violet-50 px-3 py-2 text-[10px] font-bold text-violet-700">Open Meta ad ↗</a> : null}<details className="mt-3"><summary className="cursor-pointer text-[10px] font-bold text-slate-500">Technical attribution</summary><div className="mt-2 space-y-1 text-[9px] text-slate-500"><p>Campaign: {selected.meta_campaign_id || '—'}</p><p>Ad set: {selected.meta_adset_id || '—'}</p><p>Ad: {selected.meta_ad_id || '—'}</p></div></details></section>
       </aside>
     </div>
   </div>;
 }
 
 function Header({ canWorkInbound }: { canWorkInbound: boolean }) {
-  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div><div className="flex items-center gap-2"><span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">Inbound</span><h1 className="text-lg font-black text-slate-950">Sales Inbox</h1></div><p className="mt-1 text-xs text-slate-500">Review, communicate and move real buyer inquiries into the permanent Lead pipeline. Browsing-only contacts stay out until they engage.</p></div><div className="flex items-center gap-2"><Link prefetch={false} href="/leads" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Lead Queue</Link>{canWorkInbound ? <form action={refreshStarkInteraktStaging}><PendingSubmitButton idleLabel="↻ Sync contacts" pendingLabel="Syncing contacts…" pendingDetail="Checking Interakt for new or updated contacts" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white" /></form> : null}</div></div>;
+  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div><div className="flex items-center gap-2"><span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">Inbound</span><h1 className="text-lg font-black text-slate-950">Sales Inbox</h1></div><p className="mt-1 text-xs text-slate-500">Review Interakt and IndiaMART buyer inquiries, qualify them, and move the right opportunities into the permanent Lead pipeline.</p></div><div className="flex items-center gap-2"><Link prefetch={false} href="/leads" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Lead Queue</Link>{canWorkInbound ? <form action={refreshStarkInteraktStaging}><PendingSubmitButton idleLabel="↻ Sync Interakt" pendingLabel="Syncing Interakt…" pendingDetail="Checking Interakt for new or updated contacts" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white" /></form> : null}</div></div>;
 }
 
 function Kpis({ kpis, searchParams }: { kpis: any; searchParams: SearchParams }) {
@@ -345,6 +358,7 @@ function Kpis({ kpis, searchParams }: { kpis: any; searchParams: SearchParams })
 }
 
 function FilterBar({ searchParams }: { searchParams: SearchParams }) {
+  const channelFilterValue = ['ctwa', 'instagram', 'whatsapp'].includes(String(searchParams.source ?? '').toLowerCase()) ? String(searchParams.source) : 'all';
   return <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
     <form method="get" className="flex min-w-0 flex-1 flex-wrap items-end gap-2">
       <input type="hidden" name="view" value={searchParams.view || 'review'} />
@@ -352,7 +366,7 @@ function FilterBar({ searchParams }: { searchParams: SearchParams }) {
       <label className="min-w-[240px] flex-1 text-[9px] font-bold uppercase text-slate-500">Search<input name="q" defaultValue={searchParams.q || ''} placeholder="Search by name, company or phone" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs normal-case" /></label>
       <Select name="status" label="Segment" value={searchParams.status || 'all'} options={[["all","All"],["new","New"],["needs_reply","Needs reply"],["needs_info","Needs info"],["ready","Ready"],["history_pending","History pending"]]} />
       <Select name="guru" label="Setu Guru" value={searchParams.guru || 'all'} options={[["all","All"],["evaluated","Evaluated"],["new_evidence","New evidence"],["partial_history","History pending"],["pending","Pending"]]} />
-      <Select name="source" label="Source" value={searchParams.source || 'all'} options={[["all","All"],["ctwa","CTWA"],["instagram","Instagram"],["whatsapp","WhatsApp"]]} />
+      <Select name="source" label="Channel" value={channelFilterValue} options={[["all","All channels"],["ctwa","CTWA"],["instagram","Instagram"],["whatsapp","WhatsApp"]]} />
       <OwnerFilterSelect value={searchParams.owner || ''} />
       <Select name="sort" label="Sort" value={searchParams.sort || 'recent'} options={[["recent","Most recent"],["oldest","Oldest"],["score","Highest score"],["name","Name A-Z"]]} />
       <button className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white">Apply</button>
@@ -394,14 +408,15 @@ function ListView({ rows, workspaceData, searchParams, canWorkInbound }: { rows:
           {rows.map((row) => {
             const guru = guruLabel(row.guru_evaluation_status);
             const ctwa = isCtwa(row);
+            const requirement = row.pouch_type || row.packaging_type || (isIndiaMart(row) ? row.traits?.query_product_name : null) || 'Not captured';
             return <tr key={row.id} className={`group transition ${ctwa ? 'bg-orange-50/55 hover:bg-orange-100/70' : 'hover:bg-blue-50/30'}`}>
-              {show('contact') ? <td className="px-4 py-3"><p className="whitespace-nowrap text-xs font-black text-slate-900">{row.person_name || row.contact_name || 'Unnamed contact'}</p>{row.email ? <p className="mt-0.5 text-[9px] text-slate-400">{row.email}</p> : null}</td> : null}
+              {show('contact') ? <td className="px-4 py-3"><div className="flex items-center gap-1.5"><p className="whitespace-nowrap text-xs font-black text-slate-900">{row.person_name || row.contact_name || 'Unnamed contact'}</p><ProviderBadge row={row} compact /></div>{row.email ? <p className="mt-0.5 text-[9px] text-slate-400">{row.email}</p> : null}</td> : null}
               {show('phone') ? <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-700">{row.full_phone_number || '—'}</td> : null}
               {show('company') ? <td className="max-w-[220px] px-4 py-3"><p className="truncate text-xs font-semibold text-slate-700">{row.company_name || row.brand_name || 'Not confirmed'}</p></td> : null}
-              {show('requirement') ? <td className="max-w-[250px] px-4 py-3"><p className="truncate text-xs font-semibold text-slate-700">{row.pouch_type || row.packaging_type || 'Not captured'}</p>{row.industry ? <p className="mt-0.5 truncate text-[9px] text-slate-400">{row.industry}</p> : null}</td> : null}
+              {show('requirement') ? <td className="max-w-[250px] px-4 py-3"><p className="truncate text-xs font-semibold text-slate-700">{requirement}</p>{row.industry ? <p className="mt-0.5 truncate text-[9px] text-slate-400">{row.industry}</p> : null}</td> : null}
               {show('quantity') ? <td className="whitespace-nowrap px-4 py-3 text-xs font-semibold text-slate-700">{row.quantity_text || '—'}</td> : null}
               {show('source') ? <td className="px-4 py-3"><p className="whitespace-nowrap text-xs font-semibold text-slate-700">{row.computed_source}</p>{ctwa ? <div className="mt-1"><CtwaHotLeadBadge compact /></div> : null}</td> : null}
-              {show('owner') ? <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-700">{row.interakt_assignee_name || 'Unassigned'}</td> : null}
+              {show('owner') ? <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-700">{row.setu_assigned_name || row.interakt_assignee_name || 'Unassigned'}</td> : null}
               {show('guru') ? <td className="px-4 py-3"><span className={`inline-flex whitespace-nowrap rounded-full border px-2 py-1 text-[9px] font-bold ${guru.className}`}>{guru.icon} {guru.label}</span></td> : null}
               {show('score') ? <td className="px-4 py-3"><div className="flex flex-col items-start gap-1"><span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-black ${scoreClass(Number(row.computed_score ?? 0))}`}>{row.computed_score ?? 0}</span>{ctwa ? <span className="text-[9px] font-black text-orange-700">+15 CTWA intent</span> : null}</div></td> : null}
               {show('last_activity') ? <td className="whitespace-nowrap px-4 py-3"><p className="text-xs font-semibold text-slate-700">{timeAgo(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p><p className="mt-0.5 text-[9px] text-slate-400">{formatDateTime(row.last_inbound_at || row.first_inquiry_at || row.source_modified_at)}</p></td> : null}
