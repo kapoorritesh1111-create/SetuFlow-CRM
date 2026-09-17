@@ -1,5 +1,5 @@
+import { SystemTime } from '@/components/ui/system-time';
 import { WidgetEmptyState, WidgetShell } from '@/components/ui/widget-shell';
-import { formatDateTime } from '@/lib/utils';
 import type { RecentActivityItem } from '@/features/dashboard/types';
 import type { WorkspaceMode } from '@/features/workspace/types';
 
@@ -57,7 +57,7 @@ export function RecentActivityCard({ items, mode = 'all', marketCode }: Props) {
                     {item.stageName ? <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">{item.stageName}</span> : null}
                     {item.productNames?.[0] ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{item.productNames[0]}</span> : null}
                   </div>
-                  <p className="mt-0.5 text-[11px] text-slate-400">{formatDateTime(item.timestamp)}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400"><SystemTime timestamp={item.timestamp} compact /></p>
                 </div>
                 {item.href && (
                   <a href={item.href} className="flex-shrink-0 text-[11px] font-semibold text-slate-500 hover:text-slate-800">→</a>
