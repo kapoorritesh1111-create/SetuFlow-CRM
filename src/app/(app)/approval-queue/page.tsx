@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { SystemTime } from '@/components/ui/system-time';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
@@ -31,13 +32,6 @@ function readParam(value: string | string[] | undefined) {
 
 function title(value?: string | null) {
   return String(value || 'pending').replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function fmtDate(value?: string | null) {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 async function syncQuoteVersionAfterDecision(input: {
@@ -217,7 +211,7 @@ export default async function ApprovalQueuePage({ searchParams }: { searchParams
                     <div className="min-w-0">
                       <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">{approval.rule || 'quote approval'}</p>
                       <h3 className="mt-1 text-xl font-black text-slate-950">{quote?.quote_number || `Quote ${approval.quote_id.slice(0, 8)}`}</h3>
-                      <p className="mt-1 text-sm font-semibold text-slate-600">{lead?.company_name || 'Buyer'} · Version v{version?.version_no ?? '—'} · {title(version?.status)} · Requested {fmtDate(approval.created_at)}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-600">{lead?.company_name || 'Buyer'} · Version v{version?.version_no ?? '—'} · {title(version?.status)} · Requested <SystemTime timestamp={approval.created_at} /></p>
                       <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-700">{approval.reason || 'Approval requested before sending.'}</p>
                     </div>
                     <div className="grid min-w-[280px] gap-2">
