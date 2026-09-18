@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const STARK_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const TEMPLATE_ID = '5635e709-213d-4fb6-a9f8-2467021a4c64';
-const REVIEW_QUANTITIES = [1000, 2000, 5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000] as const;
+const REVIEW_QUANTITIES = [1000, 2000, 3000, 5000, 10000, 20000, 30000, 50000] as const;
 
 type ReviewBody = {
   size_profile_id?: unknown;
