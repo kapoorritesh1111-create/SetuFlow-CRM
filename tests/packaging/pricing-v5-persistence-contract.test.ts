@@ -8,6 +8,8 @@ const templateScope=fs.readFileSync('supabase/migrations/20260914013500_s52_pkg_
 const quoteIntegrity=fs.readFileSync('supabase/migrations/20260914013600_s52_pkg_v5_quote_template_integrity.sql','utf8');
 const benchmarkScope=fs.readFileSync('supabase/migrations/20260914013610_s52_pkg_v5_benchmark_revision_scope.sql','utf8');
 const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5_quote_persistence.sql','utf8');
+const spotUvPersistence=fs.readFileSync('supabase/migrations/20260918200451_pricing_v5_manual_spot_uv_quote_charge.sql','utf8');
+const packagingActions=fs.readFileSync('src/features/packaging/server/actions.ts','utf8');
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
@@ -178,4 +180,19 @@ test('S52-PKG-V5: Sales exposes only producible MOQ choices and Spot UV is manua
   assert.match(engine,/separate_quote_line/);
   assert.match(snapshot,/input:SupPricingInputV5/);
   assert.match(persistence,/p_internal_pricing/);
+});
+
+
+test('S52-PKG-V5: manual Spot UV stays outside pouch unit price and persists as one linked quote charge',()=>{
+  assert.match(engine,/const productTotal=coreProductTotal\+afterCoreTotal/);
+  assert.match(engine,/const separateChargesTotal=manualCharges\.reduce/);
+  assert.match(engine,/subtotal_before_gst/);
+  assert.match(salesConfigurator,/application_stage==='separate_quote_line'/);
+  assert.match(spotUvPersistence,/quote_optional_charges/);
+  assert.match(spotUvPersistence,/Spot UV — Manual Price/);
+  assert.match(spotUvPersistence,/charge_type,label,amount,currency,taxable,notes/);
+  assert.match(spotUvPersistence,/pricing_v5:EXTRA_SPOT_UV/);
+  assert.match(spotUvPersistence,/delete from public\.quote_optional_charges/);
+  assert.match(packagingActions,/pricing_v5:EXTRA_SPOT_UV%/);
+  assert.match(spotUvPersistence,/grant execute[\s\S]*to service_role/i);
 });

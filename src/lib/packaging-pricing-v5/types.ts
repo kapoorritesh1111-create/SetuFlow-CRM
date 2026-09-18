@@ -212,6 +212,8 @@ export type PackagingPricingResultV5 = {
   selling_price: {
     unit_price: number;
     product_total: number;
+    separate_charges_total: number;
+    subtotal_before_gst: number;
     currency: string;
     gst_pct: number;
     gst: number;
