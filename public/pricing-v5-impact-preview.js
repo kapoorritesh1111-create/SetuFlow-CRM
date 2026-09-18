@@ -2,7 +2,7 @@
 'use strict';
 const API='/api/public/pricing-v5-review-preview';
 const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
-let catalog=null,matrix=[];
+let catalog=null,matrix=[],wireTimer=null;
 function pageName(){return q('#page .page-head h2')?.textContent?.trim()||''}
 function num(v){const n=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:null}
 function money(v){return '₹'+Number(v).toFixed(2)}
