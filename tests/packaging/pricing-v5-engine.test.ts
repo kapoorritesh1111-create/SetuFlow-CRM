@@ -452,10 +452,15 @@ test('S52-PKG-V5: Spot UV is manual quote-level pricing while automatic Spot UV 
     manual_quote_charges:[{code:'EXTRA_SPOT_UV',amount:1250,note:'manual owner-deferred price'}],
   });
   assert.equal(manual.ok,true,manual.validation_errors.join(' '));
-  assert.ok(Math.abs(manual.selling_price.product_total-baseline.selling_price.product_total-1250)<0.01);
-  assert.equal(manual.cost_breakdown.totals_for_job.additional_charges_cost,1250);
+  assert.equal(manual.selling_price.unit_price,baseline.selling_price.unit_price);
+  assert.equal(manual.selling_price.product_total,baseline.selling_price.product_total);
+  assert.equal(manual.selling_price.separate_charges_total,1250);
+  assert.ok(Math.abs(manual.selling_price.subtotal_before_gst-baseline.selling_price.product_total-1250)<0.01);
+  assert.equal(manual.cost_breakdown.totals_for_job.additional_charges_cost,0);
   assert.equal(manual.applied_charges.find((item)=>item.code==='EXTRA_SPOT_UV')?.application_stage,'separate_quote_line');
   assert.equal(manual.applied_charges.find((item)=>item.code==='EXTRA_SPOT_UV')?.amount,1250);
+  assert.ok(Math.abs(manual.selling_price.gst-baseline.selling_price.gst-(1250*0.18))<0.01);
+  assert.ok(Math.abs(manual.selling_price.grand_total_before_freight-baseline.selling_price.grand_total_before_freight-(1250*1.18))<0.01);
   assert.ok(Math.abs(manual.cost_breakdown.reconciliation_delta)<0.000001);
   const auto=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_SPOT_UV']});
   assert.equal(auto.ok,false);

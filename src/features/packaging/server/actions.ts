@@ -271,6 +271,15 @@ export async function deletePackagingQuoteLine(params: {
       .maybeSingle();
     if (!quote?.id) return { ok: false, error: 'Quote not found in this workspace.' };
 
+    const { error: spotUvDeleteError } = await supabase
+      .from('quote_optional_charges')
+      .delete()
+      .eq('organization_id', organizationId)
+      .eq('quote_id', quote.id)
+      .eq('quote_line_item_id', params.lineId)
+      .like('notes', 'pricing_v5:EXTRA_SPOT_UV%');
+    if (spotUvDeleteError) return { ok: false, error: spotUvDeleteError.message };
+
     const { error } = await supabase
       .from('quote_line_items')
       .delete()

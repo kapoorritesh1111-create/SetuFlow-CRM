@@ -330,16 +330,16 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
     afterCoreTotal+=amount;
     appliedChargeTotals.set(charge.code,{charge,amount});
   }
-  let manualQuoteTotal=0;
-  for(const row of manualCharges){
-    manualQuoteTotal+=row.amount;
-    appliedChargeTotals.set(row.charge.code,{charge:row.charge,amount:row.amount,application_stage:'separate_quote_line'});
-  }
-  const productTotal=coreProductTotal+afterCoreTotal+manualQuoteTotal;
+  const separateChargesTotal=manualCharges.reduce((sum,row)=>sum+row.amount,0);
+  const productTotal=coreProductTotal+afterCoreTotal;
+  const subtotalBeforeGst=productTotal+separateChargesTotal;
   const unitPrice = quantity ? productTotal / quantity : 0;
   const gstPct = n(context.template.quote_config_json?.gst_pct ?? 18);
-  const gst = productTotal * gstPct / 100;
-  const appliedCharges=[...appliedChargeTotals.values()].map(({charge,amount,application_stage})=>({code:charge.code,name:charge.name,application_stage:String(application_stage??charge.application_stage),amount:round(amount,2)}));
+  const gst = subtotalBeforeGst * gstPct / 100;
+  const appliedCharges=[
+    ...[...appliedChargeTotals.values()].map(({charge,amount,application_stage})=>({code:charge.code,name:charge.name,application_stage:String(application_stage??charge.application_stage),amount:round(amount,2)})),
+    ...manualCharges.map(({charge,amount})=>({code:charge.code,name:charge.name,application_stage:'separate_quote_line',amount:round(amount,2)})),
+  ];
   const costBreakdown=buildCostBreakdown(context.template.currency,quantity,costedComponents,appliedChargeTotals,productTotal);
 
   const hashPayload = {
@@ -416,8 +416,9 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
     applied_charges:appliedCharges,
     cost_breakdown:costBreakdown,
     selling_price:{
-      unit_price:round(unitPrice,8),product_total:round(productTotal,2),currency:context.template.currency,
-      gst_pct:gstPct,gst:round(gst,2),grand_total_before_freight:round(productTotal+gst,2),
+      unit_price:round(unitPrice,8),product_total:round(productTotal,2),
+      separate_charges_total:round(separateChargesTotal,2),subtotal_before_gst:round(subtotalBeforeGst,2),currency:context.template.currency,
+      gst_pct:gstPct,gst:round(gst,2),grand_total_before_freight:round(subtotalBeforeGst+gst,2),
     },
     alternative_quantities:alternatives,
     source_hash:pricingSourceHash(hashPayload),
