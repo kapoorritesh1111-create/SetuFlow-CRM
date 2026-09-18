@@ -118,7 +118,7 @@ test('S52-PKG-V5: missing layer rate fails closed',()=>{
 test('S52-PKG-V5: alternative quantities are independently recalculated',()=>{
   const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,true,result.validation_errors.join(' '));
-  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[5000,10000,15000,20000]);
+  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[5000,10000,15000,20000,25000,30000]);
   const q5=result.alternative_quantities.find((item)=>item.quantity===5000)!;
   const q20=result.alternative_quantities.find((item)=>item.quantity===20000)!;
   assert.equal(q5.wastage_pct,10);
@@ -242,4 +242,33 @@ test('S52-PKG-V5: rejects workbook N/A quantities configured on a size',()=>{
   const allowed=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:10000});
   assert.equal(allowed.ok,true,allowed.validation_errors.join(' '));
   assert.ok(allowed.alternative_quantities.every((item)=>[5000,10000].includes(item.quantity)));
+});
+
+
+test('S52-PKG-V5: Akshay 98x150 registered model uses 10mm trim and resolves 22 units per frame',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'small98',size_key:'98x150_bg30_30',name:'98 x 150',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,
+    pricing_bucket:1,gusset_production_mode:'conditional',production_profile_key:'sup_98x150_conditional',bottom_registration_mode:'optional',
+    metadata:{trim_allowance_mm:10},
+  }]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'registered_artwork'});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  const body=result.production_route.components[0];
+  assert.equal(body.web_width_mm,370);
+  assert.equal(body.lanes_across,2);
+  assert.equal(body.repeats_along,11);
+  assert.equal(body.units_per_frame,22);
+});
+
+test('S52-PKG-V5: Akshay 98x150 unregistered model stays a distinct split-gusset price route',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'small98',size_key:'98x150_bg30_30',name:'98 x 150',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,
+    pricing_bucket:1,gusset_production_mode:'conditional',production_profile_key:'sup_98x150_conditional',bottom_registration_mode:'optional',
+    metadata:{trim_allowance_mm:10},
+  }]};
+  const registered=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'registered_artwork'});
+  const unregistered=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'solid_unregistered'});
+  assert.equal(unregistered.ok,true,unregistered.validation_errors.join(' '));
+  assert.equal(unregistered.production_route.components.length,2);
+  assert.notEqual(unregistered.selling_price.unit_price,registered.selling_price.unit_price);
 });
