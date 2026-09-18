@@ -118,7 +118,13 @@ export async function POST(request: NextRequest) {
   const { data: pendingDraft }=await (admin as any).from('pricing_v5_owner_review_state')
     .select('decision,value_json').eq('organization_id',STARK_ORG_ID).eq('review_key',reviewKey).maybeSingle();
   const pendingRate=Number(pendingDraft?.value_json?.proposed_rate);
-  if (pendingDraft?.decision!=='pending' || !Number.isFinite(pendingRate) || Math.abs(pendingRate-proposed)>0.000001) {
+  const pendingMicron=Number(pendingDraft?.value_json?.micron),pendingDensity=Number(pendingDraft?.value_json?.density),pendingGsm=Number(pendingDraft?.value_json?.gsm);
+  const physicalChanged=kind==='cost'&&(
+    (proposedMicron!=null&&(!Number.isFinite(pendingMicron)||Math.abs(pendingMicron-proposedMicron)>0.000001))||
+    (proposedDensity!=null&&(!Number.isFinite(pendingDensity)||Math.abs(pendingDensity-proposedDensity)>0.000001))||
+    (proposedGsm!=null&&(!Number.isFinite(pendingGsm)||Math.abs(pendingGsm-proposedGsm)>0.000001))
+  );
+  if (pendingDraft?.decision!=='pending' || !Number.isFinite(pendingRate) || Math.abs(pendingRate-proposed)>0.000001 || physicalChanged) {
     return NextResponse.json({ok:false,error:'save_draft_before_publish'},{status:409});
   }
   const existingMetadata=currentRow.metadata && typeof currentRow.metadata==='object' && !Array.isArray(currentRow.metadata) ? currentRow.metadata : {};
