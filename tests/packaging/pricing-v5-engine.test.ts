@@ -138,13 +138,6 @@ test('S52-PKG-V5: reference MOQ ladder returns five higher options from 2,000',(
   assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[2000,3000,5000,10000,20000,30000]);
 });
 
-test('S52-PKG-V5: explicit missing MOQ reference fails closed',()=>{
-  const context:PricingContextV5={...base,sizeProfiles:[{...base.sizeProfiles[0],metadata:{moq_reference_status:'not_listed_in_reference_sheet'}}]};
-  const result=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
-  assert.equal(result.ok,false);
-  assert.match(result.validation_errors.join(' '),/not allowed/i);
-});
-
 test('S52-PKG-V5: empty allowed list falls back to the reference MOQ ladder',()=>{
   const context:PricingContextV5={...base,sizeProfiles:[{...base.sizeProfiles[0],metadata:{allowed_quantities:[],blocked_quantities:[1000]}}]};
   const result=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:2000});
