@@ -3,7 +3,7 @@
 const API='/api/public/pricing-v5-review-rates';
 const PREVIEW='/api/public/pricing-v5-review-preview';
 const FEEDBACK='/api/public/pricing-v5-feedback';
-let data=null,matPage=1,procPage=1,filter='all',search='';
+let data=null,matPage=1,procPage=1,filter='all',search='',lastHost=null;
 const PAGE=10;
 const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -83,6 +83,6 @@ function bind(root){
 }
 function wireToolbar(){const p=q('#page'),toolbar=q('.rates-toolbar',p);if(!toolbar)return;const labels=qa('label.field',toolbar),type=labels.find(l=>/Rate Type/i.test(q(':scope>span',l)?.textContent||''))?.querySelector('select'),status=labels.find(l=>/^Status$/i.test(q(':scope>span',l)?.textContent||''))?.querySelector('select'),input=q('.search-input',toolbar);if(type&&!type.dataset.rrWired){type.innerHTML='<option value="all">All Rates</option><option value="material">Materials</option><option value="process">Processes</option><option value="charge">Add-on Charges</option>';type.dataset.rrWired='1';type.onchange=()=>{filter=type.value;matPage=procPage=1;render()}}if(status){status.innerHTML='<option>Published + Drafts</option>';status.disabled=true}if(input&&!input.dataset.rrWired){input.dataset.rrWired='1';input.oninput=()=>{search=input.value;matPage=procPage=1;render()}}const reset=qa('button',toolbar).find(b=>/Reset Filters/i.test(b.textContent||''));if(reset&&!reset.dataset.rrWired){reset.dataset.rrWired='1';reset.onclick=()=>{filter='all';search='';matPage=procPage=1;if(type)type.value='all';if(input)input.value='';render()}}qa('button',toolbar).forEach(b=>{const t=(b.textContent||'').trim();if(/Add Rate|Bulk Update/i.test(t)){b.disabled=true;b.title='Use Review / Change on an existing configured rate.'}if(/Run Impact Preview/i.test(t))b.onclick=()=>window.PV5?.go?.('waste')})}
 async function load(){try{const r=await fetch(API,{cache:'no-store'}),b=await r.json();if(!r.ok||b.ok===false)throw new Error(b.error||'Unable to load configured rates');data=b}catch(e){console.error('[rates-review]',e)}}
-function tick(){if(onPage()&&data&&!q('#modal.open'))render()}
+function tick(){const host=q('#page .rates-layout');if(!onPage()||!data||q('#modal.open')||!host)return;if(lastHost!==host||!q('[data-rate-review]',host)){lastHost=host;render()}}
 (async()=>{await load();new MutationObserver(()=>setTimeout(tick,80)).observe(document.documentElement,{childList:true,subtree:true});tick()})();
 })();
