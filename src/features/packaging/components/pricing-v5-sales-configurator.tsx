@@ -31,7 +31,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
   const [sizeId, setSizeId] = useState(sizes[0]?.id ?? '');
   const [constructionId, setConstructionId] = useState(constructions[0]?.id ?? '');
   const [print, setPrint] = useState<'CMYK' | 'CMYKW'>('CMYKW');
-  const [quantity, setQuantity] = useState(5000);
+  const [quantity, setQuantity] = useState(1000);
   const [bottomPrintMode, setBottomPrintMode] = useState<'solid_unregistered' | 'registered_artwork' | ''>('');
   const [selectedChargeCodes, setSelectedChargeCodes] = useState<string[]>(() => charges.some((item: any) => item.code === 'EXTRA_ZIPPER') ? ['EXTRA_ZIPPER'] : []);
   const [kldFileId, setKldFileId] = useState('');
