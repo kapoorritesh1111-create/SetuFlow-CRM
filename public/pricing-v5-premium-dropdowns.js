@@ -42,7 +42,9 @@ function inspect(){
     if(own.includes('commercial bucket')||own.includes('pricing group')) wire(select,'group');
   });
 }
-const obs=new MutationObserver(()=>setTimeout(inspect,30));
-function start(){inspect();const p=q('#page');if(p)obs.observe(p,{childList:true,subtree:true});setInterval(inspect,1000)}
+let inspectTimer=null;
+function scheduleInspect(delay=50){if(inspectTimer)clearTimeout(inspectTimer);inspectTimer=setTimeout(()=>{inspectTimer=null;inspect()},delay)}
+const obs=new MutationObserver(()=>scheduleInspect());
+function start(){inspect();const p=q('#page');if(p)obs.observe(p,{childList:true,subtree:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleInspect(0)})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
