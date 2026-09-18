@@ -124,12 +124,27 @@ test('S52-PKG-V5: missing layer rate fails closed',()=>{
 test('S52-PKG-V5: alternative quantities are independently recalculated',()=>{
   const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,true,result.validation_errors.join(' '));
-  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[5000,10000,15000,20000,25000,30000]);
+  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[5000,10000,20000,30000,50000]);
   const q5=result.alternative_quantities.find((item)=>item.quantity===5000)!;
   const q20=result.alternative_quantities.find((item)=>item.quantity===20000)!;
   assert.equal(q5.wastage_pct,10);
   assert.ok(q20.run_length_m>q5.run_length_m);
   assert.notEqual(q20.unit_price,q5.unit_price);
+});
+
+test('S52-PKG-V5: reference MOQ ladder returns five higher options from 2,000',()=>{
+  const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:2000});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[2000,3000,5000,10000,20000,30000]);
+});
+
+test('S52-PKG-V5: empty allowed list falls back to the reference MOQ ladder',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{...base.sizeProfiles[0],metadata:{allowed_quantities:[],blocked_quantities:[1000]}}]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:2000});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[2000,3000,5000,10000,20000,30000]);
+  const blocked=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:1000});
+  assert.equal(blocked.ok,false);
 });
 
 test('S52-PKG-V5: 260x340 uses separate gusset and inherits the main commercial band',()=>{
