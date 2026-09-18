@@ -96,7 +96,7 @@ function decorate(){
  qa('button',p).forEach(b=>{const t=(b.textContent||'').trim();if(/^(View|Edit|Preview)$|Review Exceptions|Compare Previous Version|Export Matrix|Preview Impact|Run Impact Preview|Edit Buckets|Apply to Family|Reduce Margin|Reduce Waste|Global Adjustment/i.test(t)){b.title=b.title||'Open working owner-review action';b.classList.add('premium-wired')}});
  // Prototype-only pager controls are replaced by the live pagers. If a live module has
  // not mounted yet, make the fallback controls visibly non-interactive instead of dead.
- qa('.pager button',p).forEach(b=>{if(!b.dataset.cp&&!b.dataset.ratePage&&!b.dataset.matrixPage){b.disabled=true;b.title='Live review pagination loads with the current Pricing v5 data.'}});
+ qa('.pager button',p).forEach(b=>{if(!b.dataset.cp&&!b.dataset.ratePage&&!b.dataset.matrixPage&&!b.dataset.pv5Page){b.disabled=true;b.title='Live review pagination loads with the current Pricing v5 data.'}});
  const nextKld=q('.next-kld',p);if(nextKld&&!nextKld.dataset.liveKld){nextKld.disabled=true;nextKld.title='Use Preview All or the Sizes table to review KLD samples.'}
  qa('.status',p).forEach(s=>{if(/Review Required|Needs Review/i.test(s.textContent||'')){s.style.cursor='pointer';s.title='Open the related clarification / owner-review question';s.onclick=()=>goClarification(clarificationIndexFor(pageName(),s.closest('tr')?.textContent||''));}});
 }
