@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const template=await templateId(admin);
     if (!template?.id) return NextResponse.json({ ok:false, error:'pricing_template_not_found' }, { status:404 });
     const [mastersRes,ratesRes,chargeMastersRes,chargeRatesRes,bandsRes] = await Promise.all([
-      (admin as any).from('packaging_cost_master_items').select('id,code,name,item_type,rate_basis,rate_uom,currency,micron,gsm,metadata').eq('organization_id',STARK_ORG_ID).eq('is_active',true).order('name'),
+      (admin as any).from('packaging_cost_master_items').select('id,code,name,item_type,rate_basis,rate_uom,currency,micron,gsm,density,metadata').eq('organization_id',STARK_ORG_ID).eq('is_active',true).order('name'),
       (admin as any).from('packaging_pricing_cost_rates_v5').select('cost_master_item_id,current_rate,micron_override,gsm_override,density_override,metadata').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id),
       (admin as any).from('packaging_charge_master_items').select('id,code,name,category,basis,currency,metadata').eq('organization_id',STARK_ORG_ID).eq('is_active',true).order('name'),
       (admin as any).from('packaging_pricing_charge_rates_v5').select('charge_master_item_id,current_rate,metadata').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id),
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     for (const r of [mastersRes,ratesRes,chargeMastersRes,chargeRatesRes,bandsRes]) if (r.error) return NextResponse.json({ ok:false, error:'rates_unavailable' }, { status:503 });
     const rateById = new Map((ratesRes.data??[]).map((r:any)=>[String(r.cost_master_item_id),r]));
     const chargeRateById = new Map((chargeRatesRes.data??[]).map((r:any)=>[String(r.charge_master_item_id),r]));
-    const materials = (mastersRes.data??[]).map((m:any)=>{ const r:any=rateById.get(String(m.id)); return { id:m.id,code:m.code,name:m.name,item_type:m.item_type,rate_basis:m.rate_basis,rate_uom:m.rate_uom,currency:m.currency||template.currency,micron:r?.micron_override??m.micron??null,gsm:r?.gsm_override??m.gsm??null,current_rate:r?.current_rate==null?null:Number(r.current_rate),configured:r?.current_rate!=null }; }).filter((x:any)=>x.configured);
+    const materials = (mastersRes.data??[]).map((m:any)=>{ const r:any=rateById.get(String(m.id)); const micron=r?.micron_override??m.micron??null; const density=r?.density_override??m.density??null; const gsm=r?.gsm_override??m.gsm??((micron!=null&&density!=null)?Number(micron)*Number(density):null); return { id:m.id,code:m.code,name:m.name,item_type:m.item_type,rate_basis:m.rate_basis,rate_uom:m.rate_uom,currency:m.currency||template.currency,micron:micron==null?null:Number(micron),density:density==null?null:Number(density),gsm:gsm==null?null:Number(gsm),current_rate:r?.current_rate==null?null:Number(r.current_rate),configured:r?.current_rate!=null }; }).filter((x:any)=>x.configured);
     const charges = (chargeMastersRes.data??[]).map((m:any)=>{ const r:any=chargeRateById.get(String(m.id)); return { id:m.id,code:m.code,name:m.name,category:m.category,basis:m.basis,currency:m.currency||template.currency,current_rate:r?.current_rate==null?null:Number(r.current_rate),configured:r?.current_rate!=null }; }).filter((x:any)=>x.configured);
     const commercial_bands = (bandsRes.data??[]).map((b:any)=>({
       id:b.id,pricing_bucket:Number(b.pricing_bucket),run_length_max_m:b.run_length_max_m==null?null:Number(b.run_length_max_m),
