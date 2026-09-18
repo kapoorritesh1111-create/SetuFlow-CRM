@@ -66,6 +66,10 @@ function handle(e){
  if(b.matches('[data-page]')||/View Approval Summary/i.test(text)||/Continue to Next Section/i.test(text))return;
  if(/View Cross-Family Impact/i.test(text)){e.preventDefault();window.PV5?.go?.('approval');return}
  if(/Save & Continue to Terms/i.test(text)){e.preventDefault();window.PV5?.go?.('approval');return}
+ if(/Find Market Comparables/i.test(text)){e.preventDefault();window.PV5?.go?.('competitor');return}
+ if(/Export to Excel/i.test(text)){e.preventDefault();exportMatrix();return}
+ if(/Download KLD/i.test(text)){e.preventDefault();window.PV5?.go?.('sizes');return}
+ if(/Add Packaging Line|Remove Line/i.test(text)){e.preventDefault();reviewRequest('Sales Quote Review',rowText(b)||'Use the live CRM quote builder for production packaging-line changes. This review workspace does not mutate a customer quote.',null);return}
  if(/Save Draft/i.test(text)){e.preventDefault();reviewRequest('Review Draft Saved','Owner review progress was captured. Continue reviewing the related section before final approval.',2);return}
  if(/Preview All/i.test(text)&&p.includes('Sizes')){e.preventDefault();window.PV5?.go?.('sizes');return}
  if(/Reset Filters/i.test(text)){e.preventDefault();qa('#page select').forEach(s=>s.selectedIndex=0);qa('#page input[type="search"],#page input[placeholder*="Search"]').forEach(i=>i.value='');return}
