@@ -62,7 +62,7 @@ function exportMatrix(){const rows=qa('#page table tr').map(r=>qa('th,td',r).map
 function handle(e){
  const b=e.target.closest('button,a');if(!b||b.closest('#modal'))return;
  const text=(b.textContent||'').trim(); const p=pageName();
- if(b.matches('[data-detail],[data-act],[data-cp],[data-rate-review],[data-band-review],[data-waste-live],.pv5-page-preview,.pv5-page-edit,.pv5-page-approve,.pv5-page-change,#sizeSaveDraft,#sizePublish,#constructionSaveDraft,#constructionPublish,#rateSaveDraft,#ratePreview,#ratePublish,#bandSave,#bandPreview,#bandPublish'))return;
+ if(b.matches('[data-detail],[data-act],[data-cp],[data-rate-review],[data-band-review],[data-band-page],[data-mp],[data-waste-live],.pv5-page-preview,.pv5-page-edit,.pv5-page-approve,.pv5-page-change,#sizeSaveDraft,#sizePublish,#constructionSaveDraft,#constructionPublish,#rateSaveDraft,#ratePreview,#ratePublish,#bandSave,#bandPreview,#bandPublish'))return;
  if(b.matches('[data-page]')||/View Approval Summary/i.test(text)||/Continue to Next Section/i.test(text))return;
  if(/View Cross-Family Impact/i.test(text)){e.preventDefault();window.PV5?.go?.('approval');return}
  if(/Save & Continue to Terms/i.test(text)){e.preventDefault();window.PV5?.go?.('approval');return}
@@ -96,7 +96,7 @@ function decorate(){
  qa('button',p).forEach(b=>{const t=(b.textContent||'').trim();if(/^(View|Edit|Preview)$|Review Exceptions|Compare Previous Version|Export Matrix|Preview Impact|Run Impact Preview|Edit Buckets|Apply to Family|Reduce Margin|Reduce Waste|Global Adjustment/i.test(t)){b.title=b.title||'Open working owner-review action';b.classList.add('premium-wired')}});
  // Prototype-only pager controls are replaced by the live pagers. If a live module has
  // not mounted yet, make the fallback controls visibly non-interactive instead of dead.
- qa('.pager button',p).forEach(b=>{if(!b.dataset.cp&&!b.dataset.ratePage&&!b.dataset.matrixPage&&!b.dataset.pv5Page){b.disabled=true;b.title='Live review pagination loads with the current Pricing v5 data.'}});
+ qa('.pager button',p).forEach(b=>{if(!b.dataset.cp&&!b.dataset.ratePage&&!b.dataset.matrixPage&&!b.dataset.pv5Page&&!b.dataset.mp&&!b.dataset.bandPage){b.disabled=true;b.title='Live review pagination loads with the current Pricing v5 data.'}});
  const nextKld=q('.next-kld',p);if(nextKld&&!nextKld.dataset.liveKld){nextKld.disabled=true;nextKld.title='Use Preview All or the Sizes table to review KLD samples.'}
  qa('.status',p).forEach(s=>{if(/Review Required|Needs Review/i.test(s.textContent||'')){s.style.cursor='pointer';s.title='Open the related clarification / owner-review question';s.onclick=()=>goClarification(clarificationIndexFor(pageName(),s.closest('tr')?.textContent||''));}});
 }

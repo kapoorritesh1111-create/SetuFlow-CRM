@@ -61,10 +61,20 @@ export async function GET(request: NextRequest) {
       wastage_pct:b.wastage_pct==null?null:Number(b.wastage_pct),margin_per_frame:b.margin_per_frame==null?null:Number(b.margin_per_frame),
       sort_order:Number(b.sort_order||0),source_worksheet:b.metadata?.source_worksheet||null,source_row:b.metadata?.source_row||null,
     }));
-    const { data: drafts } = await (admin as any).from('pricing_v5_owner_review_state')
-      .select('review_key,decision,value_json,reviewer_name,updated_at')
-      .eq('organization_id',STARK_ORG_ID).like('review_key','rate-draft:%');
-    return NextResponse.json({ ok:true,review_only:true,template:{slug:TEMPLATE_SLUG,status:template.status,is_active:template.is_active,currency:template.currency},materials,charges,commercial_bands,drafts:drafts||[],material_count:materials.length,charge_count:charges.length,commercial_band_count:commercial_bands.length }, { headers:{'Cache-Control':'private, no-store'} });
+    const [{ data: drafts },{ data: commercialBandReviews }] = await Promise.all([
+      (admin as any).from('pricing_v5_owner_review_state')
+        .select('review_key,decision,value_json,reviewer_name,updated_at')
+        .eq('organization_id',STARK_ORG_ID).like('review_key','rate-draft:%'),
+      (admin as any).from('pricing_v5_owner_review_state')
+        .select('review_key,decision,value_json,reviewer_name,updated_at')
+        .eq('organization_id',STARK_ORG_ID).like('review_key','commercial-band-draft:%'),
+    ]);
+    return NextResponse.json({
+      ok:true,review_only:true,
+      template:{slug:TEMPLATE_SLUG,status:template.status,is_active:template.is_active,currency:template.currency},
+      materials,charges,commercial_bands,drafts:drafts||[],commercial_band_reviews:commercialBandReviews||[],
+      material_count:materials.length,charge_count:charges.length,commercial_band_count:commercial_bands.length
+    }, { headers:{'Cache-Control':'private, no-store'} });
   } catch (error) {
     console.error('[pricing-v5-review-rates] failed', error);
     return NextResponse.json({ ok:false, error:'rates_unavailable' }, { status:503 });

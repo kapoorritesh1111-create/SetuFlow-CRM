@@ -199,13 +199,16 @@ export async function POST(request: NextRequest) {
         prices: REVIEW_QUANTITIES.map((quantity) => {
           const result = calculatePackagingPriceV5(baseCtx, pricingInput(baseCtx, body, size.id, constructionId, quantity));
           const safe = toSalesPricingResultV5(result);
+          const validationErrors = safe.ok ? [] : safe.validation_errors;
+          const intentionallyUnavailable = validationErrors.some((message) => /^Quantity\s+[\d,]+\s+is not allowed for\s+/i.test(String(message)));
           return {
             quantity,
             ok: safe.ok,
+            availability: safe.ok ? 'priced' : intentionallyUnavailable ? 'not_producible' : 'needs_clarification',
             unit_price: safe.ok ? safe.selling_price.unit_price : null,
             product_total: safe.ok ? safe.selling_price.product_total : null,
             currency: safe.selling_price.currency,
-            validation_errors: safe.ok ? [] : safe.validation_errors,
+            validation_errors: validationErrors,
           };
         }),
       }));

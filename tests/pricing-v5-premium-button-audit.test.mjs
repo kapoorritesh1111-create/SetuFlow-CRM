@@ -12,6 +12,8 @@ const constructions=read('public/pricing-v5-construction-review.js');
 const rates=read('public/pricing-v5-rates-review.js');
 const waste=read('public/pricing-v5-waste-review.js');
 const matrix=read('public/pricing-v5-matrix-pagination.js');
+const matrixTruth=read('public/pricing-v5-matrix-review-truth.js');
+const previewRoute=read('src/app/api/public/pricing-v5-review-preview/route.ts');
 const dashboard=read('public/pricing-v5-dashboard-live-review.js');
 const qa=read('public/pricing-v5-owner-readiness-qa.js');
 const scenario=read('public/pricing-v5-scenario-truth.js');
@@ -75,9 +77,10 @@ test('Pricing v5 review copy reflects 20 approved SUP sizes, not the superseded 
 });
 
 test('Pricing v5 review ladder is the approved 1K to 50K set',()=>{
-  const ladder='1000,2000,3000,5000,10000,20000,30000,50000';
-  must(base,new RegExp(ladder),'base matrix ladder');
-  must(matrix,new RegExp(ladder),'matrix pagination ladder');
+  const ladder=/1000,\s*2000,\s*3000,\s*5000,\s*10000,\s*20000,\s*30000,\s*50000/;
+  must(previewRoute,ladder,'preview API matrix ladder');
+  must(matrix,ladder,'matrix pagination ladder');
+  mustNot(base,/rows\.slice\(0,8\)/,'base Premium shell must not own or truncate the live matrix');
 });
 
 test('Pricing v5 Sizes Constructions and Rates expose working pagination plus next-size review navigation',()=>{
@@ -93,4 +96,19 @@ test('Pricing v5 Sizes Constructions and Rates expose working pagination plus ne
   must(rates,/materials • Page/,'Material-rate page summary');
   must(rates,/process\/add-on rates • Page/,'Process/add-on page summary');
   must(premium,/dataset\.pv5Page/,'Global pager guard preserves the live Sizes pager');
+});
+
+test('Pricing v5 Waste and Matrix expose complete pagination and intentional N/A handling',()=>{
+  must(waste,/const PAGE_SIZE=10/,'Waste page size');
+  must(waste,/data-band-page="next"/,'Waste Next page control');
+  must(waste,/run-length rules • Page/,'Waste page summary');
+  must(waste,/commercial_band_reviews/,'Waste owner review state');
+  must(matrix,/data-mp="next"/,'Matrix Next page control');
+  must(matrix,/sizes • Page/,'Matrix page summary');
+  must(matrix,/id="mpNextRow"/,'Matrix next-size row review');
+  must(matrix,/N\/A — Not Producible/,'Matrix row review preserves intentional N/A');
+  must(matrixTruth,/priceState==='not_producible'/,'Price detail does not turn intentional N/A into a clarification');
+  must(previewRoute,/availability: safe\.ok \? 'priced' : intentionallyUnavailable \? 'not_producible' : 'needs_clarification'/,'Matrix API classifies unavailable quantities');
+  must(premium,/dataset\.bandPage/,'Global pager guard preserves Waste pagination');
+  must(premium,/dataset\.mp/,'Global pager guard preserves Matrix pagination');
 });
