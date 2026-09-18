@@ -31,7 +31,7 @@ function kldMatchesSize(item: any, size: any) {
   return file.includes(`${width}mmxh${height}mm`) || file.includes(`${width}x${height}`) || file.includes(`w${width}mmxh${height}mm`);
 }
 
-export default function PricingV5SalesConfigurator({ quoteId, leadId, options }: { quoteId: string; leadId: string; options: any }) {
+export default function PricingV5SalesConfigurator({ quoteId, leadId, options, savedLines = [] }: { quoteId: string; leadId: string; options: any; savedLines?: any[] }) {
   const router = useRouter();
   const families = options?.families ?? [];
   const templates = options?.templates ?? [];
@@ -44,6 +44,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
   const engineCharges = charges.filter((item: any) => item.pricing_mode !== 'manual');
   const manualSpotUv = charges.find((item: any) => item.code === 'EXTRA_SPOT_UV' && item.pricing_mode === 'manual') ?? null;
 
+  const [editingLineId, setEditingLineId] = useState('');
   const [sizeId, setSizeId] = useState(sizes[0]?.id ?? '');
   const [constructionId, setConstructionId] = useState(constructions[0]?.id ?? '');
   const [print, setPrint] = useState<'CMYK' | 'CMYKW'>('CMYKW');
@@ -71,7 +72,17 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
   const manualSpotUvValid = !spotUvEnabled || (Number.isFinite(Number(spotUvAmount)) && Number(spotUvAmount) > 0);
   const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && manualSpotUvValid && (!askBottomPrint || bottomPrintMode));
   const currency = preview?.selling_price?.currency ?? template?.currency ?? 'INR';
-  const alternativeRows = useMemo(() => preview?.alternative_quantities ?? [], [preview]);
+  const alternativeRows = useMemo(() => {
+    const currentUnit = Number(preview?.selling_price?.unit_price ?? 0);
+    return (preview?.alternative_quantities ?? [])
+      .filter((row: any) => Number(row.quantity) > quantity)
+      .slice(0, 3)
+      .map((row: any) => ({
+        ...row,
+        saving_per_unit: Math.max(0, currentUnit - Number(row.unit_price ?? 0)),
+        saving_pct: currentUnit > 0 ? Math.max(0, ((currentUnit - Number(row.unit_price ?? 0)) / currentUnit) * 100) : 0,
+      }));
+  }, [preview, quantity]);
 
   useEffect(() => {
     if (!sizes.some((item: any) => item.id === sizeId)) setSizeId(sizes[0]?.id ?? '');
@@ -84,11 +95,14 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
   useEffect(() => {
     if (!quantityAllowedForSize(size, quantity)) setQuantity(firstValidReviewQuantity(size));
     if (!askBottomPrint) setBottomPrintMode('');
-    setKldFileId('');
     setPreview(null);
     setError('');
     setSaved('');
-  }, [sizeId, askBottomPrint, size, quantity]);
+  }, [sizeId]);
+
+  useEffect(() => {
+    if (!askBottomPrint) setBottomPrintMode('');
+  }, [askBottomPrint]);
 
   function invalidate() {
     setPreview(null);
@@ -125,18 +139,52 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
     });
   }
 
+  function editSavedLine(line: any) {
+    if (!line) return;
+    setEditingLineId(String(line.lineId ?? ''));
+    setSizeId(String(line.sizeProfileId ?? sizes[0]?.id ?? ''));
+    setConstructionId(String(line.constructionId ?? constructions[0]?.id ?? ''));
+    setPrint(line.print === 'CMYK' ? 'CMYK' : 'CMYKW');
+    setQuantity(Number(line.quantity ?? 1000));
+    setBottomPrintMode(line.bottomPrintMode === 'solid_unregistered' || line.bottomPrintMode === 'registered_artwork' ? line.bottomPrintMode : '');
+    setSelectedChargeCodes(Array.isArray(line.selectedChargeCodes) ? line.selectedChargeCodes : []);
+    setKldFileId(String(line.kldFileId ?? ''));
+    setSpotUvEnabled(Boolean(line.spotUvEnabled));
+    setSpotUvAmount(line.spotUvAmount != null ? String(line.spotUvAmount) : '');
+    setPreview(null);
+    setSaved('');
+    setError('');
+  }
+
+  function startNewLine() {
+    setEditingLineId('');
+    setSizeId(sizes[0]?.id ?? '');
+    setConstructionId(constructions[0]?.id ?? '');
+    setPrint('CMYKW');
+    setQuantity(firstValidReviewQuantity(sizes[0]));
+    setBottomPrintMode('');
+    setSelectedChargeCodes(charges.some((item: any) => item.code === 'EXTRA_ZIPPER') ? ['EXTRA_ZIPPER'] : []);
+    setKldFileId('');
+    setSpotUvEnabled(false);
+    setSpotUvAmount('');
+    setPreview(null);
+    setSaved('');
+    setError('');
+  }
+
   function saveLine() {
     if (!canPrice) return;
     setError('');
     setSaved('');
     startTransition(async () => {
-      const response: any = await savePackagingPricingV5QuoteLine({ quoteId, leadId, familyId: family.id, templateId: template.id, input: buildInput() });
+      const response: any = await savePackagingPricingV5QuoteLine({ quoteId, leadId, familyId: family.id, templateId: template.id, input: buildInput(), lineId: editingLineId || null });
       if (!response.ok) {
         setError(response.error ?? 'Packaging line could not be saved.');
         return;
       }
       setPreview(response.result ?? preview);
-      setSaved('Packaging line added to this quote.');
+      setEditingLineId(String(response.lineId ?? editingLineId));
+      setSaved(editingLineId ? 'Packaging line updated.' : 'Packaging line added to this quote.');
       router.refresh();
     });
   }
@@ -153,6 +201,8 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
       <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Published v5 pricing</span>
     </div>
 
+    {savedLines.length ? <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><div className="text-xs font-black text-slate-900">Saved Pricing v5 lines</div><div className="mt-0.5 text-[11px] font-semibold text-slate-500">Reopen a saved pouch line to change quantity, structure, printing, KLD or manual Spot UV without creating a duplicate line.</div></div><button type="button" onClick={startNewLine} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">New pouch line</button></div><div className="mt-3 grid gap-2 md:grid-cols-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSavedLine(line)} className={`rounded-xl border p-3 text-left ${editingLineId===line.lineId?'border-teal-400 bg-teal-50':'border-slate-200 bg-white hover:bg-slate-50'}`}><div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-slate-800">{Number(line.quantity).toLocaleString()} pcs</span><span className="text-xs font-black text-slate-950">{money(line.unitPrice,line.currency)} / pc</span></div><div className="mt-1 text-[11px] font-semibold text-slate-500">{editingLineId===line.lineId?'Editing this saved line':'Edit saved line'}</div></button>)}</div></div> : null}
+
     <div className="mt-4 grid gap-2 sm:grid-cols-4">
       <Step number="1" title="Requirement" active />
       <Step number="2" title="Options & KLD" active={Boolean(size?.id && construction?.id)} />
@@ -165,7 +215,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
         <div className="rounded-2xl border border-slate-200 p-4">
           <div className="flex items-center justify-between gap-2"><div><div className="text-xs font-black text-slate-900">1. Customer requirement</div><div className="mt-1 text-[11px] text-slate-500">Choose only what Sales should know. Internal costing remains hidden.</div></div><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600">Sales view</span></div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <label className="text-xs font-black text-slate-600">Pouch size<select value={size?.id ?? ''} onChange={(e) => setSizeId(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="text-xs font-black text-slate-600">Pouch size<select value={size?.id ?? ''} onChange={(e) => { setSizeId(e.target.value); setKldFileId(''); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Dimensions</div><div className="mt-1 text-sm font-black text-slate-800">{size?.width_mm} × {size?.height_mm} mm · BG {size?.bottom_gusset_each_mm}+{size?.bottom_gusset_each_mm}</div></div>
             <label className="text-xs font-black text-slate-600">Material & finish<select value={construction?.id ?? ''} disabled={!compatibleConstructions.length} onChange={(e) => { setConstructionId(e.target.value); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 disabled:bg-slate-100">{compatibleConstructions.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="mt-1 block text-[11px] font-semibold text-teal-700">{compatibleConstructions.length ? `Approved PE ${(size?.allowed_pe_microns ?? []).join(' / ')}µ · ${compatibleConstructions.length} compatible construction${compatibleConstructions.length===1?'':'s'}` : 'No approved construction is configured for this size.'}</span></label>
             <label className="text-xs font-black text-slate-600">Printing<select value={print} onChange={(e) => { setPrint(e.target.value as 'CMYK' | 'CMYKW'); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900"><option value="CMYK">CMYK</option><option value="CMYKW">CMYKW</option></select></label>
@@ -190,7 +240,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
         {saved ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{saved}</div> : null}
 
-        <div className="flex flex-wrap gap-2"><button type="button" disabled={!canPrice || pending} onClick={runPreview} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40">{pending ? 'Calculating…' : 'Calculate price'}</button>{preview?.ok ? <button type="button" disabled={pending} onClick={saveLine} className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-black text-white disabled:opacity-40">Add to quote</button> : null}</div>
+        <div className="flex flex-wrap gap-2"><button type="button" disabled={!canPrice || pending} onClick={runPreview} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40">{pending ? 'Calculating…' : 'Calculate price'}</button>{preview?.ok ? <button type="button" disabled={pending} onClick={saveLine} className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-black text-white disabled:opacity-40">{editingLineId ? 'Update quote line' : 'Add to quote'}</button> : null}</div>
       </div>
 
       <aside className="space-y-3">
@@ -198,7 +248,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
 
         {preview?.construction ? <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Quote summary</div><div className="mt-2 text-sm font-black text-slate-900">{preview.construction.name}</div><div className="mt-1 text-xs text-slate-500">{preview.construction.structure_label}</div>{preview.production_route?.components?.length > 1 ? <div className="mt-2 rounded-lg bg-cyan-50 px-2.5 py-2 text-xs font-bold text-cyan-800">SETU automatically applied split-gusset production.</div> : null}</div> : null}
 
-        {alternativeRows.length ? <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Quantity options</div><div className="mt-2 space-y-2">{alternativeRows.map((row: any) => <button type="button" key={row.quantity} onClick={() => { setQuantity(Number(row.quantity)); setPreview(null); }} className={`w-full rounded-lg border p-2.5 text-left ${Number(row.quantity) === quantity ? 'border-teal-300 bg-teal-50' : 'border-slate-200 bg-white hover:bg-slate-50'}`}><div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-slate-700">{Number(row.quantity).toLocaleString()} pcs</span><span className="text-xs font-black text-slate-950">{money(row.unit_price, currency)} / pc</span></div><div className="mt-1 text-[11px] text-slate-500">Order {money(row.product_total, currency)}</div></button>)}</div></div> : null}
+        {alternativeRows.length ? <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Suggested higher quantities</div><div className="mt-1 text-[11px] font-semibold text-slate-500">Up to 3 higher producible quantities showing how the approved unit price can reduce.</div><div className="mt-2 space-y-2">{alternativeRows.map((row: any) => <button type="button" key={row.quantity} onClick={() => { setQuantity(Number(row.quantity)); setPreview(null); }} className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-left hover:bg-slate-50"><div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-slate-700">{Number(row.quantity).toLocaleString()} pcs</span><span className="text-xs font-black text-slate-950">{money(row.unit_price, currency)} / pc</span></div><div className="mt-1 flex items-center justify-between gap-2 text-[11px]"><span className="text-slate-500">Order {money(row.product_total, currency)}</span>{row.saving_per_unit>0?<span className="font-black text-emerald-700">Save {money(row.saving_per_unit,currency)} / pc · {row.saving_pct.toFixed(1)}%</span>:<span className="font-bold text-slate-400">Same unit price</span>}</div></button>)}</div></div> : null}
 
         <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3"><div className="text-[10px] font-black uppercase text-blue-500">What Sales does not see</div><p className="mt-1 text-xs font-semibold text-slate-600">Raw material rates, COGS, wastage, margin/frame and internal competitor intelligence stay in Admin.</p></div>
       </aside>

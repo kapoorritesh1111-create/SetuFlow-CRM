@@ -11,9 +11,15 @@ const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5
 const spotUvPersistence=fs.readFileSync('supabase/migrations/20260918200451_pricing_v5_manual_spot_uv_quote_charge.sql','utf8');
 const packagingActions=fs.readFileSync('src/features/packaging/server/actions.ts','utf8');
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
+const canonicalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilder.tsx','utf8');
+const approvalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2.tsx','utf8');
+const quotePdf=fs.readFileSync('src/app/api/quotes/[quoteId]/pdf/route.ts','utf8');
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
+const salesProjection=fs.readFileSync('src/lib/packaging-pricing-v5/engine-registry.ts','utf8');
+const salesActions=fs.readFileSync('src/features/packaging/server/pricing-v5-actions.ts','utf8');
+const savedLineProjection=fs.readFileSync('src/lib/packaging-pricing-v5/saved-line.ts','utf8');
 const compatibility=fs.readFileSync('src/lib/packaging-pricing-v5/construction-compatibility.ts','utf8');
 const snapshot=fs.readFileSync('src/lib/packaging-pricing-v5/snapshot.ts','utf8');
 const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts','utf8');
@@ -195,4 +201,70 @@ test('S52-PKG-V5: manual Spot UV stays outside pouch unit price and persists as 
   assert.match(spotUvPersistence,/delete from public\.quote_optional_charges/);
   assert.match(packagingActions,/pricing_v5:EXTRA_SPOT_UV%/);
   assert.match(spotUvPersistence,/grant execute[\s\S]*to service_role/i);
+});
+
+
+test('S52-PKG-V5: Sales Quote supports editing an existing v5 line without duplicating it',()=>{
+  assert.match(quotePage,/listPricingV5SavedLineSummaries/);
+  assert.match(quotePage,/savedLines=\{savedPricingV5Lines\}/);
+  assert.match(salesConfigurator,/savedLines = \[\]/);
+  assert.match(salesConfigurator,/function editSavedLine/);
+  assert.match(salesConfigurator,/lineId: editingLineId \|\| null/);
+  assert.match(salesConfigurator,/Update quote line/);
+  assert.match(savedLineProjection,/input_snapshot_json\?\.input/);
+  assert.doesNotMatch(savedLineProjection,/pricing_breakdown_json/);
+  assert.doesNotMatch(savedLineProjection,/cost_breakdown/);
+});
+
+test('S52-PKG-V5: changing quantity keeps a selected KLD while changing size clears it',()=>{
+  assert.match(salesConfigurator,/setSizeId\(e\.target\.value\); setKldFileId\(''\); invalidate\(\);/);
+  assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId\]\);/);
+  assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId, askBottomPrint, size, quantity\]\);/);
+});
+
+test('S52-PKG-V5: Sales shows only the next three producible quantity suggestions with unit-price savings',()=>{
+  assert.match(salesConfigurator,/filter\(\(row: any\) => Number\(row\.quantity\) > quantity\)/);
+  assert.match(salesConfigurator,/\.slice\(0, 3\)/);
+  assert.match(salesConfigurator,/Suggested higher quantities/);
+  assert.match(salesConfigurator,/saving_per_unit/);
+  assert.match(salesConfigurator,/Save \{money\(row\.saving_per_unit,currency\)\} \/ pc/);
+});
+
+test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review retains engine reconciliation detail',()=>{
+  assert.match(salesProjection,/export function toSalesPricingResultV5/);
+  assert.match(salesProjection,/cost_breakdown: result\.cost_breakdown/);
+  assert.match(salesProjection,/export function toSalesQuotePricingResultV5/);
+  const quoteProjection=salesProjection.split('export function toSalesQuotePricingResultV5')[1] || '';
+  assert.doesNotMatch(quoteProjection,/cost_breakdown: result\.cost_breakdown/);
+  assert.doesNotMatch(quoteProjection,/commercial_rules: result\.commercial_rules/);
+  assert.doesNotMatch(quoteProjection,/source_hash: result\.source_hash/);
+  assert.doesNotMatch(quoteProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
+  assert.doesNotMatch(quoteProjection,/units_per_frame: component\.units_per_frame/);
+  assert.match(quoteProjection,/alternative_quantities: result\.alternative_quantities\.map/);
+  assert.match(salesActions,/toSalesQuotePricingResultV5/);
+  assert.doesNotMatch(salesActions,/toSalesPricingResultV5/);
+});
+
+
+test('S52-PKG-V5: manual Spot UV reconciles across Sales review, approval totals and customer PDF',()=>{
+  assert.match(quotePage,/quoteOptionalCharges=\{packaging\?\.charges \?\? \[\]\}/);
+  assert.match(canonicalQuoteBuilder,/function optionalChargeTotal/);
+  assert.match(canonicalQuoteBuilder,/\+ optionalChargeTotal\(quote\)/);
+  assert.match(canonicalQuoteBuilder,/optionalCharges\.map/);
+  assert.match(approvalQuoteBuilder,/quoteTotal\(quote, props\.quoteOptionalCharges \?\? \[\]\)/);
+  assert.match(quotePdf,/from\('quote_optional_charges'\)/);
+  assert.match(quotePdf,/rows\.push\(\{ sku: '—', product: text\(charge\.label/);
+});
+
+
+test('S52-PKG-V5: snapshotted GST reconciles from Sales pricing through review, approval and PDF',()=>{
+  assert.match(canonicalQuoteBuilder,/function pricingV5TaxTotal/);
+  assert.match(canonicalQuoteBuilder,/pricing_breakdown_json\?\.selling_price\?\.gst/);
+  assert.match(canonicalQuoteBuilder,/Total incl\. GST/);
+  assert.match(approvalQuoteBuilder,/function pricingV5TaxTotal/);
+  assert.match(approvalQuoteBuilder,/pricing_breakdown_json\?\.selling_price\?\.gst/);
+  assert.match(quotePdf,/pricing_breakdown_json, calculation_version/);
+  assert.match(quotePdf,/const v5TaxTotal/);
+  assert.match(quotePdf,/taxLabel: v5TaxTotal > 0 \? 'GST'/);
+  assert.match(quotePdf,/const total = subtotal \+ taxTotal/);
 });

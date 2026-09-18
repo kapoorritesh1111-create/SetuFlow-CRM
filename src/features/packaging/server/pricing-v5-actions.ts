@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { loadKldSnapshot } from '@/lib/packaging-pricing/repository';
 import { loadPricingContextV5 } from '@/lib/packaging-pricing-v5/repository';
-import { calculatePackagingPriceV5, toSalesPricingResultV5, type PackagingPricingInputV5 } from '@/lib/packaging-pricing-v5/engine-registry';
+import { calculatePackagingPriceV5, toSalesQuotePricingResultV5, type PackagingPricingInputV5 } from '@/lib/packaging-pricing-v5/engine-registry';
 import { createPackagingPricingSnapshotV5, type PackagingPricingInputSnapshotV5 } from '@/lib/packaging-pricing-v5/snapshot';
 
 async function workspaceContext(){
@@ -21,7 +21,7 @@ export async function previewPackagingPricingV5(params:{templateId:string;input:
     const isAdmin=Boolean(workspace.canAccessAdmin);
     const context=await loadPricingContextV5(workspace.organization!.id,params.templateId,{publishedOnly:!isAdmin});
     const result=calculatePackagingPriceV5(context,params.input);
-    return {ok:result.ok,result:isAdmin?result:toSalesPricingResultV5(result),error:result.ok?undefined:result.validation_errors.join(' ')};
+    return {ok:result.ok,result:isAdmin?result:toSalesQuotePricingResultV5(result),error:result.ok?undefined:result.validation_errors.join(' ')};
   }catch(error){
     return {ok:false,error:error instanceof Error?error.message:'Packaging Pricing v5 preview failed.'};
   }
@@ -62,7 +62,7 @@ export async function savePackagingPricingV5QuoteLine(params:{
     const kld=await loadKldSnapshot(organizationId,params.input.kld_file_id??null);
     if(kld&&kld.family_id!==family.id) return {ok:false,error:'Selected KLD does not belong to this packaging family.'};
 
-    const salesResult=toSalesPricingResultV5(result);
+    const salesResult=toSalesQuotePricingResultV5(result);
     const inputSnapshot:PackagingPricingInputSnapshotV5={
       engine_version:5,
       family_id:family.id,

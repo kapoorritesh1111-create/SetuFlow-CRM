@@ -12,6 +12,7 @@ import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingFamilies, getPackagingTemplates, getQuoteOptionalCharges, getPackagingSavedSpecs } from '@/lib/packaging/queries';
 import { isPackagingPricingV4EnabledForOrg, listSalesPackagingPricingV4Options } from '@/lib/packaging-pricing/sales-options';
 import { isPackagingPricingV5EnabledForOrg, listSalesPackagingPricingV5Options } from '@/lib/packaging-pricing-v5/sales-options';
+import { listPricingV5SavedLineSummaries } from '@/lib/packaging-pricing-v5/saved-line';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -110,13 +111,14 @@ export default async function QuotePage({
   }
 
   const canonicalPackaging = pricingV5Options || pricingV4Options ? null : packaging;
+  const savedPricingV5Lines = activeQuote ? listPricingV5SavedLineSummaries(activeQuote.lineItems as any[]) : [];
 
   return (
     <>
       {feedback ? <WorkflowToast kind={feedback.kind} message={feedback.message} /> : null}
       {pricingV5Options && activeQuote ? (
         <div className="mb-4">
-          <PricingV5SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV5Options} />
+          <PricingV5SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV5Options} savedLines={savedPricingV5Lines} />
         </div>
       ) : pricingV4Options && activeQuote ? (
         <div className="mb-4">
@@ -131,6 +133,7 @@ export default async function QuotePage({
         quoteActionError={readParam(searchParams?.quoteActionError).trim() ? decodeURIComponent(readParam(searchParams?.quoteActionError).trim()) : null}
         saved={readParam(searchParams?.saved).trim() || null}
         packaging={canonicalPackaging}
+        quoteOptionalCharges={packaging?.charges ?? []}
       />
     </>
   );

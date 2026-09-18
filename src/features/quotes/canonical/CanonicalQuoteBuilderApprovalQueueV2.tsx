@@ -3,7 +3,7 @@ import type { LeadProfileData } from '@/lib/queries/leads';
 import CanonicalQuoteBuilder from './CanonicalQuoteBuilder';
 
 type PackagingProp = { enabled: boolean; families: any[]; templates: any[]; charges: any[] } | null;
-type Props = { data: LeadProfileData; quoteId?: string | null; step?: string | null; quoteDraftError?: string | null; quoteActionError?: string | null; saved?: string | null; packaging?: PackagingProp };
+type Props = { data: LeadProfileData; quoteId?: string | null; step?: string | null; quoteDraftError?: string | null; quoteActionError?: string | null; saved?: string | null; packaging?: PackagingProp; quoteOptionalCharges?: any[] };
 const TERMINAL = new Set(['accepted', 'rejected', 'expired', 'cancelled', 'declined']);
 function title(value?: string | null) { return String(value || 'draft').replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()); }
 function money(value?: number | null, currency = 'USD') { return typeof value === 'number' && Number.isFinite(value) ? `${currency} ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'; }
@@ -12,13 +12,14 @@ function selectedQuote(data: LeadProfileData, quoteId?: string | null) { const q
 function currentQuoteVersion(data: LeadProfileData, quote: any | null) { if (!quote?.id) return null; const versions = (data.quoteVersions ?? []).filter((version: any) => version.quote_id === quote.id); if (!versions.length) return null; if (quote.current_version_id) { const current = versions.find((version: any) => version.id === quote.current_version_id); if (current) return current; } return [...versions].sort((left: any, right: any) => { const leftNo = Number(left.version_no ?? 0); const rightNo = Number(right.version_no ?? 0); if (leftNo !== rightNo) return rightNo - leftNo; return String(right.created_at ?? '').localeCompare(String(left.created_at ?? '')); })[0] ?? null; }
 function pendingApprovalRequest(data: LeadProfileData, quote: any | null, version: any | null) { if (!quote?.id) return null; return (data.approvalRequests ?? []).find((request: any) => { const status = String(request.status ?? '').toLowerCase(); return status === 'pending' && (request.quote_id === quote.id || (version?.id && request.quote_version_id === version.id)); }) ?? null; }
 function quoteCurrency(data: LeadProfileData, quote: any | null) { return quote?.display_currency || quote?.currency || data.lead?.deal_currency || 'USD'; }
-function quoteTotal(quote: any | null) { const lines = quote?.lineItems?.length ? quote.lineItems : []; return lines.reduce((sum: number, item: any) => sum + (Number(item.quantity || 0) * Number(item.unit_price || item.catalog_price_amount || 0)), 0); }
+function pricingV5TaxTotal(quote: any | null) { const lines = quote?.lineItems?.length ? quote.lineItems : []; return lines.reduce((sum: number, item: any) => item.line_type === 'packaging' && Number(item.calculation_version) === 5 ? sum + Math.max(0, Number(item.pricing_breakdown_json?.selling_price?.gst ?? 0)) : sum, 0); }
+function quoteTotal(quote: any | null, optionalCharges: any[] = []) { const lines = quote?.lineItems?.length ? quote.lineItems : []; return lines.reduce((sum: number, item: any) => sum + (Number(item.quantity || 0) * Number(item.unit_price || item.catalog_price_amount || 0)), 0) + optionalCharges.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.amount ?? 0)), 0) + pricingV5TaxTotal(quote); }
 
 function ApprovalPendingPanel({ props, quote, version, request }: { props: Props; quote: any; version: any; request: any }) {
   const { data, quoteDraftError, quoteActionError, saved } = props;
   const lead = data.lead!;
   const currency = quoteCurrency(data, quote);
-  const total = quoteTotal(quote);
+  const total = quoteTotal(quote, props.quoteOptionalCharges ?? []);
   const productCount = quote?.lineItems?.length ?? 0;
   const approvalHref = `/approval-queue?quoteId=${quote.id}`;
   return <div className="space-y-4 pb-20">
