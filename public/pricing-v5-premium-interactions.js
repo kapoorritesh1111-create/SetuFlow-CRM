@@ -77,7 +77,10 @@ function handle(e){
  if(/Compare Previous Version/i.test(text)){e.preventDefault();comparePrevious();return}
  if(/Review Exceptions/i.test(text)){e.preventDefault();exceptions();return}
  if(/Preview Impact|Run Impact Preview/i.test(text)){e.preventDefault();impactPreview();return}
- if(/Edit Buckets|Apply to Family|Global Adjustment/i.test(text)){e.preventDefault();wasteEdit(b);return}
+ if(/^×$/.test(text)&&b.closest('#priceWhy')){e.preventDefault();const panel=b.closest('#priceWhy');if(panel)panel.innerHTML='<div class="panel-title"><h3>Why this price?</h3></div><div class="notice info" style="margin:12px">Select a calculated matrix price to open its engine-backed cost breakdown.</div>';return}
+ if(/Reduce Margin|Reduce Waste/i.test(text)){e.preventDefault();const edit=qa('#page [data-band-review]')[0]||qa('#page button').find(x=>/Edit Buckets/i.test(x.textContent||''));if(edit)edit.click();else wasteEdit(b);return}
+ if(/Add a Global Adjustment|Global Price Adjustment/i.test(text)){e.preventDefault();reviewRequest('Global Price Adjustment','Capture the proposed global adjustment for owner review. This does not alter live pricing until a controlled implementation and approval exists.',null);return}
+ if(/Edit Buckets|Apply to Family/i.test(text)){e.preventDefault();wasteEdit(b);return}
  if(p.includes('Constructions')&&/^View$/i.test(text)){e.preventDefault();constructionView(b);return}
  if(p.includes('Constructions')&&/^Edit$/i.test(text)){e.preventDefault();constructionEdit(b);return}
  if(p.includes('Sizes')&&/Preview/i.test(text)){e.preventDefault();sizePreview(b);return}
