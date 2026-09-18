@@ -7,6 +7,7 @@ on:
       - 'src/features/packaging/**pricing-v5**'
       - 'src/app/(app)/admin/packaging-pricing-v5/**'
       - 'src/app/(app)/leads/[leadId]/quote/page.tsx'
+      - 'public/kld/pricing-v5/**'
       - 'supabase/migrations/*pkg_v5*'
       - 'tests/packaging/pricing-v5-*.test.ts'
       - 'package.json'
@@ -30,5 +31,7 @@ jobs:
         run: npm run typecheck
       - name: Packaging pricing tests
         run: npm run test:packaging
+      - name: Pricing v5 activation readiness
+        run: npx tsx --test tests/packaging/pricing-v5-activation-readiness.test.ts
       - name: Pricing v5 material confirmations
         run: npx tsx --test tests/packaging/pricing-v5-material-confirmation.test.ts
