@@ -328,9 +328,11 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
 
   const alternatives: AlternativePriceV5[] = [];
   if (includeAlternatives && !errors.length) {
-    const configured = Array.isArray(size?.metadata?.allowed_quantities)
+    const defaultQuantityLadder = [1000,2000,5000,10000,15000,20000,25000,30000,40000,50000];
+    const allowedQuantities = Array.isArray(size?.metadata?.allowed_quantities)
       ? size!.metadata!.allowed_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
-      : [1000,2000,5000,10000,15000,20000,25000,30000,40000,50000];
+      : [];
+    const configured = allowedQuantities.length ? allowedQuantities : defaultQuantityLadder;
     const blocked = Array.isArray(size?.metadata?.blocked_quantities)
       ? size!.metadata!.blocked_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
       : [];
