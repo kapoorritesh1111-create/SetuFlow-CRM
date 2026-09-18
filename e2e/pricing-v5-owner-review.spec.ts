@@ -138,3 +138,20 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await page.getByRole('button',{name:/Save & Continue to Terms/i}).click();
   await expect(page.getByRole('heading',{name:'Impact & Approval',exact:true})).toBeVisible();
 });
+
+
+test('Pricing v5 review stays responsive through repeated owner navigation',async({page})=>{
+  const pageErrors:string[]=[];
+  page.on('pageerror',e=>pageErrors.push(e.message));
+  await page.goto('/pricing-v5-review-premium.html');
+  const pages=['dashboard','sizes','constructions','rates','waste','matrix','competitor','sales','families','approval'];
+  for(let pass=0;pass<5;pass++){
+    for(const key of pages){
+      await page.locator('#sideNav [data-page="'+key+'"]').click();
+      await expect(page.locator('#page .page-head h2')).toBeVisible();
+    }
+  }
+  await page.locator('#sideNav [data-page="dashboard"]').click();
+  await expect(page.getByRole('heading',{name:'Pricing Dashboard'})).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
