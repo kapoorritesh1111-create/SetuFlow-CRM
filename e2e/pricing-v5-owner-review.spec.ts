@@ -32,16 +32,29 @@ const charges=[
   {id:'z1',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,rate_uom:'running_m',configuration_complete:true},
   {id:'uv1',code:'EXTRA_SPOT_UV',name:'Spot UV',category:'extra',basis:null,application_stage:null,current_rate:0,rate_uom:null,configuration_complete:false},
 ];
-const bands=[
-  {id:'b1',pricing_bucket:1,run_length_max_m:500,wastage_pct:20,margin_per_frame:70,sort_order:1,source_worksheet:'Wastages & Margins',source_row:1},
-  {id:'b2',pricing_bucket:1,run_length_max_m:1000,wastage_pct:10,margin_per_frame:60,sort_order:2,source_worksheet:'Wastages & Margins',source_row:2},
-  {id:'b3',pricing_bucket:3,run_length_max_m:1000,wastage_pct:10,margin_per_frame:25,sort_order:3,source_worksheet:'Wastages & Margins',source_row:3},
-];
+const bandSchedules:any={
+  1:[[500,20,70],[1000,10,60],[2000,8,50],[3000,7,40],[5000,6,30],[10000,5,25]],
+  2:[[250,25,70],[500,20,70],[1000,10,60],[2000,8,50],[3000,7,40],[5000,6,30],[10000,5,25]],
+  3:[[250,25,35],[500,20,35],[1000,10,25],[2000,8,20],[3000,7,17],[5000,6,15],[10000,5,13]],
+  4:[[250,25,35],[500,20,35],[1000,10,25],[2000,8,20],[3000,7,17],[5000,6,15],[10000,5,13]],
+  5:[[250,25,35],[500,20,35],[1000,10,25],[2000,8,20],[3000,7,17],[5000,6,15],[10000,5,13]],
+};
+const bands=Object.entries(bandSchedules).flatMap(([bucket,items]:any)=>items.map((x:any,i:number)=>({
+  id:'b'+bucket+'_'+(i+1),pricing_bucket:Number(bucket),run_length_max_m:x[0],wastage_pct:x[1],margin_per_frame:x[2],
+  sort_order:i+1,source_worksheet:'Wastages and margins',source_row:Number(bucket)*10+i+1,
+})));
 
 function matrixRows(){
   return sizes.map((s,i)=>({
     size_profile_id:s.id,size_key:s.size_key,size_name:s.name,
-    prices:quantities.map((quantity)=>({quantity,ok:!(((s.metadata as any).blocked_quantities)||[]).includes(quantity),unit_price:10+i+5000/quantity,product_total:(10+i+5000/quantity)*quantity}))
+    prices:quantities.map((quantity)=>{
+      const blocked=(((s.metadata as any).blocked_quantities)||[]).includes(quantity);
+      return {
+        quantity,ok:!blocked,availability:blocked?'not_producible':'priced',
+        unit_price:blocked?null:10+i+5000/quantity,product_total:blocked?null:(10+i+5000/quantity)*quantity,
+        validation_errors:blocked?[`Quantity ${quantity.toLocaleString()} is not allowed for ${s.name}.`]:[],
+      };
+    })
   }));
 }
 function singleResult(quantity=5000){
@@ -91,7 +104,7 @@ test.beforeEach(async({page})=>{
         body={ok:true,item:{review_key:payload.review_key,decision:payload.decision,value_json:payload.value_json||{},reviewer_name:'Stark Packmate Owner',updated_at:new Date().toISOString()}};
       }
     } else if(p.endsWith('/pricing-v5-review-rates')){
-      body={ok:true,materials,charges,drafts:[],commercial_bands:bands};
+      body={ok:true,materials,charges,drafts:[],commercial_bands:bands,commercial_band_reviews:[]};
     } else if(p.endsWith('/pricing-v5-review-commercial-bands')){
       body={ok:true,commercial_bands:bands,bands};
     } else if(p.endsWith('/pricing-v5-review-constructions')){
@@ -205,6 +218,41 @@ test('all Sizes, Constructions and Rates are reachable through pagination and si
   await expect(page.locator('.rates-layout > .card').nth(1)).toContainText('Showing 1–10 of 13 process/add-on rates • Page 1 of 2');
   await page.locator('[data-rate-page="p:next"]').click();
   await expect(page.locator('.rates-layout > .card').nth(1)).toContainText('Showing 11–13 of 13 process/add-on rates • Page 2 of 2');
+});
+
+test('Waste and Matrix expose every commercial rule and price row with correct N/A behavior',async({page})=>{
+  await page.goto('/pricing-v5-review-premium.html');
+
+  await page.locator('#sideNav [data-page="waste"]').click();
+  const waste=page.locator('#pv5WasteBands');
+  await expect(waste).toContainText('Showing 1–10 of 34 run-length rules • Page 1 of 4');
+  await waste.locator('[data-band-page="next"]').click();
+  await expect(waste).toContainText('Showing 11–20 of 34 run-length rules • Page 2 of 4');
+  await waste.locator('[data-band-page="4"]').click();
+  await expect(waste).toContainText('Showing 31–34 of 34 run-length rules • Page 4 of 4');
+
+  await page.locator('#sideNav [data-page="matrix"]').click();
+  const matrix=page.locator('#liveMatrix');
+  await expect(matrix).toContainText('Showing 1–10 of 20 sizes • Page 1 of 2');
+
+  const firstRow=matrix.locator('tbody tr').first();
+  await expect(firstRow.locator('td').nth(1)).toContainText('N/A');
+  await expect(firstRow.locator('td').nth(1).locator('[data-truth-price]')).toHaveCount(0);
+  await expect(firstRow.locator('td').nth(2)).toContainText('N/A');
+  await expect(firstRow.locator('td').nth(2).locator('[data-truth-price]')).toHaveCount(0);
+
+  await firstRow.locator('[data-truth-price][data-qty="3000"]').click();
+  await expect(page.locator('#priceWhy')).toContainText('Calculated Selling Price');
+  await expect(page.locator('#priceWhy')).toContainText('Material cost');
+  await expect(page.locator('#priceWhy')).toContainText('Engine reconciled');
+
+  const tenthRow=matrix.locator('tbody tr').nth(9);
+  await tenthRow.getByRole('button',{name:/Review Row/i}).click();
+  await expect(page.locator('#modal')).toContainText('Size 10 of 20');
+  await page.locator('#mpNextRow').click();
+  await expect(page.locator('#modal')).toContainText('Size 11 of 20');
+  await expect(matrix).toContainText('Showing 11–20 of 20 sizes • Page 2 of 2');
+  await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 });
 
 test('Pricing v5 review stays responsive through repeated owner navigation',async({page})=>{
