@@ -44,5 +44,9 @@ test('Pricing v5 full matrix has one live controller and no legacy sample price 
   assert.doesNotMatch(premium,/status=i>=6/);
   assert.doesNotMatch(premium,/price\*\.58|price\*\.204|price\*\.052/);
   assert.doesNotMatch(premium,/renderLiveMatrix\(\);/);
+  assert.match(premium,/pv5:matrix-page-ready/);
+  assert.match(premium,/PV5MatrixPagination/);
+  assert.match(fs.readFileSync('public/pricing-v5-matrix-pagination.js','utf8'),/PV5MatrixPagination/);
+  assert.match(fs.readFileSync('public/pricing-v5-matrix-pagination.js','utf8'),/pv5:matrix-page-ready/);
   assert.match(premium,/Loading the engine-backed price breakdown/);
 });
