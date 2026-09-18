@@ -16,7 +16,7 @@
     ['competitor','Competitor evaluator logic','Approve exact-vs-directional competitor evidence rules.'],
   ];
   const CLARIFICATIONS = [
-    ['invalid-combinations','Are any size × construction combinations not manufacturable?','This is the only remaining SUP construction-scope question. Quantity N/A rules are managed separately on Sizes & KLDs.',['All 44 apply to all 21 SUP sizes','Restrictions exist — see comment']],
+    ['invalid-combinations','Are any size × construction combinations not manufacturable?','This is the only remaining SUP construction-scope question. Quantity N/A rules are managed separately on Sizes & KLDs.',['All 44 apply to all 20 SUP sizes','Restrictions exist — see comment']],
   ];
 
   const safe = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
