@@ -124,6 +124,34 @@ test('S52-PKG-V5: 160x230 workbook 3-layer example reconciles exactly at 5,000 p
   assert.ok(Math.abs(result.selling_price.product_total-79180.27)<0.01);
 });
 
+test('S52-PKG-V5: 160x230 workbook 3-layer foil example reconciles exactly at 5,000 pcs',()=>{
+  const foilConstruction={id:'cfoil3',organization_id:'org',family_id:'sup',construction_key:'glossy_al_foil_pe75',construction_family_key:'glossy_al_foil',name:'Glossy Finish With Aluminium Foil / PE75',finish_type:'glossy',barrier_type:'high_barrier',sealant_code:'MAT_PE_75',layer_count:3,is_active:true,is_quoteable:false,sort_order:3};
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{
+      ...base.sizeProfiles[0],id:'wb160-foil3',size_key:'160x230_bg50_50',name:'160 x 230',width_mm:160,height_mm:230,bottom_gusset_each_mm:50,
+      pricing_bucket:3,production_profile_key:'sup_integrated',gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',
+    }],
+    constructions:[...base.constructions,foilConstruction],
+    constructionLayers:[...base.constructionLayers,
+      {id:'lf31',construction_id:'cfoil3',layer_position:1,role_key:'print_layer',cost_master_item_id:'pet',is_print_layer:true,is_sealant_layer:false},
+      {id:'lf32',construction_id:'cfoil3',layer_position:2,role_key:'middle_layer_1',cost_master_item_id:'foil',is_print_layer:false,is_sealant_layer:false},
+      {id:'lf33',construction_id:'cfoil3',layer_position:3,role_key:'sealant_layer',cost_master_item_id:'pe75',is_print_layer:false,is_sealant_layer:true},
+    ],
+    masters:base.masters.map((item)=>{
+      if(item.id==='pet') return {...item,current_rate:165};
+      if(item.id==='foil') return {...item,current_rate:550,gsm:24.2,density:null};
+      return item;
+    }),
+    charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{}}],
+  };
+  const result=calculateSupFormulaV5(context,{size_profile_id:'wb160-foil3',construction_id:'cfoil3',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_ZIPPER']});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components[0]?.units_per_frame,7);
+  assert.ok(Math.abs(result.selling_price.unit_price-17.27390007)<1e-8);
+  assert.ok(Math.abs(result.selling_price.product_total-86369.50)<0.01);
+});
+
 test('S52-PKG-V5: 160x230 workbook 4-layer foil example reconciles exactly at 5,000 pcs',()=>{
   const context:PricingContextV5={
     ...base,
