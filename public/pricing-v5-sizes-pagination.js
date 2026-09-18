@@ -25,11 +25,30 @@ function decisionFor(s){return window.PV5DbReview?.decision?.(reviewKey(s))||'pe
 function draftFor(s){return window.PV5DbReview?.get?.(draftKey(s))?.value_json||null}
 function statusFor(s){const d=decisionFor(s);if(d==='approved')return['Owner Approved','green'];if(d==='needs_change')return['Needs Change','amber'];return['Review Required','gray']}
 function filteredSizes(){const term=filters.search.toLowerCase().trim();return (catalog?.sizes||[]).filter(s=>{const d=decisionFor(s);return(filters.status==='all'||d===filters.status)&&(!term||[sizeLabel(s),pricingGroup(s),route(s),s.name,s.key].join(' ').toLowerCase().includes(term))})}
+function moveToSize(s,delta){
+ const list=filteredSizes(),idx=list.findIndex(x=>String(x.id||sizeLabel(x))===String(s.id||sizeLabel(s))),nextIndex=idx+delta;
+ if(idx<0||nextIndex<0||nextIndex>=list.length)return null;
+ const target=list[nextIndex];
+ pageNo=Math.floor(nextIndex/PAGE_SIZE)+1;
+ render();
+ return target;
+}
+function sizeNavState(s){
+ const list=filteredSizes(),idx=list.findIndex(x=>String(x.id||sizeLabel(x))===String(s.id||sizeLabel(s)));
+ return {list,idx,hasPrev:idx>0,hasNext:idx>=0&&idx<list.length-1};
+}
 function rowHtml(s){const st=statusFor(s),w=Number(s.width_mm||0),h=Number(s.height_mm||0),draft=draftFor(s);return `<tr data-size-id="${esc(s.id||'')}"><td><input type="checkbox"></td><td><b>${w} × ${h}</b>${draft?'<div><span class="pill amber">Draft change</span></div>':''}</td><td>${gusset(s)}</td><td>${esc(pricingGroup(s))}</td><td>${esc(route(s))}</td><td>${esc(bottomRule(s))}</td><td>${kldReview(s)}</td><td>${productionKld(s)}</td><td><span class="status"><span class="dot ${st[1]}"></span>${st[0]}</span></td><td><div class="row wrap" style="gap:6px"><button class="btn tiny pv5-page-preview">◉ Preview</button><button class="btn tiny primary pv5-page-edit">✎ Edit</button><button class="btn tiny success pv5-page-approve" ${st[0]==='Owner Approved'?'disabled':''}>${st[0]==='Owner Approved'?'Approved':'✓ Approve'}</button><button class="btn tiny danger pv5-page-change">Needs Change</button></div></td></tr>`}
 function modal(title,html){const m=q('#modal'),b=q('#modalBody');if(!m||!b)return;b.innerHTML=`<div class="modal-head"><h3>${esc(title)}</h3><button class="btn outline" id="sizeClose">✕ Close</button></div>${html}`;m.classList.add('open');m.style.display='flex';q('#sizeClose',b).onclick=()=>{m.classList.remove('open');m.style.display='none'}}
 function closeModal(){const m=q('#modal');if(m){m.classList.remove('open');m.style.display='none'}}
 function qtyList(raw){return String(raw||'').split(',').map(x=>Math.floor(Number(x.replace(/[^0-9]/g,'')))).filter(x=>Number.isFinite(x)&&x>0)}
-function openPreview(s){modal('Size Review — '+sizeLabel(s),`<div class="card" style="padding:16px"><div class="detail-grid"><div><small>Size</small><b>${esc(sizeLabel(s))}</b></div><div><small>Bottom gusset</small><b>${esc(gusset(s))}</b></div><div><small>Pricing group</small><b>${esc(pricingGroup(s))}</b></div><div><small>Production route</small><b>${esc(route(s))}</b></div><div><small>Trim allowance</small><b>${esc(trimText(s))}</b></div><div><small>Allowed quantities</small><b>${esc(allowedText(s))}</b></div><div><small>N/A / blocked quantities</small><b>${esc(blockedText(s))}</b></div></div><div class="notice info" style="margin-top:12px"><b>MOQ rule:</b> any quantity marked N/A is blocked from quoting by the Pricing v5 engine.</div></div>`)}
+function openPreview(s){
+ const nav=sizeNavState(s),position=nav.idx>=0?nav.idx+1:1,total=nav.list.length||1;
+ modal('Size Review — '+sizeLabel(s),`<div class="card" style="padding:16px"><div class="panel-title"><div><h3>${esc(sizeLabel(s))}</h3><span>Size ${position} of ${total} in the current filtered list</span></div><span class="pill blue">Page ${pageNo}</span></div><div class="detail-grid" style="margin-top:12px"><div><small>Size</small><b>${esc(sizeLabel(s))}</b></div><div><small>Bottom gusset</small><b>${esc(gusset(s))}</b></div><div><small>Pricing group</small><b>${esc(pricingGroup(s))}</b></div><div><small>Production route</small><b>${esc(route(s))}</b></div><div><small>Trim allowance</small><b>${esc(trimText(s))}</b></div><div><small>Allowed quantities</small><b>${esc(allowedText(s))}</b></div><div><small>N/A / blocked quantities</small><b>${esc(blockedText(s))}</b></div></div><div class="notice info" style="margin-top:12px"><b>MOQ rule:</b> any quantity marked N/A is blocked from quoting by the Pricing v5 engine.</div><div class="row wrap" style="justify-content:space-between;gap:8px;margin-top:16px"><button class="btn outline" id="pv5PrevSize" ${nav.hasPrev?'':'disabled'}>← Previous Size</button><div class="row wrap" style="gap:8px"><button class="btn primary" id="pv5EditCurrentSize">✎ Edit This Size</button><button class="btn success" id="pv5NextSize" ${nav.hasNext?'':'disabled'}>Next Size →</button></div></div></div>`);
+ const prev=q('#pv5PrevSize'),next=q('#pv5NextSize'),edit=q('#pv5EditCurrentSize');
+ if(prev)prev.onclick=()=>{const target=moveToSize(s,-1);if(target)openPreview(target)};
+ if(next)next.onclick=()=>{const target=moveToSize(s,1);if(target)openPreview(target)};
+ if(edit)edit.onclick=()=>openEditor(s);
+}
 async function publicProposal(s,action,payload){
  const r=await fetch(FEEDBACK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
   reviewer_name:'Pricing v5 Reviewer',review_mode:'admin',step_key:'size-change-proposal',rating:4,priority:'important',
@@ -49,7 +68,7 @@ function openEditor(s){
 }
 async function saveDecision(s,decision,note=''){const payload={name:sizeLabel(s),size_id:s.id||null,note};try{if(!window.PV5DbReview)throw new Error('authentication_required');await window.PV5DbReview.save(reviewKey(s),decision,payload);await window.PV5DbReview.load?.();render()}catch(e){if(/authentication_required|review_access_required/i.test(String(e?.message||e))){await publicProposal(s,decision==='approved'?'approve':'needs_change',payload);alert('Review proposal captured. An authorized Stark owner/admin must finalize it.')}else throw e}}
 function bindRows(list){const table=findTable();if(!table)return;qa('tbody tr',table).forEach((tr,i)=>{const s=list[i];if(!s)return;q('.pv5-page-preview',tr)?.addEventListener('click',()=>openPreview(s));q('.pv5-page-edit',tr)?.addEventListener('click',()=>openEditor(s));q('.pv5-page-approve',tr)?.addEventListener('click',()=>saveDecision(s,'approved'));q('.pv5-page-change',tr)?.addEventListener('click',()=>{const note=prompt('What needs to change for '+sizeLabel(s)+'?');if(note)saveDecision(s,'needs_change',note)})})}
-function pagerHtml(total){const pages=Math.max(1,Math.ceil(total/PAGE_SIZE)),start=total?(pageNo-1)*PAGE_SIZE+1:0;return `<div id="pv5SizesPager" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px"><span>Showing ${start}–${Math.min(pageNo*PAGE_SIZE,total)} of ${total} sizes</span><div class="pager"><button ${pageNo<=1?'disabled':''} data-pv5-page="prev">‹</button>${Array.from({length:pages},(_,i)=>`<button class="${pageNo===i+1?'on':''}" data-pv5-page="${i+1}">${i+1}</button>`).join('')}<button ${pageNo>=pages?'disabled':''} data-pv5-page="next">›</button></div></div>`}
+function pagerHtml(total){const pages=Math.max(1,Math.ceil(total/PAGE_SIZE)),start=total?(pageNo-1)*PAGE_SIZE+1:0;return `<div id="pv5SizesPager" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px"><span>Showing ${start}–${Math.min(pageNo*PAGE_SIZE,total)} of ${total} sizes</span><div class="pager"><button ${pageNo<=1?'disabled':''} data-pv5-page="prev">‹ Previous</button>${Array.from({length:pages},(_,i)=>`<button class="${pageNo===i+1?'on':''}" data-pv5-page="${i+1}">${i+1}</button>`).join('')}<button ${pageNo>=pages?'disabled':''} data-pv5-page="next">Next ›</button></div></div>`}
 function confirmedModule(){
  const sizes=catalog?.sizes||[];
  const a=sizes.find(x=>Number(x.width_mm)===160&&Number(x.height_mm)===230);
