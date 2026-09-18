@@ -89,8 +89,9 @@ export async function POST(request:NextRequest){
     owner_review_published_at:now,
     owner_review_published_by:access.user.email||null,
   };
+  const nextName=`${width}mm x ${height}mm (${gusset}mm + ${gusset}mm bg)`;
   const {data:updated,error:updateError}=await (admin as any).from('packaging_size_profiles_v5').update({
-    width_mm:width,height_mm:height,bottom_gusset_each_mm:gusset,pricing_bucket:bucket,
+    name:nextName,width_mm:width,height_mm:height,bottom_gusset_each_mm:gusset,pricing_bucket:bucket,
     is_quoteable:isQuoteable,metadata,updated_by:access.user.id,updated_at:now,
   }).eq('organization_id',STARK_ORG_ID).eq('template_id',TEMPLATE_ID).eq('id',sizeId)
     .select('id,size_key,name,width_mm,height_mm,bottom_gusset_each_mm,pricing_bucket,is_quoteable,metadata').single();
