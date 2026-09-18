@@ -16,12 +16,7 @@
     ['competitor','Competitor evaluator logic','Approve exact-vs-directional competitor evidence rules.'],
   ];
   const CLARIFICATIONS = [
-    ['160x240-standard','Confirm the approved 160 × 230 / 160 × 240 size policy','Both 160 × 230 and 160 × 240 are approved as separate valid SUP sizes.',['160 × 240','160 × 230','Keep both']],
-    ['invalid-combinations','Are any size × construction combinations not manufacturable?','If yes, identify them so SETU hides them instead of allowing an invalid quote. Quantity restrictions are handled separately.',['All 44 apply to all 21 SUP sizes','Restrictions exist — see comment']],
-    ['missing-kld-policy','What should Sales do when production KLD is not yet approved?','Review samples are available, but production dielines may arrive later.',['Allow quote + show Production KLD pending','Allow quote using review sample reference','Block quote until production KLD']],
-    ['competitor-directional','How should directional competitor evidence be handled?','Exact like-for-like evidence can be averaged. Directional evidence should never silently become an exact market average.',['Show directional but exclude from average','Show exact evidence only']],
-    ['construction-complete','Are the 44 standard SUP constructions complete?','11 construction families × PE60/75/95/120 are currently configured.',['Yes — complete','No — additions required']],
-    ['other-family-geometry','Confirm family-specific geometry for Flat Bottom / Center Seal / 3SS.','Center Seal and 3SS v4 workbook baselines are reference data only. Flat Bottom still needs approved family-specific geometry.',['I will provide/confirm family-specific geometry','Use current workbook baselines as migration starting point','Needs changes — see comment']],
+    ['invalid-combinations','Are any size × construction combinations not manufacturable?','This is the only remaining SUP construction-scope question. Quantity N/A rules are managed separately on Sizes & KLDs.',['All 44 apply to all 21 SUP sizes','Restrictions exist — see comment']],
   ];
 
   const safe = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -114,7 +109,7 @@
       return '<tr><td><b>'+safe(title)+'</b><small class="owner-row-note">'+safe(desc)+'</small></td><td>'+decisionPill(value)+'</td><td><div class="owner-inline-actions"><button class="btn tiny" data-owner-business="'+key+'" data-value="true">✓ Approve</button><button class="btn tiny danger" data-owner-business="'+key+'" data-value="false">○ Needs Change</button></div></td></tr>';
     }).join('');
 
-    return '<section class="card owner-review-controls"><div class="panel-title"><div><h3>Owner Review & Decisions</h3><p>Nothing below is approved by default. Stark Packmate can answer, approve, change, and revise every decision.</p></div><span class="mini-tag amber">Client controlled</span></div><div class="owner-review-tabs"><b>Clarifications — all answers remain editable</b></div>'+clarifications+'<div class="owner-review-tabs"><b>Business approvals</b></div><div class="table-wrap"><table class="table"><thead><tr><th>Item</th><th>Owner status</th><th>Decision</th></tr></thead><tbody>'+approvals+'</tbody></table></div><div class="owner-kld-box"><div><b>KLD review samples</b><small>Approve KLD review samples only when the owner has actually reviewed them. You can reset the decisions at any time.</small></div><div class="owner-inline-actions"><button class="btn success" id="ownerApproveAllKld">Approve All 21 KLD Samples</button><button class="btn outline" id="ownerResetKld">Reset KLD Decisions</button><button class="btn outline" data-go-page="sizes">Review Individually</button></div></div></section>';
+    return '<section class="card owner-review-controls"><div class="panel-title"><div><h3>Owner Review & Decisions</h3><p>Resolved Akshay questions have been removed. Only genuine open items remain.</p></div><span class="mini-tag amber">Client controlled</span></div><div class="notice info" style="margin:12px 18px"><b>Confirmed:</b> both 160 × 230 and 160 × 240 are valid; use sales-facing construction names with the technical stack; MetPET is Silver Film; MOQ sample prices are ignored; N/A quantities are blocked; custom constructions remain owner-only until promoted.<br><b>Spot UV:</b> rate is intentionally left editable at ₹0 until Akshay provides the final value.</div><div class="owner-review-tabs"><b>Open clarification</b></div>'+clarifications+'<div class="owner-review-tabs"><b>Business approvals</b></div><div class="table-wrap"><table class="table"><thead><tr><th>Item</th><th>Owner status</th><th>Decision</th></tr></thead><tbody>'+approvals+'</tbody></table></div><div class="owner-kld-box"><div><b>KLD review samples</b><small>Approve KLD review samples only when the owner has actually reviewed them. You can reset the decisions at any time.</small></div><div class="owner-inline-actions"><button class="btn success" id="ownerApproveAllKld">Approve All 21 KLD Samples</button><button class="btn outline" id="ownerResetKld">Reset KLD Decisions</button><button class="btn outline" data-go-page="sizes">Review Individually</button></div></div></section>';
   }
 
   function patchApprovalPage() {
@@ -135,7 +130,7 @@
           row.querySelectorAll('.status').forEach(el=>{el.outerHTML=decisionPill(v);});
         }
       }
-      if (/160 × 240|Invalid size|Sales behavior \(no KLD\)|Competitor evidence|Flat-bottom geometry|Center-seal split/i.test(txt)) {
+      if (/Invalid size|size × construction/i.test(txt)) {
         row.querySelectorAll('.status').forEach(el=>{el.outerHTML='<span class="status"><span class="dot amber"></span>Use Owner Review above</span>';});
       }
     });
