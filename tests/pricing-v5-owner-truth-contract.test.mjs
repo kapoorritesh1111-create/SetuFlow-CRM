@@ -39,3 +39,10 @@ test('Pricing v5 charge review exposes and enforces complete basis and applicati
   assert.match(rates,/Publish Blocked/);
   assert.match(rates,/data-rate-complete/);
 });
+
+test('Pricing v5 full matrix has one live controller and no legacy sample price breakdown',()=>{
+  assert.doesNotMatch(premium,/status=i>=6/);
+  assert.doesNotMatch(premium,/price\*\.58|price\*\.204|price\*\.052/);
+  assert.doesNotMatch(premium,/renderLiveMatrix\(\);/);
+  assert.match(premium,/Loading the engine-backed price breakdown/);
+});
