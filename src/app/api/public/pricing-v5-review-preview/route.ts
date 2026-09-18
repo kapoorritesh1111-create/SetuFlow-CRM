@@ -105,7 +105,13 @@ function contextWithRateOverride(ctx: PricingContextV5, value: unknown): Pricing
   const proposed = Number(input.proposed_rate);
   if (!kind || !itemId || !Number.isFinite(proposed) || proposed < 0 || proposed > 10000000) return ctx;
   if (kind === 'cost') {
-    return { ...ctx, masters: ctx.masters.map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
+    const micron=Number(input.micron),density=Number(input.density),gsm=Number(input.gsm);
+    return { ...ctx, masters: ctx.masters.map((item) => item.id === itemId ? {
+      ...item,current_rate:proposed,
+      micron:Number.isFinite(micron)&&micron>0?micron:item.micron,
+      density:Number.isFinite(density)&&density>0?density:item.density,
+      gsm:Number.isFinite(gsm)&&gsm>0?gsm:(Number.isFinite(micron)&&micron>0&&Number.isFinite(density)&&density>0?micron*density:item.gsm),
+    } : item) };
   }
   return { ...ctx, charges: (ctx.charges ?? []).map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
 }
