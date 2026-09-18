@@ -25,6 +25,7 @@ function clarificationIndexFor(title,text=''){
 }
 function goClarification(idx){
  if(idx==null){window.PV5?.go?.('approval');setTimeout(()=>scrollOwnerReview(),250);return}
+ idx=0;
  window.PV5?.go?.('approval');
  setTimeout(()=>{
    const exact=q('[data-owner-clarification="'+idx+'"]')||q('#ownerClarification'+idx)||q('#clarifySelect'+idx)?.closest('.owner-question');
@@ -51,11 +52,11 @@ function sizeEdit(btn){reviewRequest('Request Size / KLD Change',rowText(btn)||'
 function wasteEdit(btn){reviewRequest('Commercial Bucket Review',rowText(btn)||'Review wastage %, margin and frame charge for this commercial bucket.',null)}
 function impactPreview(){
  const inputs=qa('#page input,#page select').map(x=>x.value).filter(Boolean).slice(-6).join(' → ');
- modal('Impact Preview','<div class="notice info"><b>Review preview only.</b> No production pricing is changed from this screen.</div><div class="card" style="padding:16px;margin-top:12px"><p>Selected change: '+esc(inputs||'Current commercial adjustment')+'</p><p>The client must explicitly approve the related pricing rules before activation.</p><div class="row wrap" style="gap:8px"><button class="btn primary" data-answer-q="5">Review Family/Geometry Questions →</button><button class="btn outline" data-answer-q="1">Review Construction Restrictions →</button></div></div>');bindModal();
+ modal('Impact Preview','<div class="notice info"><b>Review preview only.</b> No production pricing is changed from this screen.</div><div class="card" style="padding:16px;margin-top:12px"><p>Selected change: '+esc(inputs||'Current commercial adjustment')+'</p><p>The only remaining clarification is whether any size × construction combinations are not manufacturable.</p><div class="row wrap" style="gap:8px"><button class="btn primary" data-answer-q="0">Review Remaining Construction Restriction →</button></div></div>');bindModal();
 }
 function matrixView(btn){const tr=btn.closest('tr');const txt=rowText(btn);reviewRequest('Price Matrix Cell Review',txt||'Review this calculated Pricing v5 row and its current status.',null)}
-function comparePrevious(){modal('Compare Previous Version','<div class="notice info"><b>Comparison intent:</b> use the current v4 workbook/matrix only as a migration baseline. The new v5 calculation must be reviewed independently.</div><div class="row wrap" style="margin-top:12px"><button class="btn primary" data-answer-q="5">Review Family Migration / Geometry Question →</button></div>');bindModal()}
-function exceptions(){modal('Review Exceptions','<div class="notice warn"><b>Exceptions require owner review.</b> A red/yellow price does not mean rejected or approved; it means it needs a decision.</div><div class="row wrap" style="margin-top:12px"><button class="btn primary" data-answer-q="1">Construction Restrictions →</button><button class="btn primary" data-answer-q="5">Family Geometry / Migration →</button></div>');bindModal()}
+function comparePrevious(){modal('Compare Previous Version','<div class="notice info"><b>Comparison intent:</b> use the current v4 workbook/matrix only as a migration baseline. The new v5 calculation must be reviewed independently.</div><div class="row wrap" style="margin-top:12px"><button class="btn primary" data-answer-q="0">Review Remaining Open Clarification →</button></div>');bindModal()}
+function exceptions(){modal('Review Exceptions','<div class="notice warn"><b>Exceptions require owner review.</b> A red/yellow price does not mean rejected or approved; it means it needs a decision.</div><div class="row wrap" style="margin-top:12px"><button class="btn primary" data-answer-q="0">Review Size × Construction Restrictions →</button></div>');bindModal()}
 function genericEdit(btn){const p=pageName();reviewRequest(p+' — Review Change',rowText(btn)||('Review requested from '+p+'.'),clarificationIndexFor(p,rowText(btn)))}
 function genericView(btn){const p=pageName();reviewRequest(p+' — Detail Review',rowText(btn)||('Review details from '+p+'.'),clarificationIndexFor(p,rowText(btn)))}
 function exportMatrix(){const rows=qa('#page table tr').map(r=>qa('th,td',r).map(c=>'"'+String(c.textContent).replace(/"/g,'""')+'"').join(','));if(!rows.length)return alert('No matrix is currently available to export.');const blob=new Blob([rows.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='stark-pricing-v5-review-matrix.csv';a.click();URL.revokeObjectURL(a.href)}
