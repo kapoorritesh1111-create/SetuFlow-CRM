@@ -1,6 +1,7 @@
 (()=>{
 'use strict';
 const API='/api/public/pricing-v5-review-preview';
+const CONSTRUCTION_API='/api/public/pricing-v5-review-constructions';
 const PAGE_SIZE=10;
 let constructions=[],page=1,selected=null,filters={layers:'all',material:'all',search:''};
 const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
@@ -24,7 +25,7 @@ function details(c){if(!c)return'<div class="card side-panel"><p>No construction
 function modal(title,html){const m=q('#modal'),b=q('#modalBody');if(!m||!b)return;b.innerHTML='<div class="modal-head"><h3>'+esc(title)+'</h3><button class="btn outline" id="constructionClose">✕ Close</button></div>'+html;m.classList.add('open');m.style.display='flex';q('#constructionClose',b).onclick=()=>{m.classList.remove('open');m.style.display='none'}}
 function openEdit(c,clone=false){
  const existing=window.PV5DbReview?.get?.(draftKey(c))?.value_json||{};
- modal(clone?'Clone Construction as Owner Draft':'Edit Construction Draft','<div class="notice info"><b>Owner-only draft.</b> This does not change Sales pricing or the published construction until it is explicitly promoted later.</div><div class="card" style="padding:16px;margin-top:12px"><label class="field"><span>Sales-facing construction name</span><input id="constructionDisplayName" value="'+esc(clone?(displayName(c)+' — Copy'):(existing.display_name||displayName(c)))+'"></label><label class="field"><span>Technical layer stack</span><input id="constructionLayerStack" value="'+esc(existing.layer_stack||layerText(c))+'" '+(clone?'':'readonly')+'></label><label class="field"><span>Finish</span><input id="constructionFinish" value="'+esc(existing.finish_type||finish(c))+'"></label><label class="field"><span>Barrier / material family</span><input id="constructionBarrier" value="'+esc(existing.barrier_type||materialFamily(c))+'"></label><label class="field"><span>Owner note / requested change</span><textarea id="constructionDraftNote" rows="4">'+esc(existing.comment||'')+'</textarea></label><div class="row wrap" style="gap:8px;margin-top:12px"><button class="btn primary" id="constructionSaveDraft">Save Owner Draft</button></div><div id="constructionDraftStatus" style="margin-top:10px"></div></div>');
+ modal(clone?'Clone Construction as Owner Draft':'Edit Construction Draft','<div class="notice info"><b>Owner-only draft.</b> This does not change Sales pricing or the published construction until it is explicitly promoted later.</div><div class="card" style="padding:16px;margin-top:12px"><label class="field"><span>Sales-facing construction name</span><input id="constructionDisplayName" value="'+esc(clone?(displayName(c)+' — Copy'):(existing.display_name||displayName(c)))+'"></label><label class="field"><span>Technical layer stack</span><input id="constructionLayerStack" value="'+esc(existing.layer_stack||layerText(c))+'" '+(clone?'':'readonly')+'></label><label class="field"><span>Finish</span><input id="constructionFinish" value="'+esc(existing.finish_type||finish(c))+'"></label><label class="field"><span>Barrier / material family</span><input id="constructionBarrier" value="'+esc(existing.barrier_type||materialFamily(c))+'"></label><label class="field"><span>Owner note / requested change</span><textarea id="constructionDraftNote" rows="4">'+esc(existing.comment||'')+'</textarea></label><div class="row wrap" style="gap:8px;margin-top:12px"><button class="btn outline" id="constructionSaveDraft">Save Owner Draft</button>'+(clone?'':'<button class="btn success" id="constructionPublish">Publish Naming</button>')+'</div><div id="constructionDraftStatus" style="margin-top:10px"></div></div>');
  q('#constructionSaveDraft').onclick=async()=>{
    if(!window.PV5DbReview)return alert('Review state is still loading. Please try again.');
    const display=(q('#constructionDisplayName')?.value||'').trim();
@@ -35,6 +36,28 @@ function openEdit(c,clone=false){
    const box=q('#constructionDraftStatus');box.textContent='Saving draft…';
    try{await window.PV5DbReview.save(k,'pending',payload);box.innerHTML='<span class="pill green">Owner draft saved</span>';await window.PV5DbReview.load?.();render()}catch(e){box.innerHTML='<span class="pill red">'+esc(e.message||e)+'</span>'}
  };
+ if(!clone){
+   const publish=q('#constructionPublish');
+   if(publish)publish.onclick=async()=>{
+     const display=(q('#constructionDisplayName')?.value||'').trim();
+     const stack=(q('#constructionLayerStack')?.value||'').trim();
+     if(!display||!stack)return alert('Construction name and layer stack are required.');
+     if(!confirm('Publish this sales-facing construction naming? The technical layer stack and pricing key will remain unchanged.'))return;
+     const box=q('#constructionDraftStatus');box.textContent='Publishing…';
+     try{
+       const r=await fetch(CONSTRUCTION_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+         action:'publish',construction_id:c.id,display_name:display,
+         finish_type:(q('#constructionFinish')?.value||'').trim(),
+         barrier_type:(q('#constructionBarrier')?.value||'').trim(),
+         comment:(q('#constructionDraftNote')?.value||'').trim()
+       })});
+       const b=await r.json();
+       if(!r.ok||!b.ok)throw new Error(b.error||'Unable to publish construction naming');
+       box.innerHTML='<span class="pill green">Published</span>';
+       await window.PV5DbReview.load?.();await load();render();
+     }catch(e){box.innerHTML='<span class="pill red">'+esc(e.message||e)+'</span>'}
+   };
+ }
 }
 function wireFilters(){const labels=qa('#page label.field');const layers=labels.find(l=>/Number of Layers/i.test(q(':scope>span',l)?.textContent||''))?.querySelector('select');const material=labels.find(l=>/Material Family/i.test(q(':scope>span',l)?.textContent||''))?.querySelector('select');const search=qa('#page .construction-filters input').find(i=>/Search constructions/i.test(i.placeholder||''))||q('#page .construction-filters input');if(layers&&!layers.dataset.crWired){layers.innerHTML='<option value="all">All Layers</option>'+[2,3,4].map(n=>'<option value="'+n+'">'+n+' Layers</option>').join('');layers.dataset.crWired='1';layers.onchange=()=>{filters.layers=layers.value;page=1;selected=filtered()[0]||null;render()}}if(material&&!material.dataset.crWired){const vals=[...new Set(constructions.map(materialFamily))].sort();material.innerHTML='<option value="all">All Material Families</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v.replaceAll('_',' '))+'</option>').join('');material.dataset.crWired='1';material.onchange=()=>{filters.material=material.value;page=1;selected=filtered()[0]||null;render()}}if(search&&!search.dataset.crWired){search.dataset.crWired='1';search.oninput=()=>{filters.search=search.value;page=1;selected=filtered()[0]||null;render()}}const reset=qa('#page .construction-filters button').find(b=>/Reset Filters/i.test(b.textContent||''));if(reset&&!reset.dataset.crWired){reset.dataset.crWired='1';reset.onclick=()=>{filters={layers:'all',material:'all',search:''};if(layers)layers.value='all';if(material)material.value='all';if(search)search.value='';page=1;selected=constructions[0]||null;render()}}}
 function render(){if(!onPage()||!constructions.length)return;wireFilters();const host=qa('#page .card').find(x=>/Construction Recipes/i.test(x.textContent||''));if(!host)return;const parent=host.parentElement;if(!parent)return;const existing=q('#pv5ConstructionReview');if(existing)existing.remove();host.style.display='none';const maybeDetail=qa('#page .card').find(x=>/Construction Details/i.test(x.textContent||''));if(maybeDetail)maybeDetail.style.display='none';const list=filtered();if(page>totalPages())page=totalPages();const start=(page-1)*PAGE_SIZE,rows=list.slice(start,start+PAGE_SIZE);if(!selected||!list.some(c=>String(c.id)===String(selected.id)))selected=rows[0]||list[0]||null;const wrap=document.createElement('div');wrap.id='pv5ConstructionReview';wrap.className='construction-layout';wrap.innerHTML='<div class="card matrix-card"><div class="panel-title"><div><h3>Construction Recipes ('+list.length+(list.length!==constructions.length?' filtered from '+constructions.length:'')+')</h3><span>Sales-friendly names with the exact technical layer stack underneath.</span></div><button class="btn primary" id="pv5NewConstruction">+ New Construction Draft</button></div><div class="table-wrap"><table class="table"><thead><tr><th>Construction Name</th><th>Layer Stack</th><th>Layers</th><th>Finish</th><th>Applicable Sizes</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+((rows.map(row).join(''))||'<tr><td colspan="7">No constructions match the current filters.</td></tr>')+'</tbody></table></div><div class="table-footer"><span>'+(list.length?'Showing '+(start+1)+'–'+Math.min(start+PAGE_SIZE,list.length)+' of '+list.length:'Showing 0 constructions')+'</span>'+pager()+'</div></div>'+details(selected);parent.appendChild(wrap);bind(wrap)}
