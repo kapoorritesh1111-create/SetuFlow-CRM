@@ -201,10 +201,11 @@ export async function POST(request: NextRequest) {
           const safe = toSalesPricingResultV5(result);
           const validationErrors = safe.ok ? [] : safe.validation_errors;
           const intentionallyUnavailable = validationErrors.some((message) => /^Quantity\s+[\d,]+\s+is not allowed for\s+/i.test(String(message)));
+          const incompatibleConstruction = validationErrors.some((message) => /is not compatible with/i.test(String(message)));
           return {
             quantity,
             ok: safe.ok,
-            availability: safe.ok ? 'priced' : intentionallyUnavailable ? 'not_producible' : 'needs_clarification',
+            availability: safe.ok ? 'priced' : intentionallyUnavailable ? 'not_producible' : incompatibleConstruction ? 'not_compatible' : 'needs_clarification',
             unit_price: safe.ok ? safe.selling_price.unit_price : null,
             product_total: safe.ok ? safe.selling_price.product_total : null,
             currency: safe.selling_price.currency,

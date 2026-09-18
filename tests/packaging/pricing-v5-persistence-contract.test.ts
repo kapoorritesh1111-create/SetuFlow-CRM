@@ -11,6 +11,9 @@ const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
+const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
+const compatibility=fs.readFileSync('src/lib/packaging-pricing-v5/construction-compatibility.ts','utf8');
+const snapshot=fs.readFileSync('src/lib/packaging-pricing-v5/snapshot.ts','utf8');
 const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts','utf8');
 const adminActions=fs.readFileSync('src/features/packaging/server/pricing-v5-admin-actions.ts','utf8');
 const matrixActions=fs.readFileSync('src/features/packaging/server/pricing-v5-matrix-actions.ts','utf8');
@@ -150,4 +153,29 @@ test('S52-PKG-V5: separate gusset cannot receive zipper, pouching or a second ma
   assert.match(engine,/charge\.code==='EXTRA_ZIPPER'&&!component\.apply_zipper/);
   assert.match(engine,/component\.apply_pouching/);
   assert.match(engine,/component\.apply_margin/);
+});
+
+
+test('S52-PKG-V5: Sales filters constructions by approved PE thickness and engine rejects invalid pairs',()=>{
+  assert.match(salesOptions,/allowed_pe_microns/);
+  assert.match(salesOptions,/pe_micron/);
+  assert.match(salesConfigurator,/compatibleConstructions/);
+  assert.match(salesConfigurator,/Approved PE/);
+  assert.match(compatibility,/170x250_bg50_50':\[95\]/);
+  assert.match(compatibility,/280x360_bg60_60':\[120\]/);
+  assert.match(engine,/constructionAllowedForSizeV5/);
+  assert.match(engine,/constructionCompatibilityErrorV5/);
+});
+
+test('S52-PKG-V5: Sales exposes only producible MOQ choices and Spot UV is manual snapshot-backed pricing',()=>{
+  assert.match(salesConfigurator,/validQuantities/);
+  assert.match(salesConfigurator,/Only producible quantities are selectable/);
+  assert.match(salesOptions,/EXTRA_SPOT_UV/);
+  assert.match(salesOptions,/pricing_mode:'manual'/);
+  assert.match(salesConfigurator,/Spot UV — Manual Price/);
+  assert.match(salesConfigurator,/manual_quote_charges/);
+  assert.match(engine,/Spot UV automatic pricing is on hold/);
+  assert.match(engine,/separate_quote_line/);
+  assert.match(snapshot,/input:SupPricingInputV5/);
+  assert.match(persistence,/p_internal_pricing/);
 });

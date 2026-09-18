@@ -1,6 +1,7 @@
 import { pricingSourceHash } from '../packaging-pricing/snapshot';
 import { resolveCommercialBandV5 } from './commercial-band-resolver';
 import { resolveConstructionV5 } from './construction-resolver';
+import { constructionAllowedForSizeV5, constructionCompatibilityErrorV5 } from './construction-compatibility';
 import { resolveProductionRouteV5 } from './production-route-resolver';
 import type {
   AlternativePriceV5,
@@ -33,6 +34,7 @@ function selectedCharges(context: PricingContextV5, codes: string[], errors: str
   return unique.map((code)=>{
     const charge=(context.charges ?? []).find((item)=>item.code===code)??null;
     if(!charge){errors.push(`${code} is not configured in Charge Master.`);return null;}
+    if(code==='EXTRA_SPOT_UV'){errors.push('Spot UV automatic pricing is on hold. Enter Spot UV as a manual quote charge instead.');return null;}
     if(charge.current_rate==null) errors.push(`${charge.name} needs a rate before it can be quoted.`);
     if(!charge.basis||!charge.application_stage) errors.push(`${charge.name} needs a pricing basis and application stage.`);
     if(charge.basis==='percent'){
@@ -44,6 +46,24 @@ function selectedCharges(context: PricingContextV5, codes: string[], errors: str
     }
     return charge;
   }).filter((item):item is ChargeMasterRateV5=>Boolean(item));
+}
+
+function manualQuoteCharges(context:PricingContextV5,input:SupPricingInputV5,errors:string[]){
+  const seen=new Set<string>();
+  const rows=[] as Array<{charge:ChargeMasterRateV5;amount:number}>;
+  for(const raw of input.manual_quote_charges??[]){
+    const code=String(raw?.code??'').trim();
+    if(!code) continue;
+    if(seen.has(code)){errors.push(`Manual quote charge ${code} was supplied more than once.`);continue;}
+    seen.add(code);
+    if(code!=='EXTRA_SPOT_UV'){errors.push(`${code} is not supported as a manual Pricing v5 quote charge.`);continue;}
+    const charge=(context.charges??[]).find((item)=>item.code===code)??null;
+    if(!charge){errors.push('Spot UV is not configured in Charge Master.');continue;}
+    const amount=n(raw.amount);
+    if(!Number.isFinite(amount)||amount<=0){errors.push('Spot UV manual price must be greater than zero when Spot UV is selected.');continue;}
+    rows.push({charge,amount:round(amount,2)});
+  }
+  return rows;
 }
 
 function materialAmount(master: CostMasterRateV5, webMm: number, runMm: number) {
@@ -129,7 +149,7 @@ function buildCostBreakdown(
   currency:string,
   quantity:number,
   components:CostedComponent[],
-  appliedChargeTotals:Map<string,{charge:ChargeMasterRateV5;amount:number}>,
+  appliedChargeTotals:Map<string,{charge:ChargeMasterRateV5;amount:number;application_stage?:string}>,
   productTotal:number,
 ):PricingCostBreakdownV5 {
   const totals=zeroBreakdown();
@@ -174,8 +194,12 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
   if (size && quantity && !quantityAllowed(size,quantity)) errors.push(`Quantity ${quantity.toLocaleString()} is not allowed for ${size.name}.`);
   if (!resolvedConstruction) errors.push('Selected Pricing v5 construction is not available.');
   if (resolvedConstruction) errors.push(...resolvedConstruction.validation_errors);
+  if(size?.is_quoteable&&resolvedConstruction?.construction.is_quoteable&&!constructionAllowedForSizeV5(size,resolvedConstruction.construction)){
+    errors.push(constructionCompatibilityErrorV5(size,resolvedConstruction.construction));
+  }
 
   const charges=selectedCharges(context,input.selected_charge_codes??[],errors);
+  const manualCharges=manualQuoteCharges(context,input,errors);
   for(const charge of charges){
     if(charge.application_stage==='separate_quote_line') errors.push(`${charge.name} is not enabled in the Pricing v5 quote flow yet.`);
   }
@@ -200,7 +224,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
   const pouching = resolvedConstruction ? requireMaster(context, 'PROC_POUCHING', errors) : null;
 
   const costedComponents: CostedComponent[] = [];
-  const appliedChargeTotals=new Map<string,{charge:ChargeMasterRateV5;amount:number}>();
+  const appliedChargeTotals=new Map<string,{charge:ChargeMasterRateV5;amount:number;application_stage?:string}>();
   if (route && resolvedConstruction && band && !errors.length) {
     for (const component of route.components) {
       const innerWebMm = stockWeb(component.web_needed_mm, innerLadder);
@@ -306,11 +330,16 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
     afterCoreTotal+=amount;
     appliedChargeTotals.set(charge.code,{charge,amount});
   }
-  const productTotal=coreProductTotal+afterCoreTotal;
+  let manualQuoteTotal=0;
+  for(const row of manualCharges){
+    manualQuoteTotal+=row.amount;
+    appliedChargeTotals.set(row.charge.code,{charge:row.charge,amount:row.amount,application_stage:'separate_quote_line'});
+  }
+  const productTotal=coreProductTotal+afterCoreTotal+manualQuoteTotal;
   const unitPrice = quantity ? productTotal / quantity : 0;
   const gstPct = n(context.template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
-  const appliedCharges=[...appliedChargeTotals.values()].map(({charge,amount})=>({code:charge.code,name:charge.name,application_stage:String(charge.application_stage),amount:round(amount,2)}));
+  const appliedCharges=[...appliedChargeTotals.values()].map(({charge,amount,application_stage})=>({code:charge.code,name:charge.name,application_stage:String(application_stage??charge.application_stage),amount:round(amount,2)}));
   const costBreakdown=buildCostBreakdown(context.template.currency,quantity,costedComponents,appliedChargeTotals,productTotal);
 
   const hashPayload = {
@@ -369,6 +398,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
       dimensions:size?{width_mm:size.width_mm,height_mm:size.height_mm,bottom_gusset_each_mm:size.bottom_gusset_each_mm}:null,
       construction_id:input.construction_id,print:input.print,quantity,bottom_print_mode:input.bottom_print_mode??null,
       selected_charge_codes:input.selected_charge_codes??[],
+      manual_quote_charges:(input.manual_quote_charges??[]).map((item)=>({code:item.code,amount:round(n(item.amount),2),note:item.note??null})),
     },
     construction:resolvedConstruction?{
       id:resolvedConstruction.construction.id,name:resolvedConstruction.construction.name,
