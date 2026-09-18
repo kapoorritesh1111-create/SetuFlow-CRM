@@ -35,6 +35,10 @@ export async function listSalesPackagingPricingV5Options(organizationId:string){
   const sizes=context.sizeProfiles.filter((item)=>item.is_active&&item.is_quoteable).map((item)=>({
     id:item.id,size_key:item.size_key,name:item.name,width_mm:item.width_mm,height_mm:item.height_mm,bottom_gusset_each_mm:item.bottom_gusset_each_mm,
     pricing_bucket:item.pricing_bucket,gusset_production_mode:item.gusset_production_mode,bottom_registration_mode:item.bottom_registration_mode,
+    quantity_rules:{
+      allowed_quantities:Array.isArray(item.metadata?.allowed_quantities)?item.metadata.allowed_quantities:[],
+      blocked_quantities:Array.isArray(item.metadata?.blocked_quantities)?item.metadata.blocked_quantities:[],
+    },
   }));
   const constructions=context.constructions.filter((item)=>item.is_active&&item.is_quoteable).map((item)=>{
     const resolved=resolveConstructionV5(item.id,context.constructions,context.constructionLayers,context.masters);
