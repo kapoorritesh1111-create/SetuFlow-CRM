@@ -63,8 +63,12 @@ function exportMatrix(){const rows=qa('#page table tr').map(r=>qa('th,td',r).map
 function handle(e){
  const b=e.target.closest('button,a');if(!b||b.closest('#modal'))return;
  const text=(b.textContent||'').trim(); const p=pageName();
- if(b.matches('[data-detail],[data-act],[data-cp],[data-rate-review],.pv5-page-preview,.pv5-page-edit,.pv5-page-approve,.pv5-page-change,#sizeSaveDraft,#sizePublish,#constructionSaveDraft,#constructionPublish,#rateSaveDraft,#ratePreview,#ratePublish'))return;
+ if(b.matches('[data-detail],[data-act],[data-cp],[data-rate-review],[data-band-review],[data-waste-live],.pv5-page-preview,.pv5-page-edit,.pv5-page-approve,.pv5-page-change,#sizeSaveDraft,#sizePublish,#constructionSaveDraft,#constructionPublish,#rateSaveDraft,#ratePreview,#ratePublish,#bandSave,#bandPreview,#bandPublish'))return;
  if(b.matches('[data-page]')||/View Approval Summary/i.test(text)||/Continue to Next Section/i.test(text))return;
+ if(/View Cross-Family Impact/i.test(text)){e.preventDefault();window.PV5?.go?.('approval');return}
+ if(/Save & Continue to Terms/i.test(text)){e.preventDefault();window.PV5?.go?.('approval');return}
+ if(/Save Draft/i.test(text)){e.preventDefault();reviewRequest('Review Draft Saved','Owner review progress was captured. Continue reviewing the related section before final approval.',2);return}
+ if(/Preview All/i.test(text)&&p.includes('Sizes')){e.preventDefault();window.PV5?.go?.('sizes');return}
  if(/Reset Filters/i.test(text)){e.preventDefault();qa('#page select').forEach(s=>s.selectedIndex=0);qa('#page input[type="search"],#page input[placeholder*="Search"]').forEach(i=>i.value='');return}
  if(/Export Matrix/i.test(text)){e.preventDefault();exportMatrix();return}
  if(/Compare Previous Version/i.test(text)){e.preventDefault();comparePrevious();return}
