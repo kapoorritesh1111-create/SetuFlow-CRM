@@ -62,14 +62,16 @@ function openEditor(btn){
  modal('Review / Change Rate','<div class="notice warn"><b>Safe owner edit.</b> Published pricing does not change until you press <b>Publish Rate</b>.</div><div class="card" style="padding:16px;margin-top:12px"><div class="detail-grid"><div><small>Rate</small><b>'+esc(name)+'</b></div><div><small>Published</small><b>'+money(current)+' '+esc(unit)+'</b></div><div><small>Microns</small><b>'+esc(micron||'—')+'</b></div><div><small>GSM</small><b>'+esc(gsm||'—')+'</b></div><div><small>Density</small><b>'+esc(density||'—')+'</b></div></div>'+(kind==='cost'?'<div class="detail-grid" style="margin-top:12px"><label class="field"><span>Microns</span><input id="rateMicron" type="number" min="0.01" step="0.01" value="'+esc(micron||'')+'"></label><label class="field"><span>Density</span><input id="rateDensity" type="number" min="0.01" step="0.001" value="'+esc(density||'')+'"></label><label class="field"><span>Calculated GSM</span><input id="rateGsm" type="number" min="0.01" step="0.001" value="'+esc(gsm||'')+'" readonly><small>Microns × density</small></label></div>':'')+'<label class="field" style="margin-top:14px"><span>Proposed rate</span><input id="rateProposed" type="number" min="0" step="0.01" value="'+esc(initial)+'"></label><label class="field"><span>Reason / source</span><textarea id="rateComment" rows="3" placeholder="Supplier update, management decision, correction...">'+esc(dv.comment||'')+'</textarea></label><div id="rateImpact" style="margin-top:12px"></div><div class="row wrap" style="gap:8px;margin-top:14px"><button class="btn outline" id="rateSaveDraft">Save Draft</button><button class="btn primary" id="ratePreview">Preview Impact</button><button class="btn success" id="ratePublish">Publish Rate</button></div><div id="rateStatus" style="margin-top:10px"></div></div>');
  let previewedRate=null;
  const proposed=()=>Number(q('#rateProposed')?.value);
+ const numberOrNull=(selector)=>{const raw=q(selector)?.value;if(raw==null||String(raw).trim()==='')return null;const value=Number(raw);return Number.isFinite(value)?value:null};
  const physical=()=>{
    if(kind!=='cost')return{};
-   const m=Number(q('#rateMicron')?.value),d=Number(q('#rateDensity')?.value);
-   const g=Number.isFinite(m)&&Number.isFinite(d)?m*d:Number(q('#rateGsm')?.value);
-   return {micron:Number.isFinite(m)?m:null,density:Number.isFinite(d)?d:null,gsm:Number.isFinite(g)?g:null};
+   const m=numberOrNull('#rateMicron'),d=numberOrNull('#rateDensity');
+   const storedGsm=numberOrNull('#rateGsm');
+   const g=m!=null&&d!=null?m*d:storedGsm;
+   return {micron:m,density:d,gsm:g};
  };
  const comment=()=>q('#rateComment')?.value?.trim()||'';
- const syncGsm=()=>{if(kind!=='cost')return;const m=Number(q('#rateMicron')?.value),d=Number(q('#rateDensity')?.value),box=q('#rateGsm');if(box&&Number.isFinite(m)&&Number.isFinite(d))box.value=String(Math.round(m*d*1000)/1000)};
+ const syncGsm=()=>{if(kind!=='cost')return;const m=numberOrNull('#rateMicron'),d=numberOrNull('#rateDensity'),box=q('#rateGsm');if(box)box.value=m!=null&&d!=null?String(Math.round(m*d*1000)/1000):''};
  q('#rateMicron')?.addEventListener('input',syncGsm);q('#rateDensity')?.addEventListener('input',syncGsm);
  const validate=()=>{const v=proposed();if(!Number.isFinite(v)||v<0){alert('Enter a valid rate of 0 or greater.');return null}return v};
  q('#rateProposed')?.addEventListener('input',()=>{previewedRate=null;const box=q('#rateImpact');if(box)box.innerHTML='';});
