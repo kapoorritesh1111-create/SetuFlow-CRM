@@ -177,5 +177,5 @@ test('S52-PKG-V5: Sales exposes only producible MOQ choices and Spot UV is manua
   assert.match(engine,/Spot UV automatic pricing is on hold/);
   assert.match(engine,/separate_quote_line/);
   assert.match(snapshot,/input:SupPricingInputV5/);
-  assert.match(persistence,/p_internal_pricing_snapshot/);
+  assert.match(persistence,/p_internal_pricing/);
 });
