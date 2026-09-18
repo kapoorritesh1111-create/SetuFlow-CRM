@@ -77,9 +77,9 @@ test('Pricing v5 review copy reflects 20 approved SUP sizes, not the superseded 
 });
 
 test('Pricing v5 review ladder is the approved 1K to 50K set',()=>{
-  const ladder='1000,2000,3000,5000,10000,20000,30000,50000';
-  must(previewRoute,new RegExp(ladder),'preview API matrix ladder');
-  must(matrix,new RegExp(ladder),'matrix pagination ladder');
+  const ladder=/1000,\s*2000,\s*3000,\s*5000,\s*10000,\s*20000,\s*30000,\s*50000/;
+  must(previewRoute,ladder,'preview API matrix ladder');
+  must(matrix,ladder,'matrix pagination ladder');
   mustNot(base,/rows\.slice\(0,8\)/,'base Premium shell must not own or truncate the live matrix');
 });
 
