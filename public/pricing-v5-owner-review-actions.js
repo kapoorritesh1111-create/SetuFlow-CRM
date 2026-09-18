@@ -75,7 +75,7 @@
     const s = read();
     const sizeRows = (window.__PV5_CATALOG__?.sizes || []);
     if (sizeRows.length) sizeRows.forEach(x => { s.kldApprovals[x.id] = 'approved'; });
-    else for (let i=0;i<20;i++) s.kldApprovals['sample-'+(i+1)]='approved';
+    else for (let i=0;i<21;i++) s.kldApprovals['sample-'+(i+1)]='approved';
     write(s);
     await post('kld-all-20','Owner approved all 21 Pricing v5 KLD review samples.','Approved');
     rerender('approval');
