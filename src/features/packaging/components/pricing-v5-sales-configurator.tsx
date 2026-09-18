@@ -9,6 +9,20 @@ function money(value: unknown, currency = 'INR') {
   return `${currency} ${Number.isFinite(amount) ? amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}`;
 }
 
+function quantityAllowedForSize(size: any, quantity: number) {
+  const metadata = size?.metadata ?? {};
+  const allowed = Array.isArray(metadata.allowed_quantities) ? metadata.allowed_quantities.map(Number).filter((value: number) => value > 0) : [];
+  const blocked = Array.isArray(metadata.blocked_quantities) ? metadata.blocked_quantities.map(Number).filter((value: number) => value > 0) : [];
+  if (blocked.includes(quantity)) return false;
+  if (allowed.length && !allowed.includes(quantity)) return false;
+  return true;
+}
+
+function firstValidReviewQuantity(size: any) {
+  const ladder = [1000, 2000, 3000, 5000, 10000, 20000, 30000, 50000];
+  return ladder.find((value) => quantityAllowedForSize(size, value)) ?? 1000;
+}
+
 function kldMatchesSize(item: any, size: any) {
   if (!item || !size) return false;
   const file = String(item.file_name ?? '').toLowerCase().replace(/\s+/g, '');
@@ -44,7 +58,8 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
   const construction = constructions.find((item: any) => item.id === constructionId) ?? constructions[0];
   const askBottomPrint = size?.bottom_registration_mode === 'optional' && size?.gusset_production_mode === 'conditional';
   const matchingKlds = useMemo(() => klds.filter((item: any) => kldMatchesSize(item, size)), [klds, size]);
-  const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && (!askBottomPrint || bottomPrintMode));
+  const quantityAllowed = quantityAllowedForSize(size, quantity);
+  const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && (!askBottomPrint || bottomPrintMode));
   const currency = preview?.selling_price?.currency ?? template?.currency ?? 'INR';
   const alternativeRows = useMemo(() => preview?.alternative_quantities ?? [], [preview]);
 
@@ -54,12 +69,13 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
   }, [sizes, constructions, sizeId, constructionId]);
 
   useEffect(() => {
+    if (!quantityAllowedForSize(size, quantity)) setQuantity(firstValidReviewQuantity(size));
     if (!askBottomPrint) setBottomPrintMode('');
     setKldFileId('');
     setPreview(null);
     setError('');
     setSaved('');
-  }, [sizeId, askBottomPrint]);
+  }, [sizeId, askBottomPrint, size, quantity]);
 
   function invalidate() {
     setPreview(null);
@@ -155,7 +171,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
           </div>
         </div>
 
-        {!canPrice ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Complete the required selections before calculating the price.</div> : null}
+        {!quantityAllowed ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">{quantity.toLocaleString()} pcs is not producible for this pouch size. Choose a valid quantity.</div> : !canPrice ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Complete the required selections before calculating the price.</div> : null}
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
         {saved ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{saved}</div> : null}
 
