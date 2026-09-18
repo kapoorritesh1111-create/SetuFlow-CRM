@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const STARK_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const TEMPLATE_ID = '5635e709-213d-4fb6-a9f8-2467021a4c64';
-const REVIEW_QUANTITIES = [5000, 10000, 15000, 20000] as const;
+const REVIEW_QUANTITIES = [1000, 2000, 5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000] as const;
 
 type ReviewBody = {
   size_profile_id?: unknown;
@@ -70,6 +70,7 @@ function safeCatalog(ctx: PricingContextV5) {
       route: s.gusset_production_mode, bottom_registration_mode: s.bottom_registration_mode, sort_order: s.sort_order,
       allowed_quantities: Array.isArray(s.metadata?.allowed_quantities) ? s.metadata.allowed_quantities : null,
       blocked_quantities: Array.isArray(s.metadata?.blocked_quantities) ? s.metadata.blocked_quantities : null,
+      trim_allowance_mm: Number(s.metadata?.trim_allowance_mm ?? ctx.template.production_rules_json?.trim_allowance_mm ?? 20),
     })),
     constructions: ctx.constructions.filter((c) => c.is_active && c.is_quoteable).map((c) => {
       const layerStack = (layersByConstruction.get(String(c.id)) || []).sort((a,b)=>a.position-b.position).map((x)=>x.label);
