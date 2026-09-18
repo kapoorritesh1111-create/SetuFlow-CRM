@@ -234,6 +234,9 @@ test('Waste and Matrix expose every commercial rule and price row with correct N
   await page.locator('#sideNav [data-page="matrix"]').click();
   const matrix=page.locator('#liveMatrix');
   await expect(matrix).toContainText('Showing 1–10 of 20 sizes • Page 1 of 2');
+  const needsReviewMetric=page.locator('.metric-card').filter({hasText:'Needs Review'});
+  await expect(needsReviewMetric).toContainText('158');
+  await expect(needsReviewMetric).toContainText('producible price points awaiting review');
 
   const firstRow=matrix.locator('tbody tr').first();
   await expect(firstRow.locator('td').nth(1)).toContainText('N/A');
