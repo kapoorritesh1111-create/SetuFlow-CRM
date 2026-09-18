@@ -229,3 +229,17 @@ test('S52-PKG-V5: 110x170 registered route reconciles Akshay COGS frame total',(
     'registered 110x170 RMC per frame should reconcile to the workbook COGS total');
   assert.ok(Math.abs(result.cost_breakdown.totals_for_job.zipper_cost/500-1.43)<0.00001);
 });
+
+
+test('S52-PKG-V5: rejects workbook N/A quantities configured on a size',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],
+    metadata:{allowed_quantities:[5000,10000],blocked_quantities:[15000]},
+  }]};
+  const blocked=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:15000});
+  assert.equal(blocked.ok,false);
+  assert.match(blocked.validation_errors.join(' '),/not allowed/i);
+  const allowed=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:10000});
+  assert.equal(allowed.ok,true,allowed.validation_errors.join(' '));
+  assert.ok(allowed.alternative_quantities.every((item)=>[5000,10000].includes(item.quantity)));
+});
