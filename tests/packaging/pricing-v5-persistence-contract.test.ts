@@ -139,6 +139,13 @@ test('S52-PKG-V5: Sales option projection never returns raw master rates or comm
   assert.match(salesOptions,/structure_label/);
 });
 
+test('S52-PKG-V5: Sales receives only safe allowed/blocked quantity rules for N/A enforcement',()=>{
+  assert.match(salesOptions,/quantity_rules/);
+  assert.match(salesOptions,/allowed_quantities/);
+  assert.match(salesOptions,/blocked_quantities/);
+  assert.doesNotMatch(salesOptions,/metadata:item\.metadata/);
+});
+
 test('S52-PKG-V5: separate gusset cannot receive zipper, pouching or a second margin',()=>{
   assert.match(engine,/charge\.code==='EXTRA_ZIPPER'&&!component\.apply_zipper/);
   assert.match(engine,/component\.apply_pouching/);
