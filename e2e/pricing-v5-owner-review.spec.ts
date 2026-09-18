@@ -14,7 +14,10 @@ const materials=[
   {id:'p1',code:'PROC_PRINT_CMYKW',name:'CMYKW Print',item_type:'process',current_rate:46,rate_basis:'per_frame',rate_uom:'frame'},
   {id:'p2',code:'PROC_LAMINATION',name:'Lamination',item_type:'process',current_rate:5,rate_basis:'per_running_metre',rate_uom:'running_m'},
 ];
-const charges=[{id:'z1',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,rate_uom:'running_m'}];
+const charges=[
+  {id:'z1',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,rate_uom:'running_m',configuration_complete:true},
+  {id:'uv1',code:'EXTRA_SPOT_UV',name:'Spot UV',category:'extra',basis:null,application_stage:null,current_rate:0,rate_uom:null,configuration_complete:false},
+];
 const bands=[
   {id:'b1',pricing_bucket:1,run_length_max_m:500,wastage_pct:20,margin_per_frame:70,sort_order:1,source_worksheet:'Wastages & Margins',source_row:1},
   {id:'b2',pricing_bucket:1,run_length_max_m:1000,wastage_pct:10,margin_per_frame:60,sort_order:2,source_worksheet:'Wastages & Margins',source_row:2},
@@ -128,6 +131,7 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 
   await page.locator('#sideNav').getByRole('button',{name:/Constructions/i}).click();
+  await expect(page.getByText(/Compatibility pending owner confirmation/i).first()).toBeVisible();
   await expect(page.getByRole('button',{name:/New Construction Draft/i})).toBeVisible();
   await page.getByRole('button',{name:/New Construction Draft/i}).click();
   await expect(page.locator('#modal')).toContainText(/Construction/i);
@@ -137,6 +141,13 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await expect(page.getByRole('button',{name:/Review \/ Change/i}).first()).toBeVisible();
   await page.getByRole('button',{name:/Review \/ Change/i}).first().click();
   await expect(page.locator('#modal')).toContainText('Review / Change Rate');
+  await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
+
+  const spotRow=page.getByRole('row').filter({hasText:'Spot UV'});
+  await expect(spotRow).toContainText('Configuration incomplete');
+  await spotRow.getByRole('button',{name:/Review \/ Configure/i}).click();
+  await expect(page.locator('#modal')).toContainText('Configuration incomplete');
+  await expect(page.locator('#ratePublish')).toBeDisabled();
   await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 
   await page.locator('#sideNav').getByRole('button',{name:/Waste & Margins/i}).click();
