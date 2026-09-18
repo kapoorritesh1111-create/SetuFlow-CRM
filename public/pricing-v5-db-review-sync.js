@@ -10,6 +10,7 @@ async function save(key,decision,value={}){const r=await fetch(API,{method:'POST
 function legacy(){try{return JSON.parse(localStorage.getItem(STORAGE)||'{}')}catch(_){return{}}}
 function hydrateLegacy(){if(hydrating)return;hydrating=true;try{const x={kldApprovals:{},businessApprovals:{},clarifications:{}};Object.values(db).forEach(item=>{const k=item.review_key,d=item.decision,v=item.value_json||{};if(k.startsWith('clarification:'))x.clarifications[k.slice(14)]=(v.answer||'')+'|||'+(v.comment||'');if(k.startsWith('business:'))x.businessApprovals[k.slice(9)]=d==='approved'?true:d==='needs_change'?false:undefined;if(k.startsWith('family:'))x.businessApprovals['family_'+k.slice(7)]=d==='approved'?true:d==='needs_change'?false:undefined;if(k.startsWith('kld:'))x.kldApprovals[k.slice(4)]=d==='approved'?'approved':d==='needs_change'?'change':undefined});localStorage.setItem(STORAGE,JSON.stringify(x))}catch(_){}finally{hydrating=false}}
 function decision(key){return db[key]?.decision||'pending'}
+function get(key){return db[key]||null}
 function count(prefix,decisionName){return Object.entries(db).filter(([k,v])=>k.startsWith(prefix)&&(!decisionName||v.decision===decisionName)).length}
 function textReplace(root,re,txt){qsa('*',root).filter(el=>el.children.length===0&&re.test(el.textContent||'')).forEach(el=>el.textContent=txt)}
 function reviewCounts(){const clarAnswered=count('clarification:','answered'),businessApproved=count('business:','approved'),familyApproved=count('family:','approved'),kldApproved=count('kld:','approved');return{clarAnswered,businessApproved,familyApproved,kldApproved,ready:clarAnswered>=6&&businessApproved>=8&&familyApproved>=6&&kldApproved>=20}}
@@ -28,5 +29,5 @@ document.addEventListener('pv5:page-rendered',schedulePatch);
 window.addEventListener('focus',()=>load());
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load()});
 observePage();load();
-window.PV5DbReview={load,save,decision,count};
+window.PV5DbReview={load,save,decision,count,get};
 })();
