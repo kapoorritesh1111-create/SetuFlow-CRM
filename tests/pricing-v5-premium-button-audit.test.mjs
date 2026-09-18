@@ -79,3 +79,18 @@ test('Pricing v5 review ladder is the approved 1K to 50K set',()=>{
   must(base,new RegExp(ladder),'base matrix ladder');
   must(matrix,new RegExp(ladder),'matrix pagination ladder');
 });
+
+test('Pricing v5 Sizes Constructions and Rates expose working pagination plus next-size review navigation',()=>{
+  must(sizes,/const PAGE_SIZE=10/,'Sizes page size');
+  must(sizes,/data-pv5-page="next"/,'Sizes Next page control');
+  must(sizes,/id="pv5NextSize"/,'Next Size control');
+  must(sizes,/moveToSize\(s,1\)/,'Next Size changes the reviewed size');
+  must(constructions,/const PAGE_SIZE=10/,'Construction page size');
+  must(constructions,/data-cp="next"/,'Construction Next page control');
+  must(constructions,/Page '\+page\+' of '\+totalPages\(\)/,'Construction page summary');
+  must(rates,/const PAGE=10/,'Rate page size');
+  must(rates,/data-rate-page="'\+kind\+':next"/,'Rate Next page control');
+  must(rates,/materials • Page/,'Material-rate page summary');
+  must(rates,/process\/add-on rates • Page/,'Process/add-on page summary');
+  must(premium,/dataset\.pv5Page/,'Global pager guard preserves the live Sizes pager');
+});

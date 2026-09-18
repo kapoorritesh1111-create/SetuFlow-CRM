@@ -4,15 +4,29 @@ const quantities=[1000,2000,3000,5000,10000,20000,30000,50000];
 const sizes=[
   {id:'s1',size_key:'80x130_bg25_25',name:'80mm x 130mm (25mm + 25mm bg)',width_mm:80,height_mm:130,bottom_gusset_each_mm:25,pricing_bucket:1,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',metadata:{blocked_quantities:[1000,2000]}},
   {id:'s2',size_key:'160x240_bg50_50',name:'160mm x 240mm (50mm + 50mm bg)',width_mm:160,height_mm:240,bottom_gusset_each_mm:50,pricing_bucket:3,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',metadata:{}},
+  ...Array.from({length:18},(_,i)=>({
+    id:'s'+(i+3),size_key:'uat_size_'+(i+3),name:'UAT Size '+(i+3),
+    width_mm:120+i*5,height_mm:200+i*5,bottom_gusset_each_mm:40+(i%4)*5,
+    pricing_bucket:Math.min(5,1+Math.floor(i/4)),gusset_production_mode:'integrated',
+    bottom_registration_mode:'not_applicable',metadata:{},
+  })),
 ];
 const constructions=[
   {id:'c1',construction_key:'matte_metpet_pe75',name:'Matt Finish With Metpet (Silver film) / PE75',display_name:'Matt Finish With Metpet (Silver film) / PE75',layer_stack:'18 Matt BOPP / 12 MetPET / PE 75µ',structure_label:'18 Matt BOPP / 12 MetPET / PE 75µ',layer_count:3,finish_type:'matte',barrier_type:'silver',is_quoteable:true},
   {id:'c2',construction_key:'glossy_clear_window_pe75',name:'Glossy clear window / PE75',display_name:'Glossy clear window / PE75',layer_stack:'12 Clear PET / PE 75µ',structure_label:'12 Clear PET / PE 75µ',layer_count:2,finish_type:'glossy',barrier_type:'clear',is_quoteable:true},
+  ...Array.from({length:42},(_,i)=>({
+    id:'c'+(i+3),construction_key:'uat_construction_'+(i+3),name:'UAT Construction '+(i+3),
+    display_name:'UAT Construction '+(i+3),layer_stack:(i%2?'12 PET / 12 MetPET / PE 75µ':'18 Matt BOPP / PE 75µ'),
+    structure_label:(i%2?'12 PET / 12 MetPET / PE 75µ':'18 Matt BOPP / PE 75µ'),
+    layer_count:i%2?3:2,finish_type:i%3?'glossy':'matte',barrier_type:i%2?'silver':'clear',is_quoteable:true,
+  })),
 ];
 const materials=[
   {id:'m1',code:'MAT_BOPP_MATT_18',name:'18 Matt BOPP',item_type:'material',micron:18,density:0.93,gsm:16.74,current_rate:190,rate_basis:'per_kg',rate_uom:'kg'},
+  ...Array.from({length:11},(_,i)=>({id:'m'+(i+2),code:'MAT_UAT_'+(i+2),name:'UAT Material '+(i+2),item_type:'material',micron:12+i,density:1,gsm:12+i,current_rate:100+i,rate_basis:'per_kg',rate_uom:'kg'})),
   {id:'p1',code:'PROC_PRINT_CMYKW',name:'CMYKW Print',item_type:'process',current_rate:46,rate_basis:'per_frame',rate_uom:'frame'},
   {id:'p2',code:'PROC_LAMINATION',name:'Lamination',item_type:'process',current_rate:5,rate_basis:'per_running_metre',rate_uom:'running_m'},
+  ...Array.from({length:9},(_,i)=>({id:'p'+(i+3),code:'PROC_UAT_'+(i+3),name:'UAT Process '+(i+3),item_type:'process',current_rate:10+i,rate_basis:'per_running_metre',rate_uom:'running_m'})),
 ];
 const charges=[
   {id:'z1',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,rate_uom:'running_m',configuration_complete:true},
@@ -143,6 +157,7 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await expect(page.locator('#modal')).toContainText('Review / Change Rate');
   await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 
+  await page.locator('[data-rate-page="p:next"]').click();
   const spotRow=page.getByRole('row').filter({hasText:'Spot UV'});
   await expect(spotRow).toContainText('Configuration incomplete');
   await spotRow.getByRole('button',{name:/Review \/ Configure/i}).click();
@@ -161,6 +176,36 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await expect(page.getByRole('heading',{name:'Impact & Approval',exact:true})).toBeVisible();
 });
 
+
+test('all Sizes, Constructions and Rates are reachable through pagination and size review advances to the next size',async({page})=>{
+  await page.goto('/pricing-v5-review-premium.html');
+
+  await page.locator('#sideNav [data-page="sizes"]').click();
+  await expect(page.locator('#pv5SizesPager')).toContainText('Showing 1–10 of 20 sizes');
+  const firstPageRows=page.locator('#page table tbody tr');
+  await firstPageRows.nth(9).getByRole('button',{name:/Preview/i}).click();
+  await expect(page.locator('#modal')).toContainText('Size 10 of 20');
+  await page.locator('#pv5NextSize').click();
+  await expect(page.locator('#modal')).toContainText('Size 11 of 20');
+  await expect(page.locator('#pv5SizesPager')).toContainText('Showing 11–20 of 20 sizes');
+  await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
+
+  await page.locator('#sideNav [data-page="constructions"]').click();
+  const constructionReview=page.locator('#pv5ConstructionReview');
+  await expect(constructionReview).toContainText('Showing 1–10 of 44 constructions • Page 1 of 5');
+  await constructionReview.locator('[data-cp="next"]').click();
+  await expect(constructionReview).toContainText('Showing 11–20 of 44 constructions • Page 2 of 5');
+  await constructionReview.locator('[data-cp="5"]').click();
+  await expect(constructionReview).toContainText('Showing 41–44 of 44 constructions • Page 5 of 5');
+
+  await page.locator('#sideNav [data-page="rates"]').click();
+  await expect(page.locator('.rates-layout > .card').nth(0)).toContainText('Showing 1–10 of 12 materials • Page 1 of 2');
+  await page.locator('[data-rate-page="m:next"]').click();
+  await expect(page.locator('.rates-layout > .card').nth(0)).toContainText('Showing 11–12 of 12 materials • Page 2 of 2');
+  await expect(page.locator('.rates-layout > .card').nth(1)).toContainText('Showing 1–10 of 13 process/add-on rates • Page 1 of 2');
+  await page.locator('[data-rate-page="p:next"]').click();
+  await expect(page.locator('.rates-layout > .card').nth(1)).toContainText('Showing 11–13 of 13 process/add-on rates • Page 2 of 2');
+});
 
 test('Pricing v5 review stays responsive through repeated owner navigation',async({page})=>{
   const pageErrors:string[]=[];
