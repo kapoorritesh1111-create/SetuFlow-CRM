@@ -8,7 +8,9 @@ const FAMILIES=[
  ['center_seal_roll','Center Seal — Roll Form','stark-center-seal-roll-v5-review'],
  ['center_seal_pouch','Center Seal — Pouch Form','stark-center-seal-pouch-v5-review'],
  ['three_side_seal_roll','3 Side Seal — Roll Form','stark-3ss-roll-v5-review'],
- ['three_side_seal_pouch','3 Side Seal — Pouch Form','stark-3ss-pouch-v5-review']
+ ['three_side_seal_pouch','3 Side Seal — Pouch Form','stark-3ss-pouch-v5-review'],
+ ['labels','Labels',null],
+ ['shrink_sleeves','Shrink Sleeves',null]
 ];
 let metadata=null,lastSignature='';
 const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
@@ -44,9 +46,10 @@ function renderContext(force=false){
  if(!force&&sig===lastSignature&&((key==='sup'&&!q('#pv5FamilyContext'))||(key!=='sup'&&q('#pv5FamilyContext'))))return;
  lastSignature=sig;removeContext();if(key==='sup')return;
  hideSupOnly();const page=q('#page');if(!page)return;const f=fam(key),m=metaFor(key);const section=document.createElement('section');section.id='pv5FamilyContext';section.className='card section';
- if(key==='flat_bottom'){
-   section.innerHTML='<div class="panel-title"><div><h3>'+esc(f[1])+' — Owner Review</h3><span>No approved Pricing v5 geometry or bucket mapping exists yet.</span></div><span class="pill amber">Clarification Required</span></div><div class="notice warn"><b>Pricing is intentionally blocked.</b> Flat Bottom cannot inherit Stand-Up Pouch buckets or geometry. Akshay must confirm the family-specific production geometry and commercial bucket mapping before prices are calculated.</div><div style="margin-top:12px"><button class="btn primary" id="pv5FlatQuestion">Answer Flat Bottom / Family Geometry Question →</button></div>';
-   insert(section);q('#pv5FlatQuestion')?.addEventListener('click',()=>window.PV5PremiumInteractions?.goClarification?.(5));return;
+ if(key==='flat_bottom'||key==='labels'||key==='shrink_sleeves'){
+   const guidance=key==='flat_bottom'?'Confirm family-specific production geometry and commercial bucket mapping.':key==='labels'?'Confirm label sizes, substrates, print/finish rules, production geometry and commercial mapping.':'Confirm sleeve dimensions, substrate/micron, print/seaming rules, production geometry and commercial mapping.';
+   section.innerHTML='<div class="panel-title"><div><h3>'+esc(f[1])+' — Owner Review</h3><span>No approved Pricing v5 geometry or bucket mapping exists yet.</span></div><span class="pill amber">Clarification Required</span></div><div class="notice warn"><b>Pricing is intentionally blocked.</b> Flat Bottom cannot inherit Stand-Up Pouch buckets or geometry. '+esc(guidance)+' Pricing remains blocked until this family is explicitly configured; SETU will not reuse Stand-Up assumptions.</div><div style="margin-top:12px"><button class="btn primary" id="pv5FlatQuestion">Answer Flat Bottom / Family Geometry Question →</button></div>';
+   insert(section);q('#pv5FlatQuestion')?.addEventListener('click',()=>window.PV5?.go?.('families'));return;
  }
  if(!m){section.innerHTML='<div class="notice warn">Loading '+esc(f[1])+' review data…</div>';insert(section);return}
  const cons=m.constructions||[],sizes=m.sizes||[];
