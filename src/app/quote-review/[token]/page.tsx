@@ -30,7 +30,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
 
   const [{ data: lead }, { data: lines }, { data: attachments }] = await Promise.all([
     admin.from('leads').select('company_name,contact_name').eq('id', quote.lead_id).eq('organization_id', quote.organization_id).maybeSingle(),
-    admin.from('quote_line_items').select('id,line_type,product_id,quantity,unit_price,currency,notes,input_snapshot_json,packaging_family_id,packaging_product_variation_id,packaging_kld_file_id').eq('quote_id', quote.id).order('created_at'),
+    admin.from('quote_line_items').select('id,line_type,product_id,quantity,unit_price,currency,notes,input_snapshot_json,pricing_breakdown_json,packaging_family_id,packaging_product_variation_id,packaging_kld_file_id').eq('quote_id', quote.id).order('created_at'),
     admin.from('lead_attachments').select('id,file_name,mime_type,attachment_type,created_at').eq('lead_id', quote.lead_id).eq('organization_id', quote.organization_id).order('created_at', { ascending: true }),
   ]);
 
@@ -87,12 +87,31 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               const kld = line.packaging_kld_file_id ? byKld.get(String(line.packaging_kld_file_id)) : null;
               const name = product?.name || variation?.name || family?.name || line.notes || `Packaging item ${index + 1}`;
               const lineTotal = Number(line.quantity || 0) * Number(line.unit_price || 0);
+              const alternatives = Array.isArray(line.pricing_breakdown_json?.alternative_quantities)
+                ? line.pricing_breakdown_json.alternative_quantities.filter((row: any) => Number(row.quantity) > Number(line.quantity || 0)).slice(0, 5)
+                : [];
               return (
                 <article key={line.id} className="rounded-2xl border border-slate-200 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1"><h3 className="text-lg font-black">{name}</h3><p className="mt-1 text-sm font-semibold text-slate-500">{snapshot.spec_summary || line.notes || family?.description || product?.description || 'Packaging specification as quoted.'}</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">{variation?.capacity_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.capacity_label}</span> : null}{variation?.dimension_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.dimension_label}</span> : null}{input.finish ? <span className="rounded-full bg-slate-100 px-3 py-1">Finish: {label(input.finish)}</span> : null}{input.zipper ? <span className="rounded-full bg-slate-100 px-3 py-1">Zipper</span> : null}{input.print_colors ? <span className="rounded-full bg-slate-100 px-3 py-1">{input.print_colors}-color print</span> : null}</div></div>
                     <div className="text-right"><div className="text-sm font-bold text-slate-500">{Number(line.quantity || 0).toLocaleString()} pcs × {money(line.unit_price, line.currency || currency)}</div><div className="mt-1 text-lg font-black">{money(lineTotal, line.currency || currency)}</div></div>
                   </div>
+
+                  {alternatives.length ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Higher-volume options</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-600">Higher quantities can reduce the per-piece manufacturing cost. These are options only; your requested quantity is not changed automatically.</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                      {alternatives.map((row: any) => {
+                        const saving = Number(line.unit_price || 0) > 0 ? ((Number(line.unit_price) - Number(row.unit_price)) / Number(line.unit_price)) * 100 : 0;
+                        return <div key={row.quantity} className="rounded-xl border border-emerald-200 bg-white p-3">
+                          <div className="text-xs font-black text-slate-900">{Number(row.quantity).toLocaleString()} pcs</div>
+                          <div className="mt-1 text-sm font-black text-emerald-700">{money(row.unit_price, line.currency || currency)} / pc</div>
+                          <div className="mt-1 text-[11px] font-semibold text-slate-500">{money(row.product_total, line.currency || currency)} order</div>
+                          {saving > 0 ? <div className="mt-1 text-[11px] font-black text-emerald-700">{saving.toFixed(1)}% lower / pc</div> : null}
+                        </div>;
+                      })}
+                    </div>
+                  </div> : null}
 
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div className="rounded-2xl bg-cyan-50 p-4"><p className="text-xs font-black uppercase tracking-wide text-cyan-700">02 · Sample KLD / Dieline</p><p className="mt-1 text-sm font-black">{kld?.file_name || 'KLD selected for this product'}</p><p className="mt-1 text-xs font-semibold text-slate-500">Structural layout for artwork placement and design review.</p>{kld?.public_token ? <a target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex rounded-xl bg-cyan-700 px-3 py-2 text-xs font-black text-white" href={`/api/public/packaging-kld/${kld.public_token}`}>Open sample KLD ↗</a> : <span className="mt-3 inline-flex rounded-xl bg-slate-200 px-3 py-2 text-xs font-black text-slate-500">KLD preview coming from Design</span>}</div>
