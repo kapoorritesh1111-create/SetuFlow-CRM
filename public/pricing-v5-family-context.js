@@ -38,6 +38,8 @@ function removeContext(){q('#pv5FamilyContext')?.remove();qa('[data-pv5-sup-only
 function hideSupOnly(){
  const title=pageTitle();
  if(/Waste/i.test(title))qa('.metric-grid,.card').forEach(el=>{const t=el.textContent||'';if(/Quantity Buckets|Impact Preview|What to change if prices are too high/i.test(t))hide(el)});
+ if(/Sizes|Constructions/i.test(title))qa('#page > .metric-grid,#page > .filters,#page > .construction-layout,#page > .sizes-bottom,#page > .card.section').forEach(hide);
+ if(/Competitor/i.test(title))qa('#page > .competitor-filters,#page > .competitor-metrics,#page > .competitor-layout').forEach(hide);
  if(/Pricing Dashboard|Price Matrix|Sales Quote/i.test(title))qa('.dashboard-main,.matrix-card,.sales-layout,.quote-layout,.step-strip').forEach(hide);
  function hide(el){if(!el||el.id==='pv5FamilyContext'||el.dataset.pv5SupOnlyHidden)return;el.dataset.pv5OldDisplay=el.style.display||'';el.dataset.pv5SupOnlyHidden='1';el.style.display='none'}
 }
@@ -48,7 +50,7 @@ function renderContext(force=false){
  hideSupOnly();const page=q('#page');if(!page)return;const f=fam(key),m=metaFor(key);const section=document.createElement('section');section.id='pv5FamilyContext';section.className='card section';
  if(key==='flat_bottom'||key==='labels'||key==='shrink_sleeves'){
    const guidance=key==='flat_bottom'?'Confirm family-specific production geometry and commercial bucket mapping.':key==='labels'?'Confirm label sizes, substrates, print/finish rules, production geometry and commercial mapping.':'Confirm sleeve dimensions, substrate/micron, print/seaming rules, production geometry and commercial mapping.';
-   section.innerHTML='<div class="panel-title"><div><h3>'+esc(f[1])+' — Owner Review</h3><span>No approved Pricing v5 geometry or bucket mapping exists yet.</span></div><span class="pill amber">Clarification Required</span></div><div class="notice warn"><b>Pricing is intentionally blocked.</b> Flat Bottom cannot inherit Stand-Up Pouch buckets or geometry. '+esc(guidance)+' Pricing remains blocked until this family is explicitly configured; SETU will not reuse Stand-Up assumptions.</div><div style="margin-top:12px"><button class="btn primary" id="pv5FlatQuestion">Open Family Setup Review →</button></div>';
+   section.innerHTML='<div class="panel-title"><div><h3>'+esc(f[1])+' — Owner Review</h3><span>No approved Pricing v5 geometry or bucket mapping exists yet.</span></div><span class="pill amber">Clarification Required</span></div><div class="notice warn"><b>Pricing is intentionally blocked.</b> This family cannot inherit Stand-Up Pouch buckets or geometry. '+esc(guidance)+' Pricing remains blocked until this family is explicitly configured; SETU will not reuse Stand-Up assumptions.</div><div style="margin-top:12px"><button class="btn primary" id="pv5FlatQuestion">Open Family Setup Review →</button></div>';
    insert(section);q('#pv5FlatQuestion')?.addEventListener('click',()=>window.PV5?.go?.('families'));return;
  }
  if(!m){section.innerHTML='<div class="notice warn">Loading '+esc(f[1])+' review data…</div>';insert(section);return}
