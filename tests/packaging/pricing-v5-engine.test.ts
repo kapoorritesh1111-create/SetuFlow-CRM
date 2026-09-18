@@ -266,6 +266,22 @@ test('S52-PKG-V5: rejects workbook N/A quantities configured on a size',()=>{
 });
 
 
+test('S52-PKG-V5: owner clarification blocks 1K and 2K for N/A small-size rows',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],
+    id:'n-a-small',
+    name:'98 x 150',
+    metadata:{blocked_quantities:[1000,2000]},
+  }]};
+  const q1=calculateSupFormulaV5(context,{size_profile_id:'n-a-small',construction_id:'c3',print:'CMYKW',quantity:1000});
+  const q2=calculateSupFormulaV5(context,{size_profile_id:'n-a-small',construction_id:'c3',print:'CMYKW',quantity:2000});
+  const q3=calculateSupFormulaV5(context,{size_profile_id:'n-a-small',construction_id:'c3',print:'CMYKW',quantity:3000});
+  assert.equal(q1.ok,false);
+  assert.equal(q2.ok,false);
+  assert.equal(q3.ok,true,q3.validation_errors.join(' '));
+  assert.ok(q3.alternative_quantities.every((item)=>![1000,2000].includes(item.quantity)));
+});
+
 test('S52-PKG-V5: Akshay 98x150 registered model uses 10mm trim and resolves 22 units per frame',()=>{
   const context:PricingContextV5={...base,sizeProfiles:[{
     ...base.sizeProfiles[0],id:'small98',size_key:'98x150_bg30_30',name:'98 x 150',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,
