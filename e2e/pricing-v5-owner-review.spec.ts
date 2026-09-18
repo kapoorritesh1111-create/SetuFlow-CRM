@@ -24,7 +24,7 @@ const bands=[
 function matrixRows(){
   return sizes.map((s,i)=>({
     size_profile_id:s.id,size_key:s.size_key,size_name:s.name,
-    prices:quantities.map((quantity)=>({quantity,ok:!(s.metadata.blocked_quantities||[]).includes(quantity),unit_price:10+i+5000/quantity,product_total:(10+i+5000/quantity)*quantity}))
+    prices:quantities.map((quantity)=>({quantity,ok:!(((s.metadata as any).blocked_quantities)||[]).includes(quantity),unit_price:10+i+5000/quantity,product_total:(10+i+5000/quantity)*quantity}))
   }));
 }
 function singleResult(quantity=5000){
