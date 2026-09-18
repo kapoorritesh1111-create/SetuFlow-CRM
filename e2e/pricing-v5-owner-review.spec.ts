@@ -1,0 +1,140 @@
+import { expect, test } from '@playwright/test';
+
+const quantities=[1000,2000,3000,5000,10000,20000,30000,50000];
+const sizes=[
+  {id:'s1',size_key:'80x130_bg25_25',name:'80mm x 130mm (25mm + 25mm bg)',width_mm:80,height_mm:130,bottom_gusset_each_mm:25,pricing_bucket:1,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',metadata:{blocked_quantities:[1000,2000]}},
+  {id:'s2',size_key:'160x240_bg50_50',name:'160mm x 240mm (50mm + 50mm bg)',width_mm:160,height_mm:240,bottom_gusset_each_mm:50,pricing_bucket:3,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',metadata:{}},
+];
+const constructions=[
+  {id:'c1',construction_key:'matte_metpet_pe75',name:'Matt Finish With Metpet (Silver film) / PE75',display_name:'Matt Finish With Metpet (Silver film) / PE75',layer_stack:'18 Matt BOPP / 12 MetPET / PE 75µ',structure_label:'18 Matt BOPP / 12 MetPET / PE 75µ',layer_count:3,finish_type:'matte',barrier_type:'silver',is_quoteable:true},
+  {id:'c2',construction_key:'glossy_clear_window_pe75',name:'Glossy clear window / PE75',display_name:'Glossy clear window / PE75',layer_stack:'12 Clear PET / PE 75µ',structure_label:'12 Clear PET / PE 75µ',layer_count:2,finish_type:'glossy',barrier_type:'clear',is_quoteable:true},
+];
+const materials=[
+  {id:'m1',code:'MAT_BOPP_MATT_18',name:'18 Matt BOPP',item_type:'material',micron:18,density:0.93,gsm:16.74,current_rate:190,rate_basis:'per_kg',rate_uom:'kg'},
+  {id:'p1',code:'PROC_PRINT_CMYKW',name:'CMYKW Print',item_type:'process',current_rate:46,rate_basis:'per_frame',rate_uom:'frame'},
+  {id:'p2',code:'PROC_LAMINATION',name:'Lamination',item_type:'process',current_rate:5,rate_basis:'per_running_metre',rate_uom:'running_m'},
+];
+const charges=[{id:'z1',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,rate_uom:'running_m'}];
+const bands=[
+  {id:'b1',pricing_bucket:1,run_length_max_m:500,wastage_pct:20,margin_per_frame:70,sort_order:1,source_worksheet:'Wastages & Margins',source_row:1},
+  {id:'b2',pricing_bucket:1,run_length_max_m:1000,wastage_pct:10,margin_per_frame:60,sort_order:2,source_worksheet:'Wastages & Margins',source_row:2},
+  {id:'b3',pricing_bucket:3,run_length_max_m:1000,wastage_pct:10,margin_per_frame:25,sort_order:3,source_worksheet:'Wastages & Margins',source_row:3},
+];
+
+function matrixRows(){
+  return sizes.map((s,i)=>({
+    size_profile_id:s.id,size_key:s.size_key,size_name:s.name,
+    prices:quantities.map((quantity)=>({quantity,ok:!(s.metadata.blocked_quantities||[]).includes(quantity),unit_price:10+i+5000/quantity,product_total:(10+i+5000/quantity)*quantity}))
+  }));
+}
+function singleResult(quantity=5000){
+  const unit=15.83605329;
+  return {
+    ok:true,
+    selling_price:{unit_price:unit,product_total:unit*quantity,gst:unit*quantity*.18,grand_total_before_freight:unit*quantity*1.18,currency:'INR'},
+    construction:{id:'c1',name:constructions[0].name,layer_count:3,structure_label:constructions[0].layer_stack},
+    production_route:{route_type:'integrated',components:[{key:'main_body',units_per_frame:7,run_length_m:800}]},
+    commercial_rules:{bucket_no:3,run_length_m:800,band_max_m:1000,wastage_pct:10,margin_per_frame:25},
+    cost_breakdown:{
+      per_unit:{material_cost:2.18,printing_cost:6.57,lamination_cost:.8,slitting_cost:.32,pouch_making_cost:1.28,zipper_cost:.21,other_process_cost:0,base_production_cost:11.36,waste_cost:1.14,margin_cost:3.34,additional_charges_cost:0,final_price:unit},
+      totals_for_job:{material_cost:10900,printing_cost:32850,lamination_cost:4000,slitting_cost:1600,pouch_making_cost:6400,zipper_cost:1050,other_process_cost:0,base_production_cost:56800,waste_cost:5700,margin_cost:16680,additional_charges_cost:0,final_price:unit*quantity},
+      reconciliation_delta:0
+    },
+    alternative_quantities:quantities.filter(q=>q>=quantity).slice(0,6).map(q=>({quantity:q,unit_price:unit,product_total:unit*q,run_length_m:800,wastage_pct:10,margin_per_frame:25})),
+    validation_errors:[],warnings:[]
+  };
+}
+
+test.beforeEach(async({page})=>{
+  await page.route('**/api/public/pricing-v5-*',async(route)=>{
+    const request=route.request();
+    const url=new URL(request.url());
+    const p=url.pathname;
+    let body:any={ok:true};
+
+    if(p.endsWith('/pricing-v5-review-preview')){
+      if(request.method()==='GET') body={ok:true,sizes,constructions,charges,review_quantities:quantities};
+      else {
+        let payload:any={}; try{payload=request.postDataJSON()}catch{}
+        body=payload?.matrix?{ok:true,rows:matrixRows()}:{ok:true,result:singleResult(Number(payload?.quantity||5000)),review_details:{production_route:{route_type:'integrated',components:[{units_per_frame:7}]},commercial_rules:{bucket_no:3,run_length_m:800,wastage_pct:10,margin_per_frame:25},validation_errors:[]}};
+      }
+    } else if(p.endsWith('/pricing-v5-family-review')){
+      body={ok:true,families:{
+        sup:{name:'Stand Up Pouches',state:'published_baseline',template:{name:'SUP Pricing v5',row_count:20,engine:'sup_formula_v5'}},
+        flat_bottom:{name:'Flat Bottom Pouches',state:'needs_configuration',clarification:'Geometry required.'},
+        center_seal_roll:{name:'Center Seal — Roll Form',state:'review_baseline',template:{name:'Center Seal Review',row_count:2,engine:'matrix'}},
+        center_seal_pouch:{name:'Center Seal — Pouch Form',state:'review_baseline',template:{name:'Center Seal Review',row_count:2,engine:'matrix'}},
+        three_side_seal_roll:{name:'3 Side Seal — Roll Form',state:'review_baseline',template:{name:'3SS Review',row_count:2,engine:'matrix'}},
+        three_side_seal_pouch:{name:'3 Side Seal — Pouch Form',state:'review_baseline',template:{name:'3SS Review',row_count:2,engine:'matrix'}},
+      }};
+    } else if(p.endsWith('/pricing-v5-owner-review-state')){
+      if(request.method()==='GET') body={ok:true,items:[]};
+      else {
+        let payload:any={}; try{payload=request.postDataJSON()}catch{}
+        body={ok:true,item:{review_key:payload.review_key,decision:payload.decision,value_json:payload.value_json||{},reviewer_name:'Stark Packmate Owner',updated_at:new Date().toISOString()}};
+      }
+    } else if(p.endsWith('/pricing-v5-review-rates')){
+      body={ok:true,materials,charges,drafts:[],commercial_bands:bands};
+    } else if(p.endsWith('/pricing-v5-review-commercial-bands')){
+      body={ok:true,commercial_bands:bands,bands};
+    } else if(p.endsWith('/pricing-v5-review-constructions')){
+      body={ok:true,constructions};
+    } else if(p.endsWith('/pricing-v5-review-sizes')){
+      body={ok:true,sizes};
+    } else if(p.endsWith('/pricing-v5-frame-family-review')){
+      body={ok:true,families:[]};
+    } else if(p.endsWith('/pricing-v5-feedback')){
+      body={ok:true};
+    }
+
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
+  });
+});
+
+test('owner can navigate every Pricing v5 premium section',async({page})=>{
+  const pageErrors:string[]=[];
+  page.on('pageerror',e=>pageErrors.push(e.message));
+  await page.goto('/pricing-v5-review-premium.html');
+  await expect(page.getByRole('heading',{name:'Pricing Dashboard'})).toBeVisible();
+
+  for(const title of ['Sizes & KLDs','Constructions','Rates & Charges','Waste & Margins','Price Matrix','Competitor Evaluator','Sales Quote','Packaging Families','Impact & Approval']){
+    const escaped=title.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&');
+    await page.locator('#sideNav').getByRole('button',{name:new RegExp(escaped,'i')}).click();
+    await expect(page.getByRole('heading',{name:title,exact:true})).toBeVisible();
+  }
+  expect(pageErrors).toEqual([]);
+});
+
+test('critical Pricing v5 owner actions open the correct live review controls',async({page})=>{
+  await page.goto('/pricing-v5-review-premium.html');
+  await expect(page.getByRole('heading',{name:'Pricing Dashboard'})).toBeVisible();
+
+  await page.getByRole('button',{name:/View Full Matrix/i}).click();
+  await expect(page.getByRole('heading',{name:'Price Matrix',exact:true})).toBeVisible();
+
+  await page.getByRole('button',{name:/Review Exceptions/i}).click();
+  await expect(page.locator('#modal')).toContainText('Review Exceptions');
+  await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
+
+  await page.locator('#sideNav').getByRole('button',{name:/Constructions/i}).click();
+  await expect(page.getByRole('button',{name:/New Construction Draft/i})).toBeVisible();
+  await page.getByRole('button',{name:/New Construction Draft/i}).click();
+  await expect(page.locator('#modal')).toContainText(/Construction/i);
+  await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
+
+  await page.locator('#sideNav').getByRole('button',{name:/Rates & Charges/i}).click();
+  await expect(page.getByRole('button',{name:/Review \/ Change/i}).first()).toBeVisible();
+  await page.getByRole('button',{name:/Review \/ Change/i}).first().click();
+  await expect(page.locator('#modal')).toContainText('Review / Change Rate');
+  await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
+
+  await page.locator('#sideNav').getByRole('button',{name:/Waste & Margins/i}).click();
+  await expect(page.getByRole('button',{name:/Review \/ Request Change/i}).first()).toBeVisible();
+  await page.getByRole('button',{name:/Review \/ Request Change/i}).first().click();
+  await expect(page.locator('#modal')).toContainText('Review / Change Commercial Band');
+  await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
+
+  await page.locator('#sideNav').getByRole('button',{name:/Sales Quote/i}).click();
+  await page.getByRole('button',{name:/Save & Continue to Terms/i}).click();
+  await expect(page.getByRole('heading',{name:'Impact & Approval',exact:true})).toBeVisible();
+});
