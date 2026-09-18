@@ -4,7 +4,7 @@ const API='/api/public/pricing-v5-frame-family-review';
 const FEEDBACK='/api/public/pricing-v5-feedback';
 const STORAGE='setu_pricing_v5_family_comparison_v1';
 let metadata=null;
-let inserted=false;
+let inserted=false,observeTimer=null;
 const $=(s,r=document)=>r.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=v=>Number.isFinite(Number(v))?'₹'+Number(v).toFixed(2):'—';
@@ -57,6 +57,6 @@ ${warnings.length?'<div class="pv5fc-warning"><b>Review notes:</b><br>'+warnings
  $('#pv5fcApprove').onclick=()=>decision('Approved',c);$('#pv5fcChange').onclick=()=>decision('Needs Change',c);$('#pv5fcClarify').onclick=()=>window.PV5PremiumInteractions?.goClarification?.(5)}
 async function decision(status,c){const note=String($('#pv5fcOwnerNote')?.value||'').trim();if(status==='Needs Change'&&!note){alert('Please explain what needs to change.');return}const f=currentFamily();const all=saved();all[f.template_slug]={status,note,at:new Date().toISOString(),comparison:c};save(all);await feedback('family-migration-'+f.template_slug,`${f.label}: ${status}. ${note||'Owner reviewed v4 baseline against Pricing v5 calculation.'}`,status);$('#pv5fcStatus').textContent=status==='Approved'?'✓ Family comparison approved':'● Needs Change saved'}
 async function init(){try{const r=await fetch(API,{cache:'no-store'});const b=await r.json();if(!r.ok||b.ok===false)throw new Error(b.error||'Unable to load family comparison data');metadata=b}catch(e){metadata={families:[]};console.error('[family-comparison]',e)}observe()}
-function observe(){const tick=()=>{if(pageIsFamilies()){if(!$('#pv5FamilyCompare')&&metadata?.families?.length)renderShell()}else inserted=false};new MutationObserver(tick).observe(document.documentElement,{subtree:true,childList:true});setInterval(tick,800);tick()}
+function observe(){const tick=()=>{if(pageIsFamilies()){if(!$('#pv5FamilyCompare')&&metadata?.families?.length)renderShell()}else inserted=false};const schedule=()=>{if(observeTimer)clearTimeout(observeTimer);observeTimer=setTimeout(()=>{observeTimer=null;tick()},90)};new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});tick()}
 init();
 })();
