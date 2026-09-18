@@ -412,7 +412,7 @@
   }
 
   const clarificationItems = [
-    ['160x240-standard', 'Which Sales size should be standard going forward?', 'Pricing v5 workbook uses 160 × 240 while the existing v4 baseline uses 160 × 230.', ['160 × 240', '160 × 230', 'Keep both']],
+    ['160x240-standard', 'Confirm the approved 160 × 230 / 160 × 240 size policy', 'Both 160 × 230 and 160 × 240 are approved as separate valid SUP sizes.', ['160 × 240', '160 × 230', 'Keep both']],
     ['invalid-combinations', 'Are any size × construction combinations not manufacturable?', 'If yes, identify them so SETU hides them instead of allowing an invalid quote.', ['All 44 apply to all 21 SUP sizes', 'Restrictions exist — see comment']],
     ['missing-kld-policy', 'What should Sales do when production KLD is not yet approved?', 'Review samples are available, but production dielines may arrive later.', ['Allow quote + show Production KLD pending', 'Allow quote using review sample reference', 'Block quote until production KLD']],
     ['competitor-directional', 'How should directional competitor evidence be handled?', 'Exact like-for-like evidence can be averaged. Directional evidence should never silently become an exact market average.', ['Show directional but exclude from average', 'Show exact evidence only']],
