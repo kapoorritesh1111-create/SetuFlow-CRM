@@ -131,6 +131,7 @@ test('S52-PKG-V5: 160x230 workbook 4-layer foil example reconciles exactly at 5,
       ...base.sizeProfiles[0],id:'wb160-4',size_key:'160x230_bg50_50',name:'160 x 230',width_mm:160,height_mm:230,bottom_gusset_each_mm:50,
       pricing_bucket:3,production_profile_key:'sup_integrated',gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',
     }],
+    masters:base.masters.map((item)=>item.id==='foil'?{...item,current_rate:550}:item),
     charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{}}],
   };
   const result=calculateSupFormulaV5(context,{size_profile_id:'wb160-4',construction_id:'c4',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_ZIPPER']});
