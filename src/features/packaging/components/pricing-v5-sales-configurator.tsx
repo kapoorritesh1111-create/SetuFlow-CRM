@@ -10,7 +10,7 @@ function money(value: unknown, currency = 'INR') {
 }
 
 function quantityAllowedForSize(size: any, quantity: number) {
-  const metadata = size?.metadata ?? {};
+  const metadata = size?.quantity_rules ?? size?.metadata ?? {};
   const allowed = Array.isArray(metadata.allowed_quantities) ? metadata.allowed_quantities.map(Number).filter((value: number) => value > 0) : [];
   const blocked = Array.isArray(metadata.blocked_quantities) ? metadata.blocked_quantities.map(Number).filter((value: number) => value > 0) : [];
   if (blocked.includes(quantity)) return false;
