@@ -20,12 +20,13 @@ set metadata = (coalesce(metadata,'{}'::jsonb)
 where organization_id='b97913cb-3b95-4247-8ced-ffdc0d392d2a'
   and template_id='5635e709-213d-4fb6-a9f8-2467021a4c64';
 
--- 2,000 pcs is explicitly N/A in the older reference for these six approved sizes.
+-- Owner clarification (2026-09-18): 1,000 pcs is not producible for the sizes marked N/A.
+-- The older reference also marks 2,000 pcs N/A for these six approved sizes.
 update public.packaging_size_profiles_v5
 set metadata = coalesce(metadata,'{}'::jsonb)
   || jsonb_build_object(
-    'blocked_quantities', '[2000]'::jsonb,
-    'blocked_quantity_source', 'legacy SUP quantity reference: 2K explicitly N/A'
+    'blocked_quantities', '[1000,2000]'::jsonb,
+    'blocked_quantity_source', 'owner clarification: 1K not producible for N/A sizes; legacy reference: 2K explicitly N/A'
   ),
   updated_at = now()
 where organization_id='b97913cb-3b95-4247-8ced-ffdc0d392d2a'
