@@ -20,6 +20,7 @@ type ReviewBody = {
   route_override?: unknown;
   matrix?: unknown;
   rate_override?: unknown;
+  band_override?: unknown;
 };
 
 async function context(): Promise<PricingContextV5> {
@@ -109,6 +110,15 @@ function contextWithRateOverride(ctx: PricingContextV5, value: unknown): Pricing
   return { ...ctx, charges: (ctx.charges ?? []).map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
 }
 
+function contextWithBandOverride(ctx: PricingContextV5, value: unknown): PricingContextV5 {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return ctx;
+  const input=value as Record<string,unknown>;
+  const bandId=typeof input.band_id==='string'?input.band_id:'';
+  const waste=Number(input.wastage_pct), margin=Number(input.margin_per_frame);
+  if(!bandId||!Number.isFinite(waste)||waste<0||waste>100||!Number.isFinite(margin)||margin<0)return ctx;
+  return {...ctx,bands:ctx.bands.map((band)=>String(band.id)===bandId?{...band,wastage_pct:waste,margin_per_frame:margin}:band)};
+}
+
 function contextWithRouteOverride(ctx: PricingContextV5, sizeId: string, override: unknown): PricingContextV5 {
   const route = override === 'separate' || override === 'integrated' || override === 'conditional' ? override : null;
   if (!route) return ctx;
@@ -164,7 +174,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const loadedCtx = await context();
-    const baseCtx = contextWithRateOverride(loadedCtx, body.rate_override);
+    const rateCtx = contextWithRateOverride(loadedCtx, body.rate_override);
+    const baseCtx = contextWithBandOverride(rateCtx, body.band_override);
     const allowedSizes = baseCtx.sizeProfiles.filter((s) => s.is_active && s.is_quoteable);
     const allowedConstructions = baseCtx.constructions.filter((c) => c.is_active && c.is_quoteable);
     const constructionId = typeof body.construction_id === 'string' ? body.construction_id : allowedConstructions[0]?.id;
