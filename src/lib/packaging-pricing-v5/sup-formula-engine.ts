@@ -58,6 +58,19 @@ function processAmount(master: CostMasterRateV5, runM: number) {
   return n(master.current_rate);
 }
 
+function quantityAllowed(size: PricingContextV5['sizeProfiles'][number], quantity: number) {
+  const metadata=size.metadata ?? {};
+  const allowed=Array.isArray(metadata.allowed_quantities)
+    ? metadata.allowed_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
+    : [];
+  const blocked=Array.isArray(metadata.blocked_quantities)
+    ? metadata.blocked_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
+    : [];
+  if (blocked.includes(quantity)) return false;
+  if (allowed.length && !allowed.includes(quantity)) return false;
+  return true;
+}
+
 function beforeCommercialChargePerFrame(charge:ChargeMasterRateV5,component:{key:string;apply_zipper:boolean;units_per_frame:number;web_run_mm_per_frame:number},errors:string[]){
   if(charge.application_stage!=='before_wastage_margin') return 0;
   if(charge.code==='EXTRA_ZIPPER'&&!component.apply_zipper) return 0;
@@ -158,6 +171,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
 
   if (!quantity) errors.push('Quantity is required.');
   if (!size) errors.push('Selected Pricing v5 size is not available.');
+  if (size && quantity && !quantityAllowed(size,quantity)) errors.push(`Quantity ${quantity.toLocaleString()} is not allowed for ${size.name}.`);
   if (!resolvedConstruction) errors.push('Selected Pricing v5 construction is not available.');
   if (resolvedConstruction) errors.push(...resolvedConstruction.validation_errors);
 

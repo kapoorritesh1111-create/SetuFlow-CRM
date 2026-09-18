@@ -19,25 +19,69 @@ type ReviewBody = {
   bottom_print_mode?: unknown;
   route_override?: unknown;
   matrix?: unknown;
+  rate_override?: unknown;
 };
 
 async function context(): Promise<PricingContextV5> {
   return loadPricingContextV5(STARK_ORG_ID, TEMPLATE_ID, { publishedOnly: true });
 }
 
+function constructionDisplayName(familyKey: string, fallback: string) {
+  const names: Record<string,string> = {
+    glossy_clear_window: 'Glossy Clear Window',
+    matte_frosted_window: 'Matte Finish Print With Frosted Window',
+    glossy_metpet: 'Glossy Finish Print With Foil',
+    matte_metpet: 'Matte Finish Print With Foil',
+    glossy_al_foil: 'Glossy Finish Print With Aluminium Foil — High Barrier',
+    glossy_al_foil_double_pet: 'Glossy Finish Print With Aluminium Foil — Double PET',
+    matte_al_foil: 'Matte Finish Print With Aluminium Foil — High Barrier',
+    satin_matt_metpet: 'Satin Matte Finish Print With Foil',
+    velvet_matt_metpet: 'Velvet Touch Matte Finish Print With Foil',
+    glossy_holo_metpet: 'Glossy Finish Print With Holo MetPET',
+    matte_holo_metpet: 'Matte Finish Print With Holo MetPET',
+  };
+  return names[familyKey] || fallback;
+}
+
+function materialDisplayName(name: string) {
+  return name
+    .replace(/MetPET/i,'MetPET / Silver Film')
+    .replace(/Met Pet/i,'MetPET / Silver Film')
+    .replace(/PE\s+(\d+)µ?/i,'$1 PE')
+    .replace(/^12 PET$/i,'12 PET')
+    .replace(/^18 Matt BOPP$/i,'18 Matt BOPP');
+}
+
 function safeCatalog(ctx: PricingContextV5) {
+  const masterById = new Map(ctx.masters.map((m) => [String(m.id), m]));
+  const layersByConstruction = new Map<string, Array<{position:number; label:string}>>();
+  for (const layer of ctx.constructionLayers) {
+    const master = masterById.get(String(layer.cost_master_item_id));
+    if (!master) continue;
+    const list = layersByConstruction.get(String(layer.construction_id)) || [];
+    list.push({ position:Number(layer.layer_position), label:materialDisplayName(master.name) });
+    layersByConstruction.set(String(layer.construction_id), list);
+  }
   return {
     template: { id: ctx.template.id, name: ctx.template.name, currency: ctx.template.currency, status: ctx.template.status },
     sizes: ctx.sizeProfiles.filter((s) => s.is_active && s.is_quoteable).map((s) => ({
       id: s.id, key: s.size_key, name: s.name, width_mm: s.width_mm, height_mm: s.height_mm,
       bottom_gusset_each_mm: s.bottom_gusset_each_mm, pricing_bucket: s.pricing_bucket,
       route: s.gusset_production_mode, bottom_registration_mode: s.bottom_registration_mode, sort_order: s.sort_order,
+      allowed_quantities: Array.isArray(s.metadata?.allowed_quantities) ? s.metadata.allowed_quantities : null,
+      blocked_quantities: Array.isArray(s.metadata?.blocked_quantities) ? s.metadata.blocked_quantities : null,
     })),
-    constructions: ctx.constructions.filter((c) => c.is_active && c.is_quoteable).map((c) => ({
-      id: c.id, key: c.construction_key, family_key: c.construction_family_key, name: c.name,
-      layer_count: c.layer_count, finish_type: c.finish_type, barrier_type: c.barrier_type, sort_order: c.sort_order,
-    })),
-    charges: (ctx.charges ?? []).filter((c) => c.current_rate != null).map((c) => ({ code: c.code, name: c.name, category: c.category })),
+    constructions: ctx.constructions.filter((c) => c.is_active && c.is_quoteable).map((c) => {
+      const layerStack = (layersByConstruction.get(String(c.id)) || []).sort((a,b)=>a.position-b.position).map((x)=>x.label);
+      return {
+        id: c.id, key: c.construction_key, family_key: c.construction_family_key, name: c.name,
+        display_name: typeof c.metadata?.sales_display_name === 'string' && c.metadata.sales_display_name.trim() ? c.metadata.sales_display_name.trim() : constructionDisplayName(c.construction_family_key,c.name),
+        layer_stack: layerStack.join(' / '),
+        layers: layerStack,
+        layer_count: c.layer_count, finish_type: c.finish_type, barrier_type: c.barrier_type, sort_order: c.sort_order,
+      };
+    }),
+    charges: (ctx.charges ?? []).filter((c) => c.current_rate != null).map((c) => ({ id:c.id, code: c.code, name: c.name, category: c.category })),
     review_quantities: REVIEW_QUANTITIES,
   };
 }
@@ -49,6 +93,19 @@ function mode(value: unknown): BottomPrintModeV5 | undefined {
 function chargeCodes(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.filter((x): x is string => typeof x === 'string').slice(0, 20);
+}
+
+function contextWithRateOverride(ctx: PricingContextV5, value: unknown): PricingContextV5 {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return ctx;
+  const input = value as Record<string, unknown>;
+  const kind = input.kind === 'charge' ? 'charge' : input.kind === 'cost' ? 'cost' : null;
+  const itemId = typeof input.item_id === 'string' ? input.item_id : '';
+  const proposed = Number(input.proposed_rate);
+  if (!kind || !itemId || !Number.isFinite(proposed) || proposed < 0 || proposed > 10000000) return ctx;
+  if (kind === 'cost') {
+    return { ...ctx, masters: ctx.masters.map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
+  }
+  return { ...ctx, charges: (ctx.charges ?? []).map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
 }
 
 function contextWithRouteOverride(ctx: PricingContextV5, sizeId: string, override: unknown): PricingContextV5 {
@@ -105,7 +162,8 @@ export async function POST(request: NextRequest) {
   catch { return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 }); }
 
   try {
-    const baseCtx = await context();
+    const loadedCtx = await context();
+    const baseCtx = contextWithRateOverride(loadedCtx, body.rate_override);
     const allowedSizes = baseCtx.sizeProfiles.filter((s) => s.is_active && s.is_quoteable);
     const allowedConstructions = baseCtx.constructions.filter((c) => c.is_active && c.is_quoteable);
     const constructionId = typeof body.construction_id === 'string' ? body.construction_id : allowedConstructions[0]?.id;
