@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateSupFormulaV5 } from '../../src/lib/packaging-pricing-v5/sup-formula-engine';
-import { toSalesPricingResultV5 } from '../../src/lib/packaging-pricing-v5/engine-registry';
+import { toSalesQuotePricingResultV5 } from '../../src/lib/packaging-pricing-v5/engine-registry';
 import { resolveCommercialBandV5 } from '../../src/lib/packaging-pricing-v5/commercial-band-resolver';
 import { allowedPeMicronsForSupSizeV5 } from '../../src/lib/packaging-pricing-v5/construction-compatibility';
 import type { PricingContextV5 } from '../../src/lib/packaging-pricing-v5/types';
@@ -475,7 +475,7 @@ test('S52-PKG-V5: Spot UV is manual quote-level pricing while automatic Spot UV 
 test('S52-PKG-V5: Sales payload exposes selling prices but redacts COGS, run length, wastage and margin',()=>{
   const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,true,result.validation_errors.join(' '));
-  const sales:any=toSalesPricingResultV5(result);
+  const sales:any=toSalesQuotePricingResultV5(result);
   assert.equal(sales.selling_price.unit_price,result.selling_price.unit_price);
   assert.equal('cost_breakdown' in sales,false);
   assert.equal('commercial_rules' in sales,false);
@@ -492,7 +492,7 @@ test('S52-PKG-V5: Sales payload exposes selling prices but redacts COGS, run len
 test('S52-PKG-V5: Sales higher-quantity suggestions have at least three valid engine-calculated steps when available',()=>{
   const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,true,result.validation_errors.join(' '));
-  const sales:any=toSalesPricingResultV5(result);
+  const sales:any=toSalesQuotePricingResultV5(result);
   const next=sales.alternative_quantities.filter((item:any)=>Number(item.quantity)>5000).slice(0,3);
   assert.deepEqual(next.map((item:any)=>item.quantity),[10000,20000,30000]);
   assert.ok(next.every((item:any)=>Number.isFinite(item.unit_price)&&Number.isFinite(item.product_total)));

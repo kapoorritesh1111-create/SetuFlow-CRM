@@ -15,6 +15,7 @@ const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matri
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
 const salesProjection=fs.readFileSync('src/lib/packaging-pricing-v5/engine-registry.ts','utf8');
+const salesActions=fs.readFileSync('src/features/packaging/server/pricing-v5-actions.ts','utf8');
 const savedLineProjection=fs.readFileSync('src/lib/packaging-pricing-v5/saved-line.ts','utf8');
 const compatibility=fs.readFileSync('src/lib/packaging-pricing-v5/construction-compatibility.ts','utf8');
 const snapshot=fs.readFileSync('src/lib/packaging-pricing-v5/snapshot.ts','utf8');
@@ -226,11 +227,17 @@ test('S52-PKG-V5: Sales shows only the next three producible quantity suggestion
   assert.match(salesConfigurator,/Save \{money\(row\.saving_per_unit,currency\)\} \/ pc/);
 });
 
-test('S52-PKG-V5: Sales-safe pricing projection does not send internal COGS or commercial rules to the browser',()=>{
-  assert.doesNotMatch(salesProjection,/cost_breakdown: result\.cost_breakdown/);
-  assert.doesNotMatch(salesProjection,/commercial_rules: result\.commercial_rules/);
-  assert.doesNotMatch(salesProjection,/source_hash: result\.source_hash/);
-  assert.doesNotMatch(salesProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
-  assert.doesNotMatch(salesProjection,/units_per_frame: component\.units_per_frame/);
-  assert.match(salesProjection,/alternative_quantities: result\.alternative_quantities\.map/);
+test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review retains engine reconciliation detail',()=>{
+  assert.match(salesProjection,/export function toSalesPricingResultV5/);
+  assert.match(salesProjection,/cost_breakdown: result\.cost_breakdown/);
+  assert.match(salesProjection,/export function toSalesQuotePricingResultV5/);
+  const quoteProjection=salesProjection.split('export function toSalesQuotePricingResultV5')[1] || '';
+  assert.doesNotMatch(quoteProjection,/cost_breakdown: result\.cost_breakdown/);
+  assert.doesNotMatch(quoteProjection,/commercial_rules: result\.commercial_rules/);
+  assert.doesNotMatch(quoteProjection,/source_hash: result\.source_hash/);
+  assert.doesNotMatch(quoteProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
+  assert.doesNotMatch(quoteProjection,/units_per_frame: component\.units_per_frame/);
+  assert.match(quoteProjection,/alternative_quantities: result\.alternative_quantities\.map/);
+  assert.match(salesActions,/toSalesQuotePricingResultV5/);
+  assert.doesNotMatch(salesActions,/toSalesPricingResultV5/);
 });
