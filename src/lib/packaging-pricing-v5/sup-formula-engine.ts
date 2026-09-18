@@ -328,7 +328,15 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
 
   const alternatives: AlternativePriceV5[] = [];
   if (includeAlternatives && !errors.length) {
-    const targets = [quantity,10000,15000,20000].filter((value,index,all)=>value>0&&all.indexOf(value)===index).sort((a,b)=>a-b);
+    const configured = Array.isArray(size?.metadata?.allowed_quantities)
+      ? size!.metadata!.allowed_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
+      : [1000,2000,5000,10000,15000,20000,25000,30000,40000,50000];
+    const blocked = Array.isArray(size?.metadata?.blocked_quantities)
+      ? size!.metadata!.blocked_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
+      : [];
+    const ladder = [...new Set(configured)].filter((value)=>!blocked.includes(value)).sort((a,b)=>a-b);
+    const higher = ladder.filter((value)=>value>quantity).slice(0,5);
+    const targets = [quantity,...higher].filter((value,index,all)=>value>0&&all.indexOf(value)===index);
     for (const target of targets) {
       if (target===quantity) {
         alternatives.push({ quantity,unit_price:round(unitPrice,8),product_total:round(productTotal,2),run_length_m:round(primaryRunLengthM,8),wastage_pct:band?.wastage_pct??0,margin_per_frame:band?.margin_per_frame??0 });
