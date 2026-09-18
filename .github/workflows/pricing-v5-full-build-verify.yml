@@ -1,0 +1,19 @@
+name: Pricing v5 full build verification
+on:
+  push:
+    branches: [verify/pricing-v5-sales-full-build]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Full application build
+        run: npm run build
