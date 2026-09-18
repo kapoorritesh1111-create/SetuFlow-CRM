@@ -95,7 +95,6 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
   useEffect(() => {
     if (!quantityAllowedForSize(size, quantity)) setQuantity(firstValidReviewQuantity(size));
     if (!askBottomPrint) setBottomPrintMode('');
-    setKldFileId('');
     setPreview(null);
     setError('');
     setSaved('');
@@ -216,7 +215,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
         <div className="rounded-2xl border border-slate-200 p-4">
           <div className="flex items-center justify-between gap-2"><div><div className="text-xs font-black text-slate-900">1. Customer requirement</div><div className="mt-1 text-[11px] text-slate-500">Choose only what Sales should know. Internal costing remains hidden.</div></div><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600">Sales view</span></div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <label className="text-xs font-black text-slate-600">Pouch size<select value={size?.id ?? ''} onChange={(e) => setSizeId(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="text-xs font-black text-slate-600">Pouch size<select value={size?.id ?? ''} onChange={(e) => { setSizeId(e.target.value); setKldFileId(''); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Dimensions</div><div className="mt-1 text-sm font-black text-slate-800">{size?.width_mm} × {size?.height_mm} mm · BG {size?.bottom_gusset_each_mm}+{size?.bottom_gusset_each_mm}</div></div>
             <label className="text-xs font-black text-slate-600">Material & finish<select value={construction?.id ?? ''} disabled={!compatibleConstructions.length} onChange={(e) => { setConstructionId(e.target.value); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 disabled:bg-slate-100">{compatibleConstructions.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="mt-1 block text-[11px] font-semibold text-teal-700">{compatibleConstructions.length ? `Approved PE ${(size?.allowed_pe_microns ?? []).join(' / ')}µ · ${compatibleConstructions.length} compatible construction${compatibleConstructions.length===1?'':'s'}` : 'No approved construction is configured for this size.'}</span></label>
             <label className="text-xs font-black text-slate-600">Printing<select value={print} onChange={(e) => { setPrint(e.target.value as 'CMYK' | 'CMYKW'); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900"><option value="CMYK">CMYK</option><option value="CMYKW">CMYKW</option></select></label>

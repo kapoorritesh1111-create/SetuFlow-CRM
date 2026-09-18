@@ -213,7 +213,8 @@ test('S52-PKG-V5: Sales Quote supports editing an existing v5 line without dupli
 });
 
 test('S52-PKG-V5: changing quantity keeps a selected KLD while changing size clears it',()=>{
-  assert.match(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId\]\);/);
+  assert.match(salesConfigurator,/setSizeId\(e\.target\.value\); setKldFileId\(''\); invalidate\(\);/);
+  assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId\]\);/);
   assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId, askBottomPrint, size, quantity\]\);/);
 });
 
