@@ -30,6 +30,8 @@ type PdfData = {
   validUntil: string;
   terms: string;
   rows: PdfRow[];
+  taxTotal?: number;
+  taxLabel?: string;
   logoImage?: PdfImage | null;
 };
 
@@ -105,7 +107,9 @@ function buildPdf(data: PdfData) {
   const box = (x: number, y: number, w: number, h: number, fill?: string, stroke?: string) => { if (fill) ops.push(`${rgb(fill)} rg ${x} ${y} ${w} ${h} re f`); if (stroke) ops.push(`${rgb(stroke)} RG ${x} ${y} ${w} ${h} re S`); };
   const line = (x1: number, y1: number, x2: number, y2: number, color = LINE, lineWidth = 0.7) => ops.push(`${rgb(color)} RG ${lineWidth} w ${x1} ${y1} m ${x2} ${y2} l S`);
   const put = (x: number, y: number, value: string, size = 7, bold = false, color = INK, alignRight = false) => copy.push({ x, y, text: value, size, bold, color, right: alignRight });
-  const total = data.rows.reduce((sum, row) => sum + row.total, 0);
+  const subtotal = data.rows.reduce((sum, row) => sum + row.total, 0);
+  const taxTotal = Math.max(0, num(data.taxTotal));
+  const total = subtotal + taxTotal;
   const logo = orgLogoMark(data.org);
 
   box(0, 0, 612, 792, '#ffffff');
@@ -186,7 +190,7 @@ function buildPdf(data: PdfData) {
 
   box(314, y - 68, 274, 68, PANEL, LINE);
   put(326, y - 15, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY);
-  [['Subtotal', money(total, data.currency)], ['Freight / insurance', 'Not included'], ['Taxes / duties', 'Per Incoterm'], ['Amount payable', money(total, data.currency)]].forEach(([label, value], index) => {
+  [['Subtotal', money(subtotal, data.currency)], ['Freight / insurance', 'Not included'], [taxTotal > 0 ? (data.taxLabel || 'GST') : 'Taxes / duties', taxTotal > 0 ? money(taxTotal, data.currency) : 'Per Incoterm'], ['Amount payable', money(total, data.currency)]].forEach(([label, value], index) => {
     put(326, y - 31 - index * 10, label, 5.8, false, MUTED);
     put(580, y - 31 - index * 10, value, 5.8, index === 3, INK, true);
   });
@@ -240,7 +244,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
       : Promise.resolve({ data: null });
 
   const [{ data: items }, { data: org }, { data: country }, { data: freight }] = await Promise.all([
-    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes, line_type, input_snapshot_json').eq('quote_id', quote.id).order('created_at', { ascending: true }),
+    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes, line_type, input_snapshot_json, pricing_breakdown_json, calculation_version').eq('quote_id', quote.id).order('created_at', { ascending: true }),
     db.from('organizations').select('id, name, legal_name, logo_storage_path, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     countryPromise,
     quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', organizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
@@ -261,6 +265,10 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
   const logoImage = await loadOrganizationLogo(db, organizationId, org);
   const { data: optionalCharges } = await db.from('quote_optional_charges').select('label, amount, currency').eq('organization_id', organizationId).eq('quote_id', quote.id);
+
+  const v5TaxTotal = lines.reduce((sum, line) => line.line_type === 'packaging' && Number(line.calculation_version) === 5
+    ? sum + Math.max(0, num(line.pricing_breakdown_json?.selling_price?.gst))
+    : sum, 0);
 
   const rows: PdfRow[] = lines.map((line) => {
     if (line.line_type === 'packaging') {
@@ -291,6 +299,8 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     validUntil: dateText(quote.valid_until),
     terms: text(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'),
     rows,
+    taxTotal: v5TaxTotal,
+    taxLabel: v5TaxTotal > 0 ? 'GST' : undefined,
     logoImage,
   });
 

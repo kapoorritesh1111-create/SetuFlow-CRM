@@ -255,3 +255,16 @@ test('S52-PKG-V5: manual Spot UV reconciles across Sales review, approval totals
   assert.match(quotePdf,/from\('quote_optional_charges'\)/);
   assert.match(quotePdf,/rows\.push\(\{ sku: '—', product: text\(charge\.label/);
 });
+
+
+test('S52-PKG-V5: snapshotted GST reconciles from Sales pricing through review, approval and PDF',()=>{
+  assert.match(canonicalQuoteBuilder,/function pricingV5TaxTotal/);
+  assert.match(canonicalQuoteBuilder,/pricing_breakdown_json\?\.selling_price\?\.gst/);
+  assert.match(canonicalQuoteBuilder,/Total incl\. GST/);
+  assert.match(approvalQuoteBuilder,/function pricingV5TaxTotal/);
+  assert.match(approvalQuoteBuilder,/pricing_breakdown_json\?\.selling_price\?\.gst/);
+  assert.match(quotePdf,/pricing_breakdown_json, calculation_version/);
+  assert.match(quotePdf,/const v5TaxTotal/);
+  assert.match(quotePdf,/taxLabel: v5TaxTotal > 0 \? 'GST'/);
+  assert.match(quotePdf,/const total = subtotal \+ taxTotal/);
+});
