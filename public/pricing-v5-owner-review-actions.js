@@ -66,13 +66,13 @@
   }
 
   async function approveAllKld() {
-    if (!confirm('Approve all 21 Pricing v5 KLD review samples? This approves the review samples only; production KLDs can still replace them later.')) return;
+    if (!confirm('Approve all 20 Pricing v5 KLD review samples? This approves the review samples only; production KLDs can still replace them later.')) return;
     const s = read();
     const sizeRows = (window.__PV5_CATALOG__?.sizes || []);
     if (sizeRows.length) sizeRows.forEach(x => { s.kldApprovals[x.id] = 'approved'; });
-    else for (let i=0;i<21;i++) s.kldApprovals['sample-'+(i+1)]='approved';
+    else for (let i=0;i<20;i++) s.kldApprovals['sample-'+(i+1)]='approved';
     write(s);
-    await post('kld-all-21','Owner approved all 21 Pricing v5 KLD review samples.','Approved');
+    await post('kld-all-20','Owner approved all 20 Pricing v5 KLD review samples.','Approved');
     rerender('approval');
   }
 
