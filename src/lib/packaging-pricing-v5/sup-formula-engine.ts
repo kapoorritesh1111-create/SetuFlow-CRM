@@ -213,7 +213,12 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
       let materialPerFrame = 0;
       const materialBreakdown: Array<Record<string, unknown>> = [];
       for (const layer of resolvedConstruction.layers) {
-        const web = layer.is_print_layer ? outerPrintWebMm : layer.is_sealant_layer ? peWebMm : innerWebMm;
+        // Stark's SUP workbook runs aluminium foil on the 760 mm outer web even when
+        // foil is a middle barrier layer. PET/MetPET middle layers continue to use the
+        // inner stock-web ladder; PE sealant continues to use the PE ladder.
+        const web = layer.is_print_layer || layer.master.code === 'MAT_AL_FOIL_9'
+          ? outerPrintWebMm
+          : layer.is_sealant_layer ? peWebMm : innerWebMm;
         const usage = materialAmount(layer.master, web, component.web_run_mm_per_frame);
         materialPerFrame += usage.amount;
         materialBreakdown.push({
