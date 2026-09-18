@@ -98,7 +98,8 @@ export async function POST(request: NextRequest) {
   if (!template?.id) return NextResponse.json({ ok:false,error:'pricing_template_not_found' },{status:404});
   const table=kind==='charge'?'packaging_pricing_charge_rates_v5':'packaging_pricing_cost_rates_v5';
   const idColumn=kind==='charge'?'charge_master_item_id':'cost_master_item_id';
-  const { data: currentRow, error: currentError }=await (admin as any).from(table).select('current_rate,micron_override,gsm_override,density_override,metadata').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId).maybeSingle();
+  const selectColumns=kind==='charge'?'current_rate,metadata':'current_rate,micron_override,gsm_override,density_override,metadata';
+  const { data: currentRow, error: currentError }=await (admin as any).from(table).select(selectColumns).eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId).maybeSingle();
   if (currentError || !currentRow) return NextResponse.json({ok:false,error:'rate_not_found'},{status:404});
   const currentRate=currentRow.current_rate==null?null:Number(currentRow.current_rate);
   const reviewKey=`rate-draft:${kind}:${itemId}`;
