@@ -1,4 +1,4 @@
--- Source: Stark Packmate SUP quote model / "MOQ refrence" worksheet reviewed 2026-09-18.
+-- Source: legacy Stark SUP quantity reference matrix (2K/3K/5K/10K/20K/30K/50K) plus Sep 18 owner review.
 -- Sizes sheet remains the authority for approved SUP sizes and pricing buckets.
 -- MOQ reference is used only where it explicitly provides quantity availability. Sample prices are not imported.
 
