@@ -14,6 +14,8 @@ const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','u
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
+const salesProjection=fs.readFileSync('src/lib/packaging-pricing-v5/engine-registry.ts','utf8');
+const savedLineProjection=fs.readFileSync('src/lib/packaging-pricing-v5/saved-line.ts','utf8');
 const compatibility=fs.readFileSync('src/lib/packaging-pricing-v5/construction-compatibility.ts','utf8');
 const snapshot=fs.readFileSync('src/lib/packaging-pricing-v5/snapshot.ts','utf8');
 const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts','utf8');
@@ -195,4 +197,39 @@ test('S52-PKG-V5: manual Spot UV stays outside pouch unit price and persists as 
   assert.match(spotUvPersistence,/delete from public\.quote_optional_charges/);
   assert.match(packagingActions,/pricing_v5:EXTRA_SPOT_UV%/);
   assert.match(spotUvPersistence,/grant execute[\s\S]*to service_role/i);
+});
+
+
+test('S52-PKG-V5: Sales Quote supports editing an existing v5 line without duplicating it',()=>{
+  assert.match(quotePage,/listPricingV5SavedLineSummaries/);
+  assert.match(quotePage,/savedLines=\{savedPricingV5Lines\}/);
+  assert.match(salesConfigurator,/savedLines = \[\]/);
+  assert.match(salesConfigurator,/function editSavedLine/);
+  assert.match(salesConfigurator,/lineId: editingLineId \|\| null/);
+  assert.match(salesConfigurator,/Update quote line/);
+  assert.match(savedLineProjection,/input_snapshot_json\?\.input/);
+  assert.doesNotMatch(savedLineProjection,/pricing_breakdown_json/);
+  assert.doesNotMatch(savedLineProjection,/cost_breakdown/);
+});
+
+test('S52-PKG-V5: changing quantity keeps a selected KLD while changing size clears it',()=>{
+  assert.match(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId\]\);/);
+  assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId, askBottomPrint, size, quantity\]\);/);
+});
+
+test('S52-PKG-V5: Sales shows only the next three producible quantity suggestions with unit-price savings',()=>{
+  assert.match(salesConfigurator,/filter\(\(row: any\) => Number\(row\.quantity\) > quantity\)/);
+  assert.match(salesConfigurator,/\.slice\(0, 3\)/);
+  assert.match(salesConfigurator,/Suggested higher quantities/);
+  assert.match(salesConfigurator,/saving_per_unit/);
+  assert.match(salesConfigurator,/Save \{money\(row\.saving_per_unit,currency\)\} \/ pc/);
+});
+
+test('S52-PKG-V5: Sales-safe pricing projection does not send internal COGS or commercial rules to the browser',()=>{
+  assert.doesNotMatch(salesProjection,/cost_breakdown: result\.cost_breakdown/);
+  assert.doesNotMatch(salesProjection,/commercial_rules: result\.commercial_rules/);
+  assert.doesNotMatch(salesProjection,/source_hash: result\.source_hash/);
+  assert.doesNotMatch(salesProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
+  assert.doesNotMatch(salesProjection,/units_per_frame: component\.units_per_frame/);
+  assert.match(salesProjection,/alternative_quantities: result\.alternative_quantities\.map/);
 });

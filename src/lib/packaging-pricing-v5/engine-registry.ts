@@ -24,18 +24,20 @@ export function toSalesPricingResultV5(result: PackagingPricingResultV5) {
     construction: result.construction,
     production_route: {
       route_type: result.production_route.route_type,
-      pricing_bucket: result.production_route.pricing_bucket,
       components: result.production_route.components.map((component) => ({
         key: component.key,
         description: component.description,
-        units_per_frame: component.units_per_frame,
       })),
     },
-    applied_charges: result.applied_charges,
-    cost_breakdown: result.cost_breakdown,
+    applied_charges: result.applied_charges
+      .filter((charge) => charge.application_stage === 'separate_quote_line')
+      .map((charge) => ({ ...charge })),
     selling_price: result.selling_price,
-    alternative_quantities: result.alternative_quantities,
-    source_hash: result.source_hash,
+    alternative_quantities: result.alternative_quantities.map((item) => ({
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      product_total: item.product_total,
+    })),
     validation_errors: result.validation_errors,
     warnings: result.warnings,
   };
