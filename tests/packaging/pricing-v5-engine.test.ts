@@ -105,6 +105,41 @@ test('S52-PKG-V5: integrated 160x240 geometry resolves seven units per frame and
   assert.match(result.construction?.structure_label ?? '',/PE 75/);
 });
 
+test('S52-PKG-V5: 160x230 workbook 3-layer example reconciles exactly at 5,000 pcs',()=>{
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{
+      ...base.sizeProfiles[0],id:'wb160',size_key:'160x230_bg50_50',name:'160 x 230',width_mm:160,height_mm:230,bottom_gusset_each_mm:50,
+      pricing_bucket:3,production_profile_key:'sup_integrated',gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',
+    }],
+    charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{}}],
+  };
+  const result=calculateSupFormulaV5(context,{size_profile_id:'wb160',construction_id:'c3',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_ZIPPER']});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components[0]?.units_per_frame,7);
+  assert.ok(Math.abs(result.commercial_rules.run_length_m-800)<1e-8);
+  assert.equal(result.commercial_rules.wastage_pct,10);
+  assert.equal(result.commercial_rules.margin_per_frame,25);
+  assert.ok(Math.abs(result.selling_price.unit_price-15.83605329)<1e-8);
+  assert.ok(Math.abs(result.selling_price.product_total-79180.27)<0.01);
+});
+
+test('S52-PKG-V5: 160x230 workbook 4-layer foil example reconciles exactly at 5,000 pcs',()=>{
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{
+      ...base.sizeProfiles[0],id:'wb160-4',size_key:'160x230_bg50_50',name:'160 x 230',width_mm:160,height_mm:230,bottom_gusset_each_mm:50,
+      pricing_bucket:3,production_profile_key:'sup_integrated',gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',
+    }],
+    charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{}}],
+  };
+  const result=calculateSupFormulaV5(context,{size_profile_id:'wb160-4',construction_id:'c4',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_ZIPPER']});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components[0]?.units_per_frame,7);
+  assert.ok(Math.abs(result.selling_price.unit_price-18.11137689)<1e-8);
+  assert.ok(Math.abs(result.selling_price.product_total-90556.88)<0.01);
+});
+
 test('S52-PKG-V5: 4-layer construction is priced from four dynamic layer records',()=>{
   const three=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   const four=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c4',print:'CMYKW',quantity:5000});
