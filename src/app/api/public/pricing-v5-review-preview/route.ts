@@ -75,7 +75,7 @@ function safeCatalog(ctx: PricingContextV5) {
       const layerStack = (layersByConstruction.get(String(c.id)) || []).sort((a,b)=>a.position-b.position).map((x)=>x.label);
       return {
         id: c.id, key: c.construction_key, family_key: c.construction_family_key, name: c.name,
-        display_name: constructionDisplayName(c.construction_family_key,c.name),
+        display_name: typeof c.metadata?.sales_display_name === 'string' && c.metadata.sales_display_name.trim() ? c.metadata.sales_display_name.trim() : constructionDisplayName(c.construction_family_key,c.name),
         layer_stack: layerStack.join(' / '),
         layers: layerStack,
         layer_count: c.layer_count, finish_type: c.finish_type, barrier_type: c.barrier_type, sort_order: c.sort_order,
