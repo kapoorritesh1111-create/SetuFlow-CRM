@@ -68,6 +68,8 @@ function safeCatalog(ctx: PricingContextV5) {
       id: s.id, key: s.size_key, name: s.name, width_mm: s.width_mm, height_mm: s.height_mm,
       bottom_gusset_each_mm: s.bottom_gusset_each_mm, pricing_bucket: s.pricing_bucket,
       route: s.gusset_production_mode, bottom_registration_mode: s.bottom_registration_mode, sort_order: s.sort_order,
+      allowed_quantities: Array.isArray(s.metadata?.allowed_quantities) ? s.metadata.allowed_quantities : null,
+      blocked_quantities: Array.isArray(s.metadata?.blocked_quantities) ? s.metadata.blocked_quantities : null,
     })),
     constructions: ctx.constructions.filter((c) => c.is_active && c.is_quoteable).map((c) => {
       const layerStack = (layersByConstruction.get(String(c.id)) || []).sort((a,b)=>a.position-b.position).map((x)=>x.label);
