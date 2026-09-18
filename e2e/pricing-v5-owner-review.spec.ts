@@ -97,10 +97,25 @@ test('owner can navigate every Pricing v5 premium section',async({page})=>{
   await page.goto('/pricing-v5-review-premium.html');
   await expect(page.getByRole('heading',{name:'Pricing Dashboard'})).toBeVisible();
 
-  for(const title of ['Sizes & KLDs','Constructions','Rates & Charges','Waste & Margins','Price Matrix','Competitor Evaluator','Sales Quote','Packaging Families','Impact & Approval']){
+  const sections=[
+    ['Sizes & KLDs','Sizes & KLDs'],
+    ['Constructions','Constructions'],
+    ['Rates & Charges','Rates & Charges'],
+    ['Waste & Margins','Waste & Margins'],
+    ['Price Matrix','Price Matrix'],
+    ['Competitor Evaluator','Competitor Evaluator'],
+    ['Sales Quote','Sales Quote'],
+    ['Packaging Families','All Packaging Families — Review Now'],
+    ['Impact & Approval','Impact & Approval'],
+  ];
+  for(const [navTitle,headingTitle] of sections){
+    const escaped=navTitle.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\  for(const title of ['Sizes & KLDs','Constructions','Rates & Charges','Waste & Margins','Price Matrix','Competitor Evaluator','Sales Quote','Packaging Families','Impact & Approval']){
     const escaped=title.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&');
     await page.locator('#sideNav').getByRole('button',{name:new RegExp(escaped,'i')}).click();
     await expect(page.getByRole('heading',{name:title,exact:true})).toBeVisible();
+  }');
+    await page.locator('#sideNav').getByRole('button',{name:new RegExp(escaped,'i')}).click();
+    await expect(page.getByRole('heading',{name:headingTitle,exact:true})).toBeVisible();
   }
   expect(pageErrors).toEqual([]);
 });
