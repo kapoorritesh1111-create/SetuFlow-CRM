@@ -109,11 +109,7 @@ test('owner can navigate every Pricing v5 premium section',async({page})=>{
     ['Impact & Approval','Impact & Approval'],
   ];
   for(const [navTitle,headingTitle] of sections){
-    const escaped=navTitle.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\  for(const title of ['Sizes & KLDs','Constructions','Rates & Charges','Waste & Margins','Price Matrix','Competitor Evaluator','Sales Quote','Packaging Families','Impact & Approval']){
-    const escaped=title.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&');
-    await page.locator('#sideNav').getByRole('button',{name:new RegExp(escaped,'i')}).click();
-    await expect(page.getByRole('heading',{name:title,exact:true})).toBeVisible();
-  }');
+    const escaped=navTitle.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
     await page.locator('#sideNav').getByRole('button',{name:new RegExp(escaped,'i')}).click();
     await expect(page.getByRole('heading',{name:headingTitle,exact:true})).toBeVisible();
   }
