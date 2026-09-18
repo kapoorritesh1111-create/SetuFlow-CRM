@@ -57,7 +57,8 @@ export async function POST(request:NextRequest){
   const height=numeric(body.height_mm,1,2000);
   const gusset=numeric(body.bottom_gusset_each_mm,0,1000);
   const bucket=numeric(body.pricing_bucket,1,5);
-  if(width==null||height==null||gusset==null||bucket==null)return NextResponse.json({ok:false,error:'invalid_size_values'},{status:400});
+  const trim=numeric(body.trim_allowance_mm,1,100);
+  if(width==null||height==null||gusset==null||bucket==null||trim==null)return NextResponse.json({ok:false,error:'invalid_size_values'},{status:400});
 
   const allowed=quantities(body.allowed_quantities);
   const blocked=quantities(body.blocked_quantities);
@@ -68,7 +69,7 @@ export async function POST(request:NextRequest){
   const comment=clean(body.comment);
   const value={
     size_id:sizeId,size_key:current.size_key,width_mm:width,height_mm:height,bottom_gusset_each_mm:gusset,
-    pricing_bucket:bucket,allowed_quantities:allowed,blocked_quantities:blocked,is_quoteable:isQuoteable,comment
+    pricing_bucket:bucket,trim_allowance_mm:trim,allowed_quantities:allowed,blocked_quantities:blocked,is_quoteable:isQuoteable,comment
   };
   const now=new Date().toISOString();
 
@@ -83,6 +84,7 @@ export async function POST(request:NextRequest){
 
   const metadata={
     ...(current.metadata||{}),
+    trim_allowance_mm:trim,
     allowed_quantities:allowed,
     blocked_quantities:blocked,
     owner_review_comment:comment||null,
