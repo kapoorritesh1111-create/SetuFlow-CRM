@@ -19,6 +19,7 @@ type ReviewBody = {
   bottom_print_mode?: unknown;
   route_override?: unknown;
   matrix?: unknown;
+  rate_override?: unknown;
 };
 
 async function context(): Promise<PricingContextV5> {
@@ -49,6 +50,19 @@ function mode(value: unknown): BottomPrintModeV5 | undefined {
 function chargeCodes(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.filter((x): x is string => typeof x === 'string').slice(0, 20);
+}
+
+function contextWithRateOverride(ctx: PricingContextV5, value: unknown): PricingContextV5 {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return ctx;
+  const input = value as Record<string, unknown>;
+  const kind = input.kind === 'charge' ? 'charge' : input.kind === 'cost' ? 'cost' : null;
+  const itemId = typeof input.item_id === 'string' ? input.item_id : '';
+  const proposed = Number(input.proposed_rate);
+  if (!kind || !itemId || !Number.isFinite(proposed) || proposed < 0 || proposed > 10000000) return ctx;
+  if (kind === 'cost') {
+    return { ...ctx, masters: ctx.masters.map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
+  }
+  return { ...ctx, charges: (ctx.charges ?? []).map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
 }
 
 function contextWithRouteOverride(ctx: PricingContextV5, sizeId: string, override: unknown): PricingContextV5 {
@@ -105,7 +119,8 @@ export async function POST(request: NextRequest) {
   catch { return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 }); }
 
   try {
-    const baseCtx = await context();
+    const loadedCtx = await context();
+    const baseCtx = contextWithRateOverride(loadedCtx, body.rate_override);
     const allowedSizes = baseCtx.sizeProfiles.filter((s) => s.is_active && s.is_quoteable);
     const allowedConstructions = baseCtx.constructions.filter((c) => c.is_active && c.is_quoteable);
     const constructionId = typeof body.construction_id === 'string' ? body.construction_id : allowedConstructions[0]?.id;
