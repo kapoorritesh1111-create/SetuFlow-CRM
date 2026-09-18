@@ -36,7 +36,7 @@ jobs:
       - name: Pricing v5 material confirmations
         run: npx tsx --test tests/packaging/pricing-v5-material-confirmation.test.ts
       - name: Pricing v5 premium review contracts
-        run: node --test tests/pricing-v5-dashboard-review-contract.test.mjs tests/pricing-v5-premium-button-audit.test.mjs
+        run: node --test tests/pricing-v5-dashboard-review-contract.test.mjs tests/pricing-v5-premium-button-audit.test.mjs tests/pricing-v5-owner-truth-contract.test.mjs
       - name: Install Playwright Chromium
         run: npx playwright install chromium
       - name: Pricing v5 owner browser UAT

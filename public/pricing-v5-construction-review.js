@@ -16,7 +16,7 @@ function displayName(c){const d=window.PV5DbReview?.get?.(draftKey(c));return d?
 function layerText(c){if(Array.isArray(c.layers)&&c.layers.length)return c.layers.map(x=>typeof x==='string'?x:(x.material_name||x.name||x.material_key)).filter(Boolean).join(' / ');return c.layer_stack||c.name||'—'}
 function finish(c){return c.finish||c.finish_type||((c.name||'').toLowerCase().includes('matte')?'matte':'glossy')}
 function materialFamily(c){return String(c.barrier_type||c.family_key||c.construction_family_key||'other')}
-function applicable(c){return c.applicable_sizes||c.size_scope||'All Sizes'}
+function applicable(c){return c.applicable_sizes||c.size_scope||'Compatibility pending owner confirmation'}
 function hasDraft(c){return !!window.PV5DbReview?.get?.(draftKey(c))}
 function filtered(){const term=filters.search.trim().toLowerCase();return constructions.filter(c=>(filters.layers==='all'||String(c.layer_count||c.layers?.length)===filters.layers)&&(filters.material==='all'||materialFamily(c)===filters.material)&&(!term||[displayName(c),c.name,layerText(c),finish(c),materialFamily(c)].join(' ').toLowerCase().includes(term)))}
 function totalPages(){return Math.max(1,Math.ceil(filtered().length/PAGE_SIZE))}

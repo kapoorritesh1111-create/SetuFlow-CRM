@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     const [mastersRes,ratesRes,chargeMastersRes,chargeRatesRes,bandsRes] = await Promise.all([
       (admin as any).from('packaging_cost_master_items').select('id,code,name,item_type,rate_basis,rate_uom,currency,micron,gsm,density,metadata').eq('organization_id',STARK_ORG_ID).eq('is_active',true).order('name'),
       (admin as any).from('packaging_pricing_cost_rates_v5').select('cost_master_item_id,current_rate,micron_override,gsm_override,density_override,metadata').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id),
-      (admin as any).from('packaging_charge_master_items').select('id,code,name,category,basis,currency,metadata').eq('organization_id',STARK_ORG_ID).eq('is_active',true).order('name'),
+      (admin as any).from('packaging_charge_master_items').select('id,code,name,category,basis,application_stage,currency,metadata').eq('organization_id',STARK_ORG_ID).eq('is_active',true).order('name'),
       (admin as any).from('packaging_pricing_charge_rates_v5').select('charge_master_item_id,current_rate,metadata').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id),
       (admin as any).from('packaging_pricing_commercial_bands_v5').select('id,pricing_bucket,run_length_max_m,wastage_pct,margin_per_frame,sort_order,metadata').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).order('pricing_bucket').order('sort_order'),
     ]);
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const rateById = new Map((ratesRes.data??[]).map((r:any)=>[String(r.cost_master_item_id),r]));
     const chargeRateById = new Map((chargeRatesRes.data??[]).map((r:any)=>[String(r.charge_master_item_id),r]));
     const materials = (mastersRes.data??[]).map((m:any)=>{ const r:any=rateById.get(String(m.id)); const micron=r?.micron_override??m.micron??null; const density=r?.density_override??m.density??null; const gsm=r?.gsm_override??m.gsm??((micron!=null&&density!=null)?Number(micron)*Number(density):null); return { id:m.id,code:m.code,name:m.name,item_type:m.item_type,rate_basis:m.rate_basis,rate_uom:m.rate_uom,currency:m.currency||template.currency,micron:micron==null?null:Number(micron),density:density==null?null:Number(density),gsm:gsm==null?null:Number(gsm),current_rate:r?.current_rate==null?null:Number(r.current_rate),configured:r?.current_rate!=null }; }).filter((x:any)=>x.configured);
-    const charges = (chargeMastersRes.data??[]).map((m:any)=>{ const r:any=chargeRateById.get(String(m.id)); return { id:m.id,code:m.code,name:m.name,category:m.category,basis:m.basis,currency:m.currency||template.currency,current_rate:r?.current_rate==null?null:Number(r.current_rate),configured:r?.current_rate!=null }; }).filter((x:any)=>x.configured);
+    const charges = (chargeMastersRes.data??[]).map((m:any)=>{ const r:any=chargeRateById.get(String(m.id)); return { id:m.id,code:m.code,name:m.name,category:m.category,basis:m.basis,application_stage:m.application_stage,currency:m.currency||template.currency,current_rate:r?.current_rate==null?null:Number(r.current_rate),configured:r?.current_rate!=null,configuration_complete:Boolean(m.basis&&m.application_stage) }; }).filter((x:any)=>x.configured);
     const commercial_bands = (bandsRes.data??[]).map((b:any)=>({
       id:b.id,pricing_bucket:Number(b.pricing_bucket),run_length_max_m:b.run_length_max_m==null?null:Number(b.run_length_max_m),
       wastage_pct:b.wastage_pct==null?null:Number(b.wastage_pct),margin_per_frame:b.margin_per_frame==null?null:Number(b.margin_per_frame),
@@ -102,6 +102,13 @@ export async function POST(request: NextRequest) {
   const { data: currentRow, error: currentError }=await (admin as any).from(table).select(selectColumns).eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId).maybeSingle();
   if (currentError || !currentRow) return NextResponse.json({ok:false,error:'rate_not_found'},{status:404});
   const currentRate=currentRow.current_rate==null?null:Number(currentRow.current_rate);
+  let chargeConfig:any=null;
+  if(kind==='charge'){
+    const { data: chargeMaster, error: chargeMasterError }=await (admin as any).from('packaging_charge_master_items')
+      .select('code,name,basis,application_stage').eq('organization_id',STARK_ORG_ID).eq('id',itemId).maybeSingle();
+    if(chargeMasterError||!chargeMaster) return NextResponse.json({ok:false,error:'charge_master_not_found'},{status:404});
+    chargeConfig=chargeMaster;
+  }
   const reviewKey=`rate-draft:${kind}:${itemId}`;
   const now=new Date().toISOString();
   if (action==='draft') {
@@ -116,6 +123,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ok:true,action:'draft',item:data});
   }
   if (action!=='publish') return NextResponse.json({ok:false,error:'invalid_action'},{status:400});
+  if(kind==='charge'&&(!chargeConfig?.basis||!chargeConfig?.application_stage)) {
+    return NextResponse.json({
+      ok:false,
+      error:'charge_configuration_incomplete',
+      missing:[!chargeConfig?.basis?'basis':null,!chargeConfig?.application_stage?'application_stage':null].filter(Boolean),
+      code:chargeConfig?.code||null,
+      name:chargeConfig?.name||null,
+    },{status:409});
+  }
   const { data: pendingDraft }=await (admin as any).from('pricing_v5_owner_review_state')
     .select('decision,value_json').eq('organization_id',STARK_ORG_ID).eq('review_key',reviewKey).maybeSingle();
   const pendingRate=Number(pendingDraft?.value_json?.proposed_rate);
