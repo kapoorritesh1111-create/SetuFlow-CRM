@@ -105,6 +105,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ok:true,action:'draft',item:data});
   }
   if (action!=='publish') return NextResponse.json({ok:false,error:'invalid_action'},{status:400});
+  const { data: pendingDraft }=await (admin as any).from('pricing_v5_owner_review_state')
+    .select('decision,value_json').eq('organization_id',STARK_ORG_ID).eq('review_key',reviewKey).maybeSingle();
+  const pendingRate=Number(pendingDraft?.value_json?.proposed_rate);
+  if (pendingDraft?.decision!=='pending' || !Number.isFinite(pendingRate) || Math.abs(pendingRate-proposed)>0.000001) {
+    return NextResponse.json({ok:false,error:'save_draft_before_publish'},{status:409});
+  }
   const existingMetadata=currentRow.metadata && typeof currentRow.metadata==='object' && !Array.isArray(currentRow.metadata) ? currentRow.metadata : {};
   const { error:updateError }=await (admin as any).from(table).update({
     current_rate:proposed,updated_by:access.user.id,updated_at:now,
