@@ -133,6 +133,7 @@ export default async function QuotePage({
         quoteActionError={readParam(searchParams?.quoteActionError).trim() ? decodeURIComponent(readParam(searchParams?.quoteActionError).trim()) : null}
         saved={readParam(searchParams?.saved).trim() || null}
         packaging={canonicalPackaging}
+        quoteOptionalCharges={packaging?.charges ?? []}
       />
     </>
   );

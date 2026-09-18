@@ -11,6 +11,9 @@ const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5
 const spotUvPersistence=fs.readFileSync('supabase/migrations/20260918200451_pricing_v5_manual_spot_uv_quote_charge.sql','utf8');
 const packagingActions=fs.readFileSync('src/features/packaging/server/actions.ts','utf8');
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
+const canonicalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilder.tsx','utf8');
+const approvalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2.tsx','utf8');
+const quotePdf=fs.readFileSync('src/app/api/quotes/[quoteId]/pdf/route.ts','utf8');
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
@@ -240,4 +243,15 @@ test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review re
   assert.match(quoteProjection,/alternative_quantities: result\.alternative_quantities\.map/);
   assert.match(salesActions,/toSalesQuotePricingResultV5/);
   assert.doesNotMatch(salesActions,/toSalesPricingResultV5/);
+});
+
+
+test('S52-PKG-V5: manual Spot UV reconciles across Sales review, approval totals and customer PDF',()=>{
+  assert.match(quotePage,/quoteOptionalCharges=\{packaging\?\.charges \?\? \[\]\}/);
+  assert.match(canonicalQuoteBuilder,/function optionalChargeTotal/);
+  assert.match(canonicalQuoteBuilder,/\+ optionalChargeTotal\(quote\)/);
+  assert.match(canonicalQuoteBuilder,/optionalCharges\.map/);
+  assert.match(approvalQuoteBuilder,/quoteTotal\(quote, props\.quoteOptionalCharges \?\? \[\]\)/);
+  assert.match(quotePdf,/from\('quote_optional_charges'\)/);
+  assert.match(quotePdf,/rows\.push\(\{ sku: '—', product: text\(charge\.label/);
 });
