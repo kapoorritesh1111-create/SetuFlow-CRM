@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
   if (!template?.id) return NextResponse.json({ ok:false,error:'pricing_template_not_found' },{status:404});
   const table=kind==='charge'?'packaging_pricing_charge_rates_v5':'packaging_pricing_cost_rates_v5';
   const idColumn=kind==='charge'?'charge_master_item_id':'cost_master_item_id';
-  const { data: currentRow, error: currentError }=await (admin as any).from(table).select('current_rate').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId).maybeSingle();
+  const { data: currentRow, error: currentError }=await (admin as any).from(table).select('current_rate,metadata').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId).maybeSingle();
   if (currentError || !currentRow) return NextResponse.json({ok:false,error:'rate_not_found'},{status:404});
   const currentRate=currentRow.current_rate==null?null:Number(currentRow.current_rate);
   const reviewKey=`rate-draft:${kind}:${itemId}`;
@@ -105,9 +105,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ok:true,action:'draft',item:data});
   }
   if (action!=='publish') return NextResponse.json({ok:false,error:'invalid_action'},{status:400});
+  const existingMetadata=currentRow.metadata && typeof currentRow.metadata==='object' && !Array.isArray(currentRow.metadata) ? currentRow.metadata : {};
   const { error:updateError }=await (admin as any).from(table).update({
     current_rate:proposed,updated_by:access.user.id,updated_at:now,
-    metadata:{source:'owner_review_publish',comment,published_by:access.user.email||null,published_at:now},
+    metadata:{...existingMetadata,source:'owner_review_publish',comment,published_by:access.user.email||null,published_at:now},
   }).eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId);
   if (updateError) return NextResponse.json({ok:false,error:'rate_publish_failed'},{status:500});
   const { data: reviewItem }=await (admin as any).from('pricing_v5_owner_review_state').upsert({
