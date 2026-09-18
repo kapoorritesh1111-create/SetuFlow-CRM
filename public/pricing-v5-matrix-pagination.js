@@ -59,6 +59,6 @@ function openReview(r){
 }
 function tick(){if(!onPage())return;const sel=constructionSelect(),c=sel?.value,zip=fieldSelect('Zipper');if(sel&&!sel.dataset.mpWired){sel.dataset.mpWired='1';sel.addEventListener('change',()=>{rows=[];lastError='';lastConstruction=null;setTimeout(()=>load(true),30)})}if(zip&&!zip.dataset.mpWired){zip.dataset.mpWired='1';zip.addEventListener('change',()=>{rows=[];lastError='';lastConstruction=null;setTimeout(()=>load(true),30)})}if(c&&c!==lastConstruction)load(true);else if(rows.length&&!q('#liveMatrix .pager'))render();else if(c&&!rows.length&&lastError&&Date.now()-lastAttempt>=10000)load(false)}
 function scheduleTick(delay=100){if(tickTimer)clearTimeout(tickTimer);tickTimer=setTimeout(()=>{tickTimer=null;tick()},delay)}
-function init(){new MutationObserver(()=>scheduleTick()).observe(document.documentElement,{childList:true,subtree:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleTick(0)});tick()}
+function init(){window.PV5MatrixPagination={load:()=>load(true),render:()=>render()};new MutationObserver(()=>scheduleTick()).observe(document.documentElement,{childList:true,subtree:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleTick(0)});document.addEventListener('pv5:matrix-page-ready',()=>load(true));tick()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
