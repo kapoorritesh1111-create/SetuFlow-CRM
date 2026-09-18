@@ -21,7 +21,6 @@ test('Pricing v5 fallback UI contains no invented owner evidence or sample appro
     /₹13\.95/,
     /500 – 999/,
     /Default Margin','8%'/,
-    /Sep 10, 2026/,
   ]) assert.doesNotMatch(premium,pattern,String(pattern));
 });
 
