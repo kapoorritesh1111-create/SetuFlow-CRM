@@ -99,6 +99,12 @@ export type PricingTemplateV5 = {
   quote_config_json: Record<string, any>;
 };
 
+export type ManualQuoteChargeV5 = {
+  code: 'EXTRA_SPOT_UV';
+  amount: number;
+  note?: string;
+};
+
 export type SupPricingInputV5 = {
   size_profile_id: string;
   construction_id: string;
@@ -106,6 +112,7 @@ export type SupPricingInputV5 = {
   quantity: number;
   bottom_print_mode?: BottomPrintModeV5;
   selected_charge_codes?: string[];
+  manual_quote_charges?: ManualQuoteChargeV5[];
   kld_file_id?: string | null;
 };
 

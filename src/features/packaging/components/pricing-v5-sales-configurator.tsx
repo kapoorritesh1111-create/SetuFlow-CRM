@@ -41,6 +41,8 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
   const charges = options?.charges ?? [];
   const family = families[0] ?? null;
   const template = templates[0] ?? null;
+  const engineCharges = charges.filter((item: any) => item.pricing_mode !== 'manual');
+  const manualSpotUv = charges.find((item: any) => item.code === 'EXTRA_SPOT_UV' && item.pricing_mode === 'manual') ?? null;
 
   const [sizeId, setSizeId] = useState(sizes[0]?.id ?? '');
   const [constructionId, setConstructionId] = useState(constructions[0]?.id ?? '');
@@ -49,24 +51,35 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
   const [bottomPrintMode, setBottomPrintMode] = useState<'solid_unregistered' | 'registered_artwork' | ''>('');
   const [selectedChargeCodes, setSelectedChargeCodes] = useState<string[]>(() => charges.some((item: any) => item.code === 'EXTRA_ZIPPER') ? ['EXTRA_ZIPPER'] : []);
   const [kldFileId, setKldFileId] = useState('');
+  const [spotUvEnabled, setSpotUvEnabled] = useState(false);
+  const [spotUvAmount, setSpotUvAmount] = useState('');
   const [preview, setPreview] = useState<any>(null);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState('');
   const [pending, startTransition] = useTransition();
 
   const size = sizes.find((item: any) => item.id === sizeId) ?? sizes[0];
-  const construction = constructions.find((item: any) => item.id === constructionId) ?? constructions[0];
+  const compatibleConstructions = useMemo(() => {
+    const allowed=new Set((size?.allowed_pe_microns ?? []).map((value: unknown)=>Number(value)));
+    return constructions.filter((item:any)=>allowed.has(Number(item.pe_micron)));
+  }, [constructions, size]);
+  const construction = compatibleConstructions.find((item: any) => item.id === constructionId) ?? compatibleConstructions[0] ?? null;
   const askBottomPrint = size?.bottom_registration_mode === 'optional' && size?.gusset_production_mode === 'conditional';
   const matchingKlds = useMemo(() => klds.filter((item: any) => kldMatchesSize(item, size)), [klds, size]);
+  const validQuantities = useMemo(() => [1000,2000,3000,5000,10000,20000,30000,50000].filter((value)=>quantityAllowedForSize(size,value)), [size]);
   const quantityAllowed = quantityAllowedForSize(size, quantity);
-  const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && (!askBottomPrint || bottomPrintMode));
+  const manualSpotUvValid = !spotUvEnabled || (Number.isFinite(Number(spotUvAmount)) && Number(spotUvAmount) > 0);
+  const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && manualSpotUvValid && (!askBottomPrint || bottomPrintMode));
   const currency = preview?.selling_price?.currency ?? template?.currency ?? 'INR';
   const alternativeRows = useMemo(() => preview?.alternative_quantities ?? [], [preview]);
 
   useEffect(() => {
     if (!sizes.some((item: any) => item.id === sizeId)) setSizeId(sizes[0]?.id ?? '');
-    if (!constructions.some((item: any) => item.id === constructionId)) setConstructionId(constructions[0]?.id ?? '');
-  }, [sizes, constructions, sizeId, constructionId]);
+  }, [sizes, sizeId]);
+
+  useEffect(() => {
+    if (!compatibleConstructions.some((item:any)=>item.id===constructionId)) setConstructionId(compatibleConstructions[0]?.id ?? '');
+  }, [compatibleConstructions, constructionId]);
 
   useEffect(() => {
     if (!quantityAllowedForSize(size, quantity)) setQuantity(firstValidReviewQuantity(size));
@@ -96,6 +109,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
       quantity,
       bottom_print_mode: askBottomPrint ? bottomPrintMode || undefined : undefined,
       selected_charge_codes: selectedChargeCodes,
+      manual_quote_charges: spotUvEnabled ? [{ code:'EXTRA_SPOT_UV', amount:Number(spotUvAmount), note:'Owner deferred automatic Spot UV rate/basis; Sales manual price.' }] : [],
       kld_file_id: kldFileId || null,
     } as any;
   }
@@ -153,25 +167,26 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <label className="text-xs font-black text-slate-600">Pouch size<select value={size?.id ?? ''} onChange={(e) => setSizeId(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Dimensions</div><div className="mt-1 text-sm font-black text-slate-800">{size?.width_mm} × {size?.height_mm} mm · BG {size?.bottom_gusset_each_mm}+{size?.bottom_gusset_each_mm}</div></div>
-            <label className="text-xs font-black text-slate-600">Material & finish<select value={construction?.id ?? ''} onChange={(e) => { setConstructionId(e.target.value); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{constructions.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="text-xs font-black text-slate-600">Material & finish<select value={construction?.id ?? ''} disabled={!compatibleConstructions.length} onChange={(e) => { setConstructionId(e.target.value); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 disabled:bg-slate-100">{compatibleConstructions.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="mt-1 block text-[11px] font-semibold text-teal-700">{compatibleConstructions.length ? `Approved PE ${(size?.allowed_pe_microns ?? []).join(' / ')}µ · ${compatibleConstructions.length} compatible construction${compatibleConstructions.length===1?'':'s'}` : 'No approved construction is configured for this size.'}</span></label>
             <label className="text-xs font-black text-slate-600">Printing<select value={print} onChange={(e) => { setPrint(e.target.value as 'CMYK' | 'CMYKW'); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900"><option value="CMYK">CMYK</option><option value="CMYKW">CMYKW</option></select></label>
           </div>
 
-          <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50/60 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-blue-500">Structure selected automatically</div><div className="mt-1 text-sm font-black text-slate-800">{construction?.structure_label}</div><p className="mt-1 text-xs text-slate-500">{construction?.layer_count} layers. Sales cannot change material rates, wastage or margin.</p></div>
+          <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50/60 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-blue-500">Approved size-matched structure</div><div className="mt-1 text-sm font-black text-slate-800">{construction?.structure_label ?? 'No compatible structure available'}</div><p className="mt-1 text-xs text-slate-500">{construction ? `${construction.layer_count} layers · PE ${construction.pe_micron}µ. Sales cannot change material rates, wastage or margin.` : 'Pricing is blocked until a compatible construction exists.'}</p></div>
 
           {askBottomPrint ? <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50/50 p-3"><div className="text-xs font-black text-slate-700">Printing on the bottom gusset?</div><p className="mt-1 text-xs text-slate-500">This question appears only because the answer changes the production route.</p><div className="mt-3 grid gap-2 sm:grid-cols-2"><label className={`cursor-pointer rounded-xl border p-3 text-sm font-bold ${bottomPrintMode === 'solid_unregistered' ? 'border-teal-500 bg-white text-teal-800' : 'border-slate-200 bg-white text-slate-700'}`}><input className="mr-2" type="radio" name="bottom-mode-v5" checked={bottomPrintMode === 'solid_unregistered'} onChange={() => { setBottomPrintMode('solid_unregistered'); invalidate(); }} />Solid color only</label><label className={`cursor-pointer rounded-xl border p-3 text-sm font-bold ${bottomPrintMode === 'registered_artwork' ? 'border-teal-500 bg-white text-teal-800' : 'border-slate-200 bg-white text-slate-700'}`}><input className="mr-2" type="radio" name="bottom-mode-v5" checked={bottomPrintMode === 'registered_artwork'} onChange={() => { setBottomPrintMode('registered_artwork'); invalidate(); }} />Logo, text or artwork</label></div></div> : <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs font-bold text-emerald-700">{size?.gusset_production_mode === 'separate' ? 'SETU will automatically use split-gusset production for this size.' : 'Bottom artwork question does not apply to this size.'}</div>}
         </div>
 
         <div className="rounded-2xl border border-slate-200 p-4">
           <div className="text-xs font-black text-slate-900">2. Options, quantity & KLD</div>
-          {charges.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{charges.map((item: any) => <label key={item.code} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm font-bold text-slate-700"><input type="checkbox" checked={selectedChargeCodes.includes(item.code)} onChange={() => toggleCharge(item.code)} /><span>{item.name}</span></label>)}</div> : null}
+          {engineCharges.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{engineCharges.map((item: any) => <label key={item.code} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm font-bold text-slate-700"><input type="checkbox" checked={selectedChargeCodes.includes(item.code)} onChange={() => toggleCharge(item.code)} /><span>{item.name}</span></label>)}</div> : null}
+          {manualSpotUv ? <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3"><label className="flex items-center gap-2 text-sm font-black text-slate-800"><input type="checkbox" checked={spotUvEnabled} onChange={(e)=>{setSpotUvEnabled(e.target.checked);if(!e.target.checked)setSpotUvAmount('');invalidate();}} />Spot UV — Manual Price</label><p className="mt-1 text-xs font-semibold text-amber-800">Automatic Spot UV rate and charging basis are on hold. Enter the total Spot UV charge for this quote only.</p>{spotUvEnabled ? <label className="mt-3 block text-xs font-black text-slate-600">Manual Spot UV amount ({template?.currency ?? 'INR'})<input type="number" min="0.01" step="0.01" value={spotUvAmount} onChange={(e)=>{setSpotUvAmount(e.target.value);invalidate();}} placeholder="Enter total manual charge" className="mt-1 w-full rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-sm font-semibold" /></label> : null}</div> : null}
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <label className="text-xs font-black text-slate-600">Quantity<input type="number" min={1} value={quantity} onChange={(e) => { setQuantity(Math.max(1, Number(e.target.value))); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold" /></label>
+            <label className="text-xs font-black text-slate-600">Quantity<select value={quantity} onChange={(e) => { setQuantity(Number(e.target.value)); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold">{validQuantities.map((value)=><option key={value} value={value}>{value.toLocaleString()} pcs</option>)}</select><span className="mt-1 block text-[11px] font-semibold text-slate-500">Only producible quantities are selectable for this size.</span></label>
             <label className="text-xs font-black text-slate-600">KLD / dieline<select value={kldFileId} onChange={(e) => { setKldFileId(e.target.value); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold"><option value="">{matchingKlds.length ? 'No KLD selected' : 'No approved KLD for this size'}</option>{matchingKlds.map((item: any) => <option key={item.id} value={item.id}>{item.file_name}{item.version ? ` · v${item.version}` : ''}</option>)}</select><span className={`mt-1 block text-[11px] font-semibold ${matchingKlds.length ? 'text-emerald-600' : 'text-amber-600'}`}>{matchingKlds.length ? `${matchingKlds.length} size-matched KLD${matchingKlds.length === 1 ? '' : 's'} available.` : 'KLDs from other sizes are hidden intentionally.'}</span></label>
           </div>
         </div>
 
-        {!quantityAllowed ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">{quantity.toLocaleString()} pcs is not producible for this pouch size. Choose a valid quantity.</div> : !canPrice ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Complete the required selections before calculating the price.</div> : null}
+        {!compatibleConstructions.length ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">No approved PE construction is available for this pouch size. Pricing is blocked.</div> : !quantityAllowed ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">{quantity.toLocaleString()} pcs is not producible for this pouch size. Choose a valid quantity.</div> : spotUvEnabled && !manualSpotUvValid ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Enter the manual Spot UV amount before calculating or saving the quote.</div> : !canPrice ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Complete the required selections before calculating the price.</div> : null}
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
         {saved ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{saved}</div> : null}
 
@@ -179,7 +194,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options }:
       </div>
 
       <aside className="space-y-3">
-        <div className="rounded-2xl bg-slate-950 p-4 text-white"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-300">Customer price</div>{preview?.ok ? <><div className="mt-3 text-3xl font-black">{money(preview.selling_price.unit_price, currency)}</div><div className="text-xs font-bold text-white/50">per pouch</div><div className="mt-4 border-t border-white/10 pt-3"><div className="flex justify-between text-xs text-white/60"><span>Order total</span><span className="font-black text-white">{money(preview.selling_price.product_total, currency)}</span></div><div className="mt-2 flex justify-between text-xs text-white/60"><span>GST</span><span>{money(preview.selling_price.gst, currency)}</span></div><div className="mt-2 flex justify-between text-xs text-white/60"><span>Total incl. GST</span><span className="font-black text-white">{money(preview.selling_price.grand_total_before_freight, currency)}</span></div></div></> : <div className="mt-3 text-sm font-bold text-white/55">Calculate to see the approved selling price.</div>}</div>
+        <div className="rounded-2xl bg-slate-950 p-4 text-white"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-300">Customer price</div>{preview?.ok ? <><div className="mt-3 text-3xl font-black">{money(preview.selling_price.unit_price, currency)}</div><div className="text-xs font-bold text-white/50">per pouch</div><div className="mt-4 border-t border-white/10 pt-3"><div className="flex justify-between text-xs text-white/60"><span>Order total</span><span className="font-black text-white">{money(preview.selling_price.product_total, currency)}</span></div>{(preview.applied_charges ?? []).map((item:any)=><div key={item.code} className="mt-2 flex justify-between text-xs text-white/60"><span>{item.code==='EXTRA_SPOT_UV'?'Spot UV — Manual Price':item.name}</span><span>{money(item.amount,currency)}</span></div>)}<div className="mt-2 flex justify-between text-xs text-white/60"><span>GST</span><span>{money(preview.selling_price.gst, currency)}</span></div><div className="mt-2 flex justify-between text-xs text-white/60"><span>Total incl. GST</span><span className="font-black text-white">{money(preview.selling_price.grand_total_before_freight, currency)}</span></div></div></> : <div className="mt-3 text-sm font-bold text-white/55">Calculate to see the approved selling price.</div>}</div>
 
         {preview?.construction ? <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Quote summary</div><div className="mt-2 text-sm font-black text-slate-900">{preview.construction.name}</div><div className="mt-1 text-xs text-slate-500">{preview.construction.structure_label}</div>{preview.production_route?.components?.length > 1 ? <div className="mt-2 rounded-lg bg-cyan-50 px-2.5 py-2 text-xs font-bold text-cyan-800">SETU automatically applied split-gusset production.</div> : null}</div> : null}
 

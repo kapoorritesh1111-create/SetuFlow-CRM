@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateSupFormulaV5 } from '../../src/lib/packaging-pricing-v5/sup-formula-engine';
 import { resolveCommercialBandV5 } from '../../src/lib/packaging-pricing-v5/commercial-band-resolver';
+import { allowedPeMicronsForSupSizeV5 } from '../../src/lib/packaging-pricing-v5/construction-compatibility';
 import type { PricingContextV5 } from '../../src/lib/packaging-pricing-v5/types';
 
 const master = (id:string,code:string,name:string,type:'material'|'process',basis:any,rate:number|null,micron:number|null=null,density:number|null=null,gsm:number|null=null,metadata:any={}) => ({
@@ -398,4 +399,68 @@ test('S52-PKG-V5: Akshay 98x150 unregistered model stays a distinct split-gusset
   assert.equal(unregistered.ok,true,unregistered.validation_errors.join(' '));
   assert.equal(unregistered.production_route.components.length,2);
   assert.notEqual(unregistered.selling_price.unit_price,registered.selling_price.unit_price);
+});
+
+
+test('S52-PKG-V5: approved SUP size mapping restricts Sales to the source PE thickness',()=>{
+  const expected:Record<string,number> = {
+    '80x130_bg25_25':60,'98x150_bg30_30':60,'110x170_bg30_30':75,'150x150_bg40_40':75,
+    '120x210_bg40_40':75,'125x210_bg40_40':75,'130x210_bg40_40':75,'140x210_bg40_40':75,
+    '145x210_bg40_40':75,'150x220_bg50_50':75,'160x240_bg50_50':75,'170x250_bg50_50':95,
+    '185x270_bg50_50':95,'200x300_bg55_55':95,'210x300_bg55_55':95,'220x300_bg55_55':95,
+    '230x310_bg55_55':95,'245x320_bg55_55':95,'260x340_bg60_60':95,'280x360_bg60_60':120,
+  };
+  for(const [size_key,micron] of Object.entries(expected)){
+    assert.deepEqual(allowedPeMicronsForSupSizeV5({size_key,metadata:{}} as any),[micron],size_key);
+  }
+});
+
+test('S52-PKG-V5: quoteable size-construction combinations fail closed when PE thickness is incompatible',()=>{
+  const pe95=master('pe95','MAT_PE_95','PE 95','material','per_kg',185,95,0.925);
+  const c75={...base.constructions[0],is_quoteable:true};
+  const c95={...base.constructions[0],id:'c95',construction_key:'matte_metpet_pe95',name:'Matt Finish With Metpet / PE95',sealant_code:'MAT_PE_95',is_quoteable:true};
+  const c95Layers=base.constructionLayers.filter((item)=>item.construction_id==='c3').map((item,index)=>({
+    ...item,id:'c95l'+index,construction_id:'c95',cost_master_item_id:item.cost_master_item_id==='pe75'?'pe95':item.cost_master_item_id,
+  }));
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{...base.sizeProfiles[0],id:'size170',size_key:'170x250_bg50_50',name:'170 x 250',width_mm:170,height_mm:250,is_quoteable:true}],
+    constructions:[c75,c95],
+    constructionLayers:[...base.constructionLayers.filter((item)=>item.construction_id==='c3'),...c95Layers],
+    masters:[...base.masters,pe95],
+  };
+  const invalid=calculateSupFormulaV5(context,{size_profile_id:'size170',construction_id:'c3',print:'CMYKW',quantity:5000});
+  assert.equal(invalid.ok,false);
+  assert.match(invalid.validation_errors.join(' '),/not compatible with/i);
+  assert.match(invalid.validation_errors.join(' '),/PE 95/i);
+  const valid=calculateSupFormulaV5(context,{size_profile_id:'size170',construction_id:'c95',print:'CMYKW',quantity:5000});
+  assert.equal(valid.ok,true,valid.validation_errors.join(' '));
+});
+
+test('S52-PKG-V5: Spot UV is manual quote-level pricing while automatic Spot UV remains blocked',()=>{
+  const spot:any={id:'spot',code:'EXTRA_SPOT_UV',name:'Spot UV',category:'extra',basis:null,application_stage:null,current_rate:0,currency:'INR',metadata:{}};
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{...base.sizeProfiles[0],is_quoteable:true}],
+    constructions:base.constructions.map((item)=>({...item,is_quoteable:true})),
+    charges:[spot],
+  };
+  const baseline=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
+  assert.equal(baseline.ok,true,baseline.validation_errors.join(' '));
+  const manual=calculateSupFormulaV5(context,{
+    size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000,
+    manual_quote_charges:[{code:'EXTRA_SPOT_UV',amount:1250,note:'manual owner-deferred price'}],
+  });
+  assert.equal(manual.ok,true,manual.validation_errors.join(' '));
+  assert.ok(Math.abs(manual.selling_price.product_total-baseline.selling_price.product_total-1250)<0.01);
+  assert.equal(manual.cost_breakdown.totals_for_job.additional_charges_cost,1250);
+  assert.equal(manual.applied_charges.find((item)=>item.code==='EXTRA_SPOT_UV')?.application_stage,'separate_quote_line');
+  assert.equal(manual.applied_charges.find((item)=>item.code==='EXTRA_SPOT_UV')?.amount,1250);
+  assert.ok(Math.abs(manual.cost_breakdown.reconciliation_delta)<0.000001);
+  const auto=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_SPOT_UV']});
+  assert.equal(auto.ok,false);
+  assert.match(auto.validation_errors.join(' '),/automatic pricing is on hold/i);
+  const missing=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000,manual_quote_charges:[{code:'EXTRA_SPOT_UV',amount:0}]});
+  assert.equal(missing.ok,false);
+  assert.match(missing.validation_errors.join(' '),/manual price must be greater than zero/i);
 });
