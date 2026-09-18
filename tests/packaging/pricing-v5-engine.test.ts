@@ -9,6 +9,12 @@ const master = (id:string,code:string,name:string,type:'material'|'process',basi
 });
 
 const bands:any[] = [
+  {pricing_bucket:1,run_length_max_m:500,wastage_pct:20,margin_per_frame:70,sort_order:1},
+  {pricing_bucket:1,run_length_max_m:1000,wastage_pct:10,margin_per_frame:60,sort_order:2},
+  {pricing_bucket:1,run_length_max_m:2000,wastage_pct:8,margin_per_frame:50,sort_order:3},
+  {pricing_bucket:1,run_length_max_m:3000,wastage_pct:7,margin_per_frame:40,sort_order:4},
+  {pricing_bucket:1,run_length_max_m:5000,wastage_pct:6,margin_per_frame:30,sort_order:5},
+  {pricing_bucket:1,run_length_max_m:10000,wastage_pct:5,margin_per_frame:25,sort_order:6},
   {pricing_bucket:2,run_length_max_m:250,wastage_pct:25,margin_per_frame:70,sort_order:1},
   {pricing_bucket:2,run_length_max_m:500,wastage_pct:20,margin_per_frame:70,sort_order:2},
   {pricing_bucket:2,run_length_max_m:1000,wastage_pct:10,margin_per_frame:60,sort_order:3},
