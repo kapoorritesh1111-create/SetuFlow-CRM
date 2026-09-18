@@ -29,6 +29,13 @@ const bands:any[] = [
   {pricing_bucket:3,run_length_max_m:3000,wastage_pct:7,margin_per_frame:17,sort_order:5},
   {pricing_bucket:3,run_length_max_m:5000,wastage_pct:6,margin_per_frame:15,sort_order:6},
   {pricing_bucket:3,run_length_max_m:10000,wastage_pct:5,margin_per_frame:13,sort_order:7},
+  {pricing_bucket:4,run_length_max_m:250,wastage_pct:25,margin_per_frame:35,sort_order:1},
+  {pricing_bucket:4,run_length_max_m:500,wastage_pct:20,margin_per_frame:35,sort_order:2},
+  {pricing_bucket:4,run_length_max_m:1000,wastage_pct:10,margin_per_frame:25,sort_order:3},
+  {pricing_bucket:4,run_length_max_m:2000,wastage_pct:8,margin_per_frame:20,sort_order:4},
+  {pricing_bucket:4,run_length_max_m:3000,wastage_pct:7,margin_per_frame:17,sort_order:5},
+  {pricing_bucket:4,run_length_max_m:5000,wastage_pct:6,margin_per_frame:15,sort_order:6},
+  {pricing_bucket:4,run_length_max_m:10000,wastage_pct:5,margin_per_frame:13,sort_order:7},
   {pricing_bucket:5,run_length_max_m:250,wastage_pct:25,margin_per_frame:35,sort_order:1},
   {pricing_bucket:5,run_length_max_m:500,wastage_pct:20,margin_per_frame:35,sort_order:2},
   {pricing_bucket:5,run_length_max_m:1000,wastage_pct:10,margin_per_frame:25,sort_order:3},
@@ -213,6 +220,21 @@ test('S52-PKG-V5: empty allowed list falls back to the reference MOQ ladder',()=
   assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[2000,3000,5000,10000,20000,30000]);
   const blocked=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:1000});
   assert.equal(blocked.ok,false);
+});
+
+test('S52-PKG-V5: bucket 4 live-size geometry uses the authoritative PG04 commercial schedule',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'pg4',size_key:'200x300_bg55_55',name:'200 x 300',width_mm:200,height_mm:300,bottom_gusset_each_mm:55,
+    pricing_bucket:4,gusset_production_mode:'integrated',production_profile_key:'sup_integrated',bottom_registration_mode:'not_applicable',
+  }]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'pg4',construction_id:'c3',print:'CMYKW',quantity:5000});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components[0]?.units_per_frame,5);
+  assert.ok(Math.abs(result.commercial_rules.run_length_m-1000)<1e-8);
+  assert.equal(result.commercial_rules.bucket_no,4);
+  assert.equal(result.commercial_rules.band_max_m,1000);
+  assert.equal(result.commercial_rules.wastage_pct,10);
+  assert.equal(result.commercial_rules.margin_per_frame,25);
 });
 
 test('S52-PKG-V5: 260x340 uses separate gusset and inherits the main commercial band',()=>{
