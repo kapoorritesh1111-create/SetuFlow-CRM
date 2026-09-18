@@ -83,14 +83,23 @@ export async function POST(request: NextRequest) {
   const kind=String(body.kind||'cost');
   const itemId=typeof body.item_id==='string'?body.item_id:'';
   const proposed=Number(body.proposed_rate);
+  const proposedMicron=body.micron==null||body.micron===''?null:Number(body.micron);
+  const proposedDensity=body.density==null||body.density===''?null:Number(body.density);
+  const proposedGsm=body.gsm==null||body.gsm===''?null:Number(body.gsm);
   const comment=typeof body.comment==='string'?body.comment.trim().slice(0,2000):'';
   if (!['cost','charge'].includes(kind) || !itemId) return NextResponse.json({ ok:false,error:'invalid_rate_target' },{status:400});
   if (!Number.isFinite(proposed) || proposed<0 || proposed>10000000) return NextResponse.json({ ok:false,error:'invalid_rate' },{status:400});
+  if(kind==='cost'){
+    if(proposedMicron!=null&&(!Number.isFinite(proposedMicron)||proposedMicron<=0||proposedMicron>1000)) return NextResponse.json({ok:false,error:'invalid_micron'},{status:400});
+    if(proposedDensity!=null&&(!Number.isFinite(proposedDensity)||proposedDensity<=0||proposedDensity>10)) return NextResponse.json({ok:false,error:'invalid_density'},{status:400});
+    if(proposedGsm!=null&&(!Number.isFinite(proposedGsm)||proposedGsm<=0||proposedGsm>5000)) return NextResponse.json({ok:false,error:'invalid_gsm'},{status:400});
+  }
   const template=await templateId(admin);
   if (!template?.id) return NextResponse.json({ ok:false,error:'pricing_template_not_found' },{status:404});
   const table=kind==='charge'?'packaging_pricing_charge_rates_v5':'packaging_pricing_cost_rates_v5';
   const idColumn=kind==='charge'?'charge_master_item_id':'cost_master_item_id';
-  const { data: currentRow, error: currentError }=await (admin as any).from(table).select('current_rate,metadata').eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId).maybeSingle();
+  const selectColumns=kind==='charge'?'current_rate,metadata':'current_rate,micron_override,gsm_override,density_override,metadata';
+  const { data: currentRow, error: currentError }=await (admin as any).from(table).select(selectColumns).eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId).maybeSingle();
   if (currentError || !currentRow) return NextResponse.json({ok:false,error:'rate_not_found'},{status:404});
   const currentRate=currentRow.current_rate==null?null:Number(currentRow.current_rate);
   const reviewKey=`rate-draft:${kind}:${itemId}`;
@@ -98,7 +107,9 @@ export async function POST(request: NextRequest) {
   if (action==='draft') {
     const { data, error }=await (admin as any).from('pricing_v5_owner_review_state').upsert({
       organization_id:STARK_ORG_ID,review_key:reviewKey,decision:'pending',
-      value_json:{kind,item_id:itemId,current_rate:currentRate,proposed_rate:proposed,comment},
+      value_json:{kind,item_id:itemId,current_rate:currentRate,proposed_rate:proposed,
+        micron:kind==='cost'?proposedMicron:null,density:kind==='cost'?proposedDensity:null,
+        gsm:kind==='cost'?(proposedGsm??(proposedMicron!=null&&proposedDensity!=null?proposedMicron*proposedDensity:null)):null,comment},
       reviewer_name:access.user.email||'Authorized reviewer',reviewed_at:null,updated_at:now,
     },{onConflict:'organization_id,review_key'}).select('review_key,decision,value_json,reviewer_name,updated_at').single();
     if (error) return NextResponse.json({ok:false,error:'rate_draft_save_failed'},{status:500});
@@ -108,18 +119,32 @@ export async function POST(request: NextRequest) {
   const { data: pendingDraft }=await (admin as any).from('pricing_v5_owner_review_state')
     .select('decision,value_json').eq('organization_id',STARK_ORG_ID).eq('review_key',reviewKey).maybeSingle();
   const pendingRate=Number(pendingDraft?.value_json?.proposed_rate);
-  if (pendingDraft?.decision!=='pending' || !Number.isFinite(pendingRate) || Math.abs(pendingRate-proposed)>0.000001) {
+  const pendingMicron=Number(pendingDraft?.value_json?.micron),pendingDensity=Number(pendingDraft?.value_json?.density),pendingGsm=Number(pendingDraft?.value_json?.gsm);
+  const physicalChanged=kind==='cost'&&(
+    (proposedMicron!=null&&(!Number.isFinite(pendingMicron)||Math.abs(pendingMicron-proposedMicron)>0.000001))||
+    (proposedDensity!=null&&(!Number.isFinite(pendingDensity)||Math.abs(pendingDensity-proposedDensity)>0.000001))||
+    (proposedGsm!=null&&(!Number.isFinite(pendingGsm)||Math.abs(pendingGsm-proposedGsm)>0.000001))
+  );
+  if (pendingDraft?.decision!=='pending' || !Number.isFinite(pendingRate) || Math.abs(pendingRate-proposed)>0.000001 || physicalChanged) {
     return NextResponse.json({ok:false,error:'save_draft_before_publish'},{status:409});
   }
   const existingMetadata=currentRow.metadata && typeof currentRow.metadata==='object' && !Array.isArray(currentRow.metadata) ? currentRow.metadata : {};
+  const physicalPatch=kind==='cost'?{
+    micron_override:proposedMicron,
+    density_override:proposedDensity,
+    gsm_override:proposedGsm??(proposedMicron!=null&&proposedDensity!=null?proposedMicron*proposedDensity:null),
+  }:{};
   const { error:updateError }=await (admin as any).from(table).update({
-    current_rate:proposed,updated_by:access.user.id,updated_at:now,
+    current_rate:proposed,...physicalPatch,updated_by:access.user.id,updated_at:now,
     metadata:{...existingMetadata,source:'owner_review_publish',comment,published_by:access.user.email||null,published_at:now},
   }).eq('organization_id',STARK_ORG_ID).eq('template_id',template.id).eq(idColumn,itemId);
   if (updateError) return NextResponse.json({ok:false,error:'rate_publish_failed'},{status:500});
   const { data: reviewItem }=await (admin as any).from('pricing_v5_owner_review_state').upsert({
     organization_id:STARK_ORG_ID,review_key:reviewKey,decision:'approved',
-    value_json:{kind,item_id:itemId,previous_rate:currentRate,published_rate:proposed,comment,published_at:now},
+    value_json:{kind,item_id:itemId,previous_rate:currentRate,published_rate:proposed,
+      micron:kind==='cost'?proposedMicron:null,density:kind==='cost'?proposedDensity:null,
+      gsm:kind==='cost'?(proposedGsm??(proposedMicron!=null&&proposedDensity!=null?proposedMicron*proposedDensity:null)):null,
+      comment,published_at:now},
     reviewer_name:access.user.email||'Authorized reviewer',reviewed_at:now,updated_at:now,
   },{onConflict:'organization_id,review_key'}).select('review_key,decision,value_json,reviewer_name,updated_at').single();
   return NextResponse.json({ok:true,action:'publish',previous_rate:currentRate,current_rate:proposed,item:reviewItem});

@@ -6,7 +6,7 @@
   const FAMILY_KEYS = ['sup','flat_bottom','center_seal_roll','center_seal_pouch','three_side_seal_roll','three_side_seal_pouch'];
   const FAMILY_NAMES = ['Stand Up Pouches','Flat Bottom Pouches','Center Seal — Roll Form','Center Seal — Pouch Form','3 Side Seal — Roll Form','3 Side Seal — Pouch Form'];
   const BUSINESS = [
-    ['sup_sizes','21 SUP sizes','Approve addition and pricing of the 21 Stand-Up pouch sizes, including both 160 × 230 and 160 × 240.'],
+    ['sup_sizes','20 approved SUP sizes','Approve the 20 Stand-Up pouch sizes and their PG01–PG05 bucket assignments from the Sizes worksheet.'],
     ['constructions','44 constructions','Approve the 44 configured constructions and material sets.'],
     ['buckets','Commercial bucket tables','Approve the new run-length wastage and margin tables.'],
     ['kld','KLD workflow','Approve the review-sample / production-KLD workflow.'],
@@ -16,7 +16,7 @@
     ['competitor','Competitor evaluator logic','Approve exact-vs-directional competitor evidence rules.'],
   ];
   const CLARIFICATIONS = [
-    ['invalid-combinations','Are any size × construction combinations not manufacturable?','This is the only remaining SUP construction-scope question. Quantity N/A rules are managed separately on Sizes & KLDs.',['All 44 apply to all 21 SUP sizes','Restrictions exist — see comment']],
+    ['invalid-combinations','Are any size × construction combinations not manufacturable?','This is the only remaining SUP construction-scope question. Quantity N/A rules are managed separately on Sizes & KLDs.',['All 44 apply to all 20 SUP sizes','Restrictions exist — see comment']],
   ];
 
   const safe = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -66,13 +66,13 @@
   }
 
   async function approveAllKld() {
-    if (!confirm('Approve all 21 Pricing v5 KLD review samples? This approves the review samples only; production KLDs can still replace them later.')) return;
+    if (!confirm('Approve all 20 Pricing v5 KLD review samples? This approves the review samples only; production KLDs can still replace them later.')) return;
     const s = read();
     const sizeRows = (window.__PV5_CATALOG__?.sizes || []);
     if (sizeRows.length) sizeRows.forEach(x => { s.kldApprovals[x.id] = 'approved'; });
-    else for (let i=0;i<21;i++) s.kldApprovals['sample-'+(i+1)]='approved';
+    else for (let i=0;i<20;i++) s.kldApprovals['sample-'+(i+1)]='approved';
     write(s);
-    await post('kld-all-21','Owner approved all 21 Pricing v5 KLD review samples.','Approved');
+    await post('kld-all-20','Owner approved all 20 Pricing v5 KLD review samples.','Approved');
     rerender('approval');
   }
 
@@ -109,7 +109,7 @@
       return '<tr><td><b>'+safe(title)+'</b><small class="owner-row-note">'+safe(desc)+'</small></td><td>'+decisionPill(value)+'</td><td><div class="owner-inline-actions"><button class="btn tiny" data-owner-business="'+key+'" data-value="true">✓ Approve</button><button class="btn tiny danger" data-owner-business="'+key+'" data-value="false">○ Needs Change</button></div></td></tr>';
     }).join('');
 
-    return '<section class="card owner-review-controls"><div class="panel-title"><div><h3>Owner Review & Decisions</h3><p>Resolved Akshay questions have been removed. Only genuine open items remain.</p></div><span class="mini-tag amber">Client controlled</span></div><div class="notice info" style="margin:12px 18px"><b>Confirmed:</b> both 160 × 230 and 160 × 240 are valid; use sales-facing construction names with the technical stack; MetPET is Silver Film; MOQ sample prices are ignored; N/A quantities are blocked; custom constructions remain owner-only until promoted.<br><b>Spot UV:</b> rate is intentionally left editable at ₹0 until Akshay provides the final value.</div><div class="owner-review-tabs"><b>Open clarification</b></div>'+clarifications+'<div class="owner-review-tabs"><b>Business approvals</b></div><div class="table-wrap"><table class="table"><thead><tr><th>Item</th><th>Owner status</th><th>Decision</th></tr></thead><tbody>'+approvals+'</tbody></table></div><div class="owner-kld-box"><div><b>KLD review samples</b><small>Approve KLD review samples only when the owner has actually reviewed them. You can reset the decisions at any time.</small></div><div class="owner-inline-actions"><button class="btn success" id="ownerApproveAllKld">Approve All 21 KLD Samples</button><button class="btn outline" id="ownerResetKld">Reset KLD Decisions</button><button class="btn outline" data-go-page="sizes">Review Individually</button></div></div></section>';
+    return '<section class="card owner-review-controls"><div class="panel-title"><div><h3>Owner Review & Decisions</h3><p>Resolved Akshay questions have been removed. Only genuine open items remain.</p></div><span class="mini-tag amber">Client controlled</span></div><div class="notice info" style="margin:12px 18px"><b>Confirmed:</b> the 20 Sizes-sheet SUP sizes and their PG01–PG05 bucket assignments are authoritative; use sales-facing construction names with the technical stack; MetPET is Silver Film; MOQ sample prices are ignored; N/A quantities are blocked where explicitly configured; custom constructions remain owner-only until promoted.<br><b>Spot UV:</b> rate is intentionally left editable at ₹0 until Akshay provides the final value.</div><div class="owner-review-tabs"><b>Open clarification</b></div>'+clarifications+'<div class="owner-review-tabs"><b>Business approvals</b></div><div class="table-wrap"><table class="table"><thead><tr><th>Item</th><th>Owner status</th><th>Decision</th></tr></thead><tbody>'+approvals+'</tbody></table></div><div class="owner-kld-box"><div><b>KLD review samples</b><small>Approve KLD review samples only when the owner has actually reviewed them. You can reset the decisions at any time.</small></div><div class="owner-inline-actions"><button class="btn success" id="ownerApproveAllKld">Approve All 20 KLD Samples</button><button class="btn outline" id="ownerResetKld">Reset KLD Decisions</button><button class="btn outline" data-go-page="sizes">Review Individually</button></div></div></section>';
   }
 
   function patchApprovalPage() {
@@ -123,7 +123,7 @@
     // so they cannot contradict the real owner decision controls above.
     page.querySelectorAll('table tbody tr').forEach(row=>{
       const txt=row.textContent || '';
-      if (/21 SUP sizes|44 constructions|commercial bucket|KLD workflow|Owner dashboard|Sales Quote behavior|Family migration|Competitor evaluator/i.test(txt)) {
+      if (/20 approved SUP sizes|44 constructions|commercial bucket|KLD workflow|Owner dashboard|Sales Quote behavior|Family migration|Competitor evaluator/i.test(txt)) {
         const item=BUSINESS.find(x=>txt.includes(x[1])) || BUSINESS.find(x=>txt.toLowerCase().includes(x[0].replaceAll('_',' ')));
         if (item) {
           const s=read(); const v=Object.prototype.hasOwnProperty.call(s.businessApprovals,item[0])?s.businessApprovals[item[0]]:undefined;
@@ -171,6 +171,6 @@
   function apply(){injectStyle();patchApprovalPage();patchFamilyPage();}
   function schedule(){clearTimeout(timer);timer=setTimeout(apply,80);}
   const observer=new MutationObserver(schedule);
-  function start(){apply();const page=document.getElementById('page');if(page)observer.observe(page,{childList:true,subtree:true});setInterval(apply,1200);}
+  function start(){apply();const page=document.getElementById('page');if(page)observer.observe(page,{childList:true,subtree:true});document.addEventListener('pv5:review-state-changed',schedule);document.addEventListener('pv5:review-state-loaded',schedule);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

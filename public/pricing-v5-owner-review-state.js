@@ -141,7 +141,7 @@
     if (kldApprove) {
       const b = kldApprove.querySelector('b');
       const small = kldApprove.querySelector('small');
-      setText(b, `${c.kldApproved} of 21 owner approved`);
+      setText(b, `${c.kldApproved} of 20 owner approved`);
       setText(small, c.kldApproved >= 20 ? 'All KLD review samples were explicitly approved by the owner.' : 'No KLD sample is assumed approved. The owner must review and approve them.');
     }
   }

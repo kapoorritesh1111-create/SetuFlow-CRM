@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const STARK_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const TEMPLATE_ID = '5635e709-213d-4fb6-a9f8-2467021a4c64';
-const REVIEW_QUANTITIES = [5000, 10000, 15000, 20000] as const;
+const REVIEW_QUANTITIES = [1000, 2000, 3000, 5000, 10000, 20000, 30000, 50000] as const;
 
 type ReviewBody = {
   size_profile_id?: unknown;
@@ -20,6 +20,7 @@ type ReviewBody = {
   route_override?: unknown;
   matrix?: unknown;
   rate_override?: unknown;
+  band_override?: unknown;
 };
 
 async function context(): Promise<PricingContextV5> {
@@ -70,6 +71,7 @@ function safeCatalog(ctx: PricingContextV5) {
       route: s.gusset_production_mode, bottom_registration_mode: s.bottom_registration_mode, sort_order: s.sort_order,
       allowed_quantities: Array.isArray(s.metadata?.allowed_quantities) ? s.metadata.allowed_quantities : null,
       blocked_quantities: Array.isArray(s.metadata?.blocked_quantities) ? s.metadata.blocked_quantities : null,
+      trim_allowance_mm: Number(s.metadata?.trim_allowance_mm ?? ctx.template.production_rules_json?.trim_allowance_mm ?? 20),
     })),
     constructions: ctx.constructions.filter((c) => c.is_active && c.is_quoteable).map((c) => {
       const layerStack = (layersByConstruction.get(String(c.id)) || []).sort((a,b)=>a.position-b.position).map((x)=>x.label);
@@ -103,9 +105,24 @@ function contextWithRateOverride(ctx: PricingContextV5, value: unknown): Pricing
   const proposed = Number(input.proposed_rate);
   if (!kind || !itemId || !Number.isFinite(proposed) || proposed < 0 || proposed > 10000000) return ctx;
   if (kind === 'cost') {
-    return { ...ctx, masters: ctx.masters.map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
+    const micron=Number(input.micron),density=Number(input.density),gsm=Number(input.gsm);
+    return { ...ctx, masters: ctx.masters.map((item) => item.id === itemId ? {
+      ...item,current_rate:proposed,
+      micron:Number.isFinite(micron)&&micron>0?micron:item.micron,
+      density:Number.isFinite(density)&&density>0?density:item.density,
+      gsm:Number.isFinite(gsm)&&gsm>0?gsm:(Number.isFinite(micron)&&micron>0&&Number.isFinite(density)&&density>0?micron*density:item.gsm),
+    } : item) };
   }
   return { ...ctx, charges: (ctx.charges ?? []).map((item) => item.id === itemId ? { ...item, current_rate: proposed } : item) };
+}
+
+function contextWithBandOverride(ctx: PricingContextV5, value: unknown): PricingContextV5 {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return ctx;
+  const input=value as Record<string,unknown>;
+  const bandId=typeof input.band_id==='string'?input.band_id:'';
+  const waste=Number(input.wastage_pct), margin=Number(input.margin_per_frame);
+  if(!bandId||!Number.isFinite(waste)||waste<0||waste>100||!Number.isFinite(margin)||margin<0)return ctx;
+  return {...ctx,bands:ctx.bands.map((band)=>String(band.id)===bandId?{...band,wastage_pct:waste,margin_per_frame:margin}:band)};
 }
 
 function contextWithRouteOverride(ctx: PricingContextV5, sizeId: string, override: unknown): PricingContextV5 {
@@ -163,7 +180,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const loadedCtx = await context();
-    const baseCtx = contextWithRateOverride(loadedCtx, body.rate_override);
+    const rateCtx = contextWithRateOverride(loadedCtx, body.rate_override);
+    const baseCtx = contextWithBandOverride(rateCtx, body.band_override);
     const allowedSizes = baseCtx.sizeProfiles.filter((s) => s.is_active && s.is_quoteable);
     const allowedConstructions = baseCtx.constructions.filter((c) => c.is_active && c.is_quoteable);
     const constructionId = typeof body.construction_id === 'string' ? body.construction_id : allowedConstructions[0]?.id;

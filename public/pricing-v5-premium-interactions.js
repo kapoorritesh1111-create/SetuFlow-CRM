@@ -25,7 +25,6 @@ function clarificationIndexFor(title,text=''){
 }
 function goClarification(idx){
  if(idx==null){window.PV5?.go?.('approval');setTimeout(()=>scrollOwnerReview(),250);return}
- idx=0;
  window.PV5?.go?.('approval');
  setTimeout(()=>{
    const exact=q('[data-owner-clarification="'+idx+'"]')||q('#ownerClarification'+idx)||q('#clarifySelect'+idx)?.closest('.owner-question');
@@ -52,7 +51,7 @@ function sizeEdit(btn){reviewRequest('Request Size / KLD Change',rowText(btn)||'
 function wasteEdit(btn){reviewRequest('Commercial Bucket Review',rowText(btn)||'Review wastage %, margin and frame charge for this commercial bucket.',null)}
 function impactPreview(){
  const inputs=qa('#page input,#page select').map(x=>x.value).filter(Boolean).slice(-6).join(' → ');
- modal('Impact Preview','<div class="notice info"><b>Review preview only.</b> No production pricing is changed from this screen.</div><div class="card" style="padding:16px;margin-top:12px"><p>Selected change: '+esc(inputs||'Current commercial adjustment')+'</p><p>The only remaining clarification is whether any size × construction combinations are not manufacturable.</p><div class="row wrap" style="gap:8px"><button class="btn primary" data-answer-q="0">Review Remaining Construction Restriction →</button></div></div>');bindModal();
+ modal('Impact Preview','<div class="notice info"><b>Review preview only.</b> No production pricing is changed from this screen.</div><div class="card" style="padding:16px;margin-top:12px"><p>Selected change: '+esc(inputs||'Current commercial adjustment')+'</p><p>Open owner clarifications remain for configuration items that are not supported by the approved source data. Review them before final approval.</p><div class="row wrap" style="gap:8px"><button class="btn primary" data-answer-q="0">Review Remaining Construction Restriction →</button></div></div>');bindModal();
 }
 function matrixView(btn){const tr=btn.closest('tr');const txt=rowText(btn);reviewRequest('Price Matrix Cell Review',txt||'Review this calculated Pricing v5 row and its current status.',null)}
 function comparePrevious(){modal('Compare Previous Version','<div class="notice info"><b>Comparison intent:</b> use the current v4 workbook/matrix only as a migration baseline. The new v5 calculation must be reviewed independently.</div><div class="row wrap" style="margin-top:12px"><button class="btn primary" data-answer-q="0">Review Remaining Open Clarification →</button></div>');bindModal()}
@@ -63,14 +62,25 @@ function exportMatrix(){const rows=qa('#page table tr').map(r=>qa('th,td',r).map
 function handle(e){
  const b=e.target.closest('button,a');if(!b||b.closest('#modal'))return;
  const text=(b.textContent||'').trim(); const p=pageName();
- if(b.matches('[data-detail],[data-act],[data-cp],[data-rate-review],.pv5-page-preview,.pv5-page-edit,.pv5-page-approve,.pv5-page-change,#sizeSaveDraft,#sizePublish,#constructionSaveDraft,#constructionPublish,#rateSaveDraft,#ratePreview,#ratePublish'))return;
+ if(b.matches('[data-detail],[data-act],[data-cp],[data-rate-review],[data-band-review],[data-waste-live],.pv5-page-preview,.pv5-page-edit,.pv5-page-approve,.pv5-page-change,#sizeSaveDraft,#sizePublish,#constructionSaveDraft,#constructionPublish,#rateSaveDraft,#ratePreview,#ratePublish,#bandSave,#bandPreview,#bandPublish'))return;
  if(b.matches('[data-page]')||/View Approval Summary/i.test(text)||/Continue to Next Section/i.test(text))return;
+ if(/View Cross-Family Impact/i.test(text)){e.preventDefault();window.PV5?.go?.('approval');return}
+ if(/Save & Continue to Terms/i.test(text)){e.preventDefault();window.PV5?.go?.('approval');return}
+ if(/Find Market Comparables/i.test(text)){e.preventDefault();window.PV5?.go?.('competitor');return}
+ if(/Export to Excel/i.test(text)){e.preventDefault();exportMatrix();return}
+ if(/Download KLD/i.test(text)){e.preventDefault();window.PV5?.go?.('sizes');return}
+ if(/Add Packaging Line|Remove Line/i.test(text)){e.preventDefault();reviewRequest('Sales Quote Review',rowText(b)||'Use the live CRM quote builder for production packaging-line changes. This review workspace does not mutate a customer quote.',null);return}
+ if(/Save Draft/i.test(text)){e.preventDefault();reviewRequest('Review Draft Saved','Owner review progress was captured. Continue reviewing the related section before final approval.',2);return}
+ if(/Preview All/i.test(text)&&p.includes('Sizes')){e.preventDefault();window.PV5?.go?.('sizes');return}
  if(/Reset Filters/i.test(text)){e.preventDefault();qa('#page select').forEach(s=>s.selectedIndex=0);qa('#page input[type="search"],#page input[placeholder*="Search"]').forEach(i=>i.value='');return}
  if(/Export Matrix/i.test(text)){e.preventDefault();exportMatrix();return}
  if(/Compare Previous Version/i.test(text)){e.preventDefault();comparePrevious();return}
  if(/Review Exceptions/i.test(text)){e.preventDefault();exceptions();return}
  if(/Preview Impact|Run Impact Preview/i.test(text)){e.preventDefault();impactPreview();return}
- if(/Edit Buckets|Apply to Family|Global Adjustment/i.test(text)){e.preventDefault();wasteEdit(b);return}
+ if(/^×$/.test(text)&&b.closest('#priceWhy')){e.preventDefault();const panel=b.closest('#priceWhy');if(panel)panel.innerHTML='<div class="panel-title"><h3>Why this price?</h3></div><div class="notice info" style="margin:12px">Select a calculated matrix price to open its engine-backed cost breakdown.</div>';return}
+ if(/Reduce Margin|Reduce Waste/i.test(text)){e.preventDefault();const edit=qa('#page [data-band-review]')[0]||qa('#page button').find(x=>/Edit Buckets/i.test(x.textContent||''));if(edit)edit.click();else wasteEdit(b);return}
+ if(/Add a Global Adjustment|Global Price Adjustment/i.test(text)){e.preventDefault();reviewRequest('Global Price Adjustment','Capture the proposed global adjustment for owner review. This does not alter live pricing until a controlled implementation and approval exists.',null);return}
+ if(/Edit Buckets|Apply to Family/i.test(text)){e.preventDefault();wasteEdit(b);return}
  if(p.includes('Constructions')&&/^View$/i.test(text)){e.preventDefault();constructionView(b);return}
  if(p.includes('Constructions')&&/^Edit$/i.test(text)){e.preventDefault();constructionEdit(b);return}
  if(p.includes('Sizes')&&/Preview/i.test(text)){e.preventDefault();sizePreview(b);return}
@@ -83,7 +93,11 @@ function handle(e){
 }
 function decorate(){
  const p=page();if(!p)return;
- qa('button',p).forEach(b=>{const t=(b.textContent||'').trim();if(/^(View|Edit|Preview)$|Review Exceptions|Compare Previous Version|Export Matrix|Preview Impact|Run Impact Preview|Edit Buckets|Apply to Family/i.test(t)){b.title=b.title||'Open working owner-review action';b.classList.add('premium-wired')}});
+ qa('button',p).forEach(b=>{const t=(b.textContent||'').trim();if(/^(View|Edit|Preview)$|Review Exceptions|Compare Previous Version|Export Matrix|Preview Impact|Run Impact Preview|Edit Buckets|Apply to Family|Reduce Margin|Reduce Waste|Global Adjustment/i.test(t)){b.title=b.title||'Open working owner-review action';b.classList.add('premium-wired')}});
+ // Prototype-only pager controls are replaced by the live pagers. If a live module has
+ // not mounted yet, make the fallback controls visibly non-interactive instead of dead.
+ qa('.pager button',p).forEach(b=>{if(!b.dataset.cp&&!b.dataset.ratePage&&!b.dataset.matrixPage){b.disabled=true;b.title='Live review pagination loads with the current Pricing v5 data.'}});
+ const nextKld=q('.next-kld',p);if(nextKld&&!nextKld.dataset.liveKld){nextKld.disabled=true;nextKld.title='Use Preview All or the Sizes table to review KLD samples.'}
  qa('.status',p).forEach(s=>{if(/Review Required|Needs Review/i.test(s.textContent||'')){s.style.cursor='pointer';s.title='Open the related clarification / owner-review question';s.onclick=()=>goClarification(clarificationIndexFor(pageName(),s.closest('tr')?.textContent||''));}});
 }
 document.addEventListener('click',handle,true);

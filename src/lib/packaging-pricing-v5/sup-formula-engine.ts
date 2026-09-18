@@ -213,7 +213,12 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
       let materialPerFrame = 0;
       const materialBreakdown: Array<Record<string, unknown>> = [];
       for (const layer of resolvedConstruction.layers) {
-        const web = layer.is_print_layer ? outerPrintWebMm : layer.is_sealant_layer ? peWebMm : innerWebMm;
+        // Stark's SUP workbook runs aluminium foil on the 760 mm outer web even when
+        // foil is a middle barrier layer. PET/MetPET middle layers continue to use the
+        // inner stock-web ladder; PE sealant continues to use the PE ladder.
+        const web = layer.is_print_layer || layer.master.code === 'MAT_AL_FOIL_9'
+          ? outerPrintWebMm
+          : layer.is_sealant_layer ? peWebMm : innerWebMm;
         const usage = materialAmount(layer.master, web, component.web_run_mm_per_frame);
         materialPerFrame += usage.amount;
         materialBreakdown.push({
@@ -328,7 +333,17 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
 
   const alternatives: AlternativePriceV5[] = [];
   if (includeAlternatives && !errors.length) {
-    const targets = [quantity,10000,15000,20000].filter((value,index,all)=>value>0&&all.indexOf(value)===index).sort((a,b)=>a-b);
+    const defaultQuantityLadder = [1000,2000,3000,5000,10000,20000,30000,50000];
+    const allowedQuantities = Array.isArray(size?.metadata?.allowed_quantities)
+      ? size!.metadata!.allowed_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
+      : [];
+    const configured = allowedQuantities.length ? allowedQuantities : defaultQuantityLadder;
+    const blocked = Array.isArray(size?.metadata?.blocked_quantities)
+      ? size!.metadata!.blocked_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
+      : [];
+    const ladder = [...new Set(configured)].filter((value)=>!blocked.includes(value)).sort((a,b)=>a-b);
+    const higher = ladder.filter((value)=>value>quantity).slice(0,5);
+    const targets = [quantity,...higher].filter((value,index,all)=>value>0&&all.indexOf(value)===index);
     for (const target of targets) {
       if (target===quantity) {
         alternatives.push({ quantity,unit_price:round(unitPrice,8),product_total:round(productTotal,2),run_length_m:round(primaryRunLengthM,8),wastage_pct:band?.wastage_pct??0,margin_per_frame:band?.margin_per_frame??0 });

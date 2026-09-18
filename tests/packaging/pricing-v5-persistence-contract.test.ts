@@ -17,6 +17,7 @@ const matrixActions=fs.readFileSync('src/features/packaging/server/pricing-v5-ma
 const adminWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-admin-workspace.tsx','utf8');
 const matrixWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-price-matrix.tsx','utf8');
 const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
+const starkSeed=fs.readFileSync('supabase/migrations/20260914013100_s52_pkg_v5_stark_master_seed.sql','utf8');
 
 test('S52-PKG-V5: v5 uses isolated tables and a separate disabled feature flag',()=>{
   assert.match(schema,/create table if not exists public\.packaging_size_profiles_v5/i);
@@ -92,6 +93,20 @@ test('S52-PKG-V5: Admin can maintain revision-scoped Charge Master overrides',()
   assert.match(adminWorkspace,/Save charge/);
 });
 
+test('S52-PKG-V5: Stark seed preserves the exact 20 Sizes-sheet rows and PG01-PG05 assignments',()=>{
+  const expected=[
+    ['80x130_bg25_25',1],['98x150_bg30_30',1],
+    ['110x170_bg30_30',2],['150x150_bg40_40',2],
+    ['120x210_bg40_40',3],['125x210_bg40_40',3],['130x210_bg40_40',3],['140x210_bg40_40',3],['145x210_bg40_40',3],['150x220_bg50_50',3],['160x240_bg50_50',3],['170x250_bg50_50',3],['185x270_bg50_50',3],
+    ['200x300_bg55_55',4],['210x300_bg55_55',4],['220x300_bg55_55',4],['230x310_bg55_55',4],['245x320_bg55_55',4],
+    ['260x340_bg60_60',5],['280x360_bg60_60',5],
+  ];
+  for(const [key,bucket] of expected){
+    assert.match(starkSeed,new RegExp("\\('"+key+"'[^\\n]+,"+bucket+"(?:::smallint)?,"),key+' must stay in PG0'+bucket);
+  }
+  assert.doesNotMatch(starkSeed,/\('160x230_bg50_50'/,'160x230 is a workbook formula example, not an approved Sizes-sheet row');
+});
+
 test('S52-PKG-V5: publish validation enforces workbook catalog and exact run-length schedules',()=>{
   assert.match(adminActions,/activeSizes\.length!==20/);
   assert.match(adminActions,/activeConstructions\.length<44/);
@@ -122,6 +137,13 @@ test('S52-PKG-V5: Sales option projection never returns raw master rates or comm
   assert.doesNotMatch(salesOptions,/wastage_pct\s*:/);
   assert.doesNotMatch(salesOptions,/margin_per_frame\s*:/);
   assert.match(salesOptions,/structure_label/);
+});
+
+test('S52-PKG-V5: Sales receives only safe allowed/blocked quantity rules for N/A enforcement',()=>{
+  assert.match(salesOptions,/quantity_rules/);
+  assert.match(salesOptions,/allowed_quantities/);
+  assert.match(salesOptions,/blocked_quantities/);
+  assert.doesNotMatch(salesOptions,/metadata:item\.metadata/);
 });
 
 test('S52-PKG-V5: separate gusset cannot receive zipper, pouching or a second margin',()=>{

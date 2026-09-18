@@ -9,6 +9,12 @@ const master = (id:string,code:string,name:string,type:'material'|'process',basi
 });
 
 const bands:any[] = [
+  {pricing_bucket:1,run_length_max_m:500,wastage_pct:20,margin_per_frame:70,sort_order:1},
+  {pricing_bucket:1,run_length_max_m:1000,wastage_pct:10,margin_per_frame:60,sort_order:2},
+  {pricing_bucket:1,run_length_max_m:2000,wastage_pct:8,margin_per_frame:50,sort_order:3},
+  {pricing_bucket:1,run_length_max_m:3000,wastage_pct:7,margin_per_frame:40,sort_order:4},
+  {pricing_bucket:1,run_length_max_m:5000,wastage_pct:6,margin_per_frame:30,sort_order:5},
+  {pricing_bucket:1,run_length_max_m:10000,wastage_pct:5,margin_per_frame:25,sort_order:6},
   {pricing_bucket:2,run_length_max_m:250,wastage_pct:25,margin_per_frame:70,sort_order:1},
   {pricing_bucket:2,run_length_max_m:500,wastage_pct:20,margin_per_frame:70,sort_order:2},
   {pricing_bucket:2,run_length_max_m:1000,wastage_pct:10,margin_per_frame:60,sort_order:3},
@@ -23,6 +29,13 @@ const bands:any[] = [
   {pricing_bucket:3,run_length_max_m:3000,wastage_pct:7,margin_per_frame:17,sort_order:5},
   {pricing_bucket:3,run_length_max_m:5000,wastage_pct:6,margin_per_frame:15,sort_order:6},
   {pricing_bucket:3,run_length_max_m:10000,wastage_pct:5,margin_per_frame:13,sort_order:7},
+  {pricing_bucket:4,run_length_max_m:250,wastage_pct:25,margin_per_frame:35,sort_order:1},
+  {pricing_bucket:4,run_length_max_m:500,wastage_pct:20,margin_per_frame:35,sort_order:2},
+  {pricing_bucket:4,run_length_max_m:1000,wastage_pct:10,margin_per_frame:25,sort_order:3},
+  {pricing_bucket:4,run_length_max_m:2000,wastage_pct:8,margin_per_frame:20,sort_order:4},
+  {pricing_bucket:4,run_length_max_m:3000,wastage_pct:7,margin_per_frame:17,sort_order:5},
+  {pricing_bucket:4,run_length_max_m:5000,wastage_pct:6,margin_per_frame:15,sort_order:6},
+  {pricing_bucket:4,run_length_max_m:10000,wastage_pct:5,margin_per_frame:13,sort_order:7},
   {pricing_bucket:5,run_length_max_m:250,wastage_pct:25,margin_per_frame:35,sort_order:1},
   {pricing_bucket:5,run_length_max_m:500,wastage_pct:20,margin_per_frame:35,sort_order:2},
   {pricing_bucket:5,run_length_max_m:1000,wastage_pct:10,margin_per_frame:25,sort_order:3},
@@ -99,6 +112,74 @@ test('S52-PKG-V5: integrated 160x240 geometry resolves seven units per frame and
   assert.match(result.construction?.structure_label ?? '',/PE 75/);
 });
 
+test('S52-PKG-V5: 160x230 workbook 3-layer example reconciles exactly at 5,000 pcs',()=>{
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{
+      ...base.sizeProfiles[0],id:'wb160',size_key:'160x230_bg50_50',name:'160 x 230',width_mm:160,height_mm:230,bottom_gusset_each_mm:50,
+      pricing_bucket:3,production_profile_key:'sup_integrated',gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',
+    }],
+    charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{}}],
+  };
+  const result=calculateSupFormulaV5(context,{size_profile_id:'wb160',construction_id:'c3',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_ZIPPER']});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components[0]?.units_per_frame,7);
+  assert.ok(Math.abs(result.commercial_rules.run_length_m-800)<1e-8);
+  assert.equal(result.commercial_rules.wastage_pct,10);
+  assert.equal(result.commercial_rules.margin_per_frame,25);
+  assert.ok(Math.abs(result.selling_price.unit_price-15.83605329)<1e-8);
+  assert.ok(Math.abs(result.selling_price.product_total-79180.27)<0.01);
+});
+
+test('S52-PKG-V5: 160x230 workbook 3-layer foil example reconciles exactly at 5,000 pcs',()=>{
+  const foilConstruction={id:'cfoil3',organization_id:'org',family_id:'sup',construction_key:'glossy_al_foil_pe75',construction_family_key:'glossy_al_foil',name:'Glossy Finish With Aluminium Foil / PE75',finish_type:'glossy',barrier_type:'high_barrier',sealant_code:'MAT_PE_75',layer_count:3,is_active:true,is_quoteable:false,sort_order:3};
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{
+      ...base.sizeProfiles[0],id:'wb160-foil3',size_key:'160x230_bg50_50',name:'160 x 230',width_mm:160,height_mm:230,bottom_gusset_each_mm:50,
+      pricing_bucket:3,production_profile_key:'sup_integrated',gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',
+    }],
+    constructions:[...base.constructions,foilConstruction],
+    constructionLayers:[...base.constructionLayers,
+      {id:'lf31',construction_id:'cfoil3',layer_position:1,role_key:'print_layer',cost_master_item_id:'pet',is_print_layer:true,is_sealant_layer:false},
+      {id:'lf32',construction_id:'cfoil3',layer_position:2,role_key:'middle_layer_1',cost_master_item_id:'foil',is_print_layer:false,is_sealant_layer:false},
+      {id:'lf33',construction_id:'cfoil3',layer_position:3,role_key:'sealant_layer',cost_master_item_id:'pe75',is_print_layer:false,is_sealant_layer:true},
+    ],
+    masters:base.masters.map((item)=>{
+      if(item.id==='pet') return {...item,current_rate:165};
+      if(item.id==='foil') return {...item,current_rate:550,gsm:24.2,density:null};
+      return item;
+    }),
+    charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{}}],
+  };
+  const result=calculateSupFormulaV5(context,{size_profile_id:'wb160-foil3',construction_id:'cfoil3',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_ZIPPER']});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components[0]?.units_per_frame,7);
+  assert.ok(Math.abs(result.selling_price.unit_price-17.27390007)<1e-8);
+  assert.ok(Math.abs(result.selling_price.product_total-86369.50)<0.01);
+});
+
+test('S52-PKG-V5: 160x230 workbook 4-layer foil example reconciles exactly at 5,000 pcs',()=>{
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{
+      ...base.sizeProfiles[0],id:'wb160-4',size_key:'160x230_bg50_50',name:'160 x 230',width_mm:160,height_mm:230,bottom_gusset_each_mm:50,
+      pricing_bucket:3,production_profile_key:'sup_integrated',gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',
+    }],
+    masters:base.masters.map((item)=>{
+      if(item.id==='pet') return {...item,current_rate:165};
+      if(item.id==='foil') return {...item,current_rate:550,gsm:24.2,density:null};
+      return item;
+    }),
+    charges:[{id:'zip',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{}}],
+  };
+  const result=calculateSupFormulaV5(context,{size_profile_id:'wb160-4',construction_id:'c4',print:'CMYKW',quantity:5000,selected_charge_codes:['EXTRA_ZIPPER']});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components[0]?.units_per_frame,7);
+  assert.ok(Math.abs(result.selling_price.unit_price-18.11137689)<1e-8);
+  assert.ok(Math.abs(result.selling_price.product_total-90556.88)<0.01);
+});
+
 test('S52-PKG-V5: 4-layer construction is priced from four dynamic layer records',()=>{
   const three=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   const four=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c4',print:'CMYKW',quantity:5000});
@@ -118,12 +199,42 @@ test('S52-PKG-V5: missing layer rate fails closed',()=>{
 test('S52-PKG-V5: alternative quantities are independently recalculated',()=>{
   const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,true,result.validation_errors.join(' '));
-  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[5000,10000,15000,20000]);
+  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[5000,10000,20000,30000,50000]);
   const q5=result.alternative_quantities.find((item)=>item.quantity===5000)!;
   const q20=result.alternative_quantities.find((item)=>item.quantity===20000)!;
   assert.equal(q5.wastage_pct,10);
   assert.ok(q20.run_length_m>q5.run_length_m);
   assert.notEqual(q20.unit_price,q5.unit_price);
+});
+
+test('S52-PKG-V5: reference MOQ ladder returns five higher options from 2,000',()=>{
+  const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:2000});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[2000,3000,5000,10000,20000,30000]);
+});
+
+test('S52-PKG-V5: empty allowed list falls back to the reference MOQ ladder',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{...base.sizeProfiles[0],metadata:{allowed_quantities:[],blocked_quantities:[1000]}}]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:2000});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[2000,3000,5000,10000,20000,30000]);
+  const blocked=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:1000});
+  assert.equal(blocked.ok,false);
+});
+
+test('S52-PKG-V5: bucket 4 live-size geometry uses the authoritative PG04 commercial schedule',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'pg4',size_key:'200x300_bg55_55',name:'200 x 300',width_mm:200,height_mm:300,bottom_gusset_each_mm:55,
+    pricing_bucket:4,gusset_production_mode:'integrated',production_profile_key:'sup_integrated',bottom_registration_mode:'not_applicable',
+  }]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'pg4',construction_id:'c3',print:'CMYKW',quantity:5000});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.equal(result.production_route.components[0]?.units_per_frame,5);
+  assert.ok(Math.abs(result.commercial_rules.run_length_m-1000)<1e-8);
+  assert.equal(result.commercial_rules.bucket_no,4);
+  assert.equal(result.commercial_rules.band_max_m,1000);
+  assert.equal(result.commercial_rules.wastage_pct,10);
+  assert.equal(result.commercial_rules.margin_per_frame,25);
 });
 
 test('S52-PKG-V5: 260x340 uses separate gusset and inherits the main commercial band',()=>{
@@ -242,4 +353,49 @@ test('S52-PKG-V5: rejects workbook N/A quantities configured on a size',()=>{
   const allowed=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:10000});
   assert.equal(allowed.ok,true,allowed.validation_errors.join(' '));
   assert.ok(allowed.alternative_quantities.every((item)=>[5000,10000].includes(item.quantity)));
+});
+
+
+test('S52-PKG-V5: owner clarification blocks 1K and 2K for N/A small-size rows',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],
+    id:'n-a-small',
+    name:'98 x 150',
+    metadata:{blocked_quantities:[1000,2000]},
+  }]};
+  const q1=calculateSupFormulaV5(context,{size_profile_id:'n-a-small',construction_id:'c3',print:'CMYKW',quantity:1000});
+  const q2=calculateSupFormulaV5(context,{size_profile_id:'n-a-small',construction_id:'c3',print:'CMYKW',quantity:2000});
+  const q3=calculateSupFormulaV5(context,{size_profile_id:'n-a-small',construction_id:'c3',print:'CMYKW',quantity:3000});
+  assert.equal(q1.ok,false);
+  assert.equal(q2.ok,false);
+  assert.equal(q3.ok,true,q3.validation_errors.join(' '));
+  assert.ok(q3.alternative_quantities.every((item)=>![1000,2000].includes(item.quantity)));
+});
+
+test('S52-PKG-V5: Akshay 98x150 registered model uses 10mm trim and resolves 22 units per frame',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'small98',size_key:'98x150_bg30_30',name:'98 x 150',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,
+    pricing_bucket:1,gusset_production_mode:'conditional',production_profile_key:'sup_98x150_conditional',bottom_registration_mode:'optional',
+    metadata:{trim_allowance_mm:10},
+  }]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'registered_artwork'});
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  const body=result.production_route.components[0];
+  assert.equal(body.web_width_mm,370);
+  assert.equal(body.lanes_across,2);
+  assert.equal(body.repeats_along,11);
+  assert.equal(body.units_per_frame,22);
+});
+
+test('S52-PKG-V5: Akshay 98x150 unregistered model stays a distinct split-gusset price route',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],id:'small98',size_key:'98x150_bg30_30',name:'98 x 150',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,
+    pricing_bucket:1,gusset_production_mode:'conditional',production_profile_key:'sup_98x150_conditional',bottom_registration_mode:'optional',
+    metadata:{trim_allowance_mm:10},
+  }]};
+  const registered=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'registered_artwork'});
+  const unregistered=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'solid_unregistered'});
+  assert.equal(unregistered.ok,true,unregistered.validation_errors.join(' '));
+  assert.equal(unregistered.production_route.components.length,2);
+  assert.notEqual(unregistered.selling_price.unit_price,registered.selling_price.unit_price);
 });

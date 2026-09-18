@@ -18,6 +18,8 @@ const FAMILY_KEYS = {
   center_seal_pouch: 'Center Seal — Pouch Form',
   three_side_seal_roll: '3 Side Seal — Roll Form',
   three_side_seal_pouch: '3 Side Seal — Pouch Form',
+  labels: 'Labels',
+  shrink_sleeves: 'Shrink Sleeves',
 } as const;
 
 type TemplateRow = {
@@ -127,6 +129,8 @@ export async function GET(request: NextRequest) {
     const threeRoll = reviewTemplateBySlug('stark-3ss-roll-matrix-v4');
     const threePouch = reviewTemplateBySlug('stark-3ss-pouch-matrix-v4');
     const flatFamily = familyList.find((family: any) => String(family.name).toLowerCase().includes('flat bottom'));
+    const labelsFamily = familyList.find((family:any)=>String(family.slug)==='labels');
+    const shrinkFamily = familyList.find((family:any)=>String(family.slug)==='shrink-sleeves');
 
     const result = {
       flat_bottom: {
@@ -157,6 +161,16 @@ export async function GET(request: NextRequest) {
         state: threeRoll ? 'published_baseline' : 'missing',
         template: threeRoll ? compactTemplate(threeRoll) : null,
         clarification: 'Current Stark 3SS Roll Form v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing.',
+      },
+      labels: {
+        key:'labels', name:FAMILY_KEYS.labels, state:'needs_configuration',
+        pricing_mode:labelsFamily?.pricing_mode??'not_configured', template:null,
+        clarification:'Labels is an active Stark service family but does not yet have an approved Pricing v5 template. Review/fix must capture label-specific sizes, substrates, print method, finishing, production geometry and commercial rules before Sales quoting is enabled.',
+      },
+      shrink_sleeves: {
+        key:'shrink_sleeves', name:FAMILY_KEYS.shrink_sleeves, state:'needs_configuration',
+        pricing_mode:shrinkFamily?.pricing_mode??'not_configured', template:null,
+        clarification:'Shrink Sleeves is an active Stark service family but does not yet have an approved Pricing v5 template. Review/fix must capture sleeve dimensions, substrate/micron, print method, seaming/finishing, production geometry and commercial rules before Sales quoting is enabled.',
       },
       three_side_seal_pouch: {
         key: 'three_side_seal_pouch',

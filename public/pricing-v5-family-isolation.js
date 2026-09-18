@@ -2,6 +2,7 @@
 'use strict';
 const STORAGE='setu_pricing_v5_selected_family_v1';
 const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
+let applyTimer=null;
 function selected(){try{return localStorage.getItem(STORAGE)||'sup'}catch(_){return'sup'}}
 function title(){return q('#page .page-head h2')?.textContent?.trim()||''}
 function restore(){qa('[data-family-isolated]').forEach(el=>{el.style.display=el.dataset.familyDisplay||'';delete el.dataset.familyIsolated;delete el.dataset.familyDisplay})}
@@ -15,6 +16,7 @@ function apply(){restore();if(selected()==='sup')return;const t=title();
   else if(/Waste & Margins/i.test(t))qa('#page .metric-grid,#page .waste-filters,#page .waste-layout,#page .bottom-actions').forEach(hide);
   else if(/Price Matrix/i.test(t))qa('#page .metric-grid,#page .matrix-toolbar,#page .matrix-actions,#page .matrix-layout').forEach(hide);
 }
-function boot(){apply();new MutationObserver(()=>setTimeout(apply,100)).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('storage',()=>setTimeout(apply,50));setInterval(apply,1200)}
+function scheduleApply(delay=90){if(applyTimer)clearTimeout(applyTimer);applyTimer=setTimeout(()=>{applyTimer=null;apply()},delay)}
+function boot(){apply();new MutationObserver(()=>scheduleApply()).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('storage',()=>scheduleApply(20));document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleApply(0)})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();

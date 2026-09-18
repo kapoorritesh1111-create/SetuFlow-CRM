@@ -215,21 +215,16 @@
             ? '<div class="notice info"><b>Automatic split gusset.</b> SETU handles the approved production route without another Sales question.</div>'
             : '<div class="notice good"><b>Valid published configuration.</b> No extra bottom question is required.</div>';
       }
-      const quantities = [...new Set([currentQty, 10000, 15000, 20000])].sort((a, b) => a - b);
-      const results = [];
-      for (const qty of quantities) {
-        $('sQty').value = String(qty);
-        const priced = await livePrice($('sSize'), $('sStruct'), $('sQty'), $('sPrint'), $('sZip'));
-        results.push({ qty, price: unitPrice(priced.safe) });
-      }
-      $('sQty').value = String(currentQty);
+      const engineOptions = Array.isArray(d.safe?.alternative_quantities) ? d.safe.alternative_quantities : [];
+      const results = engineOptions.map((row) => ({ qty:Number(row.quantity), price:Number(row.unit_price), total:Number(row.product_total) }))
+        .filter((row) => Number.isFinite(row.qty) && Number.isFinite(row.price));
       const better = results.filter((r) => r.qty > currentQty && Number.isFinite(r.price) && r.price < current);
       const recommended = better.find((r) => (current - r.price) / current >= 0.05) || better[0];
       if (box) {
         box.innerHTML = results.map((r) => {
           const saving = Number.isFinite(current) && current > 0 ? ((current - r.price) / current) * 100 : 0;
           const rec = recommended && r.qty === recommended.qty;
-          return `<div class="alt"${rec ? ' style="border-color:#46bfae;background:#eefbf8"' : ''}><div><b>${r.qty.toLocaleString()} pcs</b>${rec ? '<div><span class="pill green">Recommended MOQ</span></div>' : ''}<div style="font-size:11px;color:var(--m)">${r.qty === currentQty ? 'Current selection' : saving > 0 ? `Unit price saves ${saving.toFixed(1)}%` : 'No unit saving'}</div></div><div style="text-align:right"><b>${money(r.price)}/pc</b><div style="font-size:11px;color:var(--m)">${money(r.price * r.qty)} excl GST</div></div></div>`;
+          return `<div class="alt"${rec ? ' style="border-color:#46bfae;background:#eefbf8"' : ''}><div><b>${r.qty.toLocaleString()} pcs</b>${rec ? '<div><span class="pill green">Recommended MOQ</span></div>' : ''}<div style="font-size:11px;color:var(--m)">${r.qty === currentQty ? 'Current selection' : saving > 0 ? `Unit price saves ${saving.toFixed(1)}%` : 'No unit saving'}</div></div><div style="text-align:right"><b>${money(r.price)}/pc</b><div style="font-size:11px;color:var(--m)">${money(Number.isFinite(r.total)?r.total:r.price*r.qty)} excl GST</div></div></div>`;
         }).join('');
         if (recommended) box.innerHTML += `<div class="notice good"><b>SETU suggestion:</b> offer ${recommended.qty.toLocaleString()} pcs as an option to reduce unit price from ${money(current)} to ${money(recommended.price)} (${(((current - recommended.price) / current) * 100).toFixed(1)}% lower). SETU never changes the customer's quantity automatically.</div>`;
       }
@@ -310,7 +305,7 @@
       const button = document.createElement('button');
       button.className = 'btn success';
       button.dataset.kldApproveAll = '1';
-      button.textContent = 'Approve All 21 KLD Samples';
+      button.textContent = 'Approve All 20 KLD Samples';
       button.onclick = approveAllKlds;
       page.appendChild(button);
     }
@@ -412,8 +407,7 @@
   }
 
   const clarificationItems = [
-    ['160x240-standard', 'Confirm the approved 160 × 230 / 160 × 240 size policy', 'Both 160 × 230 and 160 × 240 are approved as separate valid SUP sizes.', ['160 × 240', '160 × 230', 'Keep both']],
-    ['invalid-combinations', 'Are any size × construction combinations not manufacturable?', 'If yes, identify them so SETU hides them instead of allowing an invalid quote.', ['All 44 apply to all 21 SUP sizes', 'Restrictions exist — see comment']],
+    ['invalid-combinations', 'Are any size × construction combinations not manufacturable?', 'If yes, identify them so SETU hides them instead of allowing an invalid quote.', ['All 44 apply to all 20 SUP sizes', 'Restrictions exist — see comment']],
     ['missing-kld-policy', 'What should Sales do when production KLD is not yet approved?', 'Review samples are available, but production dielines may arrive later.', ['Allow quote + show Production KLD pending', 'Allow quote using review sample reference', 'Block quote until production KLD']],
     ['competitor-directional', 'How should directional competitor evidence be handled?', 'Exact like-for-like evidence can be averaged. Directional evidence should never silently become an exact market average.', ['Show directional but exclude from average', 'Show exact evidence only']],
     ['construction-complete', 'Are the 44 standard SUP constructions complete?', '11 construction families × PE60/75/95/120 are currently configured.', ['Yes — complete', 'No — additions required']],

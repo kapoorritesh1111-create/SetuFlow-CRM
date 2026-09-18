@@ -4,7 +4,7 @@ if(window.__PV5_DASHBOARD_REVIEW_CONTROLLER__) return;
 window.__PV5_DASHBOARD_REVIEW_CONTROLLER__=true;
 
 const API='/api/public/pricing-v5-review-preview';
-const QUANTITIES=[5000,10000,15000,20000];
+const QUANTITIES=[1000,2000,3000,5000,10000,20000,30000,50000];
 const CACHE_TTL_MS=30000;
 const q=(s,r=document)=>r.querySelector(s);
 const qa=(s,r=document)=>Array.from(r.querySelectorAll(s));

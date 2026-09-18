@@ -59,7 +59,8 @@ export function resolveProductionRouteV5(
   const errors: string[] = [];
   const machineWidthMm = n(rules.machine_width_mm ?? 740);
   const machineLengthMm = n(rules.machine_length_mm ?? 1120);
-  const mainTrimMm = n(rules.trim_allowance_mm ?? 20);
+  const sizeTrimMm = n(size.metadata?.trim_allowance_mm);
+  const mainTrimMm = sizeTrimMm > 0 ? sizeTrimMm : n(rules.trim_allowance_mm ?? 20);
   const gussetTrimMm = n(rules.gusset_trim_allowance_mm ?? 3);
 
   let effective: 'integrated' | 'split_gusset' = 'integrated';
