@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "python scripts/run-product-overview-ux-polish.py && npm run test:growth-agent && npm run test:packaging && npm run test:trade-events && npm run test:mail && npm run test:calendar && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
@@ -37,7 +37,11 @@
     "test:security": "tsx --test tests/security/rls-boundaries.test.ts tests/security/order-auth-boundaries.test.ts",
     "check:mobile-scan": "node scripts/check-mobile-scan-prod.mjs",
     "test:docs-drift": "node --test tests/docs-drift.test.mjs",
-    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts tests/packaging/pricing-v4-engine.test.ts tests/packaging/pricing-v4-workbook-matrix.test.ts tests/packaging/pricing-v4-charges.test.ts tests/packaging/pricing-v4-persistence-contract.test.ts tests/packaging/pricing-v4-snapshot-reproduction.test.ts tests/packaging/pricing-v4-admin-ux.test.ts tests/packaging/pricing-v5-engine.test.ts tests/packaging/pricing-v5-persistence-contract.test.ts tests/packaging/design-proof.test.ts && node --test tests/s50-packaging-intelligence-completion.test.mjs"
+    "test:packaging": "tsx --test tests/packaging/pricing-engine.test.ts tests/packaging/pricing-v4-engine.test.ts tests/packaging/pricing-v4-workbook-matrix.test.ts tests/packaging/pricing-v4-charges.test.ts tests/packaging/pricing-v4-persistence-contract.test.ts tests/packaging/pricing-v4-snapshot-reproduction.test.ts tests/packaging/pricing-v4-admin-ux.test.ts tests/packaging/pricing-v5-engine.test.ts tests/packaging/pricing-v5-persistence-contract.test.ts tests/packaging/design-proof.test.ts && node --test tests/s50-packaging-intelligence-completion.test.mjs",
+    "build:vercel": "next build",
+    "check:product-overview-polish": "python scripts/check-product-overview-ux-polish.py",
+    "verify:modules": "npm run test:growth-agent && npm run test:packaging && npm run test:trade-events && npm run test:mail && npm run test:calendar",
+    "verify:predeploy": "npm run check:product-overview-polish && npm run typecheck && npm run verify:modules && npm run build:vercel"
   },
   "dependencies": {
     "@sparticuz/chromium": "^137.0.1",
