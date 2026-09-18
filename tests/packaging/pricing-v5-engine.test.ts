@@ -196,3 +196,36 @@ test('S52-PKG-V5: conditional size fails closed until bottom-print choice is sup
   assert.equal(result.ok,false);
   assert.match(result.validation_errors.join(' '),/bottom-print selection/i);
 });
+
+
+test('S52-PKG-V5: 110x170 registered route reconciles Akshay COGS frame total',()=>{
+  const context:PricingContextV5={
+    ...base,
+    sizeProfiles:[{
+      ...base.sizeProfiles[0],id:'small-cogs',size_key:'110x170_bg30_30',name:'110 x 170',width_mm:110,height_mm:170,bottom_gusset_each_mm:30,
+      pricing_bucket:2,gusset_production_mode:'conditional',production_profile_key:'sup_110x170_conditional',bottom_registration_mode:'optional',
+    }],
+    masters:base.masters.map((item)=>{
+      if(item.id==='bopp') return {...item,current_rate:190,gsm:16.74,density:null};
+      if(item.id==='met') return {...item,current_rate:165,gsm:16.8,density:null};
+      if(item.id==='pe75') return {...item,current_rate:185,gsm:69.375,density:null};
+      if(item.id==='adh') return {...item,current_rate:350,gsm:1.5,metadata:{gsm_per_bond:1.5}};
+      return item;
+    }),
+    charges:[{
+      id:'zipper-charge',code:'EXTRA_ZIPPER',name:'Zipper',category:'extra',basis:'per_running_metre',
+      application_stage:'before_wastage_margin',current_rate:1.3,currency:'INR',metadata:{},
+    }],
+  };
+  const result=calculateSupFormulaV5(context,{
+    size_profile_id:'small-cogs',construction_id:'c3',print:'CMYKW',quantity:5000,
+    bottom_print_mode:'registered_artwork',selected_charge_codes:['EXTRA_ZIPPER'],
+  });
+  assert.equal(result.ok,true,result.validation_errors.join(' '));
+  const body=result.production_route.components[0];
+  assert.equal(body.units_per_frame,10);
+  assert.equal(body.web_run_mm_per_frame,1100);
+  assert.ok(Math.abs((result.cost_breakdown.totals_for_job.material_cost+result.cost_breakdown.totals_for_job.zipper_cost)/500-14.97533304)<0.00001,
+    'registered 110x170 RMC per frame should reconcile to the workbook COGS total');
+  assert.ok(Math.abs(result.cost_breakdown.totals_for_job.zipper_cost/500-1.43)<0.00001);
+});
