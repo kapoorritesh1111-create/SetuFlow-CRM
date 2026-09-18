@@ -123,7 +123,7 @@
     // so they cannot contradict the real owner decision controls above.
     page.querySelectorAll('table tbody tr').forEach(row=>{
       const txt=row.textContent || '';
-      if (/21 SUP sizes|44 constructions|commercial bucket|KLD workflow|Owner dashboard|Sales Quote behavior|Family migration|Competitor evaluator/i.test(txt)) {
+      if (/20 approved SUP sizes|44 constructions|commercial bucket|KLD workflow|Owner dashboard|Sales Quote behavior|Family migration|Competitor evaluator/i.test(txt)) {
         const item=BUSINESS.find(x=>txt.includes(x[1])) || BUSINESS.find(x=>txt.toLowerCase().includes(x[0].replaceAll('_',' ')));
         if (item) {
           const s=read(); const v=Object.prototype.hasOwnProperty.call(s.businessApprovals,item[0])?s.businessApprovals[item[0]]:undefined;
@@ -171,6 +171,6 @@
   function apply(){injectStyle();patchApprovalPage();patchFamilyPage();}
   function schedule(){clearTimeout(timer);timer=setTimeout(apply,80);}
   const observer=new MutationObserver(schedule);
-  function start(){apply();const page=document.getElementById('page');if(page)observer.observe(page,{childList:true,subtree:true});setInterval(apply,1200);}
+  function start(){apply();const page=document.getElementById('page');if(page)observer.observe(page,{childList:true,subtree:true});document.addEventListener('pv5:review-state-changed',schedule);document.addEventListener('pv5:review-state-loaded',schedule);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
