@@ -25,7 +25,6 @@ function clarificationIndexFor(title,text=''){
 }
 function goClarification(idx){
  if(idx==null){window.PV5?.go?.('approval');setTimeout(()=>scrollOwnerReview(),250);return}
- idx=0;
  window.PV5?.go?.('approval');
  setTimeout(()=>{
    const exact=q('[data-owner-clarification="'+idx+'"]')||q('#ownerClarification'+idx)||q('#clarifySelect'+idx)?.closest('.owner-question');
@@ -52,7 +51,7 @@ function sizeEdit(btn){reviewRequest('Request Size / KLD Change',rowText(btn)||'
 function wasteEdit(btn){reviewRequest('Commercial Bucket Review',rowText(btn)||'Review wastage %, margin and frame charge for this commercial bucket.',null)}
 function impactPreview(){
  const inputs=qa('#page input,#page select').map(x=>x.value).filter(Boolean).slice(-6).join(' → ');
- modal('Impact Preview','<div class="notice info"><b>Review preview only.</b> No production pricing is changed from this screen.</div><div class="card" style="padding:16px;margin-top:12px"><p>Selected change: '+esc(inputs||'Current commercial adjustment')+'</p><p>The only remaining clarification is whether any size × construction combinations are not manufacturable.</p><div class="row wrap" style="gap:8px"><button class="btn primary" data-answer-q="0">Review Remaining Construction Restriction →</button></div></div>');bindModal();
+ modal('Impact Preview','<div class="notice info"><b>Review preview only.</b> No production pricing is changed from this screen.</div><div class="card" style="padding:16px;margin-top:12px"><p>Selected change: '+esc(inputs||'Current commercial adjustment')+'</p><p>Open owner clarifications remain for configuration items that are not supported by the approved source data. Review them before final approval.</p><div class="row wrap" style="gap:8px"><button class="btn primary" data-answer-q="0">Review Remaining Construction Restriction →</button></div></div>');bindModal();
 }
 function matrixView(btn){const tr=btn.closest('tr');const txt=rowText(btn);reviewRequest('Price Matrix Cell Review',txt||'Review this calculated Pricing v5 row and its current status.',null)}
 function comparePrevious(){modal('Compare Previous Version','<div class="notice info"><b>Comparison intent:</b> use the current v4 workbook/matrix only as a migration baseline. The new v5 calculation must be reviewed independently.</div><div class="row wrap" style="margin-top:12px"><button class="btn primary" data-answer-q="0">Review Remaining Open Clarification →</button></div>');bindModal()}
