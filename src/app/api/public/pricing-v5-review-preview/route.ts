@@ -45,8 +45,8 @@ function constructionDisplayName(familyKey: string, fallback: string) {
 
 function materialDisplayName(name: string) {
   return name
-    .replace(/MetPET/i,'MetPET / Silver Film')
-    .replace(/Met Pet/i,'MetPET / Silver Film')
+    .replace(/MetPET/i,'MetPET (Silver Film)')
+    .replace(/Met Pet/i,'MetPET (Silver Film)')
     .replace(/PE\s+(\d+)µ?/i,'$1 PE')
     .replace(/^12 PET$/i,'12 PET')
     .replace(/^18 Matt BOPP$/i,'18 Matt BOPP');
