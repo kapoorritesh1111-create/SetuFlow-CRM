@@ -60,6 +60,7 @@ function processAmount(master: CostMasterRateV5, runM: number) {
 
 function quantityAllowed(size: PricingContextV5['sizeProfiles'][number], quantity: number) {
   const metadata=size.metadata ?? {};
+  if (metadata.moq_reference_status === 'not_listed_in_reference_sheet') return false;
   const allowed=Array.isArray(metadata.allowed_quantities)
     ? metadata.allowed_quantities.map((value)=>Math.floor(n(value))).filter((value)=>value>0)
     : [];
