@@ -157,6 +157,7 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await expect(page.locator('#modal')).toContainText('Review / Change Rate');
   await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 
+  await page.locator('[data-rate-page="p:next"]').click();
   const spotRow=page.getByRole('row').filter({hasText:'Spot UV'});
   await expect(spotRow).toContainText('Configuration incomplete');
   await spotRow.getByRole('button',{name:/Review \/ Configure/i}).click();
