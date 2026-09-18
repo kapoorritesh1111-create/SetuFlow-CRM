@@ -5,7 +5,7 @@ const STATE='/api/public/pricing-v5-owner-review-state';
 const q=(s,r=document)=>r.querySelector(s), qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=v=>Number.isFinite(Number(v))?'₹'+Number(v).toFixed(2):'—';
-let reviewState={},catalogPromise=null;
+let reviewState={},catalogPromise=null,tickTimer=null;
 function onPage(){return /Price Matrix/i.test(q('#page .page-head h2')?.textContent||'')}
 function construction(){return q('#matrixConstruction')||qa('#page label.field').find(l=>/Construction/i.test(q(':scope>span',l)?.textContent||''))?.querySelector('select')}
 function fieldSelect(label){return qa('#page label.field').find(l=>new RegExp(label,'i').test(q(':scope>span',l)?.textContent||''))?.querySelector('select')||null}
