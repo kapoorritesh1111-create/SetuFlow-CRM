@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install --no-audit --no-fund",
+  "installCommand": "npm ci --no-audit --no-fund",
   "crons": [
     {
       "path": "/api/calendar/reminders/process",
@@ -22,5 +22,6 @@
       "path": "/api/cron/generate-changelog-drafts",
       "schedule": "0 8 * * 1"
     }
-  ]
+  ],
+  "buildCommand": "npm run build:vercel"
 }
