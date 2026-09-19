@@ -19,6 +19,11 @@ const qa=read('public/pricing-v5-owner-readiness-qa.js');
 const scenario=read('public/pricing-v5-scenario-truth.js');
 const salesSuggestions=read('public/pricing-v5-sales-suggestions.js');
 const salesLive=read('public/pricing-v5-sales-live-quote.js');
+const familyRoute=read('src/app/api/public/pricing-v5-family-review/route.ts');
+const familyRuntime=read('public/pricing-v5-review-runtime.js');
+const familyQuote=read('public/pricing-v5-sales-family-quote.js');
+const ownerState=read('public/pricing-v5-owner-review-state.js');
+const dbReviewSync=read('public/pricing-v5-db-review-sync.js');
 
 function must(source,re,label){assert.match(source,re,label)}
 function mustNot(source,re,label){assert.doesNotMatch(source,re,label)}
@@ -143,4 +148,30 @@ test('Pricing v5 owner Sales Quote is fully engine-backed and interactive',()=>{
   must(salesLive,/matrixGeneration/,'Sales quote guards compatible-construction requests against stale responses');
   must(premium,/\[data-sales-kld\],#salesSaveReview,#salesContinueReview/,'Legacy capture handler bypasses live Sales Quote actions');
   mustNot(base,/\['#salesSize','#salesCon','#salesQty','#salesPrint','#salesZip'\].*refreshSales/,'Legacy Sales quote refresh wiring must stay disabled');
+});
+
+
+test('Pricing v5 Batch 8 exposes HTML only for families with real v5 engines',()=>{
+  for(const key of ['center_seal_roll','center_seal_pouch','three_side_seal_roll','three_side_seal_pouch']){
+    must(familyRoute,new RegExp(key),'family review API includes '+key);
+  }
+  must(familyRoute,/V5_REVIEW_SLUGS/,'family review API checks real v5 review templates');
+  must(familyRoute,/eq\('calculation_version',5\)/,'family review API requires calculation version 5');
+  must(familyRoute,/eq\('calculation_engine_key','frame_formula_v5'\)/,'family review API gates on frame_formula_v5');
+  must(familyRoute,/v5_engine_ready/,'family review API exposes engine readiness to HTML');
+  must(familyRoute,/v5_engine_ready_count/,'family API reports how many v5 engines are actually ready');
+  must(base,/engineReady=f\.v5_engine_ready===true/,'family detail gates controls on backend engine readiness');
+  must(base,/No Pricing v5 HTML has been enabled for this family/,'deferred families stay non-interactive in HTML');
+  must(base,/PV5DbReview\.save\('family-setup:'/,'active-family setup is persisted to DB-backed owner review state');
+  must(base,/confirmed_requirements/,'active-family setup tracks requirements independently');
+  mustNot(familyQuote,/\['flat_bottom','Flat Bottom Pouches'/,'Flat Bottom stays out of quote HTML until its v5 engine exists');
+  mustNot(familyQuote,/\['labels','Labels'/,'Labels stays out of quote HTML until its v5 engine exists');
+  mustNot(familyQuote,/\['shrink_sleeves','Shrink Sleeves'/,'Shrink Sleeves stays out of quote HTML until its v5 engine exists');
+  must(familyQuote,/stark-center-seal-roll-v5-review/,'Center Seal Roll quote review is wired');
+  must(familyQuote,/stark-center-seal-pouch-v5-review/,'Center Seal Pouch quote review is wired');
+  must(familyQuote,/stark-3ss-roll-v5-review/,'3SS Roll quote review is wired');
+  must(familyQuote,/stark-3ss-pouch-v5-review/,'3SS Pouch quote review is wired');
+  must(ownerState,/preserveReadiness/,'owner state does not overwrite v5 engine readiness');
+  must(dbReviewSync,/V5 Engine Ready\|V5 Engine Missing\|Deferred/,'DB review sync preserves engine readiness and deferred truth');
+  must(familyQuote,/pv5:sales-page-ready/,'family quote selector renders immediately when Sales page opens');
 });

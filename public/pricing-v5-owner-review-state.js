@@ -3,7 +3,7 @@
 
   const BASE_STORAGE = 'setu_pricing_v5_premium_review_v3';
   const RESET_FLAG = 'setu_pricing_v5_owner_review_reset_20260914_1';
-  const FAMILY_KEYS = ['sup','flat_bottom','center_seal_roll','center_seal_pouch','three_side_seal_roll','three_side_seal_pouch'];
+  const FAMILY_KEYS = ['sup','center_seal_roll','center_seal_pouch','three_side_seal_roll','three_side_seal_pouch'];
   const BUSINESS_KEYS = ['sup_sizes','constructions','buckets','kld','dashboard','sales','family','competitor'];
   const EXPECTED_CLARIFICATIONS = 6;
   let applying = false;
@@ -216,8 +216,12 @@
         pill.className = 'pill amber';
         card.appendChild(pill);
       }
-      setText(pill, !hasDecision ? 'Owner Review Required' : approved ? 'Owner Approved' : 'Needs Change');
-      pill.className = 'pill ' + (!hasDecision ? 'amber' : approved ? 'green' : 'red');
+      const readinessText=(pill.textContent||'').trim();
+      const preserveReadiness=/V5 Engine Ready|V5 Engine Missing|Deferred/i.test(readinessText);
+      if(!preserveReadiness){
+        setText(pill, !hasDecision ? 'Owner Review Required' : approved ? 'Owner Approved' : 'Needs Change');
+        pill.className = 'pill ' + (!hasDecision ? 'amber' : approved ? 'green' : 'red');
+      }
       card.setAttribute('data-owner-review', !hasDecision ? 'pending' : approved ? 'approved' : 'change');
     });
 
@@ -252,8 +256,8 @@
         setText(value, `${c.kldApproved} / 20`);
         setText(sub, `${20 - c.kldApproved} pending owner approval`);
       } else if (label === 'Pricing Families Reviewed') {
-        setText(value, `${c.familyDecisions} / 6`);
-        setText(sub, `${6 - c.familyDecisions} families still require a decision`);
+        setText(value, `${c.familyDecisions} / ${FAMILY_KEYS.length}`);
+        setText(sub, `${FAMILY_KEYS.length - c.familyDecisions} families still require a decision`);
       } else if (label === 'Activation Readiness') {
         setText(value, c.ready ? 'Ready' : 'Not Ready');
         setText(sub, c.ready ? 'All explicit owner approvals recorded' : 'Client review and answers still required');

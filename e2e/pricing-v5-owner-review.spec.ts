@@ -98,6 +98,7 @@ function singleResult(quantity=5000,bottomPrintMode=''){
 }
 
 test.beforeEach(async({page})=>{
+  const reviewItems:any[]=[];
   await page.route('**/api/public/pricing-v5-*',async(route)=>{
     const request=route.request();
     const url=new URL(request.url());
@@ -111,19 +112,24 @@ test.beforeEach(async({page})=>{
         body=payload?.size_matrix?{ok:true,size_profile_id:payload.size_profile_id,rows:sizeMatrixRows(String(payload.size_profile_id||'s1'))}:payload?.matrix?{ok:true,rows:matrixRows()}:{ok:true,result:singleResult(Number(payload?.quantity||5000),String(payload?.bottom_print_mode||'')),review_details:{production_route:{route_type:'integrated',components:[{units_per_frame:7}]},commercial_rules:{bucket_no:3,run_length_m:800,wastage_pct:10,margin_per_frame:25},validation_errors:[]}};
       }
     } else if(p.endsWith('/pricing-v5-family-review')){
-      body={ok:true,families:{
+      body={ok:true,review_context_count:7,v5_engine_ready_count:4,activation_ready_count:0,families:{
         sup:{name:'Stand Up Pouches',state:'published_baseline',template:{name:'SUP Pricing v5',row_count:20,engine:'sup_formula_v5'}},
-        flat_bottom:{name:'Flat Bottom Pouches',state:'needs_configuration',clarification:'Geometry required.'},
-        center_seal_roll:{name:'Center Seal — Roll Form',state:'review_baseline',template:{name:'Center Seal Review',row_count:2,engine:'matrix'}},
-        center_seal_pouch:{name:'Center Seal — Pouch Form',state:'review_baseline',template:{name:'Center Seal Review',row_count:2,engine:'matrix'}},
-        three_side_seal_roll:{name:'3 Side Seal — Roll Form',state:'review_baseline',template:{name:'3SS Review',row_count:2,engine:'matrix'}},
-        three_side_seal_pouch:{name:'3 Side Seal — Pouch Form',state:'review_baseline',template:{name:'3SS Review',row_count:2,engine:'matrix'}},
+        flat_bottom:{name:'Flat Bottom Pouches',state:'needs_configuration',deferred:true,v5_engine_ready:false,v5_template:null},
+        center_seal_roll:{name:'Center Seal — Roll Form',state:'published_baseline',v5_engine_ready:true,v5_template:{name:'Center Seal Roll v5',slug:'stark-center-seal-roll-v5-review',status:'draft',is_active:false,engine:'frame_formula_v5',currency:'INR'},review_stage:'baseline_migration_review',required_inputs:["Confirm roll-form width / repeat / lane geometry","Confirm construction mapping for each workbook row"],template:{name:'Center Seal Review',row_count:2,engine:'matrix',quantities:[500,1000,2000,5000,10000],rows:[{width_mm:100,height_mm:150,construction_key:'c1',rates:[1,2,3,4,5]},{width_mm:120,height_mm:180,construction_key:'c2',rates:[2,3,4,5,6]}]}},
+        center_seal_pouch:{name:'Center Seal — Pouch Form',state:'published_baseline',v5_engine_ready:true,v5_template:{name:'Center Seal Pouch v5',slug:'stark-center-seal-pouch-v5-review',status:'draft',is_active:false,engine:'frame_formula_v5',currency:'INR'},review_stage:'baseline_migration_review',required_inputs:["Confirm pouch finished-size interpretation","Confirm center-seal pouch conversion geometry"],template:{name:'Center Seal Review',row_count:2,engine:'matrix',quantities:[500,1000,2000,5000,10000],rows:[{width_mm:100,height_mm:150,construction_key:'c1',rates:[1,2,3,4,5]},{width_mm:120,height_mm:180,construction_key:'c2',rates:[2,3,4,5,6]}]}},
+        three_side_seal_roll:{name:'3 Side Seal — Roll Form',state:'published_baseline',v5_engine_ready:true,v5_template:{name:'3SS Roll v5',slug:'stark-3ss-roll-v5-review',status:'draft',is_active:false,engine:'frame_formula_v5',currency:'INR'},review_stage:'baseline_migration_review',required_inputs:["Confirm roll-form dimensions and repeat geometry","Confirm construction mapping for each workbook row"],template:{name:'3SS Review',row_count:2,engine:'matrix',quantities:[500,1000,2000,5000,10000],rows:[{width_mm:90,height_mm:140,construction_key:'c1',rates:[1,2,3,4,5]},{width_mm:110,height_mm:160,construction_key:'c2',rates:[2,3,4,5,6]}]}},
+        three_side_seal_pouch:{name:'3 Side Seal — Pouch Form',state:'published_baseline',v5_engine_ready:true,v5_template:{name:'3SS Pouch v5',slug:'stark-3ss-pouch-v5-review',status:'draft',is_active:false,engine:'frame_formula_v5',currency:'INR'},review_stage:'baseline_migration_review',required_inputs:["Confirm finished pouch dimensions","Confirm three-side-seal conversion geometry"],template:{name:'3SS Review',row_count:2,engine:'matrix',quantities:[500,1000,2000,5000,10000],rows:[{width_mm:90,height_mm:140,construction_key:'c1',rates:[1,2,3,4,5]},{width_mm:110,height_mm:160,construction_key:'c2',rates:[2,3,4,5,6]}]}},
+        labels:{name:'Labels',state:'needs_configuration',deferred:true,v5_engine_ready:false,v5_template:null},
+        shrink_sleeves:{name:'Shrink Sleeves',state:'needs_configuration',deferred:true,v5_engine_ready:false,v5_template:null},
       }};
     } else if(p.endsWith('/pricing-v5-owner-review-state')){
-      if(request.method()==='GET') body={ok:true,items:[]};
+      if(request.method()==='GET') body={ok:true,items:reviewItems};
       else {
         let payload:any={}; try{payload=request.postDataJSON()}catch{}
-        body={ok:true,item:{review_key:payload.review_key,decision:payload.decision,value_json:payload.value_json||{},reviewer_name:'Stark Packmate Owner',updated_at:new Date().toISOString()}};
+        const item={review_key:payload.review_key,decision:payload.decision,value_json:payload.value_json||{},reviewer_name:'Stark Packmate Owner',updated_at:new Date().toISOString()};
+        const index=reviewItems.findIndex(x=>x.review_key===item.review_key);
+        if(index>=0) reviewItems[index]=item; else reviewItems.push(item);
+        body={ok:true,item};
       }
     } else if(p.endsWith('/pricing-v5-review-rates')){
       body={ok:true,materials,charges,drafts:[],commercial_bands:bands,commercial_band_reviews:[]};
@@ -134,7 +140,17 @@ test.beforeEach(async({page})=>{
     } else if(p.endsWith('/pricing-v5-review-sizes')){
       body={ok:true,sizes};
     } else if(p.endsWith('/pricing-v5-frame-family-review')){
-      body={ok:true,families:[]};
+      if(request.method()==='GET') body={ok:true,review_only:true,activation_allowed:false,families:[
+        {template_slug:'stark-center-seal-roll-v5-review',label:'Center Seal — Roll Form',available:true,review_only:true,activation_allowed:false,constructions:[{id:'fc1',name:'12PET / 12METPET / 60PE'}],sizes:[]},
+        {template_slug:'stark-center-seal-pouch-v5-review',label:'Center Seal — Pouch Form',available:true,review_only:true,activation_allowed:false,constructions:[{id:'fc1',name:'12PET / 12METPET / 60PE'}],sizes:[]},
+        {template_slug:'stark-3ss-roll-v5-review',label:'3 Side Seal — Roll Form',available:true,review_only:true,activation_allowed:false,constructions:[{id:'fc1',name:'12PET / 12METPET / 60PE'}],sizes:[]},
+        {template_slug:'stark-3ss-pouch-v5-review',label:'3 Side Seal — Pouch Form',available:true,review_only:true,activation_allowed:false,constructions:[{id:'fc1',name:'12PET / 12METPET / 60PE'}],sizes:[]},
+      ]};
+      else {
+        let payload:any={}; try{payload=request.postDataJSON()}catch{}
+        const pouch=String(payload.template_slug||'').includes('pouch');
+        body={ok:true,review_only:true,activation_allowed:false,comparison:{family_label:pouch?'Center Seal — Pouch Form':'Center Seal — Roll Form',baseline_found:true,v4_unit_price:11.2,v5_unit_price:12.4,difference_per_unit:1.2,difference_pct:10.714,construction:{id:'fc1',name:'12PET / 12METPET / 60PE'},size:{width_mm:Number(payload.width_mm),height_mm:Number(payload.height_mm)},quantity:Number(payload.quantity),baseline_frames:500,baseline_piece_quantity:5000},result:{geometry:{units_per_frame:pouch?20:24},run_length_m:560,commercial_bucket:Number(payload.commercial_bucket),wastage_pct:8,margin_per_frame:22,cost_breakdown:{material_per_frame:80,adhesive_per_frame:8,process_per_frame:pouch?35:25,wastage_per_frame:9,margin_per_frame:22},selling_price:{unit_price:12.4,product_total:62000,currency:'INR',gst_pct:18,gst:11160,grand_total_before_freight:73160},validation_errors:[],warnings:['Review-only calculation.']}};
+      }
     } else if(p.endsWith('/pricing-v5-feedback')){
       body={ok:true};
     }
@@ -221,6 +237,58 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await expect(page.getByRole('heading',{name:'Impact & Approval',exact:true})).toBeVisible();
 });
 
+
+test('Batch 8 exposes HTML only after a real Pricing v5 engine exists',async({page})=>{
+  await page.goto('/pricing-v5-review-premium.html');
+  await page.locator('#sideNav').getByRole('button',{name:/Packaging Families/i}).click();
+  await expect(page.getByRole('heading',{name:'All Packaging Families — Review Now',exact:true})).toBeVisible();
+
+  for(const name of ['Center Seal — Roll Form','Center Seal — Pouch Form','3 Side Seal — Roll Form','3 Side Seal — Pouch Form']){
+    const card=page.getByRole('button',{name:new RegExp(name.replace(/[.*+?^$()|[\]\\]/g,'\\$&'),'i')});
+    await expect(card).toContainText('V5 Engine Ready');
+  }
+  for(const name of ['Flat Bottom Pouches','Labels','Shrink Sleeves']){
+    const card=page.getByRole('button',{name:new RegExp(name.replace(/[.*+?^$()|[\]\\]/g,'\\$&'),'i')});
+    await expect(card).toContainText('Deferred');
+  }
+
+  await page.getByRole('button',{name:/Center Seal — Roll Form/i}).click();
+  await expect(page.locator('#familyDetail')).toContainText('frame_formula_v5');
+  await expect(page.locator('#familyDetail')).toContainText('draft / inactive');
+  await expect(page.locator('#familyDetail')).toContainText('Confirm roll-form width / repeat / lane geometry');
+  await page.locator('#familyDetail [data-family-req]').nth(0).check();
+  await page.locator('#familySetupNotes').fill('Roll geometry reviewed; construction mapping remains pending.');
+  await page.getByRole('button',{name:/Save Family Review Inputs/i}).click();
+  await expect(page.locator('#familyDetail')).toContainText('Pending');
+
+  await page.reload();
+  await page.locator('#sideNav').getByRole('button',{name:/Packaging Families/i}).click();
+  await page.getByRole('button',{name:/Center Seal — Roll Form/i}).click();
+  await expect(page.locator('#familySetupNotes')).toHaveValue('Roll geometry reviewed; construction mapping remains pending.');
+  await expect(page.locator('#familyDetail [data-family-req]').nth(0)).toBeChecked();
+  await expect(page.locator('#familyDetail [data-family-req]').nth(1)).not.toBeChecked();
+
+  await page.getByRole('button',{name:/Flat Bottom Pouches/i}).click();
+  await expect(page.locator('#familyDetail')).toContainText('No Pricing v5 HTML has been enabled for this family');
+  await expect(page.locator('#familyDetail')).not.toContainText('Save Family Review Inputs');
+});
+
+test('Batch 8 quote review exposes only SUP plus the four existing frame_formula_v5 families',async({page})=>{
+  await page.goto('/pricing-v5-review-premium.html');
+  await page.locator('#sideNav').getByRole('button',{name:/Sales Quote/i}).click();
+  const options=await page.locator('#quoteFamilyReview option').allTextContents();
+  expect(options).toEqual(['Stand Up Pouches','Center Seal — Roll Form','Center Seal — Pouch Form','3 Side Seal — Roll Form','3 Side Seal — Pouch Form']);
+
+  await page.locator('#quoteFamilyReview').selectOption('center_seal_roll');
+  await expect(page.locator('#quoteFamilyBody')).toContainText('Center Seal — Roll Form — Quote Pricing Review');
+  await page.locator('#fqWidth').fill('160');
+  await page.locator('#fqHeight').fill('240');
+  await page.locator('#fqQty').fill('5000');
+  await page.locator('#fqBucket').selectOption('3');
+  await page.getByRole('button',{name:/Calculate Quote Price/i}).click();
+  await expect(page.locator('#fqResult')).toContainText('₹12.40');
+  await expect(page.locator('#fqResult')).toContainText('v4 Baseline');
+});
 
 test('Sales Quote enforces MOQ, conditional gusset, stale-action safety and KLD routing',async({page})=>{
   await page.goto('/pricing-v5-review-premium.html');
