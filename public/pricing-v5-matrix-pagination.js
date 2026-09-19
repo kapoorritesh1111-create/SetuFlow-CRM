@@ -49,7 +49,7 @@ function clearPriceDetail(){const host=q('#priceWhy');if(host)host.innerHTML='<d
 function matrixControlChanged(target){
  if(!onPage()||!(target instanceof HTMLSelectElement))return;
  if(!['matrixSize','matrixPrint','matrixAddon','matrixBottomGusset'].includes(target.id))return;
- rows=[];page=1;lastKey='';lastError='';clearPriceDetail();showStatus('Refreshing matrix for the new selection…');load(true);
+ rows=[];page=1;lastKey='';lastError='';document.dispatchEvent(new CustomEvent('pv5:matrix-selection-changed',{detail:{control:target.id,value:target.value}}));clearPriceDetail();showStatus('Refreshing matrix for the new selection…');load(true);
 }
 function wire(){const reset=q('#matrixReset');if(reset&&reset.dataset.mpWired!=='1'){reset.dataset.mpWired='1';reset.onclick=()=>{const c=catalogPromise;Promise.resolve(c).then(cat=>{if(q('#matrixSize'))q('#matrixSize').value=cat?.sizes?.[0]?.id||'';if(q('#matrixPrint'))q('#matrixPrint').value='CMYKW';if(q('#matrixAddon'))q('#matrixAddon').value='';rows=[];page=1;lastKey='';lastError='';clearPriceDetail();load(true)})}}}
 function tick(){if(!onPage())return;wire();if(sizeSelect()&&!rows.length&&!loading)load(false)}
