@@ -11,6 +11,12 @@ const REVIEW_BASELINE_SLUGS = [
   'stark-3ss-roll-matrix-v4',
   'stark-3ss-pouch-matrix-v4',
 ] as const;
+const V5_REVIEW_SLUGS = [
+  'stark-center-seal-roll-v5-review',
+  'stark-center-seal-pouch-v5-review',
+  'stark-3ss-roll-v5-review',
+  'stark-3ss-pouch-v5-review',
+] as const;
 
 const FAMILY_KEYS = {
   flat_bottom: 'Flat Bottom Pouches',
@@ -150,6 +156,7 @@ export async function GET(request: NextRequest) {
       { data: families, error: familyError },
       { data: activeTemplates, error: activeTemplateError },
       { data: reviewTemplates, error: reviewTemplateError },
+      { data: v5ReviewTemplates, error: v5ReviewTemplateError },
       { data: matrixRows, error: matrixError },
     ] = await Promise.all([
       (admin as any)
@@ -170,6 +177,14 @@ export async function GET(request: NextRequest) {
         .in('slug', [...REVIEW_BASELINE_SLUGS])
         .order('name'),
       (admin as any)
+        .from('packaging_pricing_templates')
+        .select('id,name,slug,status,is_active,calculation_version,calculation_engine_key,currency,family_id')
+        .eq('organization_id', STARK_ORG_ID)
+        .eq('calculation_version',5)
+        .eq('calculation_engine_key','frame_formula_v5')
+        .in('slug', [...V5_REVIEW_SLUGS])
+        .order('name'),
+      (admin as any)
         .from('packaging_pricing_matrix_rows')
         .select('id,template_id,supply_form,construction_key,width_mm,height_mm,q1_rate_per_frame,q2_rate_per_frame,q3_rate_per_frame,q4_rate_per_frame,q5_rate_per_frame')
         .eq('organization_id', STARK_ORG_ID)
@@ -177,13 +192,14 @@ export async function GET(request: NextRequest) {
         .order('height_mm'),
     ]);
 
-    if (familyError || activeTemplateError || reviewTemplateError || matrixError) {
+    if (familyError || activeTemplateError || reviewTemplateError || v5ReviewTemplateError || matrixError) {
       return NextResponse.json({ ok: false, error: 'family_review_unavailable' }, { status: 503 });
     }
 
     const familyList = Array.isArray(families) ? families : [];
     const activeTemplateList = (Array.isArray(activeTemplates) ? activeTemplates : []) as TemplateRow[];
     const reviewTemplateList = (Array.isArray(reviewTemplates) ? reviewTemplates : []) as TemplateRow[];
+    const v5ReviewTemplateList = (Array.isArray(v5ReviewTemplates) ? v5ReviewTemplates : []) as Array<TemplateRow & { calculation_version?: number | null }>;
     const rowList = (Array.isArray(matrixRows) ? matrixRows : []) as MatrixRow[];
 
     const compactTemplate = (template: TemplateRow) => {
@@ -211,6 +227,8 @@ export async function GET(request: NextRequest) {
     };
 
     const reviewTemplateBySlug = (slug: string) => reviewTemplateList.find((template) => template.slug === slug);
+    const v5ReviewTemplateBySlug = (slug: string) => v5ReviewTemplateList.find((template) => template.slug === slug);
+    const v5Summary = (slug: string) => { const t=v5ReviewTemplateBySlug(slug); return t ? { id:t.id,name:t.name,slug:t.slug,status:t.status,is_active:t.is_active,engine:t.calculation_engine_key,currency:t.currency } : null; };
     const centerSeal = reviewTemplateBySlug('stark-center-seal-matrix-v4');
     const threeRoll = reviewTemplateBySlug('stark-3ss-roll-matrix-v4');
     const threePouch = reviewTemplateBySlug('stark-3ss-pouch-matrix-v4');
@@ -226,6 +244,9 @@ export async function GET(request: NextRequest) {
         ...FAMILY_REVIEW_REQUIREMENTS.flat_bottom,
         pricing_mode: flatFamily?.pricing_mode ?? 'not_configured',
         template: null,
+        v5_engine_ready: false,
+        v5_template: null,
+        deferred: true,
         clarification: 'No published Stark Flat Bottom pricing template exists. Akshay must confirm approved sizes, constructions, geometry and pricing rules. SETU will not invent prices or reuse Stand-Up geometry.',
       },
       center_seal_roll: {
@@ -234,6 +255,8 @@ export async function GET(request: NextRequest) {
         state: centerSeal ? 'published_baseline' : 'missing',
         ...FAMILY_REVIEW_REQUIREMENTS.center_seal_roll,
         template: centerSeal ? compactTemplate(centerSeal) : null,
+        v5_engine_ready: Boolean(v5ReviewTemplateBySlug('stark-center-seal-roll-v5-review')),
+        v5_template: v5Summary('stark-center-seal-roll-v5-review'),
         clarification: 'Current Stark Center Seal v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing. Review it now, then confirm the v5 Roll Form/Pouch Form split and geometry.',
       },
       center_seal_pouch: {
@@ -242,6 +265,8 @@ export async function GET(request: NextRequest) {
         state: centerSeal ? 'published_baseline' : 'missing',
         ...FAMILY_REVIEW_REQUIREMENTS.center_seal_pouch,
         template: centerSeal ? compactTemplate(centerSeal) : null,
+        v5_engine_ready: Boolean(v5ReviewTemplateBySlug('stark-center-seal-pouch-v5-review')),
+        v5_template: v5Summary('stark-center-seal-pouch-v5-review'),
         clarification: 'Current Stark Center Seal v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing. Review it now, then confirm the v5 Roll Form/Pouch Form split and geometry.',
       },
       three_side_seal_roll: {
@@ -250,18 +275,22 @@ export async function GET(request: NextRequest) {
         state: threeRoll ? 'published_baseline' : 'missing',
         ...FAMILY_REVIEW_REQUIREMENTS.three_side_seal_roll,
         template: threeRoll ? compactTemplate(threeRoll) : null,
+        v5_engine_ready: Boolean(v5ReviewTemplateBySlug('stark-3ss-roll-v5-review')),
+        v5_template: v5Summary('stark-3ss-roll-v5-review'),
         clarification: 'Current Stark 3SS Roll Form v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing.',
       },
       labels: {
         key:'labels', name:FAMILY_KEYS.labels, state:'needs_configuration',
         ...FAMILY_REVIEW_REQUIREMENTS.labels,
         pricing_mode:labelsFamily?.pricing_mode??'not_configured', template:null,
+        v5_engine_ready:false, v5_template:null, deferred:true,
         clarification:'Labels is an active Stark service family but does not yet have an approved Pricing v5 template. Review/fix must capture label-specific sizes, substrates, print method, finishing, production geometry and commercial rules before Sales quoting is enabled.',
       },
       shrink_sleeves: {
         key:'shrink_sleeves', name:FAMILY_KEYS.shrink_sleeves, state:'needs_configuration',
         ...FAMILY_REVIEW_REQUIREMENTS.shrink_sleeves,
         pricing_mode:shrinkFamily?.pricing_mode??'not_configured', template:null,
+        v5_engine_ready:false, v5_template:null, deferred:true,
         clarification:'Shrink Sleeves is an active Stark service family but does not yet have an approved Pricing v5 template. Review/fix must capture sleeve dimensions, substrate/micron, print method, seaming/finishing, production geometry and commercial rules before Sales quoting is enabled.',
       },
       three_side_seal_pouch: {
@@ -270,6 +299,8 @@ export async function GET(request: NextRequest) {
         state: threePouch ? 'published_baseline' : 'missing',
         ...FAMILY_REVIEW_REQUIREMENTS.three_side_seal_pouch,
         template: threePouch ? compactTemplate(threePouch) : null,
+        v5_engine_ready: Boolean(v5ReviewTemplateBySlug('stark-3ss-pouch-v5-review')),
+        v5_template: v5Summary('stark-3ss-pouch-v5-review'),
         clarification: 'Current Stark 3SS Pouch Form v4 workbook is loaded as a migration-review baseline only. It remains inactive and does not alter live pricing.',
       },
     };
@@ -282,6 +313,7 @@ export async function GET(request: NextRequest) {
       families: result,
       configured_family_count: Object.values(result).filter((item) => item.state === 'published_baseline').length,
       review_context_count: Object.keys(FAMILY_REVIEW_REQUIREMENTS).length,
+      v5_engine_ready_count: Object.values(result).filter((item:any) => item.v5_engine_ready === true).length,
       activation_ready_count: 0,
     }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
