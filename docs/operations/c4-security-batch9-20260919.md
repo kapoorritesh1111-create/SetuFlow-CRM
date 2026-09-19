@@ -18,3 +18,20 @@ Anonymous SECURITY DEFINER count:
 Post-change runtime errors: 0.
 
 The remaining anonymous SECURITY DEFINER functions require usage-specific tracing because they include public invitation/trial/token flows, RLS membership/admin helpers, and intentionally public counters.
+
+
+## C4 Batch 10
+Anonymous execution removed from:
+- get_trial_capability
+- is_trial_org
+- is_platform_support_user
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 9: 14
+- After Batch 10: 11
+
+Post-change runtime errors: 0.
+
+Remaining anonymous SECURITY DEFINER functions are now held for preserve/redesign classification rather than further blanket revocation.
