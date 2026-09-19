@@ -157,6 +157,9 @@ test('Pricing v5 Batch 8 exposes all non-SUP family review contexts safely',()=>
   must(familyRoute,/activation_ready_count: 0/,'unsupported families are not silently activated');
   must(familyRoute,/SETU will not invent prices or reuse Stand-Up geometry/,'Flat Bottom safety contract');
   must(base,/saveFamilySetup/,'owner can save family setup inputs');
+  must(base,/PV5DbReview\.save\('family-setup:'/,'family setup is persisted to DB-backed owner review state');
+  must(base,/confirmed_requirements/,'family setup tracks confirmed requirements independently');
+  must(base,/data-family-req/,'family review renders per-requirement controls');
   must(base,/Pricing Activation Blocked/,'unconfigured family pricing remains blocked');
   must(familyRuntime,/shrinksleeves.*shrink_sleeves/,'Shrink Sleeves review card is wired');
   must(familyRuntime,/labels.*labels/,'Labels review card is wired');
