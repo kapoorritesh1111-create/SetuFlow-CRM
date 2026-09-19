@@ -98,6 +98,7 @@ function singleResult(quantity=5000,bottomPrintMode=''){
 }
 
 test.beforeEach(async({page})=>{
+  const reviewItems:any[]=[];
   await page.route('**/api/public/pricing-v5-*',async(route)=>{
     const request=route.request();
     const url=new URL(request.url());
@@ -122,10 +123,13 @@ test.beforeEach(async({page})=>{
         shrink_sleeves:{name:'Shrink Sleeves',state:'needs_configuration',review_stage:'configuration_required',clarification:'Sleeve-specific rules required.',required_inputs:["Approved lay-flat width and cut-length rules","Film type / micron / shrink characteristics","Seaming / solvent / finishing rules"]},
       }};
     } else if(p.endsWith('/pricing-v5-owner-review-state')){
-      if(request.method()==='GET') body={ok:true,items:[]};
+      if(request.method()==='GET') body={ok:true,items:reviewItems};
       else {
         let payload:any={}; try{payload=request.postDataJSON()}catch{}
-        body={ok:true,item:{review_key:payload.review_key,decision:payload.decision,value_json:payload.value_json||{},reviewer_name:'Stark Packmate Owner',updated_at:new Date().toISOString()}};
+        const item={review_key:payload.review_key,decision:payload.decision,value_json:payload.value_json||{},reviewer_name:'Stark Packmate Owner',updated_at:new Date().toISOString()};
+        const index=reviewItems.findIndex(x=>x.review_key===item.review_key);
+        if(index>=0) reviewItems[index]=item; else reviewItems.push(item);
+        body={ok:true,item};
       }
     } else if(p.endsWith('/pricing-v5-review-rates')){
       body={ok:true,materials,charges,drafts:[],commercial_bands:bands,commercial_band_reviews:[]};
@@ -236,9 +240,22 @@ test('Batch 8 family review exposes all non-SUP families without inventing prici
   await page.getByRole('button',{name:/Flat Bottom Pouches/i}).click();
   await expect(page.locator('#familyDetail')).toContainText('Approved finished sizes and gusset/base dimensions');
   await expect(page.locator('#familyDetail')).toContainText('Pricing Activation Blocked');
-  await page.locator('#familySetupNotes').fill('Use Stark approved flat-bottom size sheet and production geometry.');
+  const reqs=page.locator('#familyDetail [data-family-req]');
+  await expect(reqs).toHaveCount(3);
+  await reqs.nth(0).check();
+  await page.locator('#familySetupNotes').fill('Size source confirmed; geometry and constructions still need owner confirmation.');
   await page.getByRole('button',{name:/Save Family Review Inputs/i}).click();
-  await expect(page.locator('#familyDetail')).toContainText('Captured');
+  await expect(page.locator('#familyDetail')).toContainText('Pending');
+  await expect(reqs.nth(0)).toBeChecked();
+  await expect(reqs.nth(1)).not.toBeChecked();
+  await expect(reqs.nth(2)).not.toBeChecked();
+
+  await page.reload();
+  await page.locator('#sideNav').getByRole('button',{name:/Packaging Families/i}).click();
+  await page.getByRole('button',{name:/Flat Bottom Pouches/i}).click();
+  await expect(page.locator('#familySetupNotes')).toHaveValue('Size source confirmed; geometry and constructions still need owner confirmation.');
+  await expect(page.locator('#familyDetail [data-family-req]').nth(0)).toBeChecked();
+  await expect(page.locator('#familyDetail [data-family-req]').nth(1)).not.toBeChecked();
 
   await page.getByRole('button',{name:/Labels/i}).click();
   await expect(page.locator('#familyDetail')).toContainText('Substrate / facestock / adhesive options');
