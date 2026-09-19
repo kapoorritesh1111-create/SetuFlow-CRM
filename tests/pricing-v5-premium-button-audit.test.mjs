@@ -139,5 +139,8 @@ test('Pricing v5 owner Sales Quote is fully engine-backed and interactive',()=>{
   must(salesLive,/slice\(0,3\)/,'Sales quote caps suggestions at three');
   must(salesLive,/salesSaveReview/,'Sales quote can save a review snapshot');
   must(salesLive,/salesContinueReview/,'Sales quote can continue to approval');
+  must(salesLive,/invalidateQuote/,'Sales quote invalidates prior calculated result as soon as controls change');
+  must(salesLive,/matrixGeneration/,'Sales quote guards compatible-construction requests against stale responses');
+  must(premium,/\[data-sales-kld\],#salesSaveReview,#salesContinueReview/,'Legacy capture handler bypasses live Sales Quote actions');
   mustNot(base,/\['#salesSize','#salesCon','#salesQty','#salesPrint','#salesZip'\].*refreshSales/,'Legacy Sales quote refresh wiring must stay disabled');
 });
