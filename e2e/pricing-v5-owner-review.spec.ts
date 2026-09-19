@@ -158,7 +158,7 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 
   await page.locator('#sideNav').getByRole('button',{name:/Constructions/i}).click();
-  await expect(page.getByText(/Compatibility pending owner confirmation/i).first()).toBeVisible();
+  await expect(page.getByText(/Controlled by approved size \/ PE compatibility rules/i).first()).toBeVisible();
   await expect(page.getByRole('button',{name:/New Construction Draft/i})).toBeVisible();
   await page.getByRole('button',{name:/New Construction Draft/i}).click();
   await expect(page.locator('#modal')).toContainText(/Construction/i);
@@ -220,7 +220,7 @@ test('all Sizes, Constructions and Rates are reachable through pagination and si
   await expect(page.locator('.rates-layout > .card').nth(1)).toContainText('Showing 11–13 of 13 process/add-on rates • Page 2 of 2');
 });
 
-test('Waste and Matrix expose every commercial rule and price row with correct N/A behavior',async({page})=>{
+test('Waste and Matrix expose every commercial rule and the approved size-first construction matrix',async({page})=>{
   await page.goto('/pricing-v5-review-premium.html');
 
   await page.locator('#sideNav [data-page="waste"]').click();
@@ -232,30 +232,21 @@ test('Waste and Matrix expose every commercial rule and price row with correct N
   await expect(waste).toContainText('Showing 31–34 of 34 run-length rules • Page 4 of 4');
 
   await page.locator('#sideNav [data-page="matrix"]').click();
+  await expect(page.locator('#matrixSize')).toBeVisible();
+  await expect(page.locator('#matrixPrint')).toBeVisible();
+  await expect(page.locator('#matrixAddon')).toBeVisible();
   const matrix=page.locator('#liveMatrix');
-  await expect(matrix).toContainText('Showing 1–10 of 20 sizes • Page 1 of 2');
-  const needsReviewMetric=page.locator('.metric-card').filter({hasText:'Needs Review'});
-  await expect(needsReviewMetric).toContainText('158');
-  await expect(needsReviewMetric).toContainText('producible price points awaiting review');
+  await expect(matrix).toContainText('valid constructions');
+  await expect(matrix.locator('thead')).toContainText('Construction');
+  await expect(matrix.locator('thead')).toContainText('1,000');
+  await expect(matrix.locator('thead')).toContainText('50,000');
 
-  const firstRow=matrix.locator('tbody tr').first();
-  await expect(firstRow.locator('td').nth(1)).toContainText('N/A');
-  await expect(firstRow.locator('td').nth(1).locator('[data-truth-price]')).toHaveCount(0);
-  await expect(firstRow.locator('td').nth(2)).toContainText('N/A');
-  await expect(firstRow.locator('td').nth(2).locator('[data-truth-price]')).toHaveCount(0);
-
-  await firstRow.locator('[data-truth-price][data-qty="3000"]').click();
+  const firstPriced=matrix.locator('[data-truth-price]').first();
+  await expect(firstPriced).toBeVisible();
+  await firstPriced.click();
   await expect(page.locator('#priceWhy')).toContainText('Calculated Selling Price');
   await expect(page.locator('#priceWhy')).toContainText('Material cost');
   await expect(page.locator('#priceWhy')).toContainText('Engine reconciled');
-
-  const tenthRow=matrix.locator('tbody tr').nth(9);
-  await tenthRow.getByRole('button',{name:/Review Row/i}).click();
-  await expect(page.locator('#modal')).toContainText('Size 10 of 20');
-  await page.locator('#mpNextRow').click();
-  await expect(page.locator('#modal')).toContainText('Size 11 of 20');
-  await expect(matrix).toContainText('Showing 11–20 of 20 sizes • Page 2 of 2');
-  await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 });
 
 test('Pricing v5 review stays responsive through repeated owner navigation',async({page})=>{
