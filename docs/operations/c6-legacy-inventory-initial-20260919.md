@@ -101,6 +101,7 @@ ARCHIVED FROM PUBLIC SURFACE:
 - public/internal/catalog-price-list-qa.html → docs/archive/catalog-price-list-qa.html
 - public/internal/catalog-workflow-repair-map.html → docs/archive/catalog-workflow-repair-map.html
 - public/internal/lead-capture-intro-behavior.html → docs/archive/lead-capture-intro-behavior.html
+- public/internal/trade-show-trial-preview-policy.html → docs/archive/trade-show-trial-preview-policy.html (canonical Markdown policy retained)
 
 NEXT INVENTORY TARGETS:
 - other public/internal prototypes that may have been superseded
