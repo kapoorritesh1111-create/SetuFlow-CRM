@@ -185,9 +185,10 @@ test('Pricing v5 family cards use a dedicated selector button without nested act
 });
 
 
-test('Pricing v5 family selection is bound programmatically and survives re-renders', () => {
-  must(base,/document\.addEventListener\('click',e=>\{const button=e\.target\?\.closest\?\.\('\[data-family-select\]'\)/,'family selectors use delegated click binding');
-  must(base,/if\(button\)family\(button\.dataset\.familySelect\|\|'sup'\)/,'delegated family selector calls canonical family handler');
+test('Pricing v5 family selection uses an explicit selector and collection-safe family handler', () => {
+  must(base,/data-family-select=/,'family selector remains explicitly keyed');
+  must(base,/onclick="window\.PV5\.family/,'family selector calls the canonical family handler directly');
+  must(base,/Array\.from\(document\.querySelectorAll\('\.family-card'\)\)\.forEach/,'family handler updates all family cards with a collection-safe selector');
   must(base,/setu_pricing_v5_selected_family_v1/,'selected family persists across page re-renders');
-  assert.doesNotMatch(base, /data-family-select="[^"]+"[^>]+onclick=/, 'family selection must not depend on inline onclick');
+  assert.doesNotMatch(base, /<button class="family-card /, 'family card container must not itself be a button');
 });
