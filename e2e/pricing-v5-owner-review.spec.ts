@@ -205,7 +205,17 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 
   await page.locator('#sideNav').getByRole('button',{name:/Sales Quote/i}).click();
-  await page.getByRole('button',{name:/Save & Continue to Terms/i}).click();
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+  await expect(page.locator('#salesUnit')).toContainText('₹15.84');
+  await expect(page.locator('#salesBreakdown')).toContainText('Material');
+  await expect(page.locator('#salesQuantitySuggestions')).toContainText('10,000 pcs');
+  await expect(page.locator('#salesQuantitySuggestions')).toContainText('20,000 pcs');
+  await expect(page.locator('#salesQuantitySuggestions')).toContainText('30,000 pcs');
+  const initialConstructionCount=await page.locator('#salesCon option').count();
+  await page.locator('#salesSize').selectOption('s2');
+  await expect.poll(()=>page.locator('#salesCon option').count()).not.toBe(initialConstructionCount);
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+  await page.getByRole('button',{name:/Continue to Approval/i}).click();
   await expect(page.getByRole('heading',{name:'Impact & Approval',exact:true})).toBeVisible();
 });
 
