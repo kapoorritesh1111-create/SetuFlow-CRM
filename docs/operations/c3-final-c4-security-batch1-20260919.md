@@ -86,3 +86,20 @@ Anonymous SECURITY DEFINER count:
 - After Batch 5: 22
 
 Post-change runtime errors: 0.
+
+
+## C4 Batch 6
+Anonymous execution removed from:
+- generate_quote_number
+- seed_default_document_terms_profiles
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 5: 22
+- After Batch 6: 20
+
+Post-change runtime errors: 0.
+
+Held for separate review:
+- create_guided_trial_entitlement (possible public trial dependency)
