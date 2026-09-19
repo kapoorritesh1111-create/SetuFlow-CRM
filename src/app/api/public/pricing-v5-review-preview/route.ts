@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
           return {
             quantity,
             ok: safe.ok,
-            availability: safe.ok ? 'priced' : intentionallyUnavailable ? 'not_producible' : incompatibleConstruction ? 'not_compatible' : 'needs_clarification',
+            availability: safe.ok ? 'priced' : incompatibleConstruction ? 'not_compatible' : intentionallyUnavailable ? 'not_producible' : 'needs_clarification',
             unit_price: safe.ok ? safe.selling_price.unit_price : null,
             product_total: safe.ok ? safe.selling_price.product_total : null,
             currency: safe.selling_price.currency,
