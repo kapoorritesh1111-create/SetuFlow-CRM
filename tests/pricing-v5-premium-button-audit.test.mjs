@@ -149,25 +149,24 @@ test('Pricing v5 owner Sales Quote is fully engine-backed and interactive',()=>{
 });
 
 
-test('Pricing v5 Batch 8 exposes all non-SUP family review contexts safely',()=>{
-  for(const key of ['flat_bottom','center_seal_roll','center_seal_pouch','three_side_seal_roll','three_side_seal_pouch','labels','shrink_sleeves']){
-    must(familyRoute,new RegExp(key.replace(/_/g,'_')),'family review API includes '+key);
+test('Pricing v5 Batch 8 exposes HTML only for families with real v5 engines',()=>{
+  for(const key of ['center_seal_roll','center_seal_pouch','three_side_seal_roll','three_side_seal_pouch']){
+    must(familyRoute,new RegExp(key),'family review API includes '+key);
   }
-  must(familyRoute,/FAMILY_REVIEW_REQUIREMENTS/,'family API exposes structured family-specific requirements');
-  must(familyRoute,/activation_ready_count: 0/,'unsupported families are not silently activated');
-  must(familyRoute,/SETU will not invent prices or reuse Stand-Up geometry/,'Flat Bottom safety contract');
-  must(base,/saveFamilySetup/,'owner can save family setup inputs');
-  must(base,/PV5DbReview\.save\('family-setup:'/,'family setup is persisted to DB-backed owner review state');
-  must(base,/confirmed_requirements/,'family setup tracks confirmed requirements independently');
-  must(base,/data-family-req/,'family review renders per-requirement controls');
-  must(base,/Pricing Activation Blocked/,'unconfigured family pricing remains blocked');
-  must(familyRuntime,/shrinksleeves.*shrink_sleeves/,'Shrink Sleeves review card is wired');
-  must(familyRuntime,/labels.*labels/,'Labels review card is wired');
+  must(familyRoute,/V5_REVIEW_SLUGS/,'family review API checks real v5 review templates');
+  must(familyRoute,/eq\('calculation_version',5\)/,'family review API requires calculation version 5');
+  must(familyRoute,/eq\('calculation_engine_key','frame_formula_v5'\)/,'family review API gates on frame_formula_v5');
+  must(familyRoute,/v5_engine_ready/,'family review API exposes engine readiness to HTML');
+  must(familyRoute,/v5_engine_ready_count/,'family API reports how many v5 engines are actually ready');
+  must(base,/engineReady=f\.v5_engine_ready===true/,'family detail gates controls on backend engine readiness');
+  must(base,/No Pricing v5 HTML has been enabled for this family/,'deferred families stay non-interactive in HTML');
+  must(base,/PV5DbReview\.save\('family-setup:'/,'active-family setup is persisted to DB-backed owner review state');
+  must(base,/confirmed_requirements/,'active-family setup tracks requirements independently');
   mustNot(familyQuote,/\['flat_bottom','Flat Bottom Pouches'/,'Flat Bottom stays out of quote HTML until its v5 engine exists');
   mustNot(familyQuote,/\['labels','Labels'/,'Labels stays out of quote HTML until its v5 engine exists');
   mustNot(familyQuote,/\['shrink_sleeves','Shrink Sleeves'/,'Shrink Sleeves stays out of quote HTML until its v5 engine exists');
-  must(familyRoute,/V5_REVIEW_SLUGS/,'family review API checks real v5 review templates');
-  must(familyRoute,/calculation_engine_key','frame_formula_v5'/,'family review API gates on frame_formula_v5');
-  must(familyRoute,/v5_engine_ready/,'family review API exposes engine readiness to HTML');
-  must(base,/No Pricing v5 HTML has been enabled for this family/,'deferred families stay non-interactive in HTML');
+  must(familyQuote,/stark-center-seal-roll-v5-review/,'Center Seal Roll quote review is wired');
+  must(familyQuote,/stark-center-seal-pouch-v5-review/,'Center Seal Pouch quote review is wired');
+  must(familyQuote,/stark-3ss-roll-v5-review/,'3SS Roll quote review is wired');
+  must(familyQuote,/stark-3ss-pouch-v5-review/,'3SS Pouch quote review is wired');
 });
