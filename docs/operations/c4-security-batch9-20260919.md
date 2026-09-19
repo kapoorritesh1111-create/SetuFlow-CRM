@@ -35,3 +35,21 @@ Anonymous SECURITY DEFINER count:
 Post-change runtime errors: 0.
 
 Remaining anonymous SECURITY DEFINER functions are now held for preserve/redesign classification rather than further blanket revocation.
+
+
+## C4 Batch 11
+Anonymous execution removed from:
+- app_safe_accept_sent_quote_tx
+- app_finalize_invitation_delivery_tx
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 10: 11
+- After Batch 11: 9
+
+Reason:
+- app_safe_accept_sent_quote_tx accepted caller-supplied actor identity when auth.uid() was null, making anon exposure unsafe.
+- invitation delivery is an internal status/token mutation and should not be a public RPC.
+
+Post-change runtime errors: 0.
