@@ -252,7 +252,41 @@ test('Batch 8 exposes HTML only after a real Pricing v5 engine exists',async({pa
     await expect(card).toContainText('Deferred');
   }
 
-  await page.getByRole('button',{name:/Center Seal — Roll Form/i}).click();
+  const centerSealButton=page.getByRole('button',{name:/Center Seal — Roll Form/i});
+  const centerSealCount=await centerSealButton.count();
+  const centerSealOuter=await centerSealButton.first().evaluate((el)=>el.outerHTML);
+  const beforeCenterSeal=await page.evaluate(()=>({
+    stored:localStorage.getItem('setu_pricing_v5_selected_family_v1'),
+    familyType:typeof (window as any).PV5?.family,
+    detail:document.querySelector('#familyDetail')?.textContent?.slice(0,180)||'',
+  }));
+  await centerSealButton.click();
+  await page.waitForTimeout(200);
+  const afterCenterSeal=await page.evaluate(()=>({
+    stored:localStorage.getItem('setu_pricing_v5_selected_family_v1'),
+    familyType:typeof (window as any).PV5?.family,
+    detail:document.querySelector('#familyDetail')?.textContent?.slice(0,180)||'',
+  }));
+  const directCenterSeal=await page.evaluate(()=>{
+    try{
+      (window as any).PV5?.family?.('center_seal_roll');
+      return {
+        stored:localStorage.getItem('setu_pricing_v5_selected_family_v1'),
+        detail:document.querySelector('#familyDetail')?.textContent?.slice(0,240)||'',
+        error:null,
+      };
+    }catch(error){
+      return {
+        stored:localStorage.getItem('setu_pricing_v5_selected_family_v1'),
+        detail:document.querySelector('#familyDetail')?.textContent?.slice(0,240)||'',
+        error:String(error),
+      };
+    }
+  });
+  console.log('PV5_FAMILY_DIAG',JSON.stringify({centerSealCount,centerSealOuter,beforeCenterSeal,afterCenterSeal,directCenterSeal}));
+  if(!/Center Seal — Roll Form/i.test(afterCenterSeal.detail)){
+    throw new Error('PV5 family click diagnostics: '+JSON.stringify({centerSealCount,centerSealOuter,beforeCenterSeal,afterCenterSeal,directCenterSeal}));
+  }
   await expect(page.locator('#familyDetail')).toContainText('frame_formula_v5');
   await expect(page.locator('#familyDetail')).toContainText('draft / inactive');
   await expect(page.locator('#familyDetail')).toContainText('Confirm roll-form width / repeat / lane geometry');
