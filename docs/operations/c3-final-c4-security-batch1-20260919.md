@@ -1,0 +1,135 @@
+# C3 Final Non-Pricing + C4 Security Batch 1
+
+Date: 2026-09-19
+
+## C3
+Final non-Pricing duplicate UNIQUE constraint removed:
+- public.uq_lead_compliance
+
+Retained:
+- lead_compliance_items_lead_id_compliance_item_id_key
+
+Remaining duplicate-index advisor findings: 6.
+All 6 remaining groups are Pricing/Quote-related and intentionally held while Pricing v5 is active.
+
+## C4 Batch 1
+Anonymous execution removed from:
+- app_advance_order_stage_tx
+- app_convert_external_opportunity_to_lead
+- app_create_lead_quote_draft_tx
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- Before: 36
+- After Batch 1: 33
+
+Post-change runtime errors: 0.
+
+
+## C4 Batch 2
+Anonymous execution removed from:
+- app_record_save_lead_non_stage_fanout_tx
+- app_record_save_lead_stage_change_fanout_tx
+- app_refresh_lead_relations_tx
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 1: 33
+- After Batch 2: 30
+
+Post-change runtime errors: 0.
+
+
+## C4 Batch 3
+Anonymous execution removed from:
+- app_save_settings_list_item_tx
+- app_delete_settings_list_item_tx
+- app_import_settings_snapshot_tx
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 2: 30
+- After Batch 3: 27
+
+Post-change runtime errors: 0.
+
+
+## C4 Batch 4
+Anonymous execution removed from:
+- app_replace_lead_follow_up_tx
+- app_upsert_lead
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 3: 27
+- After Batch 4: 25
+
+Post-change runtime errors: 0.
+
+Note: app_upsert_lead still requires a separate mutable search_path hardening review; this batch changes grants only.
+
+
+## C4 Batch 5
+Anonymous execution removed from:
+- app_submit_quote_approval_tx
+- app_decide_quote_approval_tx
+- app_ensure_order_for_accepted_quote_tx
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 4: 25
+- After Batch 5: 22
+
+Post-change runtime errors: 0.
+
+
+## C4 Batch 6
+Anonymous execution removed from:
+- generate_quote_number
+- seed_default_document_terms_profiles
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 5: 22
+- After Batch 6: 20
+
+Post-change runtime errors: 0.
+
+Held for separate review:
+- create_guided_trial_entitlement (possible public trial dependency)
+
+
+## C4 Batch 7
+Anonymous execution removed from:
+- get_orders_execution_lead_display
+- get_effective_notif_pref
+- match_guru_embeddings(uuid, vector, integer, text[])
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 6: 20
+- After Batch 7: 17
+
+Post-change runtime errors: 0.
+
+
+## C4 Batch 8
+Anonymous execution removed from:
+- app_quote_version_approval_state
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 7: 17
+- After Batch 8: 16
+
+Post-change runtime errors: 0.
+
+At this point the remaining anonymous SECURITY DEFINER functions are primarily public invitation/trial/token flows, RLS/helper predicates, or intentionally public counters. Further revocation requires usage-specific tracing rather than blanket cleanup.
