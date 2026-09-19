@@ -100,6 +100,7 @@ KEEP:
 ARCHIVED FROM PUBLIC SURFACE:
 - public/internal/catalog-price-list-qa.html → docs/archive/catalog-price-list-qa.html
 - public/internal/catalog-workflow-repair-map.html → docs/archive/catalog-workflow-repair-map.html
+- public/internal/lead-capture-intro-behavior.html → docs/archive/lead-capture-intro-behavior.html
 
 NEXT INVENTORY TARGETS:
 - other public/internal prototypes that may have been superseded
