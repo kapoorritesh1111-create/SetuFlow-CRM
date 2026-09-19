@@ -143,3 +143,22 @@ Do not remove current orders components. The legacy workspace is already exclude
 
 Conclusion:
 Do not archive/remove these versioned docs assets merely because their filenames contain dates.
+
+
+## C6 Batch 2 additional removals
+Archived from public/prototypes because they are standalone review/demo mockups with no current repository consumers:
+- public/prototypes/trade-show-trial.html
+- public/prototypes/trade-show-mobile-preview.html
+- public/prototypes/trade-show-trial-premium.css
+
+Archive location:
+- docs/archive/trade-show-trial-prototypes/
+
+Removed:
+- public/setuflow-client-docs.html (empty file, no repository consumers)
+
+Held:
+- public/setuflow-trade-show-trial.html — no repo consumers, but may be an externally shared direct URL.
+- public/vendor/investor_demo_v5.html — no repo consumers, but may be an externally shared direct URL.
+
+These held files require traffic/external-link evidence before retirement.
