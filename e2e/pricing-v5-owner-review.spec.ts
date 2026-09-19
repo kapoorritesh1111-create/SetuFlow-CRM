@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 
 const quantities=[1000,2000,3000,5000,10000,20000,30000,50000];
 const sizes=[
-  {id:'s1',size_key:'80x130_bg25_25',name:'80mm x 130mm (25mm + 25mm bg)',width_mm:80,height_mm:130,bottom_gusset_each_mm:25,pricing_bucket:1,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',metadata:{blocked_quantities:[1000,2000]}},
-  {id:'s2',size_key:'160x240_bg50_50',name:'160mm x 240mm (50mm + 50mm bg)',width_mm:160,height_mm:240,bottom_gusset_each_mm:50,pricing_bucket:3,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',metadata:{}},
-  {id:'s3',size_key:'98x150_bg30_30',name:'98mm x 150mm (30mm + 30mm bg)',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,pricing_bucket:1,gusset_production_mode:'conditional',route:'conditional',bottom_registration_mode:'optional',metadata:{blocked_quantities:[1000,2000],trim_allowance_mm:10}},
-  {id:'s4',size_key:'110x170_bg30_30',name:'110mm x 170mm (30mm + 30mm bg)',width_mm:110,height_mm:170,bottom_gusset_each_mm:30,pricing_bucket:2,gusset_production_mode:'conditional',route:'conditional',bottom_registration_mode:'optional',metadata:{}},
+  {id:'s1',size_key:'80x130_bg25_25',name:'80mm x 130mm (25mm + 25mm bg)',width_mm:80,height_mm:130,bottom_gusset_each_mm:25,pricing_bucket:1,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',allowed_quantities:null,blocked_quantities:[1000,2000],metadata:{blocked_quantities:[1000,2000]}},
+  {id:'s2',size_key:'160x240_bg50_50',name:'160mm x 240mm (50mm + 50mm bg)',width_mm:160,height_mm:240,bottom_gusset_each_mm:50,pricing_bucket:3,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',allowed_quantities:null,blocked_quantities:null,metadata:{}},
+  {id:'s3',size_key:'98x150_bg30_30',name:'98mm x 150mm (30mm + 30mm bg)',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,pricing_bucket:1,gusset_production_mode:'conditional',route:'conditional',bottom_registration_mode:'optional',allowed_quantities:null,blocked_quantities:[1000,2000],metadata:{blocked_quantities:[1000,2000],trim_allowance_mm:10}},
+  {id:'s4',size_key:'110x170_bg30_30',name:'110mm x 170mm (30mm + 30mm bg)',width_mm:110,height_mm:170,bottom_gusset_each_mm:30,pricing_bucket:2,gusset_production_mode:'conditional',route:'conditional',bottom_registration_mode:'optional',allowed_quantities:null,blocked_quantities:null,metadata:{},
   ...Array.from({length:16},(_,i)=>({
     id:'s'+(i+5),size_key:'uat_size_'+(i+5),name:'UAT Size '+(i+5),
     width_mm:130+i*5,height_mm:210+i*5,bottom_gusset_each_mm:40+(i%4)*5,
