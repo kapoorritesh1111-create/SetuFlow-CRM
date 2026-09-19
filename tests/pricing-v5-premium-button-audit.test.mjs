@@ -22,6 +22,8 @@ const salesLive=read('public/pricing-v5-sales-live-quote.js');
 const familyRoute=read('src/app/api/public/pricing-v5-family-review/route.ts');
 const familyRuntime=read('public/pricing-v5-review-runtime.js');
 const familyQuote=read('public/pricing-v5-sales-family-quote.js');
+const ownerState=read('public/pricing-v5-owner-review-state.js');
+const dbReviewSync=read('public/pricing-v5-db-review-sync.js');
 
 function must(source,re,label){assert.match(source,re,label)}
 function mustNot(source,re,label){assert.doesNotMatch(source,re,label)}
@@ -169,4 +171,7 @@ test('Pricing v5 Batch 8 exposes HTML only for families with real v5 engines',()
   must(familyQuote,/stark-center-seal-pouch-v5-review/,'Center Seal Pouch quote review is wired');
   must(familyQuote,/stark-3ss-roll-v5-review/,'3SS Roll quote review is wired');
   must(familyQuote,/stark-3ss-pouch-v5-review/,'3SS Pouch quote review is wired');
+  must(ownerState,/preserveReadiness/,'owner state does not overwrite v5 engine readiness');
+  must(dbReviewSync,/V5 Engine Ready\|V5 Engine Missing\|Deferred/,'DB review sync preserves engine readiness and deferred truth');
+  must(familyQuote,/pv5:sales-page-ready/,'family quote selector renders immediately when Sales page opens');
 });
