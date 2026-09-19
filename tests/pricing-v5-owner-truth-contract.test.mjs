@@ -25,11 +25,11 @@ test('Pricing v5 fallback UI contains no invented owner evidence or sample appro
   ]) assert.doesNotMatch(premium,pattern,String(pattern));
 });
 
-test('Pricing v5 construction compatibility stays explicitly unconfirmed until owner decision',()=>{
-  assert.match(constructions,/Compatibility pending owner confirmation/);
-  assert.doesNotMatch(constructions,/\|\|'All Sizes'/);
-  assert.match(premium,/Size Compatibility','Pending'/);
-  assert.match(premium,/No construction is assumed compatible with every size/);
+test('Pricing v5 owner review reflects implemented size and PE compatibility rules',()=>{
+  assert.match(constructions,/Controlled by approved size \/ PE compatibility rules/);
+  assert.doesNotMatch(constructions,/Compatibility pending owner confirmation/);
+  assert.match(premium,/id="matrixSize"/);
+  assert.match(premium,/select a size to show valid constructions/);
 });
 
 test('Pricing v5 charge review exposes and enforces complete basis and application stage',()=>{

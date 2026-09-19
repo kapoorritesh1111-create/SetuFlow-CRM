@@ -17,6 +17,7 @@ const previewRoute=read('src/app/api/public/pricing-v5-review-preview/route.ts')
 const dashboard=read('public/pricing-v5-dashboard-live-review.js');
 const qa=read('public/pricing-v5-owner-readiness-qa.js');
 const scenario=read('public/pricing-v5-scenario-truth.js');
+const salesSuggestions=read('public/pricing-v5-sales-suggestions.js');
 
 function must(source,re,label){assert.match(source,re,label)}
 function mustNot(source,re,label){assert.doesNotMatch(source,re,label)}
@@ -104,13 +105,20 @@ test('Pricing v5 Waste and Matrix expose complete pagination and intentional N/A
   must(waste,/run-length rules • Page/,'Waste page summary');
   must(waste,/commercial_band_reviews/,'Waste owner review state');
   must(matrix,/data-mp="next"/,'Matrix Next page control');
-  must(matrix,/sizes • Page/,'Matrix page summary');
-  must(matrix,/id="mpNextRow"/,'Matrix next-size row review');
+  must(matrix,/valid constructions • Page/,'Matrix page summary');
   must(matrix,/N\/A — Not Producible/,'Matrix row review preserves intentional N/A');
   must(matrixTruth,/priceState==='not_producible'/,'Price detail does not turn intentional N/A into a clarification');
   must(previewRoute,/availability: safe\.ok \? 'priced' : intentionallyUnavailable \? 'not_producible' : incompatibleConstruction \? 'not_compatible' : 'needs_clarification'/,'Matrix API classifies unavailable quantities and known construction incompatibility');
-  must(matrix,/N\/A — Construction Not Compatible/,'Matrix row review treats known construction incompatibility as N/A');
-  must(matrixTruth,/priceState==='not_producible'\|\|priceState==='not_compatible'/,'Price detail does not turn known construction incompatibility into a clarification');
+  must(previewRoute,/filter\(\(row\) => row\.prices\.some\(\(price\) => price\.availability !== 'not_compatible'\)\)/,'Size-first matrix omits incompatible construction rows');
   must(premium,/dataset\.bandPage/,'Global pager guard preserves Waste pagination');
   must(premium,/dataset\.mp/,'Global pager guard preserves Matrix pagination');
+});
+
+
+test('Pricing v5 owner Sales Quote shows up to three engine-backed higher producible quantities',()=>{
+  must(salesSuggestions,/alternative_quantities/,'Sales suggestion controller reads engine alternative quantities');
+  must(salesSuggestions,/x\.quantity>currentQty/,'Sales suggestion controller only shows higher quantities');
+  must(salesSuggestions,/\.slice\(0,3\)/,'Sales suggestion controller is capped at three options');
+  must(salesSuggestions,/N\/A quantities are excluded automatically/,'Sales suggestion copy explains blocked quantities are excluded');
+  mustNot(base,/id="better10"|id="better20"/,'hardcoded two-card sales suggestions must not return');
 });

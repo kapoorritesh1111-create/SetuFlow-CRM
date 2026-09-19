@@ -19,6 +19,7 @@ type ReviewBody = {
   bottom_print_mode?: unknown;
   route_override?: unknown;
   matrix?: unknown;
+  size_matrix?: unknown;
   rate_override?: unknown;
   band_override?: unknown;
 };
@@ -187,6 +188,39 @@ export async function POST(request: NextRequest) {
     const constructionId = typeof body.construction_id === 'string' ? body.construction_id : allowedConstructions[0]?.id;
     if (!constructionId || !allowedConstructions.some((c) => c.id === constructionId)) {
       return NextResponse.json({ ok: false, error: 'invalid_construction' }, { status: 400 });
+    }
+
+    if (body.size_matrix === true) {
+      const sizeId = typeof body.size_profile_id === 'string' ? body.size_profile_id : allowedSizes[0]?.id;
+      if (!sizeId || !allowedSizes.some((s) => s.id === sizeId)) {
+        return NextResponse.json({ ok: false, error: 'invalid_size' }, { status: 400 });
+      }
+      const rows = allowedConstructions.map((construction) => {
+        const prices = REVIEW_QUANTITIES.map((quantity) => {
+          const result = calculatePackagingPriceV5(baseCtx, pricingInput(baseCtx, body, sizeId, construction.id, quantity));
+          const safe = toSalesPricingResultV5(result);
+          const validationErrors = safe.ok ? [] : safe.validation_errors;
+          const intentionallyUnavailable = validationErrors.some((message) => /^Quantity\\s+[\\d,]+\\s+is not allowed for\\s+/i.test(String(message)));
+          const incompatibleConstruction = validationErrors.some((message) => /is not compatible with/i.test(String(message)));
+          return {
+            quantity,
+            ok: safe.ok,
+            availability: safe.ok ? 'priced' : incompatibleConstruction ? 'not_compatible' : intentionallyUnavailable ? 'not_producible' : 'needs_clarification',
+            unit_price: safe.ok ? safe.selling_price.unit_price : null,
+            product_total: safe.ok ? safe.selling_price.product_total : null,
+            currency: safe.selling_price.currency,
+            validation_errors: validationErrors,
+          };
+        });
+        return {
+          construction_id: construction.id,
+          construction_key: construction.construction_key,
+          construction_name: constructionDisplayName(construction.construction_family_key, construction.name),
+          layer_stack: safeCatalog(baseCtx).constructions.find((item) => item.id === construction.id)?.layer_stack || construction.name,
+          prices,
+        };
+      }).filter((row) => row.prices.some((price) => price.availability !== 'not_compatible'));
+      return NextResponse.json({ ok: true, size_profile_id: sizeId, rows }, { headers: { 'Cache-Control': 'private, no-store' } });
     }
 
     if (body.matrix === true) {
