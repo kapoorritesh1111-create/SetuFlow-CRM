@@ -240,6 +240,30 @@ function applyAcademyCanonical(response: NextResponse, host: string, pathname: s
   return response;
 }
 
+function isMissingRefreshTokenError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { code?: unknown; message?: unknown };
+  const code = String(candidate.code ?? '').toLowerCase();
+  const message = String(candidate.message ?? '').toLowerCase();
+  return code === 'refresh_token_not_found' || message.includes('refresh token not found');
+}
+
+function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) {
+  request.cookies.getAll().forEach(({ name }) => {
+    if (!name.startsWith('sb-') || !name.includes('-auth-token')) return;
+    response.cookies.set({
+      name,
+      value: '',
+      path: '/',
+      expires: new Date(0),
+      maxAge: 0,
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+  });
+  return response;
+}
+
 function createMiddlewareClient(request: NextRequest, response: NextResponse) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
@@ -299,10 +323,42 @@ export async function middleware(request: NextRequest) {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   const supabase = createMiddlewareClient(request, response);
-  const { data, error } = await supabase.auth.getUser();
+  let authUser = null;
+  let authError: unknown = null;
+
+  try {
+    const authResult = await supabase.auth.getUser();
+    authUser = authResult.data.user;
+    authError = authResult.error;
+  } catch (caught) {
+    authError = caught;
+  }
+
   const isPendingPasswordReset = request.cookies.get(PASSWORD_RESET_PENDING_COOKIE)?.value === '1';
 
-  if (isPendingPasswordReset && data.user && pathname !== '/reset-password' && !pathname.startsWith('/auth/') && pathname !== '/api/auth/reset-password/complete') {
+  if (isMissingRefreshTokenError(authError)) {
+    if (isPublicPath(pathname)) {
+      return applySecurityHeaders(
+        applyAcademyCanonical(clearSupabaseAuthCookies(request, response), host, pathname),
+        nonce,
+      );
+    }
+
+    if (isProtectedApiPath(pathname)) {
+      const unauthorized = NextResponse.json(
+        { ok: false, error: 'Authentication required.', code: 'session_expired' },
+        { status: 401 },
+      );
+      return applySecurityHeaders(clearSupabaseAuthCookies(request, unauthorized), nonce);
+    }
+
+    return applySecurityHeaders(
+      clearSupabaseAuthCookies(request, NextResponse.redirect(loginRedirect(request))),
+      nonce,
+    );
+  }
+
+  if (isPendingPasswordReset && authUser && pathname !== '/reset-password' && !pathname.startsWith('/auth/') && pathname !== '/api/auth/reset-password/complete') {
     return applySecurityHeaders(NextResponse.redirect(resetPasswordRedirect(request)), nonce);
   }
 
@@ -310,7 +366,7 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(applyAcademyCanonical(response, host, pathname), nonce);
   }
 
-  if (error || !data.user) {
+  if (authError || !authUser) {
     if (isProtectedApiPath(pathname)) {
       return applySecurityHeaders(NextResponse.json({ ok: false, error: 'Authentication required.' }, { status: 401 }), nonce);
     }
