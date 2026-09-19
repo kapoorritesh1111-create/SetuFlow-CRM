@@ -163,7 +163,11 @@ test('Pricing v5 Batch 8 exposes all non-SUP family review contexts safely',()=>
   must(base,/Pricing Activation Blocked/,'unconfigured family pricing remains blocked');
   must(familyRuntime,/shrinksleeves.*shrink_sleeves/,'Shrink Sleeves review card is wired');
   must(familyRuntime,/labels.*labels/,'Labels review card is wired');
-  must(familyQuote,/\['labels','Labels',''\]/,'Labels appears in Sales Quote family selector');
-  must(familyQuote,/\['shrink_sleeves','Shrink Sleeves',''\]/,'Shrink Sleeves appears in Sales Quote family selector');
-  must(familyQuote,/pricing is intentionally blocked/,'unconfigured families stay blocked in Sales Quote');
+  mustNot(familyQuote,/\['flat_bottom','Flat Bottom Pouches'/,'Flat Bottom stays out of quote HTML until its v5 engine exists');
+  mustNot(familyQuote,/\['labels','Labels'/,'Labels stays out of quote HTML until its v5 engine exists');
+  mustNot(familyQuote,/\['shrink_sleeves','Shrink Sleeves'/,'Shrink Sleeves stays out of quote HTML until its v5 engine exists');
+  must(familyRoute,/V5_REVIEW_SLUGS/,'family review API checks real v5 review templates');
+  must(familyRoute,/calculation_engine_key','frame_formula_v5'/,'family review API gates on frame_formula_v5');
+  must(familyRoute,/v5_engine_ready/,'family review API exposes engine readiness to HTML');
+  must(base,/No Pricing v5 HTML has been enabled for this family/,'deferred families stay non-interactive in HTML');
 });
