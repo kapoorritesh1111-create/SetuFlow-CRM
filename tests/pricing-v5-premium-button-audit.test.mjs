@@ -175,3 +175,12 @@ test('Pricing v5 Batch 8 exposes HTML only for families with real v5 engines',()
   must(dbReviewSync,/V5 Engine Ready\|V5 Engine Missing\|Deferred/,'DB review sync preserves engine readiness and deferred truth');
   must(familyQuote,/pv5:sales-page-ready/,'family quote selector renders immediately when Sales page opens');
 });
+
+
+test('Pricing v5 family cards use a dedicated selector button without nested action buttons', () => {
+  must(base,/class="family-card /,'family cards remain the owner review containers');
+  must(base,/class="family-select"/,'family cards expose a dedicated review selector');
+  must(base,/data-family-select=/,'family selector is explicitly keyed to the selected family');
+  must(base,/window\.PV5\.family/,'family selector delegates to the canonical family selection handler');
+  assert.doesNotMatch(base, /<button class="family-card /, 'family card container must not itself be a button');
+});
