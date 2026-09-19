@@ -58,15 +58,17 @@ function matrixRows(){
   }));
 }
 function sizeMatrixRows(sizeId='s1'){
-  const s=sizes.find(x=>x.id===sizeId)||sizes[0];
-  return constructions.map((construction,i)=>({
+  const sizeIndex=Math.max(0,sizes.findIndex(x=>x.id===sizeId));
+  const s=sizes[sizeIndex]||sizes[0];
+  const constructionCount=sizeId==='s1'?12:sizeId==='s2'?18:14+(sizeIndex%8);
+  return constructions.slice(0,constructionCount).map((construction,i)=>({
     construction_id:construction.id,
     construction_key:construction.construction_key,
     construction_name:construction.display_name||construction.name,
     layer_stack:construction.layer_stack,
     prices:quantities.map((quantity)=>{
       const blocked=(((s.metadata as any).blocked_quantities)||[]).includes(quantity);
-      const unit=10+i/10+5000/quantity;
+      const unit=10+sizeIndex*2+i/10+5000/quantity;
       return {
         quantity,ok:!blocked,availability:blocked?'not_producible':'priced',
         unit_price:blocked?null:unit,product_total:blocked?null:unit*quantity,
@@ -258,6 +260,17 @@ test('Waste and Matrix expose every commercial rule and the approved size-first 
   await expect(matrix.locator('thead')).toContainText('Construction');
   await expect(matrix.locator('thead')).toContainText('1,000');
   await expect(matrix.locator('thead')).toContainText('50,000');
+  await expect(matrix).toContainText('12 valid constructions');
+  const initial3000=matrix.locator('[data-truth-price][data-qty="3000"]').first();
+  await expect(initial3000).toBeVisible();
+  const initialPrice=await initial3000.textContent();
+
+  await page.locator('#matrixSize').selectOption('s2');
+  await expect(matrix).toContainText('18 valid constructions');
+  const changed3000=matrix.locator('[data-truth-price][data-qty="3000"]').first();
+  await expect(changed3000).toBeVisible();
+  await expect(changed3000).not.toHaveText(initialPrice||'');
+  await expect(page.locator('#matrixSize')).toHaveValue('s2');
 
   const firstPriced=matrix.locator('[data-truth-price]').first();
   await expect(firstPriced).toBeVisible();
