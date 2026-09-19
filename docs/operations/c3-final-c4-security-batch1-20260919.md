@@ -55,3 +55,19 @@ Anonymous SECURITY DEFINER count:
 - After Batch 3: 27
 
 Post-change runtime errors: 0.
+
+
+## C4 Batch 4
+Anonymous execution removed from:
+- app_replace_lead_follow_up_tx
+- app_upsert_lead
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 3: 27
+- After Batch 4: 25
+
+Post-change runtime errors: 0.
+
+Note: app_upsert_lead still requires a separate mutable search_path hardening review; this batch changes grants only.
