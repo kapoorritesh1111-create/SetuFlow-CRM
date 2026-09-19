@@ -19,7 +19,6 @@ const removedReferencePaths = [
 // against) and was undermining trust in the whole `npm run verify` gate.
 const knownStaticHtmlPages = [
   'internal/design-system/style-guide.html',
-  'internal/lead-capture-intro-behavior.html',
   'internal/products-price-list-workflow.html',
   'internal/setuflow-demo-checklist.html',
   'internal/setuflow-docs.html',
