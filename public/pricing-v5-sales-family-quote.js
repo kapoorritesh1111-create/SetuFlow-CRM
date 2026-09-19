@@ -22,6 +22,6 @@ async function runFamilyQuote(fam){const result=q('#fqResult'),width=Number(q('#
 async function saveQuote(key,decision,fam,b,comp){const value={family:fam.label,template_slug:fam.template_slug,construction_id:q('#fqConstruction')?.value,width_mm:Number(q('#fqWidth')?.value),height_mm:Number(q('#fqHeight')?.value),quantity:Number(q('#fqQty')?.value),commercial_bucket:Number(q('#fqBucket')?.value),unit_price:b.result?.selling_price?.unit_price,v4_unit_price:comp.v4_unit_price,comment:(q('#fqComment')?.value||'').trim()};if(window.PV5DbReview?.save)await window.PV5DbReview.save(key,decision,value);alert(decision==='approved'?'Quote behavior approved for review.':'Change request saved.')}
 function tick(){const now=onPage();if(now&&!lastPage)renderBase();if(!now)lastPage=false;else lastPage=true}
 function scheduleTick(delay=90){if(tickTimer)clearTimeout(tickTimer);tickTimer=setTimeout(()=>{tickTimer=null;tick()},delay)}
-function init(){new MutationObserver(()=>scheduleTick()).observe(document.documentElement,{subtree:true,childList:true});document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleTick(0)});tick()}
+function init(){new MutationObserver(()=>scheduleTick()).observe(document.documentElement,{subtree:true,childList:true});document.addEventListener('pv5:sales-page-ready',()=>{lastPage=false;renderBase()});document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleTick(0)});tick()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
