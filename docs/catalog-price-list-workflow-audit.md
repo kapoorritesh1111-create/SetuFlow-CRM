@@ -80,7 +80,7 @@ Invariants: Products = source of truth; a Price List **references** products (ne
 
 ### Remove / deprecate
 
-- `public/internal/catalog-price-list-qa.html` — conceptual role replaced by `public/internal/products-price-list-workflow.html` (this prototype). Keep only as a historical QA artifact.
+- `docs/archive/catalog-price-list-qa.html` — archived historical QA artifact. Its former public route was retired after `public/internal/products-price-list-workflow.html` replaced its conceptual role.
 - The Catalog Hub **Products** tab (editor duplication).
 - All reads of flat `products.*_price` columns across the app.
 

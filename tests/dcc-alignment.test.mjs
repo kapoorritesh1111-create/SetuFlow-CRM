@@ -18,10 +18,7 @@ const removedReferencePaths = [
 // none of them the specific handoff artifacts this test is actually guarding
 // against) and was undermining trust in the whole `npm run verify` gate.
 const knownStaticHtmlPages = [
-  'internal/catalog-price-list-qa.html',
-  'internal/catalog-workflow-repair-map.html',
   'internal/design-system/style-guide.html',
-  'internal/lead-capture-intro-behavior.html',
   'internal/products-price-list-workflow.html',
   'internal/setuflow-demo-checklist.html',
   'internal/setuflow-docs.html',
