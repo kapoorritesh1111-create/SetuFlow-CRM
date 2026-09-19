@@ -40,3 +40,18 @@ Anonymous SECURITY DEFINER count:
 - After Batch 2: 30
 
 Post-change runtime errors: 0.
+
+
+## C4 Batch 3
+Anonymous execution removed from:
+- app_save_settings_list_item_tx
+- app_delete_settings_list_item_tx
+- app_import_settings_snapshot_tx
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 2: 30
+- After Batch 3: 27
+
+Post-change runtime errors: 0.
