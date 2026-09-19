@@ -21,6 +21,7 @@ const salesSuggestions=read('public/pricing-v5-sales-suggestions.js');
 const salesLive=read('public/pricing-v5-sales-live-quote.js');
 const familyRoute=read('src/app/api/public/pricing-v5-family-review/route.ts');
 const familyRuntime=read('public/pricing-v5-review-runtime.js');
+const familyQuote=read('public/pricing-v5-sales-family-quote.js');
 
 function must(source,re,label){assert.match(source,re,label)}
 function mustNot(source,re,label){assert.doesNotMatch(source,re,label)}
@@ -159,4 +160,7 @@ test('Pricing v5 Batch 8 exposes all non-SUP family review contexts safely',()=>
   must(base,/Pricing Activation Blocked/,'unconfigured family pricing remains blocked');
   must(familyRuntime,/shrinksleeves.*shrink_sleeves/,'Shrink Sleeves review card is wired');
   must(familyRuntime,/labels.*labels/,'Labels review card is wired');
+  must(familyQuote,/\['labels','Labels',''\]/,'Labels appears in Sales Quote family selector');
+  must(familyQuote,/\['shrink_sleeves','Shrink Sleeves',''\]/,'Shrink Sleeves appears in Sales Quote family selector');
+  must(familyQuote,/pricing is intentionally blocked/,'unconfigured families stay blocked in Sales Quote');
 });
