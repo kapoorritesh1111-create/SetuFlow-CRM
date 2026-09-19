@@ -318,6 +318,8 @@
     if (t.includes('centersealpouch')) return 'center_seal_pouch';
     if (t.includes('3sidesealroll')) return 'three_side_seal_roll';
     if (t.includes('3sidesealpouch')) return 'three_side_seal_pouch';
+    if (t.includes('labels')) return 'labels';
+    if (t.includes('shrinksleeves')) return 'shrink_sleeves';
     return null;
   }
 
