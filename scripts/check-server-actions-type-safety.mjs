@@ -3,6 +3,11 @@ import { readFileSync, existsSync } from 'node:fs';
 const files = [
   'src/features/leads/server/actions.ts',
   'src/features/leads/server/actions/legacy-actions.ts',
+  'src/features/leads/server/actions/quote-actions.ts',
+  'src/features/leads/server/actions/lead-record-actions.ts',
+  'src/features/leads/server/actions/follow-up-actions.ts',
+  'src/features/leads/server/actions/communication-actions.ts',
+  'src/features/leads/server/actions/approval-actions.ts',
   'src/features/quotes/server/actions.ts',
   'src/features/orders/server/actions.ts',
 ];
