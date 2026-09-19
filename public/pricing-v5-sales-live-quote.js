@@ -6,7 +6,7 @@ const Q=[1000,2000,3000,5000,10000,20000,30000,50000];
 const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=v=>Number.isFinite(Number(v))?'₹'+Number(v).toFixed(2):'—';
-let catalog=null,generation=0,timer=null,lastKey='',currentResult=null,currentPayload=null;
+let catalog=null,generation=0,matrixGeneration=0,timer=null,lastKey='',currentResult=null,currentPayload=null;
 function onPage(){return /Sales Quote/i.test(q('#page .page-head h2')?.textContent||'')}
 async function getCatalog(){if(catalog)return catalog;const r=await fetch(API,{cache:'no-store'}),b=await r.json();if(!r.ok||!b.ok)throw new Error(b.error||'Pricing catalog unavailable');catalog=b;return b}
 function size(){return q('#salesSize')}
@@ -42,15 +42,17 @@ function ensureQuantityControl(){
  el.replaceWith(select);
 }
 async function refreshConstructionOptions(preserve=true){
- const c=await getCatalog(),s=size()?.value;if(!s)return;
+ const mg=++matrixGeneration,c=await getCatalog(),s=size()?.value;if(!s)return;
  const prev=preserve?con()?.value:'';
  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({size_matrix:true,size_profile_id:s,print:print()?.value||'CMYKW',selected_charge_codes:selectedCharges(),bottom_print_mode:gusset()?.value||undefined}),cache:'no-store'}),b=await r.json();
  if(!r.ok||!b.ok)throw new Error(b.error||'Compatible constructions unavailable');
+ if(mg!==matrixGeneration||String(size()?.value)!==String(s))return false;
  const valid=new Set((b.rows||[]).map(x=>String(x.construction_id)));
  const options=(c.constructions||[]).filter(x=>valid.has(String(x.id)));
  if(!con())return;
  con().innerHTML=options.map(x=>'<option value="'+esc(x.id)+'">'+esc((x.display_name||x.name)+(x.layer_stack?' — '+x.layer_stack:''))+'</option>').join('');
  if(prev&&valid.has(String(prev)))con().value=prev;
+ return true;
 }
 function breakdown(result){
  const host=q('#salesBreakdown');if(!host)return;
@@ -89,17 +91,18 @@ async function calculate(){
   const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store'}),b=await r.json();
   if(gen!==generation)return;
   if(!r.ok||!b.ok)throw new Error((b.review_details?.validation_errors||[]).join(' ')||b.error||'Quote calculation failed');
-  currentResult=b.result;currentPayload=payload;updateSummary(b.result);
+  currentResult=b.result;currentPayload=payload;updateSummary(b.result);const save=q('#salesSaveReview'),cont=q('#salesContinueReview');if(save)save.disabled=false;if(cont)cont.disabled=false;
   showStatus('<b>✓ Live Pricing v5 quote calculated.</b> '+esc(selectedSize()?.name||'')+' · '+Number(payload.quantity).toLocaleString()+' pcs','success');
  }catch(e){if(gen!==generation)return;currentResult=null;currentPayload=null;showStatus('<b>Quote cannot be calculated:</b> '+esc(e.message||e),'warn');['#salesUnit','#salesTotal','#salesGst','#salesGrand','#estimatedTotal'].forEach(s=>{if(q(s))q(s).textContent='—'});}
 }
 async function sizeChanged(){
- generation++;await getCatalog();ensureGusset();
+ invalidateQuote();matrixGeneration++;await getCatalog();ensureGusset();
  const old=qty()?.value;
  if(qty()&&qty().tagName==='SELECT'){const s=selectedSize(),blocked=(s?.blocked_quantities||[]).map(Number),allowed=Array.isArray(s?.allowed_quantities)&&s.allowed_quantities.length?s.allowed_quantities.map(Number):Q;qty().innerHTML=allowed.filter(x=>!blocked.includes(x)).map(x=>'<option value="'+x+'">'+x.toLocaleString()+'</option>').join('');if([...qty().options].some(o=>o.value===old))qty().value=old;else qty().value='5000'}
- await refreshConstructionOptions(false);calculate();
+ const applied=await refreshConstructionOptions(false);if(applied!==false)calculate();
 }
-function schedule(){if(timer)clearTimeout(timer);timer=setTimeout(()=>{timer=null;calculate()},80)}
+function invalidateQuote(){generation++;currentResult=null;currentPayload=null;const save=q('#salesSaveReview'),cont=q('#salesContinueReview');if(save)save.disabled=true;if(cont)cont.disabled=true;showStatus('<b>Refreshing quote for the new selection…</b>')}
+function schedule(){invalidateQuote();if(timer)clearTimeout(timer);timer=setTimeout(()=>{timer=null;calculate()},80)}
 async function saveSnapshot(){
  if(!currentResult||!currentPayload)return alert('Calculate a valid quote first.');
  const key='sales-quote-review:'+currentPayload.size_profile_id+':'+currentPayload.construction_id+':'+currentPayload.quantity;
@@ -122,12 +125,12 @@ function wire(){
 function change(e){
  if(!onPage())return;const t=e.target;if(!(t instanceof HTMLElement))return;
  if(t.id==='salesSize'){e.stopImmediatePropagation();sizeChanged();return}
- if(['salesCon','salesQty','salesPrint','salesZip','salesBottomGusset'].includes(t.id)){e.stopImmediatePropagation();generation++;schedule()}
+ if(['salesCon','salesQty','salesPrint','salesZip','salesBottomGusset'].includes(t.id)){e.stopImmediatePropagation();schedule()}
 }
 async function bootSales(){
  if(!onPage())return;await getCatalog();ensureGusset();ensureQuantityControl();await refreshConstructionOptions(true);wire();calculate();
 }
 function tick(){if(onPage())bootSales().catch(e=>showStatus('<b>Quote setup failed:</b> '+esc(e.message||e),'warn'))}
-function init(){document.addEventListener('change',change,true);document.addEventListener('input',e=>{if(onPage()&&e.target?.id==='salesQty'){generation++;schedule()}},true);new MutationObserver(()=>{if(onPage())wire()}).observe(document.documentElement,{childList:true,subtree:true});document.addEventListener('pv5:sales-page-ready',tick);setTimeout(tick,0)}
+function init(){document.addEventListener('change',change,true);document.addEventListener('input',e=>{if(onPage()&&e.target?.id==='salesQty')schedule()},true);new MutationObserver(()=>{if(onPage())wire()}).observe(document.documentElement,{childList:true,subtree:true});document.addEventListener('pv5:sales-page-ready',tick);setTimeout(tick,0)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
