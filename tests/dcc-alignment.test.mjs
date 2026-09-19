@@ -23,12 +23,8 @@ const knownStaticHtmlPages = [
   'internal/setuflow-demo-checklist.html',
   'internal/setuflow-docs.html',
   'internal/setuflow-roadmap.html',
-  'internal/trade-show-trial-preview-policy.html',
   'marketing/setuflow-bg-video.html',
   'marketing/setuflow-showcase.html',
-  'prototypes/trade-show-mobile-preview.html',
-  'prototypes/trade-show-trial.html',
-  'setuflow-client-docs.html',
   'setuflow-trade-show-trial.html',
   'vendor/investor_demo_v5.html'
 ];

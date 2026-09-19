@@ -101,9 +101,64 @@ ARCHIVED FROM PUBLIC SURFACE:
 - public/internal/catalog-price-list-qa.html → docs/archive/catalog-price-list-qa.html
 - public/internal/catalog-workflow-repair-map.html → docs/archive/catalog-workflow-repair-map.html
 - public/internal/lead-capture-intro-behavior.html → docs/archive/lead-capture-intro-behavior.html
+- public/internal/trade-show-trial-preview-policy.html → docs/archive/trade-show-trial-preview-policy.html (canonical Markdown policy retained)
 
 NEXT INVENTORY TARGETS:
 - other public/internal prototypes that may have been superseded
 - old quote/order compatibility components
 - old Pricing review assets not referenced by the active V5 owner-review flow
 - archived handoff/fix-report volume that can move out of everyday code search
+
+
+## Quote / Lead / Order compatibility audit
+
+### Already removed
+The following historical implementation modules referenced by the SF-18-007 decomposition document no longer exist on current main:
+- src/features/quotes/components/wizard/quote-wizard-form.legacy.tsx
+- src/features/leads/components/drawer/lead-drawer.legacy.tsx
+- src/features/leads/components/workspace/leads-workspace.legacy.tsx
+
+These should be treated as already-cleaned history, not future deletion targets.
+
+### Current Lead workspace — KEEP
+- src/features/leads/components/leads-workspace.tsx is a thin re-export of workspace/leads-workspace-implementation.
+- src/features/leads/components/lead-drawer.tsx wraps and re-exports drawer/lead-drawer-implementation.
+- /leads mounts LeadsWorkspace.
+- mobile/trade-event tests explicitly assert LeadsWorkspace and LeadDrawer behavior.
+
+Conclusion:
+These are canonical active paths despite historical "legacy" decomposition documentation.
+
+### Orders — current active route is already canonical
+- src/app/(app)/orders/page.tsx intentionally returns null because the cockpit is rendered by layout.tsx.
+- layout.tsx mounts the current responsive Orders workspace and MobileOrdersWorkspace.
+- help docs state the deprecated legacy Orders workspace is not the active workflow.
+
+Conclusion:
+Do not remove current orders components. The legacy workspace is already excluded from mounting; further code deletion requires identifying a physical unreferenced file first.
+
+### Docs workspace — KEEP
+- setuflow-docs-current-updates.html is intentionally linked from the live product-docs rail as "Archived update view".
+- setuflow-docs-premium-20260827.js and setuflow-docs-product-docs-v2.js are directly loaded by setuflow-docs.html.
+
+Conclusion:
+Do not archive/remove these versioned docs assets merely because their filenames contain dates.
+
+
+## C6 Batch 2 additional removals
+Archived from public/prototypes because they are standalone review/demo mockups with no current repository consumers:
+- public/prototypes/trade-show-trial.html
+- public/prototypes/trade-show-mobile-preview.html
+- public/prototypes/trade-show-trial-premium.css
+
+Archive location:
+- docs/archive/trade-show-trial-prototypes/
+
+Removed:
+- public/setuflow-client-docs.html (empty file, no repository consumers)
+
+Held:
+- public/setuflow-trade-show-trial.html — no repo consumers, but may be an externally shared direct URL.
+- public/vendor/investor_demo_v5.html — no repo consumers, but may be an externally shared direct URL.
+
+These held files require traffic/external-link evidence before retirement.
