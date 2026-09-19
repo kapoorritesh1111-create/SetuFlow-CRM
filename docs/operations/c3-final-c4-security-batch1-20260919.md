@@ -118,3 +118,18 @@ Anonymous SECURITY DEFINER count:
 - After Batch 7: 17
 
 Post-change runtime errors: 0.
+
+
+## C4 Batch 8
+Anonymous execution removed from:
+- app_quote_version_approval_state
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 7: 17
+- After Batch 8: 16
+
+Post-change runtime errors: 0.
+
+At this point the remaining anonymous SECURITY DEFINER functions are primarily public invitation/trial/token flows, RLS/helper predicates, or intentionally public counters. Further revocation requires usage-specific tracing rather than blanket cleanup.
