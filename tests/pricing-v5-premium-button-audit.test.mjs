@@ -24,6 +24,7 @@ const familyRuntime=read('public/pricing-v5-review-runtime.js');
 const familyQuote=read('public/pricing-v5-sales-family-quote.js');
 const ownerState=read('public/pricing-v5-owner-review-state.js');
 const dbReviewSync=read('public/pricing-v5-db-review-sync.js');
+const ownerNav=read('public/pricing-v5-owner-navigation-recovery.js');
 
 function must(source,re,label){assert.match(source,re,label)}
 function mustNot(source,re,label){assert.doesNotMatch(source,re,label)}
@@ -191,4 +192,11 @@ test('Pricing v5 family selection uses an explicit selector and collection-safe 
   must(base,/Array\.from\(document\.querySelectorAll\('\.family-card'\)\)\.forEach/,'family handler updates all family cards with a collection-safe selector');
   must(base,/setu_pricing_v5_selected_family_v1/,'selected family persists across page re-renders');
   assert.doesNotMatch(base, /<button class="family-card /, 'family card container must not itself be a button');
+});
+
+
+test('Pricing v5 family selector is captured by owner navigation recovery', () => {
+  must(ownerNav,/\[data-family-select\]/,'owner navigation recovery sees family selector buttons');
+  must(ownerNav,/window\.PV5\?\.family\?\./,'owner navigation recovery delegates to canonical family handler');
+  must(ownerNav,/stopImmediatePropagation\(\)/,'family selection is protected from later click-handler interference');
 });
