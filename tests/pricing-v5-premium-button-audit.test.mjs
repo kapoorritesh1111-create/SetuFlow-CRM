@@ -18,6 +18,7 @@ const dashboard=read('public/pricing-v5-dashboard-live-review.js');
 const qa=read('public/pricing-v5-owner-readiness-qa.js');
 const scenario=read('public/pricing-v5-scenario-truth.js');
 const salesSuggestions=read('public/pricing-v5-sales-suggestions.js');
+const salesLive=read('public/pricing-v5-sales-live-quote.js');
 
 function must(source,re,label){assert.match(source,re,label)}
 function mustNot(source,re,label){assert.doesNotMatch(source,re,label)}
@@ -121,4 +122,25 @@ test('Pricing v5 owner Sales Quote shows up to three engine-backed higher produc
   must(salesSuggestions,/\.slice\(0,3\)/,'Sales suggestion controller is capped at three options');
   must(salesSuggestions,/N\/A quantities are excluded automatically/,'Sales suggestion copy explains blocked quantities are excluded');
   mustNot(base,/id="better10"|id="better20"/,'hardcoded two-card sales suggestions must not return');
+});
+
+
+test('Pricing v5 matrix invalidates stale price detail when controls change',()=>{
+  must(matrix,/pv5:matrix-selection-changed/,'Matrix emits selection invalidation event');
+  must(matrixTruth,/detailGeneration/,'Price detail tracks request generation');
+  must(matrixTruth,/generation!==detailGeneration/,'Stale price-detail responses are ignored');
+});
+
+test('Pricing v5 owner Sales Quote is fully engine-backed and interactive',()=>{
+  must(salesLive,/size_matrix:true/,'Sales quote filters constructions through size matrix');
+  must(salesLive,/bottom_print_mode/,'Sales quote sends conditional bottom-gusset mode');
+  must(salesLive,/cost_breakdown/,'Sales quote renders engine-backed owner breakdown');
+  must(salesLive,/alternative_quantities/,'Sales quote renders engine-backed quantity suggestions');
+  must(salesLive,/slice\(0,3\)/,'Sales quote caps suggestions at three');
+  must(salesLive,/salesSaveReview/,'Sales quote can save a review snapshot');
+  must(salesLive,/salesContinueReview/,'Sales quote can continue to approval');
+  must(salesLive,/invalidateQuote/,'Sales quote invalidates prior calculated result as soon as controls change');
+  must(salesLive,/matrixGeneration/,'Sales quote guards compatible-construction requests against stale responses');
+  must(premium,/\[data-sales-kld\],#salesSaveReview,#salesContinueReview/,'Legacy capture handler bypasses live Sales Quote actions');
+  mustNot(base,/\['#salesSize','#salesCon','#salesQty','#salesPrint','#salesZip'\].*refreshSales/,'Legacy Sales quote refresh wiring must stay disabled');
 });

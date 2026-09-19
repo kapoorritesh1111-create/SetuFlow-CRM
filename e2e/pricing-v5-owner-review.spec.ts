@@ -2,11 +2,13 @@ import { expect, test } from '@playwright/test';
 
 const quantities=[1000,2000,3000,5000,10000,20000,30000,50000];
 const sizes=[
-  {id:'s1',size_key:'80x130_bg25_25',name:'80mm x 130mm (25mm + 25mm bg)',width_mm:80,height_mm:130,bottom_gusset_each_mm:25,pricing_bucket:1,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',metadata:{blocked_quantities:[1000,2000]}},
-  {id:'s2',size_key:'160x240_bg50_50',name:'160mm x 240mm (50mm + 50mm bg)',width_mm:160,height_mm:240,bottom_gusset_each_mm:50,pricing_bucket:3,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',metadata:{}},
-  ...Array.from({length:18},(_,i)=>({
-    id:'s'+(i+3),size_key:'uat_size_'+(i+3),name:'UAT Size '+(i+3),
-    width_mm:120+i*5,height_mm:200+i*5,bottom_gusset_each_mm:40+(i%4)*5,
+  {id:'s1',size_key:'80x130_bg25_25',name:'80mm x 130mm (25mm + 25mm bg)',width_mm:80,height_mm:130,bottom_gusset_each_mm:25,pricing_bucket:1,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',allowed_quantities:null,blocked_quantities:[1000,2000],metadata:{blocked_quantities:[1000,2000]}},
+  {id:'s2',size_key:'160x240_bg50_50',name:'160mm x 240mm (50mm + 50mm bg)',width_mm:160,height_mm:240,bottom_gusset_each_mm:50,pricing_bucket:3,gusset_production_mode:'integrated',bottom_registration_mode:'not_applicable',allowed_quantities:null,blocked_quantities:null,metadata:{}},
+  {id:'s3',size_key:'98x150_bg30_30',name:'98mm x 150mm (30mm + 30mm bg)',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,pricing_bucket:1,gusset_production_mode:'conditional',route:'conditional',bottom_registration_mode:'optional',allowed_quantities:null,blocked_quantities:[1000,2000],metadata:{blocked_quantities:[1000,2000],trim_allowance_mm:10}},
+  {id:'s4',size_key:'110x170_bg30_30',name:'110mm x 170mm (30mm + 30mm bg)',width_mm:110,height_mm:170,bottom_gusset_each_mm:30,pricing_bucket:2,gusset_production_mode:'conditional',route:'conditional',bottom_registration_mode:'optional',allowed_quantities:null,blocked_quantities:null,metadata:{}},
+  ...Array.from({length:16},(_,i)=>({
+    id:'s'+(i+5),size_key:'uat_size_'+(i+5),name:'UAT Size '+(i+5),
+    width_mm:130+i*5,height_mm:210+i*5,bottom_gusset_each_mm:40+(i%4)*5,
     pricing_bucket:Math.min(5,1+Math.floor(i/4)),gusset_production_mode:'integrated',
     bottom_registration_mode:'not_applicable',metadata:{},
   })),
@@ -77,8 +79,8 @@ function sizeMatrixRows(sizeId='s1'){
     }),
   }));
 }
-function singleResult(quantity=5000){
-  const unit=15.83605329;
+function singleResult(quantity=5000,bottomPrintMode=''){
+  const unit=bottomPrintMode==='registered_artwork'?16.83605329:15.83605329;
   return {
     ok:true,
     selling_price:{unit_price:unit,product_total:unit*quantity,gst:unit*quantity*.18,grand_total_before_freight:unit*quantity*1.18,currency:'INR'},
@@ -106,7 +108,7 @@ test.beforeEach(async({page})=>{
       if(request.method()==='GET') body={ok:true,sizes,constructions,charges,review_quantities:quantities};
       else {
         let payload:any={}; try{payload=request.postDataJSON()}catch{}
-        body=payload?.size_matrix?{ok:true,size_profile_id:payload.size_profile_id,rows:sizeMatrixRows(String(payload.size_profile_id||'s1'))}:payload?.matrix?{ok:true,rows:matrixRows()}:{ok:true,result:singleResult(Number(payload?.quantity||5000)),review_details:{production_route:{route_type:'integrated',components:[{units_per_frame:7}]},commercial_rules:{bucket_no:3,run_length_m:800,wastage_pct:10,margin_per_frame:25},validation_errors:[]}};
+        body=payload?.size_matrix?{ok:true,size_profile_id:payload.size_profile_id,rows:sizeMatrixRows(String(payload.size_profile_id||'s1'))}:payload?.matrix?{ok:true,rows:matrixRows()}:{ok:true,result:singleResult(Number(payload?.quantity||5000),String(payload?.bottom_print_mode||'')),review_details:{production_route:{route_type:'integrated',components:[{units_per_frame:7}]},commercial_rules:{bucket_no:3,run_length_m:800,wastage_pct:10,margin_per_frame:25},validation_errors:[]}};
       }
     } else if(p.endsWith('/pricing-v5-family-review')){
       body={ok:true,families:{
@@ -205,10 +207,68 @@ test('critical Pricing v5 owner actions open the correct live review controls',a
   await page.locator('#modal').getByRole('button',{name:/Close/i}).click();
 
   await page.locator('#sideNav').getByRole('button',{name:/Sales Quote/i}).click();
-  await page.getByRole('button',{name:/Save & Continue to Terms/i}).click();
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+  await expect(page.locator('#salesUnit')).toContainText('₹15.84');
+  await expect(page.locator('#salesBreakdown')).toContainText('Material');
+  await expect(page.locator('#salesQuantitySuggestions')).toContainText('10,000 pcs');
+  await expect(page.locator('#salesQuantitySuggestions')).toContainText('20,000 pcs');
+  await expect(page.locator('#salesQuantitySuggestions')).toContainText('30,000 pcs');
+  const initialConstructionCount=await page.locator('#salesCon option').count();
+  await page.locator('#salesSize').selectOption('s2');
+  await expect.poll(()=>page.locator('#salesCon option').count()).not.toBe(initialConstructionCount);
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+  await page.getByRole('button',{name:/Continue to Approval/i}).click();
   await expect(page.getByRole('heading',{name:'Impact & Approval',exact:true})).toBeVisible();
 });
 
+
+test('Sales Quote enforces MOQ, conditional gusset, stale-action safety and KLD routing',async({page})=>{
+  await page.goto('/pricing-v5-review-premium.html');
+  await page.locator('#sideNav').getByRole('button',{name:/Sales Quote/i}).click();
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+
+  const defaultQtyOptions=await page.locator('#salesQty option').allTextContents();
+  expect(defaultQtyOptions).not.toContain('1,000');
+  expect(defaultQtyOptions).not.toContain('2,000');
+
+  await page.locator('#salesSize').selectOption('s3');
+  await expect(page.locator('#salesBottomGusset')).toBeVisible();
+  await expect(page.locator('#salesQty option')).toHaveCount(6);
+  const qTexts=await page.locator('#salesQty option').allTextContents();
+  expect(qTexts).not.toContain('1,000');
+  expect(qTexts).not.toContain('2,000');
+
+  await page.locator('#salesBottomGusset').selectOption('solid_unregistered');
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+  const unregistered=await page.locator('#salesUnit').textContent();
+
+  await page.locator('#salesBottomGusset').selectOption('registered_artwork');
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+  await expect(page.locator('#salesUnit')).not.toHaveText(unregistered||'');
+
+  const continueButton=page.locator('#salesContinueReview');
+  await page.locator('#salesPrint').selectOption('CMYK');
+  await expect(continueButton).toBeDisabled();
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+  await expect(continueButton).toBeEnabled();
+
+  const urlBefore=page.url();
+  const popupPromise=page.waitForEvent('popup');
+  await page.locator('[data-sales-kld]').first().click();
+  const popup=await popupPromise;
+  await expect.poll(()=>popup.url()).toContain('/kld/pricing-v5/sup/98x150-bg-30-30.svg');
+  expect(page.url()).toBe(urlBefore);
+  await popup.close();
+});
+
+test('Sales Quote keeps workbook-backed 160x230 reconciliation checkpoint',async({page})=>{
+  await page.goto('/pricing-v5-review-premium.html');
+  await page.locator('#sideNav').getByRole('button',{name:/Sales Quote/i}).click();
+  await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
+  await expect(page.locator('#salesUnit')).toContainText('₹15.84');
+  await expect(page.locator('#salesBreakdown')).toContainText('Material');
+  await expect(page.locator('#salesGrand')).not.toHaveText('—');
+});
 
 test('all Sizes, Constructions and Rates are reachable through pagination and size review advances to the next size',async({page})=>{
   await page.goto('/pricing-v5-review-premium.html');
