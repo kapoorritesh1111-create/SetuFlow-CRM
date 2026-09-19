@@ -19,6 +19,8 @@ const qa=read('public/pricing-v5-owner-readiness-qa.js');
 const scenario=read('public/pricing-v5-scenario-truth.js');
 const salesSuggestions=read('public/pricing-v5-sales-suggestions.js');
 const salesLive=read('public/pricing-v5-sales-live-quote.js');
+const familyRoute=read('src/app/api/public/pricing-v5-family-review/route.ts');
+const familyRuntime=read('public/pricing-v5-review-runtime.js');
 
 function must(source,re,label){assert.match(source,re,label)}
 function mustNot(source,re,label){assert.doesNotMatch(source,re,label)}
@@ -143,4 +145,18 @@ test('Pricing v5 owner Sales Quote is fully engine-backed and interactive',()=>{
   must(salesLive,/matrixGeneration/,'Sales quote guards compatible-construction requests against stale responses');
   must(premium,/\[data-sales-kld\],#salesSaveReview,#salesContinueReview/,'Legacy capture handler bypasses live Sales Quote actions');
   mustNot(base,/\['#salesSize','#salesCon','#salesQty','#salesPrint','#salesZip'\].*refreshSales/,'Legacy Sales quote refresh wiring must stay disabled');
+});
+
+
+test('Pricing v5 Batch 8 exposes all non-SUP family review contexts safely',()=>{
+  for(const key of ['flat_bottom','center_seal_roll','center_seal_pouch','three_side_seal_roll','three_side_seal_pouch','labels','shrink_sleeves']){
+    must(familyRoute,new RegExp(key.replace(/_/g,'_')),'family review API includes '+key);
+  }
+  must(familyRoute,/FAMILY_REVIEW_REQUIREMENTS/,'family API exposes structured family-specific requirements');
+  must(familyRoute,/activation_ready_count: 0/,'unsupported families are not silently activated');
+  must(familyRoute,/SETU will not invent prices or reuse Stand-Up geometry/,'Flat Bottom safety contract');
+  must(base,/saveFamilySetup/,'owner can save family setup inputs');
+  must(base,/Pricing Activation Blocked/,'unconfigured family pricing remains blocked');
+  must(familyRuntime,/shrinksleeves.*shrink_sleeves/,'Shrink Sleeves review card is wired');
+  must(familyRuntime,/labels.*labels/,'Labels review card is wired');
 });
