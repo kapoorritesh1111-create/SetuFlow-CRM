@@ -187,7 +187,7 @@ test('Pricing v5 family cards use a dedicated selector button without nested act
 
 test('Pricing v5 family selection is bound programmatically and survives re-renders', () => {
   must(base,/document\.addEventListener\('click',e=>\{const button=e\.target\?\.closest\?\.\('\[data-family-select\]'\)/,'family selectors use delegated click binding');
-  must(base,/button\.onclick=\(\)=>family\(button\.dataset\.familySelect\|\|'sup'\)/,'family selector calls canonical family handler');
+  must(base,/if\(button\)family\(button\.dataset\.familySelect\|\|'sup'\)/,'delegated family selector calls canonical family handler');
   must(base,/setu_pricing_v5_selected_family_v1/,'selected family persists across page re-renders');
   assert.doesNotMatch(base, /data-family-select="[^"]+"[^>]+onclick=/, 'family selection must not depend on inline onclick');
 });
