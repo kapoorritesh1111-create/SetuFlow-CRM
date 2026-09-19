@@ -25,3 +25,18 @@ Anonymous SECURITY DEFINER count:
 - After Batch 1: 33
 
 Post-change runtime errors: 0.
+
+
+## C4 Batch 2
+Anonymous execution removed from:
+- app_record_save_lead_non_stage_fanout_tx
+- app_record_save_lead_stage_change_fanout_tx
+- app_refresh_lead_relations_tx
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 1: 33
+- After Batch 2: 30
+
+Post-change runtime errors: 0.
