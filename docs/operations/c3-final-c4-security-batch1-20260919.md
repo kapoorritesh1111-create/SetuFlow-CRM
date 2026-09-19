@@ -103,3 +103,18 @@ Post-change runtime errors: 0.
 
 Held for separate review:
 - create_guided_trial_entitlement (possible public trial dependency)
+
+
+## C4 Batch 7
+Anonymous execution removed from:
+- get_orders_execution_lead_display
+- get_effective_notif_pref
+- match_guru_embeddings(uuid, vector, integer, text[])
+
+Authenticated and service_role EXECUTE remain enabled.
+
+Anonymous SECURITY DEFINER count:
+- After Batch 6: 20
+- After Batch 7: 17
+
+Post-change runtime errors: 0.
