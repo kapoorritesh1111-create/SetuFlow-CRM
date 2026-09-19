@@ -97,8 +97,9 @@ KEEP:
 - mitigation/ while CI references it
 - legacy-actions.ts while active
 
-ARCHIVE CANDIDATE:
-- public/internal/catalog-price-list-qa.html after test/reference cleanup
+ARCHIVED FROM PUBLIC SURFACE:
+- public/internal/catalog-price-list-qa.html → docs/archive/catalog-price-list-qa.html
+- public/internal/catalog-workflow-repair-map.html → docs/archive/catalog-workflow-repair-map.html
 
 NEXT INVENTORY TARGETS:
 - other public/internal prototypes that may have been superseded
