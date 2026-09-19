@@ -17,6 +17,7 @@ const previewRoute=read('src/app/api/public/pricing-v5-review-preview/route.ts')
 const dashboard=read('public/pricing-v5-dashboard-live-review.js');
 const qa=read('public/pricing-v5-owner-readiness-qa.js');
 const scenario=read('public/pricing-v5-scenario-truth.js');
+const salesSuggestions=read('public/pricing-v5-sales-suggestions.js');
 
 function must(source,re,label){assert.match(source,re,label)}
 function mustNot(source,re,label){assert.doesNotMatch(source,re,label)}
@@ -111,4 +112,13 @@ test('Pricing v5 Waste and Matrix expose complete pagination and intentional N/A
   must(previewRoute,/filter\(\(row\) => row\.prices\.some\(\(price\) => price\.availability !== 'not_compatible'\)\)/,'Size-first matrix omits incompatible construction rows');
   must(premium,/dataset\.bandPage/,'Global pager guard preserves Waste pagination');
   must(premium,/dataset\.mp/,'Global pager guard preserves Matrix pagination');
+});
+
+
+test('Pricing v5 owner Sales Quote shows up to three engine-backed higher producible quantities',()=>{
+  must(salesSuggestions,/alternative_quantities/,'Sales suggestion controller reads engine alternative quantities');
+  must(salesSuggestions,/x\.quantity>currentQty/,'Sales suggestion controller only shows higher quantities');
+  must(salesSuggestions,/\.slice\(0,3\)/,'Sales suggestion controller is capped at three options');
+  must(salesSuggestions,/N\/A quantities are excluded automatically/,'Sales suggestion copy explains blocked quantities are excluded');
+  mustNot(base,/id="better10"|id="better20"/,'hardcoded two-card sales suggestions must not return');
 });
