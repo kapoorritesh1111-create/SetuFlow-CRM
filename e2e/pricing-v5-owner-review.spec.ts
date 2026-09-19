@@ -57,6 +57,24 @@ function matrixRows(){
     })
   }));
 }
+function sizeMatrixRows(sizeId='s1'){
+  const s=sizes.find(x=>x.id===sizeId)||sizes[0];
+  return constructions.map((construction,i)=>({
+    construction_id:construction.id,
+    construction_key:construction.construction_key,
+    construction_name:construction.display_name||construction.name,
+    layer_stack:construction.layer_stack,
+    prices:quantities.map((quantity)=>{
+      const blocked=(((s.metadata as any).blocked_quantities)||[]).includes(quantity);
+      const unit=10+i/10+5000/quantity;
+      return {
+        quantity,ok:!blocked,availability:blocked?'not_producible':'priced',
+        unit_price:blocked?null:unit,product_total:blocked?null:unit*quantity,
+        validation_errors:blocked?[`Quantity ${quantity.toLocaleString()} is not allowed for ${s.name}.`]:[],
+      };
+    }),
+  }));
+}
 function singleResult(quantity=5000){
   const unit=15.83605329;
   return {
@@ -86,7 +104,7 @@ test.beforeEach(async({page})=>{
       if(request.method()==='GET') body={ok:true,sizes,constructions,charges,review_quantities:quantities};
       else {
         let payload:any={}; try{payload=request.postDataJSON()}catch{}
-        body=payload?.matrix?{ok:true,rows:matrixRows()}:{ok:true,result:singleResult(Number(payload?.quantity||5000)),review_details:{production_route:{route_type:'integrated',components:[{units_per_frame:7}]},commercial_rules:{bucket_no:3,run_length_m:800,wastage_pct:10,margin_per_frame:25},validation_errors:[]}};
+        body=payload?.size_matrix?{ok:true,size_profile_id:payload.size_profile_id,rows:sizeMatrixRows(String(payload.size_profile_id||'s1'))}:payload?.matrix?{ok:true,rows:matrixRows()}:{ok:true,result:singleResult(Number(payload?.quantity||5000)),review_details:{production_route:{route_type:'integrated',components:[{units_per_frame:7}]},commercial_rules:{bucket_no:3,run_length_m:800,wastage_pct:10,margin_per_frame:25},validation_errors:[]}};
       }
     } else if(p.endsWith('/pricing-v5-family-review')){
       body={ok:true,families:{
