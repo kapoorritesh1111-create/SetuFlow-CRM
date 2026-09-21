@@ -110,12 +110,16 @@ test('IndiaMART controls are reachable from the main Integrations page', () => {
   assert.match(adminHub, /href="\/leads\/inbound\?source=indiamart"/);
 });
 
-test('scheduled sync is protected and runs every ten minutes', () => {
+test('scheduled sync is protected, observable and runs every five minutes', () => {
   assert.match(cron, /CRON_SECRET/);
   assert.match(cron, /authorization/);
   const job = vercel.crons.find((item) => item.path === '/api/cron/indiamart-sync');
   assert.ok(job);
-  assert.equal(job.schedule, '*/10 * * * *');
+  assert.equal(job.schedule, '*/5 * * * *');
+  assert.match(cron, /cron_last_attempt_at/);
+  assert.match(cron, /cron_last_success_at/);
+  assert.match(cron, /cron_last_failure_at/);
+  assert.match(cron, /failures\.length/);
 });
 
 test('audit events never include the CRM key', () => {
