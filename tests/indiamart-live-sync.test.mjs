@@ -91,8 +91,8 @@ test('inbound records are visibly and persistently attributed to their provider'
   assert.match(inboundActions, /inbound_provider: provider/);
   assert.match(inboundActions, /IndiaMART enquiry/);
   assert.match(inboundPage, /function ProviderBadge/);
-  assert.match(inboundPage, /IndiaMART marketplace enquiry|Marketplace enquiry/);
-  assert.match(inboundPage, /!selectedIsIndiaMart \? <a href="#message-customer"/);
+  assert.match(inboundPage, /IndiaMART enquiry/);
+  assert.match(inboundPage, /href="#message-customer"/);
 });
 
 test('shared Stark inbound review actions accept both supported providers while WhatsApp send remains Interakt-only', () => {
@@ -106,16 +106,19 @@ test('shared Stark inbound review actions accept both supported providers while 
 
 test('IndiaMART controls are reachable from the main Integrations page', () => {
   assert.match(adminHub, /href="\/admin\/integrations\/indiamart"/);
-  assert.match(adminHub, /Manage IndiaMART connection/);
-  assert.match(adminHub, /href="\/leads\/inbound\?source=indiamart"/);
+  assert.match(adminHub, /Manage IndiaMART/);
+  assert.match(adminHub, /href="\/leads\/inbound\?provider=indiamart"/);
 });
 
-test('scheduled sync is protected, observable and runs every five minutes', () => {
+test('scheduled sync is protected, observable and stays outside the provider cooldown', () => {
   assert.match(cron, /CRON_SECRET/);
   assert.match(cron, /authorization/);
   const job = vercel.crons.find((item) => item.path === '/api/cron/indiamart-sync');
   assert.ok(job);
-  assert.equal(job.schedule, '*/5 * * * *');
+  assert.equal(job.schedule, '*/10 * * * *');
+  assert.match(cron, /PROVIDER_COOLDOWN_MS = 6 \* 60 \* 1000/);
+  assert.match(cron, /last_successful_sync_at/);
+  assert.match(cron, /reason: 'provider_cooldown'/);
   assert.match(cron, /cron_last_attempt_at/);
   assert.match(cron, /cron_last_success_at/);
   assert.match(cron, /cron_last_failure_at/);

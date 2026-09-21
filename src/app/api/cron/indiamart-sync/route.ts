@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 const PROVIDER = 'indiamart';
+const PROVIDER_COOLDOWN_MS = 6 * 60 * 1000;
 
 function authorized(request: NextRequest) {
   if (!CRON_SECRET) return false;
@@ -24,6 +25,22 @@ function asConfig(value: unknown): Record<string, unknown> {
 
 function enabledFlag(value: unknown) {
   return value === true || String(value ?? '').trim().toLowerCase() === 'true';
+}
+
+function mostRecentSyncAttempt(configuration: Record<string, unknown>) {
+  const candidates = [
+    configuration.cron_last_attempt_at,
+    configuration.last_successful_sync_at,
+  ]
+    .map((value) => new Date(String(value ?? '')).getTime())
+    .filter(Number.isFinite);
+
+  return candidates.length ? Math.max(...candidates) : null;
+}
+
+function isInsideProviderCooldown(configuration: Record<string, unknown>, now = Date.now()) {
+  const mostRecent = mostRecentSyncAttempt(configuration);
+  return mostRecent !== null && now - mostRecent < PROVIDER_COOLDOWN_MS;
 }
 
 async function updateCronHeartbeat(
@@ -89,6 +106,20 @@ export async function GET(request: NextRequest) {
   const results: Array<Record<string, unknown>> = [];
 
   for (const integration of enabled) {
+    const configuration = asConfig(integration.configuration);
+    if (isInsideProviderCooldown(configuration)) {
+      console.info('[IndiaMART cron] Organization sync skipped during provider cooldown', {
+        organizationId: integration.organization_id,
+      });
+      results.push({
+        organizationId: integration.organization_id,
+        ok: true,
+        skipped: true,
+        reason: 'provider_cooldown',
+      });
+      continue;
+    }
+
     const attemptAt = new Date().toISOString();
     try {
       await updateCronHeartbeat(db, integration.id, {
