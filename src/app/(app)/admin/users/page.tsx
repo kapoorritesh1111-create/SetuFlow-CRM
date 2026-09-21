@@ -46,6 +46,14 @@ function Notice({ notice }: { notice: string }) {
 const inviteInputClass =
   'mt-1 min-h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
 
+function roleLabel(name: string | null | undefined) {
+  const normalized = String(name ?? '').trim().toLowerCase();
+  if (normalized === 'owner') return 'Owner';
+  if (normalized === 'admin') return 'Super Admin';
+  if (normalized === 'member') return 'User';
+  return name ? name.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) : 'No role';
+}
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
@@ -114,7 +122,7 @@ export default async function AdminUsersPage({
         <input type="hidden" name="return_path" value="/admin/users?tab=invites" />
         <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Full name<input name="full_name" placeholder="Full name" aria-label="Invitee full name" className={inviteInputClass} /></label>
         <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Email<input type="email" name="email" required placeholder="new-user@example.com" aria-label="Invitee email" className={inviteInputClass} /></label>
-        <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Role<select name="role_id" aria-label="Invitee role" className={inviteInputClass}><option value="">No role yet</option>{(rolesResult.data ?? []).map((role: any) => <option key={role.id} value={role.id}>{role.name}{role.organization_id ? '' : ' (global)'}</option>)}</select></label>
+        <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Role<select name="role_id" aria-label="Invitee role" className={inviteInputClass}><option value="">No role yet</option>{(rolesResult.data ?? []).map((role: any) => <option key={role.id} value={role.id}>{roleLabel(role.name)}{role.organization_id ? '' : ' (global)'}</option>)}</select></label>
         <label className="block text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">Expiry<select name="expires_in_days" defaultValue="7" aria-label="Invitation expiry" className={inviteInputClass}><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></label>
         <button type="submit" className="inline-flex min-h-9 items-center justify-center rounded-ctl bg-brand-700 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-brand-800">Create &amp; send</button>
       </form>
@@ -144,7 +152,7 @@ export default async function AdminUsersPage({
       <div className="space-y-2">{fullRoles.map((role) => {
         const permissions = ((role.role_permissions ?? []) as Array<{ permission: string }>).map((item) => item.permission);
         const assigned = ((role.user_roles ?? []) as Array<{ id: string }>).length;
-        return <div key={role.id} className="rounded-ctl border border-slate-200 bg-slate-50 px-3 py-2.5"><div className="flex items-center gap-2"><p className="text-xs font-bold capitalize text-slate-900">{role.name}</p><KitTag tone={role.organization_id ? 'info' : 'neutral'}>{role.organization_id ? 'Org role' : 'Global'}</KitTag><span className="ml-auto text-[9.5px] font-semibold text-slate-400">{assigned} member{assigned === 1 ? '' : 's'}</span></div>{role.description ? <p className="mt-1 text-[10.5px] leading-[1.45] text-slate-500">{role.description}</p> : null}<div className="mt-1.5 flex flex-wrap gap-1">{permissions.length ? permissions.slice(0, 14).map((permission) => <span key={permission} className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[8.5px] font-semibold text-slate-600">{permission}</span>) : <span className="text-[9.5px] italic text-slate-400">No explicit permissions recorded</span>}{permissions.length > 14 ? <span className="text-[8.5px] font-semibold text-slate-400">+{permissions.length - 14} more</span> : null}</div></div>;
+        return <div key={role.id} className="rounded-ctl border border-slate-200 bg-slate-50 px-3 py-2.5"><div className="flex items-center gap-2"><p className="text-xs font-bold text-slate-900">{roleLabel(role.name)}</p><KitTag tone={role.organization_id ? 'info' : 'neutral'}>{role.organization_id ? 'Org role' : 'Global'}</KitTag><span className="ml-auto text-[9.5px] font-semibold text-slate-400">{assigned} member{assigned === 1 ? '' : 's'}</span></div>{role.description ? <p className="mt-1 text-[10.5px] leading-[1.45] text-slate-500">{role.description}</p> : null}<div className="mt-1.5 flex flex-wrap gap-1">{permissions.length ? permissions.slice(0, 14).map((permission) => <span key={permission} className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[8.5px] font-semibold text-slate-600">{permission}</span>) : <span className="text-[9.5px] italic text-slate-400">No explicit permissions recorded</span>}{permissions.length > 14 ? <span className="text-[8.5px] font-semibold text-slate-400">+{permissions.length - 14} more</span> : null}</div></div>;
       })}</div>
       <p className="mt-3 text-[10.5px] text-slate-500">Full role permission management and the approval threshold live in <Link href="/admin/security" className="font-bold text-blue-800 hover:underline">Security &amp; Roles →</Link></p>
     </div>
