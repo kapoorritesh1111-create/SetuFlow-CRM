@@ -30,6 +30,14 @@ function tone(status: AdminUserRow['status']) {
   return 'neutral' as const;
 }
 
+function roleLabel(name: string | null | undefined) {
+  const normalized = String(name ?? '').trim().toLowerCase();
+  if (normalized === 'owner') return 'Owner';
+  if (normalized === 'admin') return 'Super Admin';
+  if (normalized === 'member') return 'User';
+  return name ? name.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()) : 'No role';
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="space-y-1.5 text-sm font-semibold text-slate-700">
@@ -163,7 +171,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
               return (
                 <tr key={row.id} className="hover:bg-slate-50/70">
                   <td className="px-4 py-3"><div className="flex items-center gap-3"><UserAvatar name={name} email={row.email} avatarUrl={row.avatarUrl} size="sm" /><div><p className="font-bold text-slate-900">{name}</p><p className="text-xs text-slate-500">{row.email ?? 'Invitation pending'}</p></div></div></td>
-                  <td className="px-4 py-3 text-slate-600">{row.roleName ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-600">{row.roleName ? roleLabel(row.roleName) : '—'}</td>
                   <td className="px-4 py-3"><StatusBadge label={row.status} tone={tone(row.status)} /></td>
                   <td className="px-4 py-3 text-xs text-slate-500">{row.lastActiveAt ? formatDateTime(row.lastActiveAt) : '—'}</td>
                   <td className="px-4 py-3 text-right"><button type="button" onClick={() => open(row)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">Manage</button></td>
@@ -184,7 +192,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
         headerActions={selected ? (
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={selected.status} tone={tone(selected.status)} />
-            {selected.roleName ? <StatusBadge label={selected.roleName} tone="info" /> : null}
+            {selected.roleName ? <StatusBadge label={roleLabel(selected.roleName)} tone="info" /> : null}
           </div>
         ) : null}
         footer={selected ? (
@@ -249,7 +257,7 @@ export function AdminUsersManager({ rows, roles, canManageOwners }: { rows: Admi
                     <input type="hidden" name="membership_id" value={selected.membershipId} />
                     <input type="hidden" name="return_path" value="/admin/users" />
                     <Field label="Role">
-                      <select name="role_id" defaultValue={selected.roleId ?? ''} className={drawerInputClass}>{roles.map((role) => <option key={role.id} value={role.id}>{role.name}{role.organizationId ? '' : ' (global)'}</option>)}</select>
+                      <select name="role_id" defaultValue={selected.roleId ?? ''} className={drawerInputClass}>{roles.map((role) => <option key={role.id} value={role.id}>{roleLabel(role.name)}{role.organizationId ? '' : ' (global)'}</option>)}</select>
                     </Field>
                     <div className="flex justify-end border-t border-slate-100 pt-4"><button className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Save role</button></div>
                   </form>
