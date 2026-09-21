@@ -104,6 +104,133 @@ export async function resendClientOnboardingNotification(formData: FormData): Pr
 
 function pickDelivery(metadata: unknown): Record<string, any> { const value = metadata as Record<string, any> | null | undefined; const delivery = value?.delivery; return delivery && typeof delivery === 'object' ? delivery as Record<string, any> : {}; }
 
+export async function createManagedOrganization(formData: FormData): Promise<void> {
+  const companyName = normalizeText(formData.get('company_name'));
+  const ownerEmail = normalizeEmail(formData.get('owner_email'));
+  const ownerName = normalizeText(formData.get('owner_name'));
+  const website = normalizeText(formData.get('website'));
+  const headquartersCountry = normalizeText(formData.get('headquarters_country'));
+  const requestedPlan = normalizeText(formData.get('requested_plan')) ?? 'enterprise';
+  const requestedSeatCount = Math.max(1, Number.parseInt(String(formData.get('requested_seat_count') ?? '25'), 10) || 25);
+  if (!companyName || !ownerEmail) clientManagementRedirect('organization-create-missing-required', 'new');
+
+  const { missingEnv, membership, organization } = await requireSetuInternalAdminWorkspace();
+  if (missingEnv || !membership || !organization) clientManagementRedirect('organization-create-not-authorized', 'new');
+  const admin = createAdminSupabaseClient() as any;
+  if (!admin) clientManagementRedirect('organization-create-service-missing', 'new');
+
+  const companySlug = slugifyCompanyName(companyName);
+  const { data: existingOrg } = await admin.from('organizations').select('id, name, slug').eq('slug', companySlug).maybeSingle();
+  if (existingOrg?.id) clientManagementRedirect('organization-already-exists', existingOrg.id, existingOrg.id);
+
+  const workspaceDomain = buildWorkspaceDomain(companyName);
+  const { data: request, error: requestError } = await admin.from('client_onboarding_requests').insert({
+    company_name: companyName,
+    company_slug: companySlug,
+    workspace_domain: workspaceDomain,
+    logo_url: DEFAULT_SETU_FLOW_LOGO,
+    website,
+    primary_admin_name: ownerName,
+    primary_admin_email: ownerEmail,
+    headquarters_country: headquartersCountry,
+    requested_markets: [],
+    requested_countries: [],
+    requested_pipelines: [],
+    requested_pipeline_stages: [],
+    requested_next_steps: [],
+    requested_modules: [],
+    requested_plan: requestedPlan,
+    requested_seat_count: requestedSeatCount,
+    is_trial_request: false,
+    wants_trade_events: false,
+    status: 'setup_in_progress',
+    additional_notes: 'Organization created from SETU internal Client Management.',
+  }).select('*').maybeSingle();
+
+  if (requestError || !request?.id) clientManagementRedirect('organization-create-request-failed', 'new');
+
+  let provisioned;
+  try {
+    provisioned = await provisionWorkspaceFromOnboardingRequest({
+      admin,
+      request,
+      platformOrganizationId: organization.id,
+      actorMembershipId: membership.id,
+      actorUserId: membership.user_id ?? null,
+    });
+  } catch (error) {
+    await admin.from('client_onboarding_requests').update({
+      status: 'setup_in_progress',
+      additional_notes: `Organization provisioning needs attention: ${provisioningErrorMessage(error)}`,
+      updated_at: new Date().toISOString(),
+    }).eq('id', request.id);
+    clientManagementRedirect('organization-create-provision-failed', request.id, request.id);
+  }
+
+  await admin.from('client_onboarding_requests').update({
+    status: 'admin_invite_ready',
+    workspace_domain: provisioned.workspaceDomain,
+    linked_organization_id: provisioned.organizationId,
+    updated_at: new Date().toISOString(),
+  }).eq('id', request.id);
+
+  const { data: invitation } = await admin.from('organization_invitations')
+    .select('id, email, status, expires_at, metadata, roles(name)')
+    .eq('organization_id', provisioned.organizationId)
+    .ilike('email', ownerEmail)
+    .in('status', ['draft', 'pending', 'sent'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const delivery = pickDelivery(invitation?.metadata);
+  const acceptUrl = typeof delivery.accept_url === 'string' ? delivery.accept_url : null;
+  let inviteSent = false;
+
+  if (invitation?.id && acceptUrl) {
+    const roleName = Array.isArray(invitation.roles) ? invitation.roles[0]?.name : invitation.roles?.name;
+    const notification = await sendFirstAdminInviteEmail({
+      toEmail: ownerEmail,
+      companyName,
+      workspaceDomain: provisioned.workspaceDomain,
+      acceptUrl,
+      roleName: roleName || 'owner',
+      expiresAt: invitation.expires_at ?? null,
+    });
+    inviteSent = notification.status === 'email_sent';
+    const nextMetadata = {
+      ...(invitation.metadata ?? {}),
+      delivery: {
+        ...delivery,
+        email_status: notification.status,
+        email_error: notification.error,
+        emailed_at: inviteSent ? new Date().toISOString() : null,
+        provider: 'mailtrap',
+        source: 'internal_client_management_org_create',
+      },
+    };
+    await admin.from('organization_invitations').update({
+      status: inviteSent ? 'sent' : 'pending',
+      last_sent_at: inviteSent ? new Date().toISOString() : null,
+      metadata: nextMetadata,
+      updated_at: new Date().toISOString(),
+    }).eq('id', invitation.id);
+  }
+
+  await admin.from('client_onboarding_requests').update({
+    status: inviteSent ? 'admin_invited' : 'admin_invite_ready',
+    additional_notes: inviteSent
+      ? 'Organization provisioned and first owner invite sent through Mailtrap.'
+      : 'Organization provisioned. Owner invite is ready; Mailtrap delivery needs attention.',
+    updated_at: new Date().toISOString(),
+  }).eq('id', request.id);
+
+  revalidatePath('/admin/client-management');
+  revalidatePath('/admin/invitations');
+  revalidatePath('/admin/users');
+  clientManagementRedirect(inviteSent ? 'organization-created-and-invited' : 'organization-created-invite-pending', provisioned.organizationId, provisioned.organizationId);
+}
+
 export async function sendFirstAdminInviteFromOnboardingRequest(formData: FormData): Promise<void> {
   const requestId = normalizeText(formData.get('request_id'));
   const client = selectedClient(formData, requestId ?? '');
