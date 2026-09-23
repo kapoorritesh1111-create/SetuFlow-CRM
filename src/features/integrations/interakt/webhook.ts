@@ -224,6 +224,11 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
         status: 'sent',
         updated_at: now,
       }, { onConflict: 'organization_id,provider,external_message_id' });
+      await db.from('lead_intake_messages')
+        .delete()
+        .eq('organization_id', STARK_PACKMATE_ORG_ID)
+        .eq('provider', SOURCE_PROVIDER)
+        .eq('external_message_id', `interakt-context-gap:${questionId}`);
     }
     if (answerText) {
       const identityKind = identityQuestion(questionText);
@@ -268,6 +273,50 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
 function messageText(message: Record<string, unknown>) { if (typeof message.message === 'string') return message.message; return recursiveFindString(message.message, ['text', 'caption', 'message']) ?? ''; }
 function messageMediaUrl(message: Record<string, unknown>) { const url = recursiveFindString(message, ['media_url', 'mediaUrl']); return url && /^https:\/\//i.test(url) ? url : null; }
 function isImageMessage(message: Record<string, unknown>, mediaUrl: string | null) { if (!mediaUrl) return false; const type = clean(message.message_content_type ?? message.chat_message_type)?.toLowerCase() ?? ''; return type.includes('image') || /\.(?:png|jpe?g|webp|gif)(?:\?|$)/i.test(mediaUrl); }
+
+async function preserveUnknownInteraktReplyContext(db: any, input: { intakeId: string; message: Record<string, unknown>; receivedAt: string | null; assignee: string | null }) {
+  const context = safeObject(input.message.message_context);
+  const contextId = clean(context.id);
+  if (!contextId) return;
+
+  const [{ data: knownMessage }, { data: knownWorkflow }] = await Promise.all([
+    db.from('lead_intake_messages')
+      .select('id')
+      .eq('organization_id', STARK_PACKMATE_ORG_ID)
+      .eq('provider', SOURCE_PROVIDER)
+      .or(`external_message_id.eq.${contextId},external_message_id.eq.workflow-question:${contextId}`)
+      .limit(1)
+      .maybeSingle(),
+    db.from('lead_intake_workflow_answers')
+      .select('id')
+      .eq('organization_id', STARK_PACKMATE_ORG_ID)
+      .eq('provider', SOURCE_PROVIDER)
+      .eq('intake_id', input.intakeId)
+      .or(`question_id.eq.${contextId},raw_payload->question->>id.eq.${contextId}`)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  if (knownMessage?.id || knownWorkflow?.id) return;
+
+  const base = input.receivedAt ? new Date(input.receivedAt).getTime() : Date.now();
+  const sentAt = new Date(Math.max(0, base - 1)).toISOString();
+  await db.from('lead_intake_messages').upsert({
+    organization_id: STARK_PACKMATE_ORG_ID,
+    intake_id: input.intakeId,
+    provider: SOURCE_PROVIDER,
+    external_message_id: `interakt-context-gap:${contextId}`,
+    event_type: 'interakt_manual_outbound_gap',
+    direction: 'outbound',
+    actor_type: 'agent',
+    actor_name: input.assignee || 'Interakt agent',
+    message_type: 'InteraktInbox',
+    message_text: 'An outbound message exists in Interakt, but Interakt did not include its content in the webhook sent to Setu Flow.',
+    message_payload: { context_id: contextId, source: 'reply_context_reconciliation' },
+    sent_at: sentAt,
+    status: 'sent',
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'organization_id,provider,external_message_id' });
+}
 
 async function notifySupportOfInboundMessage(db: any, input: { intake: any; messageId: string; customerName: string | null; visibleText: string; mediaUrl: string | null }) {
   const { data: support } = await db.from('profiles').select('id,email').ilike('email', 'support@setugroups.com').limit(1).maybeSingle();
@@ -329,6 +378,8 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   const eventType = clean(payload.type) ?? 'message_received'; const incoming = eventType === 'message_received'; const receivedAt = iso(message.received_at_utc); const deliveredAt = iso(message.delivered_at_utc); const readAt = iso(message.seen_at_utc);
   const status = incoming ? 'received' : eventType.endsWith('_read') ? 'read' : eventType.endsWith('_delivered') ? 'delivered' : eventType.endsWith('_failed') ? 'failed' : 'sent';
   const callbackData = recursiveFindString(message.meta_data, ['callback_data']); const text = messageText(message); const visibleText = visibleMessageText(text); const mediaUrl = messageMediaUrl(message); const now = new Date().toISOString();
+  const assignee = assigneeFromTraits(traits) || intake.interakt_assignee_name || null;
+  if (incoming) await preserveUnknownInteraktReplyContext(db, { intakeId: intake.id, message, receivedAt, assignee });
   const textIntelligence = incoming ? extractExplicitCompanyFromText(visibleText) : null; const imageIntelligence = incoming && isImageMessage(message, mediaUrl) ? await analyzeInteraktCustomerImage(mediaUrl, visibleText) : null; const intelligence = textIntelligence ?? imageIntelligence;
   await db.from('lead_intake_messages').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, external_message_id: messageId, event_type: eventType, direction: incoming ? 'inbound' : 'outbound', actor_type: incoming ? 'customer' : 'agent', actor_name: incoming ? name : null, message_type: clean(message.message_content_type ?? message.chat_message_type), message_text: text || (mediaUrl ? '[Customer media]' : ''), message_payload: message, media_url: mediaUrl, intelligence: intelligence ?? {}, received_at: incoming ? receivedAt : null, sent_at: incoming ? null : receivedAt, delivered_at: deliveredAt, read_at: readAt, failed_at: status === 'failed' ? now : null, status, callback_data: callbackData, updated_at: now }, { onConflict: 'organization_id,provider,external_message_id' });
 
@@ -347,7 +398,6 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   if (textIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(textIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   if (imageIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(imageIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   const attribution = mergeAttribution(intake, attributionFromPayload(data));
-  const assignee = assigneeFromTraits(traits) || intake.interakt_assignee_name || null;
   await db.from('lead_intake_staging').update({ contact_name: intake.contact_name ?? name, person_name: intake.person_name ?? name, email: intake.email ?? email, full_phone_number: intake.full_phone_number ?? phone, first_inquiry_at: incoming ? (intake.first_inquiry_at ?? receivedAt) : intake.first_inquiry_at, last_inbound_at: incoming ? receivedAt : intake.last_inbound_at, source_modified_at: now, raw_payload: data, company_evidence: companyEvidence, company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at, interakt_assignee_name: assignee, updated_at: now, ...identityPatch, ...attribution }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
 
   if (incoming) {

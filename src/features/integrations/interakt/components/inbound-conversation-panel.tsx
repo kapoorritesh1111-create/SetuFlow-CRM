@@ -168,6 +168,11 @@ function requirementCaptures(messages: ConversationMessage[], captured: Captured
 }
 
 function MessageBubble({ message, customerName, latest = false }: { message: ConversationMessage; customerName: string; latest?: boolean }) {
+  const isInteraktGap = message.event_type === 'interakt_manual_outbound_gap';
+  if (isInteraktGap) {
+    return <div className="flex justify-end"><div className="max-w-[82%] rounded-card border border-amber-200 bg-amber-50 px-3.5 py-3"><div className="flex items-center justify-between gap-4"><span className="text-caption font-bold uppercase text-amber-800">Interakt inbox · {message.actor_name || 'Agent'}</span><span className="text-caption text-amber-700/70">{formatDateTime(message.sent_at || message.received_at)}</span></div><p className="mt-1 text-small leading-5 text-amber-900">Outbound message detected from the Interakt conversation, but Interakt did not provide the message content to Setu Flow.</p></div></div>;
+  }
+
   const isCall = message.event_type === 'call_logged' || message.message_type === 'Call';
   if (isCall) {
     return <div className="mx-auto max-w-xl rounded-card border border-info-border bg-info-bg px-4 py-3"><div className="flex items-center justify-between gap-3"><span className="text-caption font-bold uppercase text-info-fg">☎ Call logged · {message.actor_name || 'Setu Flow user'}</span><span className="text-caption text-content-faint">{formatDateTime(message.sent_at || message.received_at)}</span></div><p className="mt-2 whitespace-pre-wrap text-small leading-5 text-content-secondary">{message.message_text}</p></div>;
@@ -191,10 +196,12 @@ export function InboundConversationPanel({ messages, customerName, captured = {}
   const display = dedupeDisplayMessages(messages);
   const latestCustomerMessage = [...display.messages].reverse().find(hasVisibleCustomerContent) ?? null;
   const captures = requirementCaptures(display.messages, captured);
+  const interaktGapCount = display.messages.filter((message) => message.event_type === 'interakt_manual_outbound_gap').length;
 
   return <section>
     <div className="mb-2 flex items-center justify-between gap-3"><h3 className="text-caption font-bold uppercase text-content-muted">Conversation intelligence</h3><span className="text-caption text-content-faint">{messages.length} imported {messages.length === 1 ? 'activity' : 'activities'}</span></div>
     <div className="space-y-2">
+      {interaktGapCount ? <div className="rounded-card border border-amber-200 bg-amber-50 px-3 py-2.5 text-caption leading-5 text-amber-900"><strong>Interakt sync gap detected.</strong> {interaktGapCount} outbound {interaktGapCount === 1 ? 'message was' : 'messages were'} sent from the Interakt inbox without message content being included in Interakt’s webhook. The timeline keeps the correct position instead of silently hiding the activity. Reply from Setu Flow when possible so the full outbound text is preserved.</div> : null}
       <div className="rounded-card border border-info-border bg-info-bg px-3 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-caption font-bold uppercase text-info-fg">✨ Setu Guru understood</span>
