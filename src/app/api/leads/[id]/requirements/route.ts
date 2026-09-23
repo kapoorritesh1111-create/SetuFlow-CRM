@@ -10,12 +10,20 @@ export async function GET(_:Request,{params}:{params:{id:string}}){
   const c=await ctx();if('error'in c)return c.error;const{workspace,db}=c;const org=workspace.organization!.id;
   const{data:lead}=await db.from('leads').select('id').eq('organization_id',org).eq('id',params.id).maybeSingle();
   if(!lead)return NextResponse.json({error:'Lead not found.'},{status:404});
-  const[{data:rows},{data:notes}]=await Promise.all([
+  const[{data:rows},{data:notes},{data:families},{data:sizes}]=await Promise.all([
     db.from('lead_product_interests').select('id,label,interest_type,source_context,created_at').eq('organization_id',org).eq('lead_id',params.id).in('interest_type',['captured_requirement','manual_requirement']).order('created_at',{ascending:true}),
-    db.from('lead_activities').select('id,message,occurred_at,actor_user_id').eq('organization_id',org).eq('lead_id',params.id).eq('kind','crm_note').order('occurred_at',{ascending:false}).limit(50)
+    db.from('lead_activities').select('id,message,occurred_at,actor_user_id').eq('organization_id',org).eq('lead_id',params.id).eq('kind','crm_note').order('occurred_at',{ascending:false}).limit(50),
+    db.from('packaging_service_families').select('id,slug,name,sort_order,is_active').eq('organization_id',org).eq('is_active',true).order('sort_order',{ascending:true}),
+    db.from('packaging_size_profiles_v5').select('id,family_id,size_key,name,width_mm,height_mm,bottom_gusset_each_mm,sort_order,is_active,is_quoteable').eq('organization_id',org).eq('is_active',true).eq('is_quoteable',true).order('sort_order',{ascending:true})
   ]);
-  const requirements=(rows??[]).map((r:any)=>({id:r.id,label:r.label||'',quantity:String(r.source_context?.quantity_text||''),notes:String(r.source_context?.requirement_notes||''),source:r.source_context?.source||'',sourceContext:r.source_context||{}}));
-  return NextResponse.json({requirements,notes:notes??[]},{headers:{'Cache-Control':'private, no-store'}});
+  const norm=(v:any)=>String(v||'').toLowerCase().replace(/pouches?/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  const familyRows=families??[];
+  const requirements=(rows??[]).map((r:any)=>{
+    const sc=r.source_context||{};let familyId=sc.family_id||null;
+    if(!familyId){const labelNorm=norm(r.label);const match=familyRows.find((f:any)=>{const n=norm(f.name);return labelNorm&&n&&(labelNorm.includes(n)||n.includes(labelNorm))});familyId=match?.id||null}
+    return{id:r.id,label:r.label||'',quantity:String(sc.quantity_text||''),notes:String(sc.requirement_notes||''),familyId,sizeProfileId:sc.size_profile_id||null,dimensions:String(sc.dimensions_text||sc.dimensions_print||''),source:sc.source||'',sourceContext:sc};
+  });
+  return NextResponse.json({requirements,notes:notes??[],families:familyRows,sizes:sizes??[]},{headers:{'Cache-Control':'private, no-store'}});
 }
 
 export async function PUT(request:Request,{params}:{params:{id:string}}){
@@ -23,10 +31,10 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
   const{data:lead}=await db.from('leads').select('id').eq('organization_id',org).eq('id',params.id).maybeSingle();
   if(!lead)return NextResponse.json({error:'Lead not found.'},{status:404});
   const incoming=Array.isArray(body.requirements)?body.requirements:[];
-  const valid=incoming.map((r:any)=>({label:clean(r.label,240),quantity:clean(r.quantity,80),notes:clean(r.notes,1200),sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}})).filter((r:any)=>r.label);
+  const valid=incoming.map((r:any)=>({label:clean(r.label,240),quantity:clean(r.quantity,80),notes:clean(r.notes,1200),familyId:clean(r.familyId,64)||null,sizeProfileId:clean(r.sizeProfileId,64)||null,dimensions:clean(r.dimensions,160),sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}})).filter((r:any)=>r.label);
   await db.from('lead_product_interests').delete().eq('organization_id',org).eq('lead_id',params.id).in('interest_type',['captured_requirement','manual_requirement']);
   if(valid.length){
-    const rows=valid.map((r:any)=>({organization_id:org,lead_id:params.id,product_id:null,label:r.label,interest_type:'manual_requirement',source_context:{...r.sourceContext,source:r.sourceContext?.source||'canonical_lead_detail',quantity_text:r.quantity||null,requirement_notes:r.notes||null,edited_at:new Date().toISOString(),edited_by:workspace.user!.id}}));
+    const rows=valid.map((r:any)=>({organization_id:org,lead_id:params.id,product_id:null,label:r.label,interest_type:'manual_requirement',source_context:{...r.sourceContext,source:r.sourceContext?.source||'canonical_lead_detail',quantity_text:r.quantity||null,requirement_notes:r.notes||null,family_id:r.familyId,size_profile_id:r.sizeProfileId,dimensions_text:r.dimensions||null,edited_at:new Date().toISOString(),edited_by:workspace.user!.id}}));
     const{error}=await db.from('lead_product_interests').insert(rows);if(error)return NextResponse.json({error:'Unable to save requirements.'},{status:503});
     await db.from('leads').update({products_or_needs:valid.map((r:any)=>r.label).join(', '),updated_by:workspace.user!.id}).eq('organization_id',org).eq('id',params.id);
   }

@@ -22,6 +22,12 @@ function readFormText(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
 }
 
+function parseRequestedQuantity(value: unknown) {
+  const match=String(value??'').replace(/,/g,'').match(/\d+(?:\.\d+)?/);
+  const parsed=match?Number(match[0]):1;
+  return Number.isFinite(parsed)&&parsed>0?parsed:1;
+}
+
 function buildLeadQuoteDraftKey(input: { organizationId: string; leadId: string; forceNew: boolean }) {
   if (input.forceNew) {
     const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -129,6 +135,25 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
 
   const draft: LeadQuoteDraftResult = Array.isArray(draftResult) ? draftResult[0] : draftResult;
   if (!draft?.quote_id) redirect(`/leads/${leadId}/quote?quoteDraftError=empty-rpc-result`);
+
+  if (draft.created && draft.quote_version_id) {
+    const [{ data: quoteRow }, { data: requirements }] = await Promise.all([
+      db.from('quotes').select('currency,display_currency').eq('organization_id',workspace.organization.id).eq('id',draft.quote_id).maybeSingle(),
+      db.from('lead_product_interests').select('id,label,product_id,source_context,created_at').eq('organization_id',workspace.organization.id).eq('lead_id',leadId).in('interest_type',['captured_requirement','manual_requirement']).is('product_id',null).order('created_at',{ascending:true})
+    ]);
+    const currency=quoteRow?.display_currency||quoteRow?.currency||'USD';
+    const reqs=requirements??[];
+    if(reqs.length){
+      const quoteLines=reqs.map((r:any)=>{const sc=r.source_context||{};const quantity=parseRequestedQuantity(sc.quantity_text);const dims=String(sc.dimensions_text||sc.dimensions_print||'').trim();const note=[sc.requirement_notes,dims?`Dimensions: ${dims}`:null,sc.quantity_text?`Requested quantity: ${sc.quantity_text}`:null].filter(Boolean).join(' · ');return{quote_id:draft.quote_id,product_id:null,quantity,unit_price:0,currency,notes:note||r.label,line_type:'packaging',packaging_family_id:sc.family_id||null,packaging_size_profile_v5_id:sc.size_profile_id||null,input_snapshot_json:{source:'lead_requirement',lead_product_interest_id:r.id,label:r.label,quantity_text:sc.quantity_text||null,dimensions_text:dims||null,requirement_notes:sc.requirement_notes||null,family_id:sc.family_id||null,size_profile_id:sc.size_profile_id||null}}});
+      const{error:lineError}=await db.from('quote_line_items').insert(quoteLines);
+      if(lineError)logServerError('createLeadQuoteDraftFromLead.seed-requirement-lines',lineError);
+      const versionLines=reqs.map((r:any,index:number)=>{const sc=r.source_context||{};const dims=String(sc.dimensions_text||sc.dimensions_print||'').trim();const note=[sc.requirement_notes,dims?`Dimensions: ${dims}`:null,sc.quantity_text?`Requested quantity: ${sc.quantity_text}`:null].filter(Boolean).join(' · ');return{quote_version_id:draft.quote_version_id,product_id:null,product_variant_id:null,sku_code:`REQ-${index+1}`,product_name:r.label||`Requirement ${index+1}`,category_type:'Packaging Requirement',pack_label:dims||null,basis_applied:'unit',pricing_mode:'unit',moq:parseRequestedQuantity(sc.quantity_text),final_unit_price:0,display_currency:currency,is_overridden:false,line_notes:note||'Seeded from lead requirement.',sort_order:Number(draft.line_count||0)+index,calculation_meta:{source:'lead_requirement',lead_product_interest_id:r.id,quantity_text:sc.quantity_text||null,dimensions_text:dims||null,family_id:sc.family_id||null,size_profile_id:sc.size_profile_id||null},catalog_price_snapshot:{},line_type:'packaging'}});
+      const{error:versionError}=await db.from('quote_version_line_items').insert(versionLines);
+      if(versionError)logServerError('createLeadQuoteDraftFromLead.seed-requirement-version-lines',versionError);
+      if(!versionError)await db.from('quote_versions').update({total_line_count:Number(draft.line_count||0)+versionLines.length}).eq('id',draft.quote_version_id);
+      draft.line_count=Number(draft.line_count||0)+versionLines.length;
+    }
+  }
 
   await writeAuditLog({
     organizationId: workspace.organization.id,
