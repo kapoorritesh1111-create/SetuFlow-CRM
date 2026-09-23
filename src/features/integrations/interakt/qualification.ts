@@ -162,7 +162,7 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
 
   const inboundTexts = evidence?.inboundMessageTexts ?? [];
   const joinedMessages = inboundTexts.join(' ').toLowerCase();
-  if (/quote|quotation|price|pricing|cost|sample|order|buy|need|require|packaging|pouch|design|branding|artwork|partner/.test(joinedMessages)) {
+  if (/quote|quotation|price|pricing|cost|sample|order|buy|need|require|packaging|pouch|bag|design|branding|artwork|partner/.test(joinedMessages)) {
     score += 8;
     scoreParts.push('+8 commercial intent in message');
   }
@@ -174,15 +174,37 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
   }
   if ((evidence?.workflowAnswerCount ?? 0) > 0) { score += 4; scoreParts.push('+4 chatbot engagement'); }
 
+  // Keep quantity as sales context rather than a hard MOQ gate. However, an explicit
+  // personal/non-business use case should not be promoted simply because a forced
+  // chatbot path collected pouch/industry answers.
+  const explicitPersonalUse = /(?:i\s*(?:do\s*not|don't|dont)\s+own\s+(?:a\s+)?company|personal\s+use|for\s+my\s+(?:wedding|marriage)|my\s+(?:wedding|marriage)|gift\s+(?:my\s+)?(?:friends|family)|friends\s+and\s+family|not\s+for\s+(?:a\s+)?business)/i.test(joinedMessages);
+  const paperBagNarrative = /\bpaper\s+bags?\b|\bhandle\s+bags?\b|\bbrand\s+bags?\b/i.test(joinedMessages);
+  const structuredPouch = /pouch/i.test(normalizeText(evidence?.packagingType)) || present(evidence?.pouchType);
+  const requirementConflict = paperBagNarrative && structuredPouch;
+
+  if (requirementConflict) {
+    score -= 8;
+    scoreParts.push('-8 narrative/product conflict');
+  }
+  if (explicitPersonalUse) {
+    score -= 18;
+    scoreParts.push('-18 explicit personal/non-business use case');
+  }
+
   const recency = recencyPoints(evidence?.firstInquiryAt ?? contact.sourceCreatedAt, now);
   score += recency.points;
   if (recency.reason) scoreParts.push(`+${recency.points} ${recency.reason}`);
 
   const hasIntentEvidence = inboundTexts.length > 0 || (evidence?.workflowAnswerCount ?? 0) > 0 || present(evidence?.packagingType) || present(evidence?.pouchType) || present(evidence?.quantityText);
-  const finalScore = Math.min(hasIntentEvidence ? score : Math.min(score, 69), 100);
+  let finalScore = Math.max(0, Math.min(hasIntentEvidence ? score : Math.min(score, 69), 100));
+  // Personal-use enquiries remain valid enquiries, but should not be presented as warm/hot
+  // B2B opportunities merely because the workflow collected structured answers.
+  if (explicitPersonalUse) finalScore = Math.min(finalScore, 39);
 
   const leadBlockers = [
     !(present(evidence?.companyName) || present(evidence?.brandName)) ? 'Company / brand' : null,
+    requirementConflict ? 'Confirm actual packaging product' : null,
+    explicitPersonalUse ? 'Confirm business / commercial use case' : null,
     !(present(evidence?.packagingType) || present(evidence?.pouchType)) ? 'Product / pouch type' : null,
   ].filter(Boolean) as string[];
   const laterEnrichment = [

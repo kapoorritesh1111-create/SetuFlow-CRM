@@ -65,6 +65,13 @@ function evidenceFromRow(row: any): InteraktInquiryEvidence {
   const indiaMartMessage = clean(traits.query_message);
   const rawMessage = row.raw_payload?.message?.message;
   const interaktMessage = typeof rawMessage === 'string' && !rawMessage.trim().startsWith('{') ? rawMessage.trim() : '';
+  const companyEvidence = row.company_evidence && typeof row.company_evidence === 'object' ? row.company_evidence : {};
+  const evidenceHistory = [
+    ...(Array.isArray(companyEvidence.history) ? companyEvidence.history : []),
+    ...(companyEvidence.latest ? [companyEvidence.latest] : []),
+  ]
+    .map((entry: any) => clean(entry?.evidence))
+    .filter(Boolean);
   return {
     personName: row.person_name,
     companyName: row.company_name,
@@ -83,7 +90,7 @@ function evidenceFromRow(row: any): InteraktInquiryEvidence {
     adNetwork: row.ad_network,
     adPlatform: row.ad_platform,
     adUrl: row.ad_url,
-    inboundMessageTexts: [indiaMartMessage, interaktMessage].filter(Boolean),
+    inboundMessageTexts: [indiaMartMessage, ...evidenceHistory, interaktMessage].filter(Boolean),
     workflowAnswerCount: [row.company_name, row.packaging_type || indiaMartProduct, row.pouch_type, row.quantity_text, row.industry, indiaMartMessage].filter(Boolean).length,
   };
 }
