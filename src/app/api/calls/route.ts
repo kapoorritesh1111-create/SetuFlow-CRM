@@ -132,6 +132,31 @@ export async function POST(request: Request) {
 
     const { leadId, intakeId } = await resolveTargets(db, workspace.organization.id, workspace.user.id, canSeeAll, phone, sourcePath);
     const startedAt = new Date().toISOString();
+
+    // Guard against duplicate browser click handlers / rapid double clicks. We observed
+    // Simran getting two call rows roughly 100 ms apart for the same target.
+    const dedupeSince = new Date(Date.now() - 3000).toISOString();
+    const { data: recentCall } = await db.from('crm_call_logs')
+      .select('id, started_at, lead_id, intake_id')
+      .eq('organization_id', workspace.organization.id)
+      .eq('actor_user_id', workspace.user.id)
+      .eq('phone', phone)
+      .eq('source_path', sourcePath || '')
+      .eq('status', 'initiated')
+      .gte('started_at', dedupeSince)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (recentCall?.id) {
+      return NextResponse.json({
+        id: recentCall.id,
+        startedAt: recentCall.started_at,
+        leadId: recentCall.lead_id ?? leadId,
+        intakeId: recentCall.intake_id ?? intakeId,
+        deduped: true,
+      });
+    }
+
     const { data: callLog, error } = await db.from('crm_call_logs').insert({
       organization_id: workspace.organization.id,
       lead_id: leadId,

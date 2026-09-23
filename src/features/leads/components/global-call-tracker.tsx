@@ -46,40 +46,51 @@ function openWhatsAppAppFirst(phone: string) {
   const targets = whatsappTargets(phone);
   if (!targets) return;
 
-  // Open exactly one new browsing context from the original user gesture.
-  // Try the installed WhatsApp desktop app first; only fall back to WhatsApp Web
-  // in that same tab if the browser stays focused (meaning the app did not take over).
+  // Keep SETU Flow in place and use exactly one helper tab. The previous version
+  // watched the *opener* tab for blur/visibility, but opening the helper tab itself
+  // makes the opener lose focus. That falsely looked like a successful WhatsApp
+  // handoff and could leave Simran on a permanent about:blank tab.
   const popup = window.open('about:blank', '_blank');
   if (!popup) return;
 
   try { popup.opener = null; } catch {}
 
-  let handedOff = false;
-  const markHandedOff = () => { handedOff = true; };
-  const visibilityHandler = () => {
-    if (document.visibilityState === 'hidden') markHandedOff();
-  };
-
-  window.addEventListener('blur', markHandedOff, { once: true });
-  document.addEventListener('visibilitychange', visibilityHandler);
+  let appHandedOff = false;
+  let popupVisibilityHandler: (() => void) | null = null;
 
   try {
+    popupVisibilityHandler = () => {
+      try {
+        if (popup.document.visibilityState === 'hidden') {
+          appHandedOff = true;
+          window.setTimeout(() => {
+            try { if (!popup.closed) popup.close(); } catch {}
+          }, 250);
+        }
+      } catch {}
+    };
+    popup.document.addEventListener('visibilitychange', popupVisibilityHandler);
+  } catch {}
+
+  try {
+    // This runs inside the original click handler so Chrome can offer/open the
+    // installed WhatsApp Desktop protocol handler when available.
     popup.location.href = targets.app;
   } catch {
-    popup.location.href = targets.web;
-    document.removeEventListener('visibilitychange', visibilityHandler);
+    try { popup.location.replace(targets.web); } catch {}
     return;
   }
 
   window.setTimeout(() => {
-    document.removeEventListener('visibilitychange', visibilityHandler);
-    if (handedOff || popup.closed) return;
-    try {
-      popup.location.replace(targets.web);
-    } catch {
-      // If the popup was blocked or closed after the click, keep SETU Flow untouched.
+    if (popupVisibilityHandler) {
+      try { popup.document.removeEventListener('visibilitychange', popupVisibilityHandler); } catch {}
     }
-  }, 1200);
+    if (appHandedOff || popup.closed) return;
+
+    // Desktop app did not take over. Reuse the SAME tab for WhatsApp Web; never
+    // leave about:blank behind and never open a second WhatsApp tab.
+    try { popup.location.replace(targets.web); } catch {}
+  }, 1800);
 }
 
 export function GlobalCallTracker({ whatsappMode = false }: { whatsappMode?: boolean }) {
