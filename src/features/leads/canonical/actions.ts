@@ -28,6 +28,28 @@ export async function saveCanonicalLeadDetails(formData: FormData) {
   goLead(leadId, { saved: 'lead' }, 'edit-lead');
 }
 
+export async function saveCanonicalCompanyDetails(formData: FormData) {
+  if (!hasSupabaseEnv) return;
+  const workspace = await requireWorkspace();
+  if (!workspace?.organization || !workspace?.user) return;
+  const leadId = clean(formData.get('lead_id'));
+  const companyName = clean(formData.get('company_name'));
+  if (!leadId || !companyName) return;
+  const supabase = (await createClient()) as any;
+  const { error } = await supabase.from('leads').update({
+    company_name: companyName,
+    country: nullable(formData.get('country')),
+    website: nullable(formData.get('website')),
+    updated_by: workspace.user.id,
+  }).eq('organization_id', workspace.organization.id).eq('id', leadId);
+  if (!error) {
+    await supabase.from('contacts').update({ company: companyName }).eq('organization_id', workspace.organization.id).eq('company', clean(formData.get('previous_company_name')));
+    await supabase.from('lead_activities').insert({ organization_id: workspace.organization.id, lead_id: leadId, actor_user_id: workspace.user.id, kind: 'company_updated', message: 'Company details updated from Stark Lead Detail.', occurred_at: new Date().toISOString() });
+  }
+  revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`);
+  goLead(leadId, { saved: 'company' });
+}
+
 export async function reassignCanonicalLeadOwner(formData: FormData) {
   if (!hasSupabaseEnv) return;
   const workspace = await requireWorkspace();
