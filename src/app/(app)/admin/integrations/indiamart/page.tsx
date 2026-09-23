@@ -9,7 +9,7 @@ import { syncIndiaMartOrganization, testIndiaMartConnection } from '@/features/i
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { isSetuInternalOrganization, requireAdminWorkspace } from '@/lib/workspace/auth';
-import { nextFiveMinuteSyncAt } from '../next-sync-time';
+import { nextTenMinuteSyncAt } from '../next-sync-time';
 import { SystemTime, SystemTimeZone } from '../system-time';
 
 type SalesOption = { userId: string; name: string; email: string };
@@ -134,7 +134,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
   const validated = Boolean(config.connection_validated);
   const active = Boolean(integration?.is_active && config.sync_enabled);
   const lastSyncAt = String(config.last_successful_sync_at ?? '');
-  const nextSyncAt = nextFiveMinuteSyncAt(Date.now(), active);
+  const nextSyncAt = nextTenMinuteSyncAt(Date.now(), active);
   const lastWindowStart = String(config.last_window_start ?? '');
   const lastWindowEnd = String(config.last_window_end ?? '');
   const lastFetched = Number(config.last_fetched_count ?? 0);
@@ -226,7 +226,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between"><p className="text-sm font-bold text-slate-950">Automatic polling</p><StatusBadge label={active ? 'Active' : 'Paused'} tone={active ? 'success' : 'warning'} dot={false} /></div>
             <p className="mt-3 text-xs text-slate-500">Schedule</p>
-            <p className="mt-1 text-xs font-semibold text-slate-700">Every 5 minutes</p>
+            <p className="mt-1 text-xs font-semibold text-slate-700">Every 10 minutes</p>
             <p className={`mt-2 text-xs font-bold ${active ? 'text-emerald-700' : 'text-slate-400'}`}>{active && nextSyncAt ? <>Next: <SystemTime timestamp={nextSyncAt} /></> : 'Next: paused'}</p>
             <p className="mt-1 text-[11px] text-slate-400"><SystemTimeZone /></p>
           </div>
@@ -245,7 +245,7 @@ export default async function IndiaMartAdminPage({ searchParams }: { searchParam
           <form action={pauseSync}><button disabled={!integration || !active} className="min-h-12 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40">Pause automatic sync</button></form>
         </div>
         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-600">
-          <span className="font-bold text-slate-800">Test connection</span> checks API access for the last 30 minutes and never imports leads. <span className="font-bold text-slate-800">Run sync now</span> performs a real pull immediately. Automatic polling continues every 5 minutes while sync is active.
+          <span className="font-bold text-slate-800">Test connection</span> checks API access for the last 30 minutes and never imports leads. <span className="font-bold text-slate-800">Run sync now</span> performs a real pull immediately. Automatic polling continues every 10 minutes while sync is active.
         </div>
       </SectionCard>
 
