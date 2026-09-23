@@ -13,6 +13,7 @@ function cleanEntity(value: unknown) {
   const text = String(value ?? '')
     .replace(/\s+/g, ' ')
     .replace(/^[\s:;,-]+|[\s:;,-]+$/g, '')
+    .replace(/[®™]+$/g, '')
     .trim();
   if (!text || text.length < 2 || text.length > 120) return null;
   return text;
@@ -61,6 +62,19 @@ export function extractExplicitCompanyFromText(textValue: unknown): InteraktComp
         model: null,
       };
     }
+  }
+
+  const founderBrandMatch = text.match(/(?:i(?:'m| am)\s+(?:the\s+)?founder\s+of|founder\s+of)\s+([A-Za-z0-9][A-Za-z0-9&'.®™ -]{1,80})(?=,|\s+(?:a|an|the)\s+|\n|[.!?]|$)/i);
+  const founderBrandName = founderBrandMatch?.[1] ? truncateEntity(founderBrandMatch[1]) : null;
+  if (founderBrandName) {
+    return {
+      companyName: null,
+      brandName: founderBrandName,
+      confidence: 0.99,
+      evidence: founderBrandMatch?.[0]?.trim() || text.slice(0, 240),
+      source: 'message_text',
+      model: null,
+    };
   }
 
   const brandMatch = text.match(/(?:my|our)?\s*brand\s+(?:name\s+)?(?:is|:|-)\s*([^\n.!?]{2,120})/i);

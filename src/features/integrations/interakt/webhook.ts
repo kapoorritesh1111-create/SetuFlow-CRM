@@ -70,7 +70,11 @@ function isBrandQuestion(question: string) {
 }
 
 function qualificationPatchFromAnswer(question: string, answer: string) {
-  const q = question.toLowerCase();
+  const q = question.toLowerCase().replace(/[*_]/g, ' ').replace(/\s+/g, ' ').trim();
+  const questionLike = question.includes('?')
+    || /^(?:what|which|select|choose|enter|provide|share|tell|please\s+(?:select|choose|enter|provide|share)|how\s+(?:many|much)|where|when)\b/.test(q)
+    || (q.length <= 80 && /^(?:quantity|moq|industry|pouch type|packaging type|delivery location|timeline|size|dimensions?)\b/.test(q));
+  if (!questionLike) return {};
   if (/packaging type|packaging category/.test(q)) return { packaging_type: answer };
   if (/what type of pouch|pouch type/.test(q)) return { pouch_type: answer };
   if (/quantity|moq/.test(q)) return { quantity_text: answer };
@@ -108,6 +112,18 @@ function quantityFromMessage(textValue: unknown) {
   return bareRange?.[1]?.trim() ?? null;
 }
 
+function packagingTypeFromMessage(textValue: unknown) {
+  const text = visibleMessageText(textValue).replace(/\s+/g, ' ').trim().toLowerCase();
+  if (!text) return null;
+  if (/\bstand\s*[- ]?up\s+pouch(?:es)?\b/.test(text)) return 'Pouches';
+  if (/\b(?:3|three)\s*[- ]?side\s*seal\b/.test(text)) return 'Pouches';
+  if (/\bpouch(?:es)?\b/.test(text)) return 'Pouches';
+  if (/\blaminate(?:s)?\b/.test(text)) return 'Laminates';
+  if (/\bshrink\s+sleeve(?:s)?\b/.test(text)) return 'Shrink Sleeves';
+  if (/\bpackaging\b/.test(text)) return 'Custom packaging';
+  return null;
+}
+
 function industryFromMessage(textValue: unknown) {
   const text = visibleMessageText(textValue).replace(/\s+/g, ' ').trim();
   if (!text) return null;
@@ -131,7 +147,12 @@ function industryFromMessage(textValue: unknown) {
     ['frozen food', 'Frozen Food'],
     ['dairy', 'Dairy'],
   ]);
-  return known.get(normalized) ?? null;
+  const exact = known.get(normalized);
+  if (exact) return exact;
+  if (/\b(?:makhana|snack|snacks|food|foods|beverage|spice|spices|tea|coffee|dry fruit|dry fruits|confectionery)\b/.test(normalized)) return 'Food and Beverage';
+  if (/\b(?:supplement|supplements|protein|nutraceutical)\b/.test(normalized)) return 'Health / supplements';
+  if (/\b(?:cosmetic|cosmetics|beauty)\b/.test(normalized)) return 'Cosmetics / Beauty';
+  return null;
 }
 
 function assigneeFromTraits(traits: Record<string, unknown>) {
@@ -244,6 +265,8 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   if (imageIntelligence?.brandName && !intake.brand_name) identityPatch.proposed_brand_name = imageIntelligence.brandName;
   const quantity = incoming && !intake.quantity_text ? quantityFromMessage(visibleText) : null;
   if (quantity) identityPatch.quantity_text = quantity;
+  const packagingType = incoming && !intake.packaging_type ? packagingTypeFromMessage(visibleText) : null;
+  if (packagingType) identityPatch.packaging_type = packagingType;
   const industry = incoming && !intake.industry ? industryFromMessage(visibleText) : null;
   if (industry) identityPatch.industry = industry;
   let companyEvidence = intake.company_evidence ?? {};

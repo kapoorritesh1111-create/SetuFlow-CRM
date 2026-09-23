@@ -65,13 +65,19 @@ function looksLikeSpacedHandle(value: string) {
 function inferIdentity(contact: NormalizedInteraktContact, evidence?: InteraktInquiryEvidence): SetuGuruInteraktAssessment['identity'] {
   const explicitPerson = normalizeText(evidence?.personName);
   const explicitCompany = normalizeText(evidence?.companyName);
-  if (explicitPerson || explicitCompany) {
+  const explicitBrand = normalizeText(evidence?.brandName);
+  const businessIdentity = explicitCompany || explicitBrand;
+  if (explicitPerson || businessIdentity) {
     return {
-      kind: explicitCompany && !explicitPerson ? 'company' : 'person',
+      kind: businessIdentity && !explicitPerson ? 'company' : 'person',
       personName: explicitPerson || null,
-      companyName: explicitCompany || null,
+      companyName: businessIdentity || null,
       confidence: 'high',
-      reason: 'Identity was confirmed or captured in the inbound qualification record.',
+      reason: explicitCompany
+        ? 'Identity was confirmed or captured in the inbound qualification record.'
+        : explicitBrand
+          ? 'The customer explicitly identified their brand in the inbound conversation.'
+          : 'Identity was confirmed or captured in the inbound qualification record.',
     };
   }
 
@@ -144,7 +150,7 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
   if (contact.fullPhoneNumber) { score += 8; scoreParts.push('+8 reachable phone'); }
   if (contact.email) { score += 4; scoreParts.push('+4 email'); }
   if (contact.contactName || evidence?.personName) { score += 6; scoreParts.push('+6 named contact'); }
-  if (evidence?.companyName) { score += 8; scoreParts.push('+8 company identified'); }
+  if (evidence?.companyName || evidence?.brandName) { score += 8; scoreParts.push(evidence?.companyName ? '+8 company identified' : '+8 brand identified'); }
   if (present(evidence?.packagingType)) { score += 8; scoreParts.push('+8 packaging category'); }
   if (present(evidence?.pouchType)) { score += 10; scoreParts.push('+10 specific pouch type'); }
   // Any stated quantity is commercial evidence. There is intentionally no MOQ threshold here.
@@ -156,7 +162,16 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
 
   const inboundTexts = evidence?.inboundMessageTexts ?? [];
   const joinedMessages = inboundTexts.join(' ').toLowerCase();
-  if (/quote|quotation|price|pricing|cost|sample|order|buy|need|require/.test(joinedMessages)) { score += 8; scoreParts.push('+8 commercial intent in message'); }
+  if (/quote|quotation|price|pricing|cost|sample|order|buy|need|require|packaging|pouch|design|branding|artwork|partner/.test(joinedMessages)) {
+    score += 8;
+    scoreParts.push('+8 commercial intent in message');
+  }
+  const detailedSignals = ['packaging', 'pouch', 'design', 'logo', 'branding', 'pricing', 'sample', 'timeline', 'revision', 'export', 'order', 'quote']
+    .filter((signal) => joinedMessages.includes(signal));
+  if (joinedMessages.length >= 180 && detailedSignals.length >= 3) {
+    score += 6;
+    scoreParts.push('+6 detailed requirement brief');
+  }
   if ((evidence?.workflowAnswerCount ?? 0) > 0) { score += 4; scoreParts.push('+4 chatbot engagement'); }
 
   const recency = recencyPoints(evidence?.firstInquiryAt ?? contact.sourceCreatedAt, now);
@@ -167,7 +182,7 @@ export function assessInteraktContact(contact: NormalizedInteraktContact, now = 
   const finalScore = Math.min(hasIntentEvidence ? score : Math.min(score, 69), 100);
 
   const leadBlockers = [
-    !present(evidence?.companyName) ? 'Company' : null,
+    !(present(evidence?.companyName) || present(evidence?.brandName)) ? 'Company / brand' : null,
     !(present(evidence?.packagingType) || present(evidence?.pouchType)) ? 'Product / pouch type' : null,
   ].filter(Boolean) as string[];
   const laterEnrichment = [

@@ -97,6 +97,7 @@ export type InteraktAttribution = {
 export type InteraktInquiryEvidence = {
   personName?: string | null;
   companyName?: string | null;
+  brandName?: string | null;
   packagingType?: string | null;
   pouchType?: string | null;
   quantityText?: string | null;
