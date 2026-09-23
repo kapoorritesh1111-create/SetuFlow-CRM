@@ -44,7 +44,7 @@ export async function GET(_:Request,{params}:{params:{id:string}}){
     if(sc.dimension_mode==='custom'||sc.dimensions_structured){dimensionOptionId='custom'}
     const selected=dimensionOptions.find((o:any)=>o.id===dimensionOptionId);
     const structured=sc.dimensions_structured||{};
-    return{id:r.id,label:r.label||'',quantity:String(sc.quantity_text||''),notes:String(sc.requirement_notes||''),familyId,dimensionOptionId,dimensions:selected?.name||String(sc.dimensions_text||sc.dimensions_print||''),customWidthMm:structured.width_mm!=null?String(structured.width_mm):'',customHeightMm:structured.height_mm!=null?String(structured.height_mm):'',customGussetMm:structured.gusset_mm!=null?String(structured.gusset_mm):'',source:sc.source||'',sourceContext:sc};
+    return{id:r.id,label:r.label||'',quantity:String(sc.quantity_text||''),quantityMode:sc.quantity_mode==='custom'?'custom':sc.quantity_mode==='preset'?'preset':'',notes:String(sc.requirement_notes||''),familyId,dimensionOptionId,dimensions:selected?.name||String(sc.dimensions_text||sc.dimensions_print||''),customWidthMm:structured.width_mm!=null?String(structured.width_mm):'',customHeightMm:structured.height_mm!=null?String(structured.height_mm):'',customGussetMm:structured.gusset_mm!=null?String(structured.gusset_mm):'',source:sc.source||'',sourceContext:sc};
   });
   return NextResponse.json({requirements,notes:notes??[],families:familyRows,dimensionOptions},{headers:{'Cache-Control':'private, no-store'}});
 }
@@ -59,7 +59,8 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
     db.from('packaging_size_profiles_v5').select('id,family_id,name').eq('organization_id',org).eq('is_active',true).eq('is_quoteable',true),
     db.from('packaging_pricing_templates').select('id,family_id,name,quote_config_json').eq('organization_id',org).order('updated_at',{ascending:false})
   ]);
-  const familyMap=new Map((familyRows??[]).map((f:any)=>[f.id,f]));
+  const familyMap=new Map<string,any>();
+  for(const f of familyRows??[])familyMap.set(String(f.id),f);
   const dimensionMap=new Map<string,any>();
   const familyHasSizes=new Set((sizeRows??[]).map((s:any)=>s.family_id));
   for(const s of sizeRows??[])dimensionMap.set(String(s.id),{id:s.id,familyId:s.family_id,label:s.name,sizeProfileId:s.id});
@@ -70,7 +71,7 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
   }
   const valid:any[]=[];
   for(const r of incoming){
-    const familyId=clean(r.familyId,64);const quantity=clean(r.quantity,80);const notes=clean(r.notes,1200);const dimensionOptionId=clean(r.dimensionOptionId,120);
+    const familyId=clean(r.familyId,64);const quantity=clean(r.quantity,80);const quantityMode=r.quantityMode==='custom'?'custom':'preset';const notes=clean(r.notes,1200);const dimensionOptionId=clean(r.dimensionOptionId,120);
     const family=familyMap.get(familyId);
     if(!family)continue;
     if(!quantity)continue;
@@ -79,17 +80,17 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
       if(!Number.isFinite(width)||width<=0||!Number.isFinite(height)||height<=0)continue;
       if(gusset!=null&&(!Number.isFinite(gusset)||gusset<0))continue;
       const label=`${width}mm x ${height}mm${gusset!=null&&gusset>0?` · Gusset ${gusset}mm`:''}`;
-      valid.push({label:family.name,quantity,notes,familyId,dimensionOptionId:'custom',dimensions:label,sizeProfileId:null,dimensionsStructured:{width_mm:width,height_mm:height,gusset_mm:gusset},sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}});
+      valid.push({label:family.name,quantity,quantityMode,notes,familyId,dimensionOptionId:'custom',dimensions:label,sizeProfileId:null,dimensionsStructured:{width_mm:width,height_mm:height,gusset_mm:gusset},sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}});
       continue;
     }
     const dimension=dimensionMap.get(dimensionOptionId);
     if(!dimension||dimension.familyId!==familyId)continue;
-    valid.push({label:family.name,quantity,notes,familyId,dimensionOptionId,dimensions:dimension.label,sizeProfileId:dimension.sizeProfileId,dimensionsStructured:{width_mm:dimension.width_mm??null,height_mm:dimension.height_mm??null,gusset_mm:dimension.gusset_mm??null},sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}});
+    valid.push({label:family.name,quantity,quantityMode,notes,familyId,dimensionOptionId,dimensions:dimension.label,sizeProfileId:dimension.sizeProfileId,dimensionsStructured:{width_mm:dimension.width_mm??null,height_mm:dimension.height_mm??null,gusset_mm:dimension.gusset_mm??null},sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}});
   }
   if(incoming.length&&valid.length!==incoming.length)return NextResponse.json({error:'Each requirement needs a valid service family, dimensions, and quantity. Custom dimensions require numeric width and height.'},{status:400});
   await db.from('lead_product_interests').delete().eq('organization_id',org).eq('lead_id',params.id).in('interest_type',['captured_requirement','manual_requirement']);
   if(valid.length){
-    const rows=valid.map((r:any)=>({organization_id:org,lead_id:params.id,product_id:null,label:r.label,interest_type:'manual_requirement',source_context:{...r.sourceContext,source:r.sourceContext?.source||'canonical_lead_detail',quantity_text:r.quantity||null,requirement_notes:r.notes||null,family_id:r.familyId,size_profile_id:r.sizeProfileId,dimension_option_id:r.dimensionOptionId,dimension_mode:r.dimensionOptionId==='custom'?'custom':'preset',dimensions_structured:r.dimensionsStructured||null,dimensions_text:r.dimensions||null,edited_at:new Date().toISOString(),edited_by:workspace.user!.id}}));
+    const rows=valid.map((r:any)=>({organization_id:org,lead_id:params.id,product_id:null,label:r.label,interest_type:'manual_requirement',source_context:{...r.sourceContext,source:r.sourceContext?.source||'canonical_lead_detail',quantity_text:r.quantity||null,quantity_mode:r.quantityMode||'preset',requirement_notes:r.notes||null,family_id:r.familyId,size_profile_id:r.sizeProfileId,dimension_option_id:r.dimensionOptionId,dimension_mode:r.dimensionOptionId==='custom'?'custom':'preset',dimensions_structured:r.dimensionsStructured||null,dimensions_text:r.dimensions||null,edited_at:new Date().toISOString(),edited_by:workspace.user!.id}}));
     const{error}=await db.from('lead_product_interests').insert(rows);if(error)return NextResponse.json({error:'Unable to save requirements.'},{status:503});
     await db.from('leads').update({products_or_needs:valid.map((r:any)=>r.label).join(', '),updated_by:workspace.user!.id}).eq('organization_id',org).eq('id',params.id);
   }
