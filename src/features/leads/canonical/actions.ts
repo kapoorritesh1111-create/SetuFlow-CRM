@@ -43,7 +43,9 @@ export async function saveCanonicalCompanyDetails(formData: FormData) {
     updated_by: workspace.user.id,
   }).eq('organization_id', workspace.organization.id).eq('id', leadId);
   if (!error) {
-    await supabase.from('contacts').update({ company: companyName }).eq('organization_id', workspace.organization.id).eq('company', clean(formData.get('previous_company_name')));
+    const { data: links } = await supabase.from('contact_crm_links').select('contact_id').eq('organization_id', workspace.organization.id).eq('entity_id', leadId);
+    const contactIds = (links ?? []).map((row: any) => row.contact_id).filter(Boolean);
+    if (contactIds.length) await supabase.from('contacts').update({ company: companyName }).eq('organization_id', workspace.organization.id).in('id', contactIds);
     await supabase.from('lead_activities').insert({ organization_id: workspace.organization.id, lead_id: leadId, actor_user_id: workspace.user.id, kind: 'company_updated', message: 'Company details updated from Stark Lead Detail.', occurred_at: new Date().toISOString() });
   }
   revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`);
