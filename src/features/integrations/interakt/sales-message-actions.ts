@@ -31,7 +31,7 @@ const replyWindowOpen = (v: unknown) => {
 };
 
 function approvedFollowUpTemplate() {
-  const templateName = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE) || 'boost_conversion';
+  const templateName = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE) || 'qualification_follow_up';
   const languageCode = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE_LANGUAGE) || 'en';
   return { templateName, languageCode };
 }
