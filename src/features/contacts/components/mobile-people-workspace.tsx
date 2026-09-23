@@ -4,7 +4,8 @@ import themeStyles from '@/components/layout/communication-theme.module.css';
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Archive, CalendarPlus, Mail, Menu, Pencil, Plus, Search, UserRound, X } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { ArrowLeft, Archive, CalendarPlus, Mail, Menu, MessageCircle, Pencil, PhoneCall, Plus, Search, Star, UserRound, X } from 'lucide-react';
 
 type Contact = {
   id: string;
@@ -12,9 +13,13 @@ type Contact = {
   last_name: string;
   company: string | null;
   job_title: string | null;
+  department: string | null;
+  contact_role: string | null;
   email: string;
   phone: string | null;
+  whatsapp_number: string | null;
   relationship_type: string;
+  links?: Array<{ entity_id:string; entity_type:string; is_primary?:boolean }>;
 };
 
 type FormState = {
@@ -22,9 +27,13 @@ type FormState = {
   lastName: string;
   company: string;
   jobTitle: string;
+  department: string;
+  contactRole: string;
   email: string;
   phone: string;
+  whatsappNumber: string;
   relationshipType: string;
+  isPrimary: boolean;
 };
 
 const EMPTY: FormState = {
@@ -32,12 +41,18 @@ const EMPTY: FormState = {
   lastName: '',
   company: '',
   jobTitle: '',
+  department: '',
+  contactRole: '',
   email: '',
   phone: '',
+  whatsappNumber: '',
   relationshipType: 'other',
+  isPrimary: false,
 };
 
 const RELATIONSHIPS = ['buyer', 'supplier', 'prospect', 'customer', 'vendor', 'other'];
+const DEPARTMENTS=['Purchasing / Procurement','Management / Owner','Finance / Accounts','Design / Creative','Operations','Logistics / Supply Chain','Quality / Compliance','Technical / Engineering','Sales','Marketing','Warehouse / Dispatch','Other'];
+const CONTACT_ROLES=['Decision Maker','Buyer / Purchasing Contact','Approver','Influencer','Finance / Accounts Payable','Design Contact','Technical Contact','Operations Contact','Logistics / Delivery Contact','Owner / Director','Other'];
 const title = (value: string) => value ? value[0].toUpperCase() + value.slice(1) : value;
 const displayName = (contact: Contact) => `${contact.first_name} ${contact.last_name}`.trim() || contact.company || contact.email;
 const initials = (contact: Contact) => {
@@ -48,6 +63,7 @@ const initials = (contact: Contact) => {
 const secondary = (contact: Contact) => contact.phone || contact.email || contact.company || title(contact.relationship_type);
 
 export function MobilePeopleWorkspace() {
+  const params=useSearchParams();const leadId=params.get('lead')||'';const leadCompany=params.get('company')||'';const leadContactName=params.get('contactName')||'';const leadParts=leadContactName.trim().split(/\s+/).filter(Boolean);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -55,15 +71,15 @@ export function MobilePeopleWorkspace() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');
   const [selected, setSelected] = useState<Contact | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(params.get('create')==='1');
   const [editing, setEditing] = useState<Contact | null>(null);
-  const [form, setForm] = useState<FormState>({ ...EMPTY });
+  const [form, setForm] = useState<FormState>({...EMPTY,firstName:leadParts[0]||'',lastName:leadParts.slice(1).join(' '),company:leadCompany,jobTitle:params.get('jobTitle')||'',email:params.get('email')||'',phone:params.get('phone')||'',whatsappNumber:params.get('phone')||'',relationshipType:leadId?'buyer':'other',isPrimary:Boolean(leadId)});
   const [saving, setSaving] = useState(false);
 
   async function load(query = search) {
     setLoading(true);
     try {
-      const response = await fetch(`/api/contacts?q=${encodeURIComponent(query)}`, { cache: 'no-store' });
+      const response = await fetch(`/api/contacts?q=${encodeURIComponent(query)}${leadId?`&lead=${encodeURIComponent(leadId)}`:''}`, { cache: 'no-store' });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Unable to load People.');
       const next = [...(payload.contacts || [])] as Contact[];
@@ -90,7 +106,7 @@ export function MobilePeopleWorkspace() {
 
   function openNew() {
     setEditing(null);
-    setForm({ ...EMPTY });
+    setForm({ ...EMPTY, company:leadCompany, relationshipType:leadId?'buyer':'other', isPrimary:Boolean(leadId&&contacts.length===0) });
     setFormOpen(true);
   }
 
@@ -101,9 +117,13 @@ export function MobilePeopleWorkspace() {
       lastName: contact.last_name,
       company: contact.company || '',
       jobTitle: contact.job_title || '',
+      department: contact.department || '',
+      contactRole: contact.contact_role || '',
       email: contact.email,
       phone: contact.phone || '',
+      whatsappNumber: contact.whatsapp_number || '',
       relationshipType: contact.relationship_type,
+      isPrimary: Boolean(contact.links?.some(link=>link.is_primary)),
     });
     setFormOpen(true);
   }
@@ -116,7 +136,7 @@ export function MobilePeopleWorkspace() {
       const response = await fetch(editing ? `/api/contacts/${editing.id}` : '/api/contacts', {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, leadId: editing ? '' : leadId }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Unable to save contact.');
@@ -163,6 +183,8 @@ export function MobilePeopleWorkspace() {
               <input autoFocus value={search} onChange={event => setSearch(event.target.value)} placeholder="Search people" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
               {search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={16} /></button> : null}
             </label>
+            {leadId?<label className="flex items-center gap-2 text-xs font-semibold text-content-secondary"><input type="checkbox" checked={form.isPrimary} onChange={event=>setForm({...form,isPrimary:event.target.checked})}/>Primary contact for this lead</label>:null}
+            <datalist id="mobile-contact-departments">{DEPARTMENTS.map(item=><option key={item} value={item}/>)}</datalist><datalist id="mobile-contact-roles">{CONTACT_ROLES.map(item=><option key={item} value={item}/>)}</datalist>
           </div>
         ) : null}
         {menuOpen ? (
@@ -212,14 +234,14 @@ export function MobilePeopleWorkspace() {
           <div className="px-5 pb-28 pt-8">
             <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand-700 text-2xl font-semibold text-white">{initials(selected)}</div>
             <h2 className="mt-4 text-center text-2xl font-semibold text-content-primary">{displayName(selected)}</h2>
-            <p className="mt-1 text-center text-sm text-content-muted">{[selected.job_title, selected.company].filter(Boolean).join(' · ') || title(selected.relationship_type)}</p>
-            <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-3">
-              <Link href={`/mail?compose=1&to=${encodeURIComponent(selected.email)}`} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-800 text-sm font-semibold text-white"><Mail size={17} />Email</Link>
-              <Link href={`/calendar?compose=1&guest=${encodeURIComponent(selected.email)}&contact=${selected.id}`} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line border-line text-sm font-semibold text-content-secondary"><CalendarPlus size={17} />Meeting</Link>
-            </div>
+            <p className="mt-1 text-center text-sm text-content-muted">{[selected.job_title, selected.department, selected.company].filter(Boolean).join(' · ') || title(selected.relationship_type)}</p>{selected.contact_role?<p className="mt-2 text-center text-xs font-semibold text-content-secondary">{selected.contact_role}</p>:null}{selected.links?.some(link=>link.is_primary)?<div className="mt-2 flex justify-center"><span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700"><Star size={12}/>Primary contact</span></div>:null}
+            <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-3"><Link href={`/mail?compose=1&to=${encodeURIComponent(selected.email)}`} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-800 text-sm font-semibold text-white"><Mail size={17}/>Email</Link>{selected.whatsapp_number||selected.phone?<a href={`https://wa.me/${String(selected.whatsapp_number||selected.phone).replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700"><MessageCircle size={17}/>WhatsApp</a>:null}{selected.phone?<a href={`tel:${selected.phone}`} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line text-sm font-semibold text-content-secondary"><PhoneCall size={17}/>Call</a>:null}<Link href={`/calendar?compose=1&guest=${encodeURIComponent(selected.email)}&contact=${selected.id}`} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line text-sm font-semibold text-content-secondary"><CalendarPlus size={17}/>Meeting</Link></div>
             <div className="mx-auto mt-7 max-w-sm overflow-hidden rounded-2xl border border-line border-line bg-surface-1">
               <Info label="Email" value={selected.email} />
               <Info label="Phone" value={selected.phone || '—'} />
+              <Info label="WhatsApp" value={selected.whatsapp_number || selected.phone || '—'} />
+              <Info label="Department" value={selected.department || '—'} />
+              <Info label="Role" value={selected.contact_role || selected.job_title || '—'} />
               <Info label="Company" value={selected.company || '—'} />
               <Info label="Relationship" value={title(selected.relationship_type)} last />
             </div>
@@ -240,8 +262,11 @@ export function MobilePeopleWorkspace() {
             <MobileField label="Last name" value={form.lastName} onChange={value => setForm({ ...form, lastName: value })} />
             <MobileField label="Company" value={form.company} onChange={value => setForm({ ...form, company: value })} />
             <MobileField label="Job title" value={form.jobTitle} onChange={value => setForm({ ...form, jobTitle: value })} />
+            <MobileField label="Department" value={form.department} onChange={value => setForm({ ...form, department: value })} list="mobile-contact-departments" />
+            <MobileField label="Contact role" value={form.contactRole} onChange={value => setForm({ ...form, contactRole: value })} list="mobile-contact-roles" />
             <MobileField label="Email" type="email" value={form.email} onChange={value => setForm({ ...form, email: value })} />
             <MobileField label="Phone" type="tel" value={form.phone} onChange={value => setForm({ ...form, phone: value })} />
+            <MobileField label="WhatsApp" type="tel" value={form.whatsappNumber} onChange={value => setForm({ ...form, whatsappNumber: value })} />
             <label className="block text-xs font-semibold text-content-secondary">Relationship
               <select value={form.relationshipType} onChange={event => setForm({ ...form, relationshipType: event.target.value })} className="mt-1 h-12 w-full rounded-xl border border-line border-line bg-surface-1 px-3 text-sm font-medium text-content-primary outline-none focus:border-accent-500">
                 {RELATIONSHIPS.map(item => <option key={item} value={item}>{title(item)}</option>)}
@@ -260,6 +285,6 @@ function Info({ label, value, last = false }: { label: string; value: string; la
   return <div className={`px-4 py-3 ${last ? '' : 'border-b border-line border-line'}`}><div className="text-[11px] font-semibold uppercase tracking-wide text-content-muted">{label}</div><div className="mt-1 break-words text-sm font-medium text-content-primary">{value}</div></div>;
 }
 
-function MobileField({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
-  return <label className="block text-xs font-semibold text-content-secondary">{label}<input type={type} value={value} onChange={event => onChange(event.target.value)} className="mt-1 h-12 w-full rounded-xl border border-line border-line px-3 text-sm font-medium text-content-primary outline-none focus:border-accent-500" /></label>;
+function MobileField({ label, value, onChange, type = 'text', list }: { label: string; value: string; onChange: (value: string) => void; type?: string; list?: string }) {
+  return <label className="block text-xs font-semibold text-content-secondary">{label}<input type={type} list={list} value={value} onChange={event => onChange(event.target.value)} className="mt-1 h-12 w-full rounded-xl border border-line border-line px-3 text-sm font-medium text-content-primary outline-none focus:border-accent-500" /></label>;
 }

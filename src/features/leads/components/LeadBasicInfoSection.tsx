@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import NewCountryForm from './NewCountryForm';
 import { ContactScanTrigger } from '@/components/contact-exchange/contact-scan-trigger';
 import type { ContactPostApplyAssistResult } from '@/lib/contact-exchange/contact-post-apply-assist';
@@ -236,10 +237,7 @@ export default function LeadBasicInfoSection({
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Company name</span>
           <input ref={companyInputRef} name="company_name" value={companyName} onChange={(event) => setCompanyName(event.target.value)} className={inputClassName()} required />
         </label>
-        <label className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contact name</span>
-          <input name="contact_name" value={contactName} onChange={(event) => setContactName(event.target.value)} className={inputClassName()} />
-        </label>
+        <label className="space-y-2"><span className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contact name{currentLeadId?<Link href={`/contacts?lead=${encodeURIComponent(currentLeadId)}&create=1&company=${encodeURIComponent(companyName)}&contactName=${encodeURIComponent(contactName)}&jobTitle=${encodeURIComponent(jobTitle)}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`} className="normal-case tracking-normal text-brand-700 hover:underline">Manage contacts</Link>:null}</span><input name="contact_name" value={contactName} onChange={(event) => setContactName(event.target.value)} className={inputClassName()} /></label>
         <label className="space-y-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Role / designation</span>
           <input name="job_title" value={jobTitle} onChange={(event) => setJobTitle(event.target.value)} className={inputClassName()} placeholder="e.g. Procurement Manager" />

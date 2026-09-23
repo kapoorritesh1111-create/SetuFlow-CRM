@@ -21,6 +21,7 @@ type StarkWorkspace = WorkspaceAccess & {
 };
 
 function clean(value: unknown) { return String(value ?? '').trim(); }
+function splitPersonName(value: unknown) { const parts=clean(value).split(/\s+/).filter(Boolean); return { firstName:parts[0]??'', lastName:parts.slice(1).join(' ') }; }
 function nullable(value: unknown) { const text = clean(value); return text || null; }
 function nowIso() { return new Date().toISOString(); }
 function isSupportedProvider(value: unknown): value is (typeof SUPPORTED_PROVIDERS)[number] {
@@ -253,6 +254,29 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
     },
   }).select('id').single();
   if (leadError || !lead?.id) throw new Error(`Unable to create Lead: ${String(leadError?.message ?? 'unknown database error')}`);
+
+  const primaryEmail = clean(row.email).toLowerCase();
+  if (primaryEmail) {
+    const { data: existingContact } = await db.from('contacts').select('id').eq('organization_id', organizationId).eq('normalized_email', primaryEmail).maybeSingle();
+    let contactId = existingContact?.id ?? null;
+    if (!contactId) {
+      const person = splitPersonName(row.person_name || row.contact_name);
+      const { data: createdContact } = await db.from('contacts').insert({
+        organization_id: organizationId, first_name: person.firstName, last_name: person.lastName,
+        company: companyName, job_title: null, department: 'Purchasing / Procurement', contact_role: 'Buyer / Purchasing Contact',
+        email: primaryEmail, phone: row.full_phone_number, whatsapp_number: row.full_phone_number,
+        relationship_type: 'buyer', created_by: userId,
+      }).select('id').single();
+      contactId = createdContact?.id ?? null;
+    }
+    if (contactId) {
+      await db.from('contact_crm_links').update({ is_primary: false }).eq('organization_id', organizationId).eq('entity_id', lead.id).eq('is_primary', true);
+      await db.from('contact_crm_links').upsert({
+        organization_id: organizationId, contact_id: contactId, entity_type: 'buyer', entity_id: lead.id,
+        created_by: userId, is_primary: true,
+      }, { onConflict: 'contact_id,entity_type,entity_id' });
+    }
+  }
 
   if (productInterestLabel) {
     const { error: interestError } = await db.from('lead_product_interests').insert({
