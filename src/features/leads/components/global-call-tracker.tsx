@@ -84,8 +84,7 @@ export function GlobalCallTracker({ whatsappMode = false }: { whatsappMode?: boo
       if (whatsappMode) {
         const whatsappUrl = whatsappContactUrl(phone);
         if (whatsappUrl) {
-          const opened = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-          if (!opened) window.location.assign(whatsappUrl);
+          window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
         }
       } else {
         window.location.href = href;
