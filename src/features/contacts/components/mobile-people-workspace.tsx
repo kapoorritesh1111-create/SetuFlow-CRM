@@ -136,7 +136,7 @@ export function MobilePeopleWorkspace() {
       const response = await fetch(editing ? `/api/contacts/${editing.id}` : '/api/contacts', {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...form, leadId: editing ? '' : leadId }),
+        body: JSON.stringify({ ...form, leadId }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Unable to save contact.');
@@ -183,8 +183,6 @@ export function MobilePeopleWorkspace() {
               <input autoFocus value={search} onChange={event => setSearch(event.target.value)} placeholder="Search people" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
               {search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={16} /></button> : null}
             </label>
-            {leadId?<label className="flex items-center gap-2 text-xs font-semibold text-content-secondary"><input type="checkbox" checked={form.isPrimary} onChange={event=>setForm({...form,isPrimary:event.target.checked})}/>Primary contact for this lead</label>:null}
-            <datalist id="mobile-contact-departments">{DEPARTMENTS.map(item=><option key={item} value={item}/>)}</datalist><datalist id="mobile-contact-roles">{CONTACT_ROLES.map(item=><option key={item} value={item}/>)}</datalist>
           </div>
         ) : null}
         {menuOpen ? (
@@ -272,6 +270,9 @@ export function MobilePeopleWorkspace() {
                 {RELATIONSHIPS.map(item => <option key={item} value={item}>{title(item)}</option>)}
               </select>
             </label>
+            {leadId?<label className="flex items-center gap-2 text-xs font-semibold text-content-secondary"><input type="checkbox" checked={form.isPrimary} onChange={event=>setForm({...form,isPrimary:event.target.checked})}/>Primary contact for this lead</label>:null}
+            <datalist id="mobile-contact-departments">{DEPARTMENTS.map(item=><option key={item} value={item}/>)}</datalist>
+            <datalist id="mobile-contact-roles">{CONTACT_ROLES.map(item=><option key={item} value={item}/>)}</datalist>
           </div>
         </div>
       ) : null}
