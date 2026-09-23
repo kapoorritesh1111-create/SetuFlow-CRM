@@ -33,9 +33,53 @@ function parseDuration(value: string) {
   return Number(match[1]) * 60 + Math.min(Number(match[2]), 59);
 }
 
-function whatsappContactUrl(phone: string) {
+function whatsappTargets(phone: string) {
   const digits = phone.replace(/\D/g, '');
-  return digits ? `https://wa.me/${digits}` : null;
+  if (!digits) return null;
+  return {
+    app: `whatsapp://send?phone=${digits}`,
+    web: `https://wa.me/${digits}`,
+  };
+}
+
+function openWhatsAppAppFirst(phone: string) {
+  const targets = whatsappTargets(phone);
+  if (!targets) return;
+
+  // Open exactly one new browsing context from the original user gesture.
+  // Try the installed WhatsApp desktop app first; only fall back to WhatsApp Web
+  // in that same tab if the browser stays focused (meaning the app did not take over).
+  const popup = window.open('about:blank', '_blank');
+  if (!popup) return;
+
+  try { popup.opener = null; } catch {}
+
+  let handedOff = false;
+  const markHandedOff = () => { handedOff = true; };
+  const visibilityHandler = () => {
+    if (document.visibilityState === 'hidden') markHandedOff();
+  };
+
+  window.addEventListener('blur', markHandedOff, { once: true });
+  document.addEventListener('visibilitychange', visibilityHandler);
+
+  try {
+    popup.location.href = targets.app;
+  } catch {
+    popup.location.href = targets.web;
+    document.removeEventListener('visibilitychange', visibilityHandler);
+    return;
+  }
+
+  window.setTimeout(() => {
+    document.removeEventListener('visibilitychange', visibilityHandler);
+    if (handedOff || popup.closed) return;
+    try {
+      popup.location.replace(targets.web);
+    } catch {
+      // If the popup was blocked or closed after the click, keep SETU Flow untouched.
+    }
+  }, 1200);
 }
 
 export function GlobalCallTracker({ whatsappMode = false }: { whatsappMode?: boolean }) {
@@ -82,10 +126,7 @@ export function GlobalCallTracker({ whatsappMode = false }: { whatsappMode?: boo
       });
 
       if (whatsappMode) {
-        const whatsappUrl = whatsappContactUrl(phone);
-        if (whatsappUrl) {
-          window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-        }
+        openWhatsAppAppFirst(phone);
       } else {
         window.location.href = href;
       }
