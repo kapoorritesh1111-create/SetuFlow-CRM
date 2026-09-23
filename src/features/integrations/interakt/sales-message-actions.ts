@@ -31,9 +31,16 @@ const replyWindowOpen = (v: unknown) => {
 };
 
 function approvedFollowUpTemplate() {
-  const templateName = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE) || 'qualification_follow_up';
+  const templateName = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE) || 'boost_conversion';
   const languageCode = clean(process.env.INTERAKT_STARK_PACKMATE_FOLLOW_UP_TEMPLATE_LANGUAGE) || 'en';
   return { templateName, languageCode };
+}
+
+function approvedFollowUpBodyValues(templateName: string, customerName: string, context: string) {
+  // Temporary approved Stark template while qualification_follow_up is awaiting Meta approval.
+  // boost_conversion has exactly one body variable (customer name). The permanent
+  // qualification_follow_up template has two body variables (customer name + context/signature).
+  return templateName === 'boost_conversion' ? [customerName] : [customerName, context];
 }
 
 function assertDraftContext(formData: FormData, rowId: string) {
@@ -343,8 +350,9 @@ export async function sendStarkLeadWhatsAppTemplate(formData: FormData): Promise
     const senderSignature = await loadSenderSignature(db, workspace);
     const context = `${salesFollowUpContext(row)}\n\n${profileSignatureText(senderSignature)}`;
     const callbackData = JSON.stringify({ source: 'setu_flow_lead_detail', intake_id: row.id, lead_id: leadId, actor_user_id: workspace.user!.id, mode: 'template_restart' });
-    const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context], callbackData });
-    await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { mode: 'template_restart', lead_id: leadId, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context] } });
+    const bodyValues = approvedFollowUpBodyValues(preset.templateName, customerName, context);
+    const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues, callbackData });
+    await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { mode: 'template_restart', lead_id: leadId, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues } });
     revalidatePath(`/leads/${leadId}`);
     return { ok: true, message: 'Approved WhatsApp follow-up sent with profile signature. Free-text messaging will reopen after the customer replies.' };
   } catch (error) {
@@ -391,8 +399,9 @@ async function performStarkInteraktSalesFollowUp(formData: FormData) {
   const senderSignature = await loadSenderSignature(db, workspace);
   const context = `${salesFollowUpContext(row)}\n\n${profileSignatureText(senderSignature)}`;
   const callbackData = JSON.stringify({ source: 'setu_flow_inbound_sales', intake_id: row.id, actor_user_id: workspace.user!.id, mode: 'template_restart' });
-  const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context], callbackData });
-  await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { templateName: preset.templateName, languageCode: preset.languageCode, bodyValues: [customerName, context] } });
+  const bodyValues = approvedFollowUpBodyValues(preset.templateName, customerName, context);
+  const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues, callbackData });
+  await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { templateName: preset.templateName, languageCode: preset.languageCode, bodyValues } });
   revalidatePath(INBOUND_PATH);
 }
 
