@@ -17,6 +17,7 @@ const credentialMigration = fs.readFileSync('supabase/migrations/20260917143000_
 const providerMigration = fs.readFileSync('supabase/migrations/20260917192000_stark_inbound_provider_channel_filters.sql', 'utf8');
 const compatibilityMigration = fs.readFileSync('supabase/migrations/20260917193000_stark_inbound_provider_compat.sql', 'utf8');
 const assignmentMigration = fs.readFileSync('supabase/migrations/20260917194000_stark_indiamart_sales_assignment.sql', 'utf8');
+const defaultAssignmentMigration = fs.readFileSync('supabase/migrations/20260923010500_indiamart_default_sales_assignee.sql', 'utf8');
 
 test('IndiaMART adapter uses server-side Vault credential and official pull-v2 endpoint', () => {
   assert.match(adapter, /mapi\.indiamart\.com\/wservce\/crm\/crmListing\/v2/);
@@ -73,6 +74,17 @@ test('IndiaMART rows are assigned to the Stark sales pool before sales scoping',
   assert.match(assignmentMigration, /Fallback for unassigned Interakt and all new IndiaMART enquiries/);
   assert.match(assignmentMigration, /before insert or update of interakt_assignee_name, source_provider/);
   assert.match(assignmentMigration, /s\.source_provider = 'indiamart'/);
+});
+
+test('IndiaMART supports an admin-configured default Sales owner without hardcoding an employee', () => {
+  assert.match(defaultAssignmentMigration, /default_sales_assignee_user_id/);
+  assert.match(defaultAssignmentMigration, /lower\(r\.name\) = 'sales'/);
+  assert.match(defaultAssignmentMigration, /not like 'support@%'/);
+  assert.doesNotMatch(defaultAssignmentMigration, /Anita Singh|anita\.singh@/i);
+  assert.match(admin, /Default lead owner/);
+  assert.match(admin, /defaultSalesAssigneeUserId/);
+  assert.match(admin, /saveDefaultSalesAssignee/);
+  assert.match(admin, /Field Sales and support accounts are not eligible/);
 });
 
 test('IndiaMART product and enquiry text participate in Setu Guru assessment', () => {
