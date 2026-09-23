@@ -231,6 +231,16 @@ async function loadIntegration(admin: NonNullable<ReturnType<typeof createServic
   return data as IndiaMartIntegration;
 }
 
+async function readLatestConfiguration(
+  admin: NonNullable<ReturnType<typeof createServiceRoleClient>>,
+  integrationId: string,
+  fallback: Record<string, unknown> | null,
+) {
+  const { data, error } = await admin.from('integrations').select('configuration').eq('id', integrationId).maybeSingle();
+  if (error) throw new Error(`Unable to refresh IndiaMART integration configuration: ${error.message}`);
+  return (data?.configuration ?? fallback ?? {}) as Record<string, unknown>;
+}
+
 function resolveWindow(configuration: Record<string, unknown> | null, now = new Date(), lookbackMinutes = DEFAULT_LOOKBACK_MINUTES) {
   const configuredLastSync = text(configuration?.last_successful_sync_at);
   const fallbackStart = new Date(now.getTime() - Math.max(lookbackMinutes, 15) * 60_000);
@@ -252,8 +262,9 @@ export async function testIndiaMartConnection(organizationId: string) {
   try {
     const response = await fetchIndiaMart(credential, start, end);
     const now = new Date().toISOString();
+    const latestConfiguration = await readLatestConfiguration(admin, integration.id, integration.configuration);
     const nextConfiguration = {
-      ...(integration.configuration ?? {}),
+      ...latestConfiguration,
       mode: 'pull_v2',
       api_version: 'v2',
       credential_type: 'crm_key',
@@ -322,15 +333,16 @@ export async function syncIndiaMartOrganization(
     const inserted = uniqueIds.filter((id) => !existingIds.has(id)).length;
     const updated = uniqueIds.length - inserted;
     const now = new Date().toISOString();
+    const latestConfiguration = await readLatestConfiguration(admin, integration.id, integration.configuration);
     const nextConfiguration = {
-      ...(integration.configuration ?? {}),
+      ...latestConfiguration,
       mode: 'pull_v2',
       api_version: 'v2',
       credential_type: 'crm_key',
       prepared_for: 'inbound_leads',
       connection_validated: true,
-      connection_validated_at: text(integration.configuration?.connection_validated_at) ?? now,
-      sync_enabled: options.activateAfterSuccess ? true : Boolean(integration.configuration?.sync_enabled),
+      connection_validated_at: text(latestConfiguration.connection_validated_at) ?? now,
+      sync_enabled: options.activateAfterSuccess ? true : Boolean(latestConfiguration.sync_enabled),
       last_successful_sync_at: now,
       last_window_start: start.toISOString(),
       last_window_end: end.toISOString(),
