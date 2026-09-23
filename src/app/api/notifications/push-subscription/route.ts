@@ -37,8 +37,11 @@ export async function POST(request: Request) {
 
     const admin = createAdminSupabaseClient();
     if (!admin) return NextResponse.json({ ok: false, error: 'Push service unavailable.' }, { status: 503 });
+    // push_subscriptions has newer live columns (app_scope/last_seen_at) than the
+    // generated Database type in this repo. Keep this narrow API runtime-validated.
+    const db = admin as any;
 
-    const { data: member, error: memberError } = await admin
+    const { data: member, error: memberError } = await db
       .from('organization_members')
       .select('id')
       .eq('organization_id', organizationId)
@@ -48,7 +51,7 @@ export async function POST(request: Request) {
     if (memberError || !member?.id) return NextResponse.json({ ok: false, error: 'Workspace membership required.' }, { status: 403 });
 
     const now = new Date().toISOString();
-    const { data: existing } = await admin.from('push_subscriptions').select('id').eq('endpoint', endpoint).maybeSingle();
+    const { data: existing } = await db.from('push_subscriptions').select('id').eq('endpoint', endpoint).maybeSingle();
     const values = {
       organization_id: organizationId,
       user_id: user.id,
@@ -61,8 +64,8 @@ export async function POST(request: Request) {
     };
 
     const result = existing?.id
-      ? await admin.from('push_subscriptions').update(values).eq('id', existing.id)
-      : await admin.from('push_subscriptions').insert(values);
+      ? await db.from('push_subscriptions').update(values).eq('id', existing.id)
+      : await db.from('push_subscriptions').insert(values);
 
     if (result.error) return NextResponse.json({ ok: false, error: result.error.message }, { status: 500 });
     return NextResponse.json({ ok: true, appScope });
