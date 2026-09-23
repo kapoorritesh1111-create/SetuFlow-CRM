@@ -10,7 +10,6 @@ import { SetuGuruFeedbackBridge } from '@/features/setu-guru/setu-guru-feedback-
 import { GlobalGrowthCenterEntry } from '@/features/setu-guru/global-growth-center-entry';
 import { ProductPricingDeepLinkDrawer } from '@/features/products/components/product-pricing-deep-link-drawer';
 import { GlobalCallTracker } from '@/features/leads/components/global-call-tracker';
-import { StarkWhatsAppCallInterceptor } from '@/features/integrations/interakt/components/stark-whatsapp-call-interceptor';
 import { TrialWorkspaceBanner } from '@/features/trial/trial-workspace-banner';
 import { TrialTourProvider } from '@/features/trial/tour-provider';
 import { getTrialCapability } from '@/lib/trial/capability';
@@ -118,8 +117,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       <TrialWorkspaceBanner organizationId={workspace.organization.id} />
       {isPlatformSupport ? <SupportModeBadge organizationName={workspace.organization.name} /> : null}
       <SetuGuruFeedbackBridge />
-      <GlobalCallTracker />
-      <StarkWhatsAppCallInterceptor enabled={isStarkPackmate} />
+      <GlobalCallTracker whatsappMode={isStarkPackmate} />
       <LeadCoverageRecoveryBoundary />
       <ModuleAccessGuard>{children}</ModuleAccessGuard>
     </>

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 type ActiveCall = {
   id: string;
@@ -33,7 +33,12 @@ function parseDuration(value: string) {
   return Number(match[1]) * 60 + Math.min(Number(match[2]), 59);
 }
 
-export function GlobalCallTracker() {
+function whatsappContactUrl(phone: string) {
+  const digits = phone.replace(/\D/g, '');
+  return digits ? `https://wa.me/${digits}` : null;
+}
+
+export function GlobalCallTracker({ whatsappMode = false }: { whatsappMode?: boolean }) {
   const [active, setActive] = useState<ActiveCall | null>(null);
   const [showOutcome, setShowOutcome] = useState(false);
   const [disposition, setDisposition] = useState('Connected');
@@ -41,6 +46,7 @@ export function GlobalCallTracker() {
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastLaunch = useRef<{ href: string; at: number } | null>(null);
 
   const elapsed = useMemo(() => active ? secondsSince(active.startedAt) : 0, [active, showOutcome]);
 
@@ -56,19 +62,37 @@ export function GlobalCallTracker() {
       if (!phone) return;
 
       event.preventDefault();
+      const now = Date.now();
+      if (lastLaunch.current?.href === href && now - lastLaunch.current.at < 1500) return;
+      lastLaunch.current = { href, at: now };
       setError(null);
+
+      // Keep the external-app launch inside the original user click. Waiting for the
+      // call-log request first can cause Chrome to suppress the WhatsApp/dialer handoff.
+      const logPromise = fetch('/api/calls', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'start',
+          phone,
+          dialerHref: href,
+          sourcePath: `${window.location.pathname}${window.location.search}`,
+        }),
+        keepalive: true,
+      });
+
+      if (whatsappMode) {
+        const whatsappUrl = whatsappContactUrl(phone);
+        if (whatsappUrl) {
+          const opened = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+          if (!opened) window.location.assign(whatsappUrl);
+        }
+      } else {
+        window.location.href = href;
+      }
+
       try {
-        const response = await fetch('/api/calls', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            action: 'start',
-            phone,
-            dialerHref: href,
-            sourcePath: `${window.location.pathname}${window.location.search}`,
-          }),
-          keepalive: true,
-        });
+        const response = await logPromise;
         const body = await response.json().catch(() => ({}));
         if (!response.ok || !body?.id) throw new Error(body?.error || 'Unable to log call attempt.');
         const next = { id: body.id, phone, dialerHref: href, startedAt: body.startedAt || new Date().toISOString() } as ActiveCall;
@@ -76,14 +100,12 @@ export function GlobalCallTracker() {
         sessionStorage.setItem('setu-active-call', JSON.stringify(next));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to log call attempt.');
-      } finally {
-        window.location.href = href;
       }
     };
 
     document.addEventListener('click', clickHandler, true);
     return () => document.removeEventListener('click', clickHandler, true);
-  }, []);
+  }, [whatsappMode]);
 
   useEffect(() => {
     if (!active) {
