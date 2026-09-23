@@ -51,6 +51,14 @@ function declarativePayload(payload: PushPayload, badgeCount: number) {
   return {
     web_push: 8030,
     app_badge: String(badgeCount),
+    title: payload.title,
+    body: payload.body,
+    action_url: payload.action_url,
+    priority: payload.priority,
+    id: payload.id,
+    type: payload.type,
+    icon: payload.icon,
+    badge: payload.badge,
     notification: {
       title: payload.title || 'SETU Mail',
       body: payload.body || 'You have a new Mail or Calendar notification.',

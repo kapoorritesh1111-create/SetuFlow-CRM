@@ -3,6 +3,7 @@ import 'server-only';
 import crypto from 'crypto';
 
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { sendWebPushToUsers } from '@/lib/notifications/web-push';
 import { analyzeInteraktCustomerImage, extractExplicitCompanyFromText, normalizeWorkflowCompanyAnswer } from '@/features/integrations/interakt/intelligence';
 import type { InteraktCompanyIntelligence } from '@/features/integrations/interakt/intelligence';
 import type { InteraktWebhookPayload } from '@/features/integrations/interakt/types';
@@ -268,6 +269,59 @@ function messageText(message: Record<string, unknown>) { if (typeof message.mess
 function messageMediaUrl(message: Record<string, unknown>) { const url = recursiveFindString(message, ['media_url', 'mediaUrl']); return url && /^https:\/\//i.test(url) ? url : null; }
 function isImageMessage(message: Record<string, unknown>, mediaUrl: string | null) { if (!mediaUrl) return false; const type = clean(message.message_content_type ?? message.chat_message_type)?.toLowerCase() ?? ''; return type.includes('image') || /\.(?:png|jpe?g|webp|gif)(?:\?|$)/i.test(mediaUrl); }
 
+async function notifySupportOfInboundMessage(db: any, input: { intake: any; messageId: string; customerName: string | null; visibleText: string; mediaUrl: string | null }) {
+  const { data: support } = await db.from('profiles').select('id,email').ilike('email', 'support@setugroups.com').limit(1).maybeSingle();
+  if (!support?.id) return;
+  const { data: membership } = await db.from('organization_members').select('id').eq('organization_id', STARK_PACKMATE_ORG_ID).eq('user_id', support.id).eq('is_active', true).maybeSingle();
+  if (!membership?.id) return;
+
+  const entityRef = `interakt-message:${input.messageId}`;
+  const { data: existing } = await db.from('notifications').select('id').eq('organization_id', STARK_PACKMATE_ORG_ID).eq('user_id', support.id).eq('type', 'inbound_message').eq('entity_ref', entityRef).limit(1).maybeSingle();
+  if (existing?.id) return;
+
+  const [{ data: inApp }, { data: push }] = await Promise.all([
+    db.rpc('get_effective_notif_pref', { p_user_id: support.id, p_org_id: STARK_PACKMATE_ORG_ID, p_type: 'inbound_message', p_channel: 'in_app' }),
+    db.rpc('get_effective_notif_pref', { p_user_id: support.id, p_org_id: STARK_PACKMATE_ORG_ID, p_type: 'inbound_message', p_channel: 'push' }),
+  ]);
+
+  const customer = input.customerName || input.intake.person_name || input.intake.contact_name || input.intake.full_phone_number || 'WhatsApp customer';
+  const snippet = (input.visibleText || (input.mediaUrl ? 'Sent an attachment.' : 'Sent a new WhatsApp message.')).replace(/\s+/g, ' ').trim().slice(0, 180);
+  const title = `New WhatsApp message · ${customer}`;
+  const actionUrl = `/leads/inbound?review=${encodeURIComponent(String(input.intake.id))}`;
+  const channels = [...(inApp === true ? ['in_app'] : []), ...(push === true ? ['push'] : [])];
+
+  if (inApp === true) {
+    await db.from('notifications').insert({
+      organization_id: STARK_PACKMATE_ORG_ID,
+      user_id: support.id,
+      type: 'inbound_message',
+      title,
+      body: snippet,
+      icon: 'comments-o',
+      priority: 'high',
+      entity_type: 'lead',
+      entity_id: input.intake.qualified_lead_id ?? null,
+      entity_ref: entityRef,
+      action_url: actionUrl,
+      channels_sent: channels,
+    });
+  }
+
+  if (push === true) {
+    const result = await sendWebPushToUsers(db, [support.id], {
+      title,
+      body: snippet,
+      action_url: actionUrl,
+      priority: 'high',
+      type: 'inbound_message',
+      id: entityRef,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+    }, STARK_PACKMATE_ORG_ID);
+    if (result.sent === 0) console.warn('[stark-inbound:push] no device delivery', { messageId: input.messageId, skipped: result.skipped ?? null, pruned: result.pruned });
+  }
+}
+
 async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   const data = safeObject(payload.data); const customer = safeObject(data.customer); const message = safeObject(data.message); const traits = safeObject(customer.traits);
   const customerId = clean(customer.id); const phone = normalizePhone(customer.channel_phone_number); const name = clean(traits.name); const email = clean(traits.email); const messageId = clean(message.id); if (!messageId) return;
@@ -295,6 +349,14 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   const attribution = mergeAttribution(intake, attributionFromPayload(data));
   const assignee = assigneeFromTraits(traits) || intake.interakt_assignee_name || null;
   await db.from('lead_intake_staging').update({ contact_name: intake.contact_name ?? name, person_name: intake.person_name ?? name, email: intake.email ?? email, full_phone_number: intake.full_phone_number ?? phone, first_inquiry_at: incoming ? (intake.first_inquiry_at ?? receivedAt) : intake.first_inquiry_at, last_inbound_at: incoming ? receivedAt : intake.last_inbound_at, source_modified_at: now, raw_payload: data, company_evidence: companyEvidence, company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at, interakt_assignee_name: assignee, updated_at: now, ...identityPatch, ...attribution }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
+
+  if (incoming) {
+    try {
+      await notifySupportOfInboundMessage(db, { intake, messageId, customerName: name, visibleText, mediaUrl });
+    } catch (error) {
+      console.warn('[stark-inbound:push] notification failed', { messageId, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
 }
 
 export function verifyInteraktSignature(rawBody: string, signature: string | null) { const secret = process.env.INTERAKT_STARK_PACKMATE_WEBHOOK_SECRET?.trim(); if (!secret || !signature) return false; const expected = `sha256=${crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('hex')}`; try { return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature)); } catch { return false; } }

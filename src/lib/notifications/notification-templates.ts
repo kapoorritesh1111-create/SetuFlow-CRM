@@ -9,6 +9,7 @@ export type NotifType =
   | 'approval_request'
   | 'quote_opened'
   | 'catalog_engagement'
+  | 'inbound_message'
   | 'mail_received'
   | 'calendar_reminder';
 
@@ -147,6 +148,15 @@ export function getNotificationTemplate(
         title: withRef('Catalog engagement', context.entityRef),
         body: `${context.companyName || 'A buyer'} engaged with a shared catalog. Review activity and follow up while interest is warm.`,
         icon: 'bar-chart-3',
+        priority: 'high',
+        entityType: 'lead'
+      };
+    case 'inbound_message':
+      return {
+        type,
+        title: 'New inbound WhatsApp message',
+        body: `${context.companyName || context.actorName || 'A customer'} sent a new WhatsApp message.`,
+        icon: 'comments-o',
         priority: 'high',
         entityType: 'lead'
       };
