@@ -54,6 +54,12 @@ test('connection and sync do not report success unless integration metadata is p
   assert.match(adapter, /integrationUpdateError/);
 });
 
+test('IndiaMART sync preserves concurrent admin configuration such as default sales owner', () => {
+  assert.match(adapter, /readLatestConfiguration/);
+  assert.match(adapter, /\.\.\.latestConfiguration/);
+  assert.match(adapter, /latestConfiguration\.sync_enabled/);
+});
+
 test('Stark inbound workspace can switch between all, Interakt and IndiaMART without overwriting channel filters', () => {
   assert.match(controls, /All inbound/);
   assert.match(controls, />Interakt</);
