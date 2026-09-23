@@ -25,7 +25,7 @@ async function persistSubscription(input: {
   organizationId: string;
   userId: string;
   subscription: PushSubscription;
-}) {
+}): Promise<{ existed: boolean }> {
   const json = input.subscription.toJSON();
   const endpoint = json.endpoint ?? input.subscription.endpoint;
   const authKey = json.keys?.auth;
@@ -47,6 +47,8 @@ async function persistSubscription(input: {
     keepalive: true,
   });
   if (!response.ok) throw new Error('Push subscription could not be saved.');
+  const body = await response.json().catch(() => ({}));
+  return { existed: body?.existed === true };
 }
 
 export function CrmPushRegistrar({ organizationId, userId }: { organizationId: string; userId: string }) {
@@ -65,6 +67,7 @@ export function CrmPushRegistrar({ organizationId, userId }: { organizationId: s
         if (cancelled) return;
 
         let subscription = await registration.pushManager.getSubscription();
+        const hadExistingBrowserSubscription = Boolean(subscription);
         if (!subscription) {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
@@ -72,7 +75,20 @@ export function CrmPushRegistrar({ organizationId, userId }: { organizationId: s
           });
         }
         if (cancelled) return;
-        await persistSubscription({ organizationId, userId, subscription });
+        const saved = await persistSubscription({ organizationId, userId, subscription });
+
+        // A stored browser subscription can outlive its push-service endpoint. The sender
+        // prunes those endpoints after a 404/410. If the browser still presents that old
+        // subscription but the server no longer has it, rotate the subscription once.
+        if (hadExistingBrowserSubscription && !saved.existed) {
+          await subscription.unsubscribe().catch(() => false);
+          if (cancelled) return;
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: base64UrlToBytes(publicKey),
+          });
+          await persistSubscription({ organizationId, userId, subscription });
+        }
       } catch (error) {
         console.warn('[crm-push:registrar] unable to register this device', error instanceof Error ? error.message : String(error));
       }

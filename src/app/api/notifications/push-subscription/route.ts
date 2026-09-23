@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       : await db.from('push_subscriptions').insert(values);
 
     if (result.error) return NextResponse.json({ ok: false, error: result.error.message }, { status: 500 });
-    return NextResponse.json({ ok: true, appScope });
+    return NextResponse.json({ ok: true, appScope, existed: Boolean(existing?.id) });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Unable to register push notifications.' }, { status: 500 });
   }

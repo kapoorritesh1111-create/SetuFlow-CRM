@@ -136,7 +136,52 @@ export function InAppNotificationCenter({ organizationId, userId, variant = 'flo
   useEffect(() => { let cancelled = false; async function loadNotifications() { try { const supabase = createClient() as unknown as NotificationClient; const [storedResult, followUpResult, taskResult, quoteResult, orderResult] = await Promise.all([supabase.from('notifications').select('id,type,title,body,icon,priority,entity_ref,action_url,read,created_at').eq('organization_id', organizationId).is('archived_at', null).order('created_at', { ascending: false }).limit(12), supabase.from('lead_follow_ups').select('id,lead_id,scheduled_at,status,notes,leads(company_name,contact_name)').eq('organization_id', organizationId).order('scheduled_at', { ascending: true }).limit(30), supabase.from('scheduled_tasks').select('id,lead_id,task_type,scheduled_for,status,leads(company_name,contact_name)').eq('organization_id', organizationId).order('scheduled_for', { ascending: true }).limit(24), supabase.from('quotes').select('id,lead_id,quote_number,status,valid_until,updated_at,leads(company_name,contact_name)').eq('organization_id', organizationId).order('valid_until', { ascending: true }).limit(30), supabase.from('orders').select('id,lead_id,order_number,current_stage,status,approval_state,order_lifecycle_status,updated_at,leads(company_name,contact_name)').eq('organization_id', organizationId).order('updated_at', { ascending: false }).limit(30)]); if (cancelled) return; const stored = (storedResult.error ? [] : storedResult.data ?? []).map((row) => ({ ...row, source: 'stored' as const })); const derived = [...((followUpResult.error ? [] : followUpResult.data ?? []).map(followUpAlert).filter((row): row is NotificationRow => row !== null)), ...((taskResult.error ? [] : taskResult.data ?? []).map(taskAlert).filter((row): row is NotificationRow => row !== null)), ...((quoteResult.error ? [] : quoteResult.data ?? []).map(quoteAlert).filter((row): row is NotificationRow => row !== null)), ...((orderResult.error ? [] : orderResult.data ?? []).map(orderAlert).filter((row): row is NotificationRow => row !== null))].filter((row) => !dismissedDerived.has(row.id)); setNotifications([...(showDerived ? derived : []), ...stored].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 30)); } finally { if (!cancelled) setLoading(false); } } loadNotifications(); const interval = window.setInterval(loadNotifications, 60000); return () => { cancelled = true; window.clearInterval(interval); }; }, [dismissedDerived, organizationId, showDerived]);
 
   const markRead = async (notificationId: string) => { setNotifications((current) => current.filter((item) => item.id !== notificationId)); if (notificationId.startsWith('derived:')) { setDismissedDerived((current) => { const next = new Set(current); next.add(notificationId); saveDismissed(next); return next; }); return; } const supabase = createClient() as unknown as NotificationClient; await supabase.from('notifications').update?.({ read: true, read_at: new Date().toISOString() }).eq('id', notificationId); };
-  const enablePush = async () => { if (!canUseBrowserPush()) { setPushStatus('unsupported'); return; } if (iosDevice && !standalonePwa) { setPushStatus('unsupported'); return; } if (!webPushPublicKey) { setPushStatus('missing-key'); return; } setPushStatus('saving'); try { const permission = await Notification.requestPermission(); if (permission !== 'granted') { setPushStatus(permission === 'denied' ? 'denied' : 'idle'); return; } const registration = await registerCrmPushWorker(); const existing = await registration.pushManager.getSubscription(); const subscription = existing ?? (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(webPushPublicKey) })); const subscriptionJson = subscription.toJSON() as PushSubscriptionJson; const endpoint = subscriptionJson.endpoint ?? subscription.endpoint; const authKey = subscriptionJson.keys?.auth; const p256dh = subscriptionJson.keys?.p256dh; if (!endpoint || !authKey || !p256dh) { setPushStatus('error'); return; } const supabase = createClient() as unknown as NotificationClient; const payload: PushSubscriptionInsert = { organization_id: organizationId, user_id: userId, endpoint, auth_key: authKey, p256dh, user_agent: navigator.userAgent || null, app_scope: 'crm' }; const { data: existingRows } = await supabase.from('push_subscriptions').select('id,endpoint').eq('endpoint', endpoint).limit(1); const existingId = existingRows?.[0]?.id; const { error } = existingId ? await supabase.from('push_subscriptions').update({ auth_key: authKey, p256dh, user_agent: payload.user_agent }).eq('id', existingId) : await supabase.from('push_subscriptions').insert(payload); setPushStatus(error ? 'error' : 'enabled'); } catch { setPushStatus('error'); } };
+  const enablePush = async () => {
+    if (!canUseBrowserPush()) { setPushStatus('unsupported'); return; }
+    if (iosDevice && !standalonePwa) { setPushStatus('unsupported'); return; }
+    if (!webPushPublicKey) { setPushStatus('missing-key'); return; }
+    setPushStatus('saving');
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setPushStatus(permission === 'denied' ? 'denied' : 'idle');
+        return;
+      }
+      const registration = await registerCrmPushWorker();
+      const existing = await registration.pushManager.getSubscription();
+
+      // "Retry push" must repair a dead FCM/APNs endpoint, not merely save the same
+      // stale browser subscription again.
+      if (existing) await existing.unsubscribe().catch(() => false);
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(webPushPublicKey),
+      });
+      const subscriptionJson = subscription.toJSON() as PushSubscriptionJson;
+      const endpoint = subscriptionJson.endpoint ?? subscription.endpoint;
+      const authKey = subscriptionJson.keys?.auth;
+      const p256dh = subscriptionJson.keys?.p256dh;
+      if (!endpoint || !authKey || !p256dh) { setPushStatus('error'); return; }
+
+      const response = await fetch('/api/notifications/push-subscription', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          organizationId,
+          userId,
+          endpoint,
+          authKey,
+          p256dh,
+          userAgent: navigator.userAgent || null,
+          appScope: 'crm',
+        }),
+      });
+      setPushStatus(response.ok ? 'enabled' : 'error');
+    } catch {
+      setPushStatus('error');
+    }
+  };
 
   const pushLabel = pushStatus === 'enabled' ? 'Push on' : pushStatus === 'saving' ? 'Saving...' : pushStatus === 'error' ? 'Retry push' : 'Enable push';
   const mobilePushHint = iosDevice && !standalonePwa ? 'On iPhone/iPad, add SETU Flow to your Home Screen first, then open the app icon to enable push alerts.' : pushStatus === 'missing-key' ? 'Browser push setup is pending, but in-app alerts are active.' : pushStatus === 'denied' ? 'Push is blocked in this browser. In-app alerts still appear here.' : 'Tap an alert to open the related record. Opening an alert marks it read.';
