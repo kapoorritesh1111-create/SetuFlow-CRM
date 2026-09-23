@@ -204,6 +204,26 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
     const questionText = clean(question.message) ?? 'Workflow question'; const answerText = clean(answer.message); const answeredAt = iso(answer.received_at_utc ?? answer.created_at_utc);
     const evidenceKey = clean(answer.id) || `${clean(data.id) ?? 'workflow'}:${clean(question.id) ?? questionText}:${answerText ?? ''}`; const now = new Date().toISOString();
     await db.from('lead_intake_workflow_answers').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, workflow_id: clean(data.workflow_id), workflow_run_id: clean(data.id), question_id: clean(question.id), question_text: questionText, answer_text: answerText, response_type: clean(answer.message_content_type), answered_at: answeredAt, evidence_key: evidenceKey, raw_payload: row, updated_at: now }, { onConflict: 'organization_id,provider,intake_id,evidence_key' });
+    const questionId = clean(question.id);
+    const questionAt = iso(question.created_at_utc);
+    if (questionId && questionText && questionText !== 'Workflow question') {
+      await db.from('lead_intake_messages').upsert({
+        organization_id: STARK_PACKMATE_ORG_ID,
+        intake_id: intake.id,
+        provider: SOURCE_PROVIDER,
+        external_message_id: `workflow-question:${questionId}`,
+        event_type: 'workflow_prompt',
+        direction: 'outbound',
+        actor_type: 'bot',
+        actor_name: 'Stark Packmate Bot',
+        message_type: clean(question.message_type) || 'WorkflowPrompt',
+        message_text: questionText,
+        message_payload: question,
+        sent_at: questionAt ?? now,
+        status: 'sent',
+        updated_at: now,
+      }, { onConflict: 'organization_id,provider,external_message_id' });
+    }
     if (answerText) {
       const identityKind = identityQuestion(questionText);
       if (!identityKind) {

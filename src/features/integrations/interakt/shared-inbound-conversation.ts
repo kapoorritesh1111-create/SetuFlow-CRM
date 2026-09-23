@@ -72,6 +72,44 @@ export async function readSharedInboundConversation(intakeId: string) {
   ]);
 
   const messages = [...(messagesResult.data ?? [])];
+
+  // Interakt workflow webhooks historically stored the customer answer but not the bot prompt.
+  // Reconstruct those prompts so the sales view shows the actual back-and-forth conversation.
+  const existingWorkflowPromptIds = new Set(
+    messages
+      .filter((message: any) => message.event_type === 'workflow_prompt')
+      .map((message: any) => String(message.external_message_id ?? ''))
+  );
+  for (const answer of answersResult.data ?? []) {
+    const payload = answer?.raw_payload && typeof answer.raw_payload === 'object' ? answer.raw_payload as Record<string, any> : {};
+    const question = payload.question && typeof payload.question === 'object' ? payload.question as Record<string, any> : {};
+    const questionId = clean(question.id || answer.question_id);
+    const questionText = clean(question.message || answer.question_text);
+    if (!questionId || !questionText) continue;
+    const externalId = `workflow-question:${questionId}`;
+    if (existingWorkflowPromptIds.has(externalId)) continue;
+    const sentAt = clean(question.created_at_utc) || answer.answered_at || selected.first_inquiry_at || selected.source_created_at;
+    messages.push({
+      id: `synthetic:${externalId}`,
+      intake_id: answer.intake_id,
+      provider: 'interakt',
+      external_message_id: externalId,
+      event_type: 'workflow_prompt',
+      direction: 'outbound',
+      actor_type: 'bot',
+      actor_name: 'Stark Packmate Bot',
+      message_type: clean(question.message_type) || 'WorkflowPrompt',
+      message_text: questionText,
+      media_url: null,
+      intelligence: null,
+      received_at: null,
+      sent_at: sentAt,
+      status: 'sent',
+      created_at: sentAt,
+    });
+    existingWorkflowPromptIds.add(externalId);
+  }
+
   if (String(selected.source_provider).toLowerCase() === 'indiamart') {
     const traits = selected.traits && typeof selected.traits === 'object' ? selected.traits as Record<string, unknown> : {};
     const inquiryText = normalizeIndiaMartMessage(traits.query_message);

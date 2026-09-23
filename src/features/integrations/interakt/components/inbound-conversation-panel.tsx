@@ -51,9 +51,19 @@ function messageTime(message: ConversationMessage) {
 
 function cleanInteractiveText(message: ConversationMessage) {
   const text = message.message_text ?? '';
-  if (!text.startsWith('{')) return text;
+  if (!text.startsWith('{') && !text.startsWith('[')) return text;
   try {
-    const parsed = JSON.parse(text) as Record<string, any>;
+    const parsed = JSON.parse(text) as any;
+    if (Array.isArray(parsed)) {
+      const body = parsed.find((part: any) => part?.type === 'body');
+      const values = Array.isArray(body?.parameters)
+        ? body.parameters.map((parameter: any) => String(parameter?.text ?? '').trim()).filter(Boolean)
+        : [];
+      if (message.message_type === 'Template' && values.length >= 2) {
+        return `Hello ${values[0]}, thank you for contacting Stark Packmate.\nWe are following up regarding your packaging requirement:\n${values[1]}\nPlease reply to this message and our team will continue assisting you.`;
+      }
+      return values.join('\n');
+    }
     const visible = parsed?.list_reply?.title ?? parsed?.button_reply?.title;
     if (visible) return String(visible);
     if (parsed?.type === 'nfm_reply' || parsed?.nfm_reply || text.includes('response_json') || text.includes('flow_token')) return '';
