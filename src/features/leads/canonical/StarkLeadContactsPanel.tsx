@@ -7,7 +7,7 @@ import { FaIcon } from '@/components/ui/fa-icon';
 type ContactLink = { entity_id:string; entity_type:string; is_primary?:boolean };
 type Contact = {
   id:string; first_name:string; last_name:string; company:string|null; job_title:string|null;
-  department:string|null; contact_role:string|null; email:string; phone:string|null;
+  department:string|null; contact_role:string|null; email:string|null; phone:string|null;
   whatsapp_number:string|null; relationship_type:string; links:ContactLink[];
 };
 type FormState = {
@@ -16,7 +16,7 @@ type FormState = {
 };
 const DEPARTMENTS=['Purchasing / Procurement','Management / Owner','Finance / Accounts','Design / Creative','Operations','Logistics / Supply Chain','Quality / Compliance','Technical / Engineering','Sales','Marketing','Warehouse / Dispatch','Other'];
 const ROLES=['Decision Maker','Buyer / Purchasing Contact','Approver','Influencer','Finance / Accounts Payable','Design Contact','Technical Contact','Operations Contact','Logistics / Delivery Contact','Owner / Director','Other'];
-const displayName=(c:Contact)=>`${c.first_name} ${c.last_name}`.trim()||c.company||c.email;
+const displayName=(c:Contact)=>`${c.first_name} ${c.last_name}`.trim()||c.company||c.email||c.phone||'Contact';
 const phoneDigits=(v:string|null)=>String(v||'').replace(/\D/g,'');
 function Field({label,value,onChange,list,type='text'}:{label:string;value:string;onChange:(v:string)=>void;list?:string;type?:string}){return <label className="block text-xs font-semibold text-slate-600">{label}<input type={type} list={list} value={value} onChange={e=>onChange(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-400"/></label>}
 
@@ -52,11 +52,11 @@ export default function StarkLeadContactsPanel({leadId,companyName,leadType,fall
   const [form,setForm]=useState<FormState>({firstName:'',lastName:'',company:companyName,jobTitle:'',department:'',contactRole:'',email:'',phone:'',whatsappNumber:'',relationshipType:relationship,isPrimary:false});
   function openEdit(c:Contact){
     setEditing(c);
-    setForm({firstName:c.first_name,lastName:c.last_name,company:c.company||companyName,jobTitle:c.job_title||'',department:c.department||'',contactRole:c.contact_role||'',email:c.email,phone:c.phone||'',whatsappNumber:c.whatsapp_number||'',relationshipType:c.relationship_type,isPrimary:Boolean(c.links.some(l=>l.entity_id===leadId&&l.is_primary))});
+    setForm({firstName:c.first_name,lastName:c.last_name,company:c.company||companyName,jobTitle:c.job_title||'',department:c.department||'',contactRole:c.contact_role||'',email:c.email||'',phone:c.phone||'',whatsappNumber:c.whatsapp_number||'',relationshipType:c.relationship_type,isPrimary:Boolean(c.links.some(l=>l.entity_id===leadId&&l.is_primary))});
     setOpen(true);
   }
   async function save(){
-    if(!form.email.trim()){setNotice('Email is required for this contact.');return;}
+    if(!form.email.trim()&&!form.phone.trim()&&!form.whatsappNumber.trim()){setNotice('Add a phone, WhatsApp number, or email address.');return;}
     setSaving(true);setNotice('');
     try{
       const res=await fetch(editing?`/api/contacts/${editing.id}`:'/api/contacts',{method:editing?'PATCH':'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...form,leadId})});

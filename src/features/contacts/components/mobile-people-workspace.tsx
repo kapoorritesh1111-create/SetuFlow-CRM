@@ -15,7 +15,7 @@ type Contact = {
   job_title: string | null;
   department: string | null;
   contact_role: string | null;
-  email: string;
+  email: string | null;
   phone: string | null;
   whatsapp_number: string | null;
   relationship_type: string;
@@ -54,7 +54,7 @@ const RELATIONSHIPS = ['buyer', 'supplier', 'prospect', 'customer', 'vendor', 'o
 const DEPARTMENTS=['Purchasing / Procurement','Management / Owner','Finance / Accounts','Design / Creative','Operations','Logistics / Supply Chain','Quality / Compliance','Technical / Engineering','Sales','Marketing','Warehouse / Dispatch','Other'];
 const CONTACT_ROLES=['Decision Maker','Buyer / Purchasing Contact','Approver','Influencer','Finance / Accounts Payable','Design Contact','Technical Contact','Operations Contact','Logistics / Delivery Contact','Owner / Director','Other'];
 const title = (value: string) => value ? value[0].toUpperCase() + value.slice(1) : value;
-const displayName = (contact: Contact) => `${contact.first_name} ${contact.last_name}`.trim() || contact.company || contact.email;
+const displayName = (contact: Contact) => `${contact.first_name} ${contact.last_name}`.trim() || contact.company || contact.email || contact.phone || 'Contact';
 const initials = (contact: Contact) => {
   const value = displayName(contact).trim();
   const parts = value.split(/\s+/).filter(Boolean);
@@ -119,7 +119,7 @@ export function MobilePeopleWorkspace() {
       jobTitle: contact.job_title || '',
       department: contact.department || '',
       contactRole: contact.contact_role || '',
-      email: contact.email,
+      email: contact.email || '',
       phone: contact.phone || '',
       whatsappNumber: contact.whatsapp_number || '',
       relationshipType: contact.relationship_type,
@@ -129,7 +129,7 @@ export function MobilePeopleWorkspace() {
   }
 
   async function save() {
-    if (!form.email.trim()) return;
+    if (!form.email.trim() && !form.phone.trim() && !form.whatsappNumber.trim()) { setNotice('Add a phone, WhatsApp number, or email address.'); return; }
     setSaving(true);
     setNotice('');
     try {
@@ -233,9 +233,9 @@ export function MobilePeopleWorkspace() {
             <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand-700 text-2xl font-semibold text-white">{initials(selected)}</div>
             <h2 className="mt-4 text-center text-2xl font-semibold text-content-primary">{displayName(selected)}</h2>
             <p className="mt-1 text-center text-sm text-content-muted">{[selected.job_title, selected.department, selected.company].filter(Boolean).join(' · ') || title(selected.relationship_type)}</p>{selected.contact_role?<p className="mt-2 text-center text-xs font-semibold text-content-secondary">{selected.contact_role}</p>:null}{selected.links?.some(link=>link.is_primary)?<div className="mt-2 flex justify-center"><span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700"><Star size={12}/>Primary contact</span></div>:null}
-            <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-3"><Link href={`/mail?compose=1&to=${encodeURIComponent(selected.email)}`} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-800 text-sm font-semibold text-white"><Mail size={17}/>Email</Link>{selected.whatsapp_number||selected.phone?<a href={`https://wa.me/${String(selected.whatsapp_number||selected.phone).replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700"><MessageCircle size={17}/>WhatsApp</a>:null}{selected.phone?<a href={`tel:${selected.phone}`} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line text-sm font-semibold text-content-secondary"><PhoneCall size={17}/>Call</a>:null}<Link href={`/calendar?compose=1&guest=${encodeURIComponent(selected.email)}&contact=${selected.id}`} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line text-sm font-semibold text-content-secondary"><CalendarPlus size={17}/>Meeting</Link></div>
+            <div className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-3">{selected.email?<Link href={`/mail?compose=1&to=${encodeURIComponent(selected.email)}`} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-brand-800 text-sm font-semibold text-white"><Mail size={17}/>Email</Link>:null}{selected.whatsapp_number||selected.phone?<a href={`https://wa.me/${String(selected.whatsapp_number||selected.phone).replace(/\D/g,'')}`} target="_blank" rel="noreferrer" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700"><MessageCircle size={17}/>WhatsApp</a>:null}{selected.phone?<a href={`tel:${selected.phone}`} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line text-sm font-semibold text-content-secondary"><PhoneCall size={17}/>Call</a>:null}{selected.email?<Link href={`/calendar?compose=1&guest=${encodeURIComponent(selected.email)}&contact=${selected.id}`} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line text-sm font-semibold text-content-secondary"><CalendarPlus size={17}/>Meeting</Link>:null}</div>
             <div className="mx-auto mt-7 max-w-sm overflow-hidden rounded-2xl border border-line border-line bg-surface-1">
-              <Info label="Email" value={selected.email} />
+              <Info label="Email" value={selected.email || '—'} />
               <Info label="Phone" value={selected.phone || '—'} />
               <Info label="WhatsApp" value={selected.whatsapp_number || selected.phone || '—'} />
               <Info label="Department" value={selected.department || '—'} />
@@ -253,7 +253,7 @@ export function MobilePeopleWorkspace() {
           <div className="sticky top-0 z-20 flex h-14 items-center border-b border-line border-line bg-surface-1 px-3">
             <button type="button" disabled={saving} onClick={() => setFormOpen(false)} className="grid h-10 w-10 place-items-center rounded-full text-content-secondary" aria-label="Close person form"><X size={20} /></button>
             <div className="ml-1 min-w-0 flex-1 text-base font-semibold">{editing ? 'Edit Person' : 'New Person'}</div>
-            <button type="button" disabled={saving || !form.email.trim()} onClick={() => void save()} className="rounded-lg bg-brand-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
+            <button type="button" disabled={saving || (!form.email.trim() && !form.phone.trim() && !form.whatsappNumber.trim())} onClick={() => void save()} className="rounded-lg bg-brand-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
           </div>
           <div className="space-y-4 p-4 pb-24">
             <MobileField label="First name" value={form.firstName} onChange={value => setForm({ ...form, firstName: value })} />
