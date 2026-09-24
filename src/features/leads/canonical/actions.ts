@@ -3,10 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { hasSupabaseEnv } from '@/lib/env';
 import { scheduleLeadFollowUp } from '@/features/leads/server/actions';
 import { parseLeadWorkflow, serializeLeadWorkflow } from '@/lib/lead-workflow';
+import { dispatchLeadNotification } from '@/lib/notifications/lead-notification-routing';
 
 function clean(value: FormDataEntryValue | null) { return String(value ?? '').trim(); }
 function nullable(value: FormDataEntryValue | null) { const next = clean(value); return next ? next : null; }
@@ -61,7 +63,7 @@ export async function reassignCanonicalLeadOwner(formData: FormData) {
   if (!leadId || !ownerUserId) return;
   if (!canReassignOwner(workspace.currentRoles)) goLead(leadId, { stageError: 'owner-permission' }, 'lead-owner');
   const supabase = (await createClient()) as any;
-  const { data: lead } = await supabase.from('leads').select('owner_user_id').eq('organization_id', workspace.organization!.id).eq('id', leadId).maybeSingle();
+  const { data: lead } = await supabase.from('leads').select('owner_user_id,company_name,contact_name').eq('organization_id', workspace.organization!.id).eq('id', leadId).maybeSingle();
   const { data: member } = await supabase.from('organization_members').select('user_id').eq('organization_id', workspace.organization!.id).eq('user_id', ownerUserId).eq('is_active', true).maybeSingle();
   if (!member?.user_id) goLead(leadId, { stageError: 'owner-invalid' }, 'lead-owner');
   const { data: oldProfile } = lead?.owner_user_id ? await supabase.from('profiles').select('full_name, email').eq('id', lead.owner_user_id).maybeSingle() : { data: null };
@@ -71,6 +73,30 @@ export async function reassignCanonicalLeadOwner(formData: FormData) {
   const { error } = await supabase.from('leads').update({ owner_user_id: ownerUserId, updated_by: workspace.user!.id }).eq('organization_id', workspace.organization!.id).eq('id', leadId);
   if (error) goLead(leadId, { stageError: 'owner-update' }, 'lead-owner');
   await supabase.from('lead_activities').insert({ organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'owner_changed', message: `Lead owner changed from ${oldName} to ${newName}.`, occurred_at: new Date().toISOString() });
+  try {
+    const admin = createAdminSupabaseClient() as any;
+    if (admin) {
+      const leadLabel = lead?.company_name || lead?.contact_name || 'Lead';
+      await dispatchLeadNotification(admin, {
+        organizationId: workspace.organization!.id,
+        assignedUserIds: [ownerUserId],
+        type: 'lead_stage',
+        title: `Lead assignment · ${leadLabel}`,
+        body: `Owner changed from ${oldName} to ${newName}. Open the lead to review the next action.`,
+        icon: 'user-plus',
+        priority: 'high',
+        entityType: 'lead',
+        entityId: leadId,
+        entityRef: `lead-owner:${leadId}:${Date.now()}`,
+        actionUrl: `/leads/${leadId}`,
+      });
+    }
+  } catch (notificationError) {
+    console.warn('[lead-owner] notification delivery failed', {
+      leadId,
+      error: notificationError instanceof Error ? notificationError.message : String(notificationError),
+    });
+  }
   revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`);
   goLead(leadId, { saved: 'owner' }, 'lead-owner');
 }

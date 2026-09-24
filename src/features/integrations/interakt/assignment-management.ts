@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { dispatchLeadNotification } from '@/lib/notifications/lead-notification-routing';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
@@ -168,7 +169,7 @@ export async function reassignStarkInboundLead(formData: FormData): Promise<void
 
   const { data: row, error: rowError } = await db
     .from('lead_intake_staging')
-    .select('id, setu_assigned_user_id, setu_assigned_invitation_id, setu_assigned_email, setu_assigned_name, qualified_lead_id')
+    .select('id, contact_name, person_name, company_name, setu_assigned_user_id, setu_assigned_invitation_id, setu_assigned_email, setu_assigned_name, qualified_lead_id')
     .eq('id', rowId)
     .eq('organization_id', organization.id)
     .in('source_provider', SUPPORTED_PROVIDERS)
@@ -186,6 +187,7 @@ export async function reassignStarkInboundLead(formData: FormData): Promise<void
     name: row.setu_assigned_name ?? null,
   };
 
+  const assignedAt = new Date().toISOString();
   const { error: updateError } = await db
     .from('lead_intake_staging')
     .update({
@@ -193,8 +195,8 @@ export async function reassignStarkInboundLead(formData: FormData): Promise<void
       setu_assigned_invitation_id: target.invitationId,
       setu_assigned_email: target.email,
       setu_assigned_name: target.name,
-      setu_assigned_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      setu_assigned_at: assignedAt,
+      updated_at: assignedAt,
     })
     .eq('id', rowId)
     .eq('organization_id', organization.id);
@@ -207,6 +209,28 @@ export async function reassignStarkInboundLead(formData: FormData): Promise<void
       .eq('id', row.qualified_lead_id)
       .eq('organization_id', organization.id);
     if (leadError) throw new Error(`Inbound assignment changed, but qualified Lead ownership could not be updated: ${String(leadError.message ?? 'unknown database error')}`);
+  }
+
+  const leadLabel = clean(row.company_name) || clean(row.person_name) || clean(row.contact_name) || 'Inbound lead';
+  try {
+    await dispatchLeadNotification(db, {
+      organizationId: organization.id,
+      assignedUserIds: target.userId ? [target.userId] : [],
+      type: 'lead_stage',
+      title: `Lead assignment · ${leadLabel}`,
+      body: `Assigned to ${target.name}. Open the lead to review the latest inquiry and next action.`,
+      icon: 'user-plus',
+      priority: 'high',
+      entityType: 'lead',
+      entityId: row.qualified_lead_id ?? null,
+      entityRef: `inbound-assignment:${rowId}:${assignedAt}`,
+      actionUrl: `/leads/inbound?review=${encodeURIComponent(rowId)}`,
+    });
+  } catch (notificationError) {
+    console.warn('[stark-inbound:assignment] notification delivery failed', {
+      rowId,
+      error: notificationError instanceof Error ? notificationError.message : String(notificationError),
+    });
   }
 
   await db.from('audit_logs').insert({
