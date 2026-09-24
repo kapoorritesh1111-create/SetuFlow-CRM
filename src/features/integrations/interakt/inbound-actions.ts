@@ -326,9 +326,11 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
       .eq('id', row.id)
       .eq('organization_id', organizationId)
       .maybeSingle();
-    const assignedName = clean(finalAssignment?.setu_assigned_name) || clean(finalAssignment?.interakt_assignee_name) || clean(row.setu_assigned_name) || 'Sales';
     const stillOwnedByCreator = clean(finalAssignment?.setu_assigned_user_id) === userId;
-    redirect(`${INBOUND_PATH}?converted=${lead.id}&assigned=${encodeURIComponent(assignedName)}&open=${stillOwnedByCreator ? '1' : '0'}`);
+    if (!stillOwnedByCreator) {
+      const assignedName = clean(finalAssignment?.setu_assigned_name) || clean(finalAssignment?.interakt_assignee_name) || clean(row.setu_assigned_name) || 'Sales';
+      redirect(`${INBOUND_PATH}?converted=${lead.id}&assigned=${encodeURIComponent(assignedName)}`);
+    }
   }
 
   redirect(`/leads/${lead.id}?source=inbound-qualified`);
