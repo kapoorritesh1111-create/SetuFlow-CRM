@@ -35,11 +35,11 @@ export async function resolveLeadNotificationRecipients(
   if (memberError) throw memberError;
 
   const activeMembers = (members ?? []).filter((member: any) => member.user_id && member.is_internal_support !== true);
-  const activeUserIds = new Set(activeMembers.map((member: any) => String(member.user_id)));
-  const memberById = new Map(activeMembers.map((member: any) => [String(member.id), String(member.user_id)]));
+  const activeUserIds = new Set<string>(activeMembers.map((member: any) => String(member.user_id)));
+  const memberById = new Map<string, string>(activeMembers.map((member: any): [string, string] => [String(member.id), String(member.user_id)]));
   const memberIds = [...memberById.keys()];
 
-  const recipients = new Set(cleanIds(assignedUserIds).filter((userId) => activeUserIds.has(userId)));
+  const recipients = new Set<string>(cleanIds(assignedUserIds).filter((userId) => activeUserIds.has(userId)));
   if (!memberIds.length) return [...recipients];
 
   const { data: links, error: linkError } = await db
@@ -48,12 +48,12 @@ export async function resolveLeadNotificationRecipients(
     .in('organization_member_id', memberIds);
   if (linkError) throw linkError;
 
-  const roleIds = [...new Set((links ?? []).map((row: any) => String(row.role_id ?? '')).filter(Boolean))];
+  const roleIds = [...new Set<string>((links ?? []).map((row: any) => String(row.role_id ?? '')).filter(Boolean))];
   if (!roleIds.length) return [...recipients];
 
   const { data: roles, error: roleError } = await db.from('roles').select('id,name').in('id', roleIds);
   if (roleError) throw roleError;
-  const roleById = new Map((roles ?? []).map((role: any) => [String(role.id), String(role.name ?? '').toLowerCase()]));
+  const roleById = new Map<string, string>((roles ?? []).map((role: any): [string, string] => [String(role.id), String(role.name ?? '').toLowerCase()]));
 
   for (const link of links ?? []) {
     if (!OVERSIGHT_ROLES.has(roleById.get(String(link.role_id)) ?? '')) continue;
