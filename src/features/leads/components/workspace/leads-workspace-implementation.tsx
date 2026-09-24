@@ -1818,7 +1818,7 @@ export function LeadsWorkspace({
                 // Toggle direction
                 setSortRules([{ field: field as typeof current.field, dir: current.dir === 'asc' ? 'desc' : 'asc' }]);
               } else {
-                setSortRules([{ field: field as typeof current.field, dir: 'asc' }]);
+                setSortRules([{ field: field as typeof current.field, dir: field === 'created_at' ? 'desc' : 'asc' }]);
               }
             }}
           />
