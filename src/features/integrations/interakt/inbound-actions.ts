@@ -13,6 +13,7 @@ const STARK_PACKMATE_SLUG = 'starkpackmate';
 const SUPPORTED_PROVIDERS = ['interakt', 'indiamart'] as const;
 const INBOUND_PATH = '/leads/inbound';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
+const MANAGER_ROLES = new Set(['owner', 'admin', 'manager']);
 
 type WorkspaceAccess = Awaited<ReturnType<typeof requireWorkspace>>;
 type StarkWorkspace = WorkspaceAccess & {
@@ -239,6 +240,11 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   ].filter(Boolean).join('\n');
   const now = nowIso();
   const leadOwnerUserId = await resolveInboundLeadOwnerUserId(db, organizationId, row);
+  const canManageAllInbound = workspace.currentRoles.some((role) => MANAGER_ROLES.has(clean(role).toLowerCase()));
+  if (!canManageAllInbound && leadOwnerUserId !== userId) {
+    const assignedName = clean(row.setu_assigned_name) || clean(row.interakt_assignee_name) || 'another Sales user';
+    redirect(`${INBOUND_PATH}?assignmentChanged=1&assigned=${encodeURIComponent(assignedName)}`);
+  }
 
   const { data: lead, error: leadError } = await db.from('leads').insert({
     organization_id: organizationId, lead_type: 'buyer', owner_user_id: leadOwnerUserId,
@@ -312,5 +318,20 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   await db.from('lead_intake_inquiries').update({ status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: userId, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.leadBlockers, guru_evaluation: { lead_blockers: assessment.leadBlockers, later_enrichment: assessment.laterEnrichment }, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
   revalidatePath('/leads');
   revalidatePath(INBOUND_PATH);
+
+  if (!canManageAllInbound) {
+    const { data: finalAssignment } = await db
+      .from('lead_intake_staging')
+      .select('setu_assigned_user_id,setu_assigned_name,interakt_assignee_name')
+      .eq('id', row.id)
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+    const stillOwnedByCreator = clean(finalAssignment?.setu_assigned_user_id) === userId;
+    if (!stillOwnedByCreator) {
+      const assignedName = clean(finalAssignment?.setu_assigned_name) || clean(finalAssignment?.interakt_assignee_name) || clean(row.setu_assigned_name) || 'Sales';
+      redirect(`${INBOUND_PATH}?converted=${lead.id}&assigned=${encodeURIComponent(assignedName)}`);
+    }
+  }
+
   redirect(`/leads/${lead.id}?source=inbound-qualified`);
 }

@@ -40,6 +40,9 @@ type SearchParams = {
   sort?: string;
   view?: string;
   columns?: string;
+  assignmentChanged?: string;
+  assigned?: string;
+  converted?: string;
 };
 
 type ConversationMessage = {
@@ -166,6 +169,9 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   if (!isStark) return <WorkspaceState eyebrow="Leads · Inbound" title="Inbound connector not enabled" description="The inbound qualification workspace is currently enabled for Stark Packmate." primaryActionHref="/leads" primaryActionLabel="Back to Leads" />;
 
   const canWorkInbound = workspace.currentRoles.some((role) => WRITE_ROLES.has(String(role)));
+  const assignmentChanged = searchParams.assignmentChanged === '1';
+  const convertedLeadId = String(searchParams.converted ?? '').trim();
+  const assignedName = String(searchParams.assigned ?? '').trim() || 'the assigned Sales owner';
   const canManageAssignments = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase()));
   const view = searchParams.view === 'list' ? 'list' : 'review';
   const page = Math.max(1, Number(searchParams.page ?? '1') || 1);
@@ -205,6 +211,8 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
 
   return <div className="space-y-3 pb-8">
     <Header canWorkInbound={canWorkInbound} canManageAssignments={canManageAssignments} />
+    {assignmentChanged ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>Lead not created.</strong> This inquiry is assigned to {assignedName}. Only the assigned Sales owner, Manager, Admin, or Owner can convert it, so it stays visible in the correct queue.</div> : null}
+    {convertedLeadId ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"><strong>Lead created successfully.</strong> It is assigned to {assignedName}. If it is not in your Leads list, it is visible to that owner and Stark managers/admins.</div> : null}
     <Kpis kpis={workspaceData.kpis} searchParams={searchParams} />
     <FilterBar searchParams={searchParams} />
 
