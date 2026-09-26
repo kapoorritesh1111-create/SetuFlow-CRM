@@ -145,11 +145,12 @@ function isRouterPrefetch(request: NextRequest) {
   return nextRouterPrefetch === '1' || purpose === 'prefetch' || secPurpose === 'prefetch' || Boolean(nextUrl && request.method === 'GET');
 }
 
-function loginRedirect(request: NextRequest) {
+function loginRedirect(request: NextRequest, reason?: 'session_expired') {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.pathname = '/client-login';
   redirectUrl.search = '';
   redirectUrl.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`);
+  if (reason) redirectUrl.searchParams.set('reason', reason);
   return redirectUrl;
 }
 
@@ -195,6 +196,7 @@ function createNonce() {
 function createRequestHeaders(request: NextRequest, nonce: string) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('x-setu-return-to', `${request.nextUrl.pathname}${request.nextUrl.search}`);
   return requestHeaders;
 }
 
@@ -353,7 +355,7 @@ export async function middleware(request: NextRequest) {
     }
 
     return applySecurityHeaders(
-      clearSupabaseAuthCookies(request, NextResponse.redirect(loginRedirect(request))),
+      clearSupabaseAuthCookies(request, NextResponse.redirect(loginRedirect(request, 'session_expired'))),
       nonce,
     );
   }
