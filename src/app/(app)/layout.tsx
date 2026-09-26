@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AuthenticatedShellRouter } from '@/components/layout/authenticated-shell-router';
 import { LeadCoverageRecoveryBoundary } from '@/components/shell/LeadCoverageRecoveryBoundary';
@@ -35,6 +36,13 @@ function safeHex(value: unknown, fallback: string) {
   return /^#[0-9A-F]{6}$/.test(text) ? text : fallback;
 }
 
+function safeReturnPath(value: string | null) {
+  const path = String(value ?? '').trim();
+  if (!path.startsWith('/') || path.startsWith('//')) return '/dashboard';
+  if (path === '/client-login' || path.startsWith('/client-login?')) return '/dashboard';
+  return path;
+}
+
 export default async function AuthenticatedLayout({ children }: { children: ReactNode }) {
   noStore();
 
@@ -58,7 +66,12 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     redirect('/reset-password?next=/login');
   }
 
-  if (!workspace.membership || !workspace.organization || !workspace.user) {
+  if (!workspace.user) {
+    const returnTo = safeReturnPath(headers().get('x-setu-return-to'));
+    redirect(`/client-login?reason=session_expired&next=${encodeURIComponent(returnTo)}`);
+  }
+
+  if (!workspace.membership || !workspace.organization) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-2xl">
