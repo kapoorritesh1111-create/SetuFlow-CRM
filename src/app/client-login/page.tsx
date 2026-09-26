@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { LoginForm } from '@/features/auth/components/login-form';
+import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 
 export const metadata: Metadata = {
@@ -60,8 +61,9 @@ function MiniIcon() {
   );
 }
 
-export default function ClientLoginPage({ searchParams }: { searchParams?: { next?: string } }) {
+export default function ClientLoginPage({ searchParams }: { searchParams?: { next?: string; reason?: string } }) {
   const next = typeof searchParams?.next === 'string' ? searchParams.next : '';
+  const sessionExpired = searchParams?.reason === 'session_expired';
 
   return (
     <main
@@ -198,7 +200,14 @@ export default function ClientLoginPage({ searchParams }: { searchParams?: { nex
                 <span className="rounded-full bg-accent-500/12 px-3 py-1 text-[11px] font-bold text-accent-700">Protected</span>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-5 space-y-4">
+                {sessionExpired ? (
+                  <StateMessage
+                    title="Please sign in again"
+                    description="Your session expired. After sign-in, Setu Flow will return you to the screen you were using."
+                    tone="warning"
+                  />
+                ) : null}
                 <LoginForm next={next} />
               </div>
             </div>
