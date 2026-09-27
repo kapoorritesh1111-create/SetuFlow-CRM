@@ -3,6 +3,7 @@ import { resolveProductionRouteV5 } from './production-route-resolver';
 import type { BottomPrintModeV5, PricingContextV5 } from './types';
 
 export const PRICING_V5_MATRIX_RUN_LENGTHS = [250,500,1000,2000,3000,5000,10000] as const;
+export const PRICING_V5_MATRIX_QUANTITIES = [1000,2000,3000,5000,10000,20000,30000,50000] as const;
 
 export type PricingMatrixCellV5={
   run_length_target_m:number;
@@ -62,6 +63,52 @@ export function calculatePricingMatrixRowV5(params:{
       };
     }catch(error){
       return {run_length_target_m:target,quantity:0,actual_run_length_m:0,unit_price:null,product_total:null,wastage_pct:null,margin_per_frame:null,ok:false,error:error instanceof Error?error.message:'Matrix calculation failed.'};
+    }
+  });
+}
+
+
+export function calculatePricingExactQuantityMatrixV5(params:{
+  context:PricingContextV5;
+  sizeProfileId:string;
+  constructionId:string;
+  print:'CMYK'|'CMYKW';
+  bottomPrintMode?:BottomPrintModeV5;
+  selectedChargeCodes?:string[];
+  quantities?:number[];
+}){
+  const quantities=params.quantities?.length?params.quantities:[...PRICING_V5_MATRIX_QUANTITIES];
+  return quantities.map((quantity)=>{
+    try{
+      const result=calculatePackagingPriceV5(params.context,{
+        size_profile_id:params.sizeProfileId,
+        construction_id:params.constructionId,
+        print:params.print,
+        quantity,
+        bottom_print_mode:params.bottomPrintMode,
+        selected_charge_codes:params.selectedChargeCodes??[],
+      });
+      return {
+        quantity,
+        actual_run_length_m:result.commercial_rules.run_length_m,
+        unit_price:result.ok?result.selling_price.unit_price:null,
+        product_total:result.ok?result.selling_price.product_total:null,
+        wastage_pct:result.ok?result.commercial_rules.wastage_pct:null,
+        margin_per_frame:result.ok?result.commercial_rules.margin_per_frame:null,
+        ok:result.ok,
+        error:result.ok?null:result.validation_errors.join(' '),
+      };
+    }catch(error){
+      return {
+        quantity,
+        actual_run_length_m:0,
+        unit_price:null,
+        product_total:null,
+        wastage_pct:null,
+        margin_per_frame:null,
+        ok:false,
+        error:error instanceof Error?error.message:'Matrix calculation failed.',
+      };
     }
   });
 }
