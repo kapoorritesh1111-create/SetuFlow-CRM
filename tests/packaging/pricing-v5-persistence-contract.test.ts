@@ -32,6 +32,8 @@ const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts
 const adminActions=fs.readFileSync('src/features/packaging/server/pricing-v5-admin-actions.ts','utf8');
 const matrixActions=fs.readFileSync('src/features/packaging/server/pricing-v5-matrix-actions.ts','utf8');
 const adminWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-admin-workspace.tsx','utf8');
+const premiumWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-premium-workspace.tsx','utf8');
+const frameOwnerWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-frame-owner-workspace.tsx','utf8');
 const ownerControlCenter=fs.readFileSync('src/features/packaging/components/pricing-v5-owner-control-center.tsx','utf8');
 const matrixWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-price-matrix.tsx','utf8');
 const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
@@ -125,12 +127,12 @@ test('S52-PKG-V5: Stark seed preserves the exact 20 Sizes-sheet rows and PG01-PG
   assert.doesNotMatch(starkSeed,/\('160x230_bg50_50'/,'160x230 is a workbook formula example, not an approved Sizes-sheet row');
 });
 
-test('S52-PKG-V5: publish validation enforces workbook catalog and exact run-length schedules',()=>{
+test('S52-PKG-V5: publish validation enforces the approved catalog and commercial-band integrity',()=>{
   assert.match(adminActions,/activeSizes\.length!==20/);
   assert.match(adminActions,/activeConstructions\.length<44/);
-  assert.match(adminActions,/1:\[500,1000,2000,3000,5000,10000\]/);
-  assert.match(adminActions,/2:\[250,500,1000,2000,3000,5000,10000\]/);
-  assert.match(adminActions,/does not match the approved run-length schedule/);
+  assert.match(adminActions,/strictly increasing run-length limits/);
+  assert.match(adminActions,/invalid wastage value/);
+  assert.match(adminActions,/selected default pricing group has no commercial bands/);
 });
 
 test('S52-PKG-V5: v5 quote persistence has its own atomic RPC and snapshot namespace',()=>{
@@ -299,12 +301,13 @@ test('Pricing v5 Admin matrix uses approved PE compatibility and engine-backed p
   assert.match(matrixWorkspace,/reconciliation_delta/);
 });
 
-test('S52-PKG-V5: real Admin is one workspace with ERP-style layer editing and Admin-only matrix navigation',()=>{
-  assert.match(adminPage,/PricingV5AdminWorkspace/);
+test('S52-PKG-V5: real Admin provides SUP and frame-family owner workspaces with Admin-only matrix controls',()=>{
+  assert.match(adminPage,/PricingV5PremiumWorkspace/);
+  assert.match(adminPage,/PricingV5FrameOwnerWorkspace/);
   assert.doesNotMatch(adminPage,/PricingV5OwnerControlCenter/);
-  assert.match(adminPage,/Open price matrix/);
-  assert.match(adminWorkspace,/ERP-style recipe/);
-  assert.match(adminWorkspace,/Save layer stack/);
+  assert.match(premiumWorkspace,/Price Matrix/);
+  assert.match(frameOwnerWorkspace,/Save Layer Recipe/);
+  assert.match(frameOwnerWorkspace,/Build 1K–50K Matrix/);
   assert.match(adminActions,/savePackagingConstructionLayersV5/);
   assert.match(adminActions,/final construction layer must be a PE sealant material/i);
   assert.match(adminActions,/layer_count:layerIds\.length/);
@@ -325,7 +328,8 @@ test('S52-PKG-V5: Center Seal and 3SS are real quote-builder families with provi
   assert.match(quotePage,/listSalesPackagingFramePricingV5Options/);
   assert.match(frameSalesOptions,/frame_formula_v5/);
   assert.match(frameSalesConfigurator,/sellers do not choose a bucket/i);
-  assert.match(frameSalesConfigurator,/Suggested bucket/);
+  assert.doesNotMatch(frameSalesConfigurator,/Suggested bucket/i);
+  assert.match(frameSalesConfigurator,/Commercial pricing is applied automatically/);
   assert.doesNotMatch(frameSalesConfigurator,/commercial_bucket.*select/i);
   assert.match(frameSalesConfigurator,/commercial_bucket:null/);
   assert.match(frameMigration,/stark-center-seal-roll-v5-review/);
