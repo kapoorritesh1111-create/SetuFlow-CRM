@@ -25,7 +25,7 @@ export function isPricingV5SavedQuoteLine(line: any) {
 export function toPricingV5SavedLineSummary(line: any): PricingV5SavedLineSummary | null {
   if (!isPricingV5SavedQuoteLine(line)) return null;
   const input = line.input_snapshot_json?.input;
-  if (!input || typeof input !== 'object') return null;
+  if (!input || typeof input !== 'object' || !input.size_profile_id) return null;
   const manual = Array.isArray(input.manual_quote_charges) ? input.manual_quote_charges : [];
   const spot = manual.find((item: any) => item?.code === 'EXTRA_SPOT_UV');
   const bottom = input.bottom_print_mode === 'solid_unregistered' || input.bottom_print_mode === 'registered_artwork'
