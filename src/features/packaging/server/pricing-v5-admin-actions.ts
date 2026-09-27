@@ -492,7 +492,7 @@ export async function uploadPackagingKldV5(formData:FormData):Promise<PackagingK
     if(previousError) return {ok:false,error:previousError.message};
     const version=Number(previous?.[0]?.version??0)+1;
     const fileName=safeFileName(file.name);
-    const path=\`\${organization.id}/packaging-kld-v5/\${template.family_id}/\${size.size_key}/v\${version}-\${Date.now()}-\${fileName}\`;
+    const path=`${organization.id}/packaging-kld-v5/${template.family_id}/${size.size_key}/v${version}-${Date.now()}-${fileName}`;
     const {error:uploadError}=await supabase.storage.from(KLD_BUCKET).upload(path,file,{cacheControl:'3600',contentType:'application/pdf',upsert:false});
     if(uploadError) return {ok:false,error:uploadError.message};
 
