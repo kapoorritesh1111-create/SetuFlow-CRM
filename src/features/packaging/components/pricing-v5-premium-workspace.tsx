@@ -155,7 +155,7 @@ function Sizes({data,isDraft}:{data:any;isDraft:boolean}){
   const [query,setQuery]=useState('');
   const selected=sizes.find((x:any)=>x.id===selectedId)??sizes[0];
   const pe=selected?allowedPeMicronsForSupSizeV5(selected):[];
-  const pricingGroups=[...new Set((data.bands??[]).map((b:any)=>Number(b.pricing_bucket)))].sort((a:number,b:number)=>a-b);
+  const pricingGroups:number[]=Array.from(new Set<number>(((data.bands??[]) as any[]).map((b:any)=>Number(b.pricing_bucket)))).sort((a,b)=>a-b);
   const shown=sizes.filter((x:any)=>!query||String(x.name).toLowerCase().includes(query.toLowerCase()));
 
   return <div className="space-y-4">
@@ -270,7 +270,7 @@ function RateTable({title,subtitle,rows,isDraft,templateId}:{title:string;subtit
 
 function Waste({data,isDraft}:{data:any;isDraft:boolean}){
   const bands=data.bands??[];
-  const groups=[...new Set(bands.map((x:any)=>Number(x.pricing_bucket)))].sort((a:number,b:number)=>a-b);
+  const groups:number[]=Array.from(new Set<number>((bands as any[]).map((x:any)=>Number(x.pricing_bucket)))).sort((a,b)=>a-b);
   const nextGroup=(groups[groups.length-1]??0)+1;
   return <div className="space-y-4">
     <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-xl font-black text-slate-950">Waste & Margins</h2><p className="mt-1 text-sm text-slate-500">Adjust run-length bands, waste and margin; add new bands or pricing groups when needed.</p></div><Status tone="blue">{groups.length} pricing groups</Status></div>
