@@ -13,6 +13,7 @@ import {
   setPackagingConstructionQuoteableV5,
 } from '@/features/packaging/server/pricing-v5-admin-actions';
 import { previewPackagingFramePricingV5 } from '@/features/packaging/server/pricing-v5-frame-actions';
+import ConstructionLayerEditorV5 from '@/features/packaging/components/construction-layer-editor-v5';
 
 type View='dashboard'|'constructions'|'rates'|'waste'|'matrix';
 const QUANTITIES=[1000,2000,3000,5000,10000,20000,30000,50000];
@@ -135,7 +136,7 @@ function Constructions({data,isDraft}:{data:any;isDraft:boolean}){
     <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
       <Card className="overflow-hidden"><div className="max-h-[760px] overflow-y-auto p-2">{shown.map((c:any)=><button key={c.id} type="button" onClick={()=>setSelectedId(c.id)} className={'mb-2 w-full rounded-xl border p-3 text-left '+(selected?.id===c.id?'border-blue-500 bg-blue-50':'border-slate-200 bg-white')}><div className="text-sm font-black text-slate-900">{c.name}</div><div className="mt-1 text-[11px] text-slate-500">{c.layer_count} layers · {c.is_quoteable?'Quoteable':'Hidden'}</div></button>)}</div></Card>
       {selected?<Card className="p-5"><div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-black text-slate-950">{selected.name}</h3><p className="mt-1 text-xs text-slate-500">{selected.construction_key}</p></div><span className={'rounded-full px-2.5 py-1 text-[10px] font-black '+(selected.is_quoteable?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-600')}>{selected.is_quoteable?'Quoteable':'Not quoteable'}</span></div>
-        <form action={savePackagingConstructionLayersV5} className="mt-5 grid gap-3 md:grid-cols-2"><input type="hidden" name="template_id" value={data.template?.id??''}/><input type="hidden" name="id" value={selected.id}/>{[1,2,3,4,5,6].map((n)=>{const layer=layers.find((x:any)=>Number(x.layer_position)===n);return <label key={n}><Label>Layer {n}</Label><select name={'layer_'+n} defaultValue={layer?.cost_master_item_id??''} disabled={!isDraft} className={input}><option value="">None</option>{materials.map((m:any)=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label>;})}<div className="md:col-span-2 flex justify-end"><button disabled={!isDraft} className={primary}>Save Layer Recipe</button></div></form>
+        <ConstructionLayerEditorV5 templateId={data.template?.id??''} constructionId={selected.id} isDraft={isDraft} materials={materials} layers={layers}/>
         <form action={setPackagingConstructionQuoteableV5} className="mt-5 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4"><input type="hidden" name="template_id" value={data.template?.id??''}/><input type="hidden" name="id" value={selected.id}/><label className="text-sm font-bold text-slate-700"><input type="checkbox" name="is_active" defaultChecked={selected.is_active} disabled={!isDraft} className="mr-2"/>Active</label><label className="text-sm font-bold text-slate-700"><input type="checkbox" name="is_quoteable" defaultChecked={selected.is_quoteable} disabled={!isDraft} className="mr-2"/>Available to Sales</label><button disabled={!isDraft} className={secondary}>Save Availability</button></form>
       </Card>:null}
     </div>

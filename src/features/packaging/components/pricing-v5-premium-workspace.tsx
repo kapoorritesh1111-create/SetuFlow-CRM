@@ -15,6 +15,7 @@ import {
   deletePackagingCommercialBandV5,
 } from '@/features/packaging/server/pricing-v5-admin-actions';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
+import ConstructionLayerEditorV5 from '@/features/packaging/components/construction-layer-editor-v5';
 import { allowedPeMicronsForSupSizeV5 } from '@/lib/packaging-pricing-v5/construction-compatibility';
 import type { BottomPrintModeV5 } from '@/lib/packaging-pricing-v5/types';
 
@@ -227,12 +228,7 @@ function Constructions({data,isDraft}:{data:any;isDraft:boolean}){
           </div>
           <div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><Label>Current Layer Stack</Label><div className="mt-3 space-y-2">{selectedLayers.map((l:any,idx:number)=>{const m:any=costsById.get(String(l.cost_master_item_id));return <div key={l.id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-xs font-black text-blue-700">{idx+1}</span><div><b className="text-sm text-slate-900">{m?.name??'Unmapped material'}</b><span className="mt-0.5 block text-xs text-slate-500">{m?.micron?m.micron+' µ':m?.gsm?m.gsm+' GSM':m?.code??''}</span></div></div>})}</div></div>
-            <form action={savePackagingConstructionLayersV5} key={selected.id} className="mt-4">
-              <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="template_id" value={data.template?.id??''}/>
-              <Label>Edit Layer Stack</Label>
-              <div className="grid gap-3 md:grid-cols-2">{[1,2,3,4,5,6].map(pos=>{const layer=selectedLayers.find((x:any)=>Number(x.layer_position)===pos);return <label key={pos}><span className="mb-1 block text-xs font-bold text-slate-600">Layer {pos}</span><select name={'layer_'+pos} disabled={!isDraft} defaultValue={layer?.cost_master_item_id??''} className={input}><option value="">{pos<=2?'Select material':'Unused'}</option>{materials.map((m:any)=><option key={m.id} value={m.id}>{m.name}{m.micron?' · '+m.micron+'µ':m.gsm?' · '+m.gsm+' GSM':''}</option>)}</select></label>})}</div>
-              <div className="mt-4 flex justify-end"><button disabled={!isDraft} className={primary}>Save Construction</button></div>
-            </form>
+            <ConstructionLayerEditorV5 templateId={data.template?.id??''} constructionId={selected.id} isDraft={isDraft} materials={materials} layers={selectedLayers}/>
             <form action={setPackagingConstructionQuoteableV5} className="mt-4 flex flex-wrap items-center gap-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="template_id" value={data.template?.id??''}/>
               <label className="text-sm font-bold text-slate-700"><input disabled={!isDraft} type="checkbox" name="is_active" defaultChecked={selected.is_active} className="mr-2"/>Active</label>

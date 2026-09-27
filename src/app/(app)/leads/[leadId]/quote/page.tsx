@@ -6,8 +6,7 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import WorkflowToast from '@/features/leads/canonical/WorkflowToast';
 import CanonicalQuoteBuilderApprovalQueueV2 from '@/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2';
 import PricingV4SalesConfigurator from '@/features/packaging/components/pricing-v4-sales-configurator';
-import PricingV5SalesConfigurator from '@/features/packaging/components/pricing-v5-sales-configurator';
-import PricingV5FrameSalesConfigurator from '@/features/packaging/components/pricing-v5-frame-sales-configurator';
+import PremiumPackagingQuoteBuilderV5 from '@/features/packaging/components/premium-packaging-quote-builder-v5';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingFamilies, getPackagingTemplates, getQuoteOptionalCharges, getPackagingSavedSpecs } from '@/lib/packaging/queries';
@@ -122,25 +121,36 @@ export default async function QuotePage({
   const canonicalPackaging = pricingV5Options || pricingV5FrameOptions || pricingV4Options ? null : packaging;
   const savedPricingV5Lines = activeQuote ? listPricingV5SavedLineSummaries(activeQuote.lineItems as any[]) : [];
   const savedPricingV5FrameLines = activeQuote ? listPricingV5FrameSavedLineSummaries(activeQuote.lineItems as any[]) : [];
+  const quoteCurrency = String(activeQuote?.display_currency || activeQuote?.currency || data.lead?.deal_currency || 'INR').toUpperCase();
+  const pricingLineTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.quantity||0)*Number(line.unit_price||line.catalog_price_amount||0)),0) : 0;
+  const optionalChargeTotal = (packaging?.charges ?? []).reduce((sum:number,item:any)=>sum+Math.max(0,Number(item.amount??0)),0);
+  const v5TaxTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.calculation_version)===5?Math.max(0,Number(line.pricing_breakdown_json?.selling_price?.gst??0)):0),0) : 0;
+  const liveQuoteTotal = pricingLineTotal + optionalChargeTotal + v5TaxTotal;
 
   return (
     <>
       {feedback ? <WorkflowToast kind={feedback.kind} message={feedback.message} /> : null}
-      {pricingV5Options && activeQuote ? (
-        <div className="mb-4">
-          <PricingV5SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV5Options} savedLines={savedPricingV5Lines} />
-        </div>
-      ) : null}
-      {pricingV5FrameOptions && activeQuote ? (
-        <div className="mb-4">
-          <PricingV5FrameSalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV5FrameOptions} savedLines={savedPricingV5FrameLines} />
-        </div>
+      {(pricingV5Options || pricingV5FrameOptions) && activeQuote ? (
+        <PremiumPackagingQuoteBuilderV5
+          quoteId={activeQuote.id}
+          leadId={params.leadId}
+          buyerName={String(data.lead.company_name || data.lead.contact_name || 'Buyer quote')}
+          quoteNumber={String(activeQuote.quote_number || ('Q-'+activeQuote.id.slice(0,8).toUpperCase()))}
+          status={String(activeQuote.status || 'draft').replaceAll('_',' ')}
+          currency={quoteCurrency}
+          supOptions={pricingV5Options}
+          frameOptions={pricingV5FrameOptions}
+          supSavedLines={savedPricingV5Lines}
+          frameSavedLines={savedPricingV5FrameLines}
+          quoteTotal={liveQuoteTotal}
+        />
       ) : null}
       {!pricingV5Options && !pricingV5FrameOptions && pricingV4Options && activeQuote ? (
         <div className="mb-4">
           <PricingV4SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV4Options} />
         </div>
       ) : null}
+      <div id="quote-commercial-review">
       <CanonicalQuoteBuilderApprovalQueueV2
         data={data}
         quoteId={quoteId}
@@ -151,6 +161,7 @@ export default async function QuotePage({
         packaging={canonicalPackaging}
         quoteOptionalCharges={packaging?.charges ?? []}
       />
+      </div>
     </>
   );
 }
