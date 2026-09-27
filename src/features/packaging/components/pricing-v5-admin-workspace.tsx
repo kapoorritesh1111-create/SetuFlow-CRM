@@ -26,8 +26,8 @@ function RouteDiagram({size}:{size:any}){
   return <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">KLD production layout</div><div className="mt-2 flex gap-1">{segment('Front')}{segment('Bottom gusset')}{segment('Back')}</div><p className="mt-2 text-[11px] text-slate-500">Front + bottom gusset + back printed as one integrated web.</p></div>;
 }
 
-export default function PricingV5AdminWorkspace({data}:Props){
-  const [tab,setTab]=useState<(typeof tabs)[number]>('Overview');
+export default function PricingV5AdminWorkspace({data,initialTab='Overview'}:Props & {initialTab?: (typeof tabs)[number]}){
+  const [tab,setTab]=useState<(typeof tabs)[number]>(initialTab);
   const isDraft=data.template?.status==='draft';
   const quoteableSizes=data.sizes.filter((item)=>item.is_quoteable).length;
   const quoteableConstructions=data.constructions.filter((item)=>item.is_quoteable).length;
