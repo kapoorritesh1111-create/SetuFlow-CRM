@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
-import PricingV5AdminWorkspace from '@/features/packaging/components/pricing-v5-admin-workspace';
 import PricingV5AdminNav from '@/features/packaging/components/pricing-v5-admin-nav';
-import PricingV5OwnerDashboard from '@/features/packaging/components/pricing-v5-owner-dashboard';
+import PricingV5PremiumWorkspace from '@/features/packaging/components/pricing-v5-premium-workspace';
 import { clonePackagingTemplateRevisionV5, publishPackagingTemplateV5 } from '@/features/packaging/server/pricing-v5-admin-actions';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
@@ -11,7 +10,6 @@ import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 
 export const dynamic='force-dynamic';
-
 type View='dashboard'|'sizes'|'constructions'|'rates'|'waste';
 
 export default async function PackagingPricingV5AdminPage({searchParams}:{searchParams?:Promise<{view?:string}>}){
@@ -57,36 +55,22 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
   const rateByCharge=new Map((chargeRates.data??[]).map((row:any)=>[String(row.charge_master_item_id),row.current_rate]));
   const v5Charges=(charges.data??[]).filter((item:any)=>linkedChargeIds.has(String(item.id))).map((item:any)=>({...item,current_rate:rateByCharge.has(String(item.id))?rateByCharge.get(String(item.id)):null}));
   const data={template:template.data,sizes:sizes.data??[],constructions:constructions.data??[],layers:layers.data??[],costs:v5Costs,charges:v5Charges,bands:bands.data??[],benchmarks:benchmarks.data??[],featureFlag:flag.data??null};
-
-  const tab=view==='sizes'?'Sizes & Routes':view==='constructions'?'Constructions':view==='rates'?'Materials & Processes':view==='waste'?'Commercial Buckets':'Overview';
   const isDraft=template.data?.status==='draft';
 
   return <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Pricing Dashboard">
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-950">Pricing V5</h1>
-          <p className="mt-1 text-sm text-slate-500">Review and update Stand Up Pouch pricing, rates, waste, margins and pricing rules.</p>
-        </div>
+        <div><h1 className="text-2xl font-black text-slate-950">Pricing V5 - Admin</h1><p className="mt-1 text-sm text-slate-500">Manage pricing, pouch sizes, constructions, rates and commercial rules for Stark Packmate.</p></div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/admin/packaging-templates?mode=v4" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">V4 Baseline</Link>
-          {isDraft?
-            <form action={publishPackagingTemplateV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Publish Changes</button></form>
-            :
-            <form action={clonePackagingTemplateRevisionV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Edit Pricing</button></form>}
-          <span className={`rounded-full px-3 py-1.5 text-xs font-black ${isDraft?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700'}`}>{isDraft?'Draft — editing':'Published'}</span>
+          {isDraft
+            ? <form action={publishPackagingTemplateV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Publish Changes</button></form>
+            : <form action={clonePackagingTemplateRevisionV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Edit Pricing</button></form>}
+          <span className={'rounded-full px-3 py-1.5 text-xs font-black '+(isDraft?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{isDraft?'Draft - editing':'Published'}</span>
         </div>
       </div>
-
       <PricingV5AdminNav active={view}/>
-
-      {!isDraft&&view!=='dashboard'?<div className="mx-4 mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 md:mx-5">
-        <b>Click Edit Pricing to make changes.</b> A working draft will be created from the current published prices. Published pricing remains live until you publish the draft.
-      </div>:null}
-
-      <div className="p-4 md:p-5">
-        {view==='dashboard'?<PricingV5OwnerDashboard data={data}/>:<PricingV5AdminWorkspace data={data} initialTab={tab as any} embedded/>}
-      </div>
+      <div className="p-4 md:p-5"><PricingV5PremiumWorkspace data={data} view={view}/></div>
     </div>
   </AdminSettingsShell>;
 }

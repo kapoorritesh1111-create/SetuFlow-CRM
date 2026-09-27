@@ -12,19 +12,19 @@ import { resolveConstructionV5 } from '@/lib/packaging-pricing-v5/construction-r
 
 export const dynamic='force-dynamic';
 
-export default async function PackagingPricingV5MatrixPage(){
+export default async function PackagingPricingV5MatrixPage({searchParams}:{searchParams?:Promise<{view?:string}>}){
   if(!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment." tone="warning"/>;
   const {missingEnv,organization}=await requireAdminWorkspace();
   if(missingEnv||!organization) return null;
   const supabase:any=await createClient();
   const verticals=await getOrganizationVerticals(organization.id,supabase);
   if(!verticals.packagingEnabled) return <StateMessage title="Packaging vertical is not enabled" description="Pricing v5 is available only for packaging workspaces." tone="info"/>;
-
+  const params=await searchParams;
+  const competitor=params?.view==='competitor';
   const {data:template,error:templateError}=await supabase.from('packaging_pricing_templates')
     .select('id,family_id,name,currency,status,calculation_version,calculation_engine_key,created_at')
     .eq('organization_id',organization.id).eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').order('created_at',{ascending:false}).limit(1).maybeSingle();
   if(templateError||!template?.id) return <StateMessage title="Pricing v5 template is not ready" description={templateError?.message??'Create the Pricing v5 template first.'} tone="warning"/>;
-
   const context=await loadPricingContextV5(organization.id,template.id);
   const constructions=context.constructions.filter((item)=>item.is_active).map((item)=>{
     const resolved=resolveConstructionV5(item.id,context.constructions,context.constructionLayers,context.masters);
@@ -39,13 +39,11 @@ export default async function PackagingPricingV5MatrixPage(){
   return <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Pricing Dashboard">
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-4">
-        <div><h1 className="text-2xl font-black text-slate-950">Pricing V5</h1><p className="mt-1 text-sm text-slate-500">Review the complete price matrix and drill into any calculated price.</p></div>
+        <div><h1 className="text-2xl font-black text-slate-950">Pricing V5 - Admin</h1><p className="mt-1 text-sm text-slate-500">{competitor?'Compare current V5 prices with saved competitor observations.':'Review current V5 prices by size, construction and quantity.'}</p></div>
         <Link href="/admin/packaging-pricing-v5" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">Pricing Dashboard</Link>
       </div>
-      <PricingV5AdminNav active={undefined}/>
-      <div className="p-4 md:p-5">
-        <PricingV5PriceMatrix data={{template,sizes:context.sizeProfiles,constructions,charges,benchmarks:benchmarks??[]}}/>
-      </div>
+      <PricingV5AdminNav active={competitor?'competitor':'matrix'}/>
+      <div className="p-4 md:p-5"><PricingV5PriceMatrix data={{template,sizes:context.sizeProfiles,constructions,charges,benchmarks:benchmarks??[]}} mode={competitor?'competitor':'matrix'}/></div>
     </div>
   </AdminSettingsShell>;
 }
