@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { previewPackagingFramePricingV5, savePackagingFramePricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-frame-actions';
 
 function money(value:any,currency='INR'){
@@ -11,6 +12,7 @@ function money(value:any,currency='INR'){
 export default function PricingV5FrameSalesConfigurator({
   quoteId,leadId,options,savedLines=[]
 }:{quoteId:string;leadId:string;options:any;savedLines?:any[]}){
+  const router=useRouter();
   const templates=options?.templates??[];
   const [templateId,setTemplateId]=useState(templates[0]?.id??'');
   const template=useMemo(()=>templates.find((item:any)=>item.id===templateId)??templates[0],[templates,templateId]);
@@ -71,7 +73,7 @@ export default function PricingV5FrameSalesConfigurator({
           commercial_bucket:null,
         },
       });
-      if(response.ok){setEditingLineId(response.lineId);setSaved('Pricing v5 line saved to the quote.');}
+      if(response.ok){setEditingLineId(response.lineId);setSaved(editingLineId?'Pricing v5 line updated.':'Pricing v5 line added to the quote.');router.refresh();}
       else setError(response.error??'Quote line could not be saved.');
     });
   }
