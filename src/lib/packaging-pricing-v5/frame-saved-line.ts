@@ -8,6 +8,14 @@ export type PricingV5FrameSavedLineSummary = {
   print:'CMYK'|'CMYKW';
   quantity:number;
   label:string;
+  unitPrice:number;
+  currency:string;
+  baseUnitPrice:number;
+  discountType:'none'|'percent'|'amount';
+  discountValue:number;
+  discountPercent:number;
+  discountReason:string;
+  approvalRequired:boolean;
 };
 
 export function listPricingV5FrameSavedLineSummaries(lines:any[]):PricingV5FrameSavedLineSummary[]{
@@ -28,6 +36,14 @@ export function listPricingV5FrameSavedLineSummaries(lines:any[]):PricingV5Frame
       print:input.print==='CMYK'?'CMYK':'CMYKW',
       quantity:Number(input.quantity??line.quantity??0),
       label:`${label} ${form.endsWith('pouch')?'Pouch':'Roll'}`,
+      unitPrice:Number(line.unit_price??0),
+      currency:String(line.currency??'INR'),
+      baseUnitPrice:Number(line.catalog_price_amount??line.pricing_breakdown_json?.price_adjustment?.base_unit_price??line.unit_price??0),
+      discountType:line.pricing_breakdown_json?.price_adjustment?.type==='percent'?'percent':line.pricing_breakdown_json?.price_adjustment?.type==='amount'?'amount':'none',
+      discountValue:Number(line.pricing_breakdown_json?.price_adjustment?.value??0),
+      discountPercent:Number(line.pricing_breakdown_json?.price_adjustment?.discount_percent??0),
+      discountReason:String(line.pricing_breakdown_json?.price_adjustment?.reason??''),
+      approvalRequired:Boolean(line.pricing_breakdown_json?.price_adjustment?.approval_required??line.is_price_overridden),
     } as PricingV5FrameSavedLineSummary;
   }).filter(Boolean) as PricingV5FrameSavedLineSummary[];
 }
