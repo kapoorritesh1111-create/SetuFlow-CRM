@@ -121,7 +121,7 @@ export default async function QuotePage({
   const canonicalPackaging = pricingV5Options || pricingV5FrameOptions || pricingV4Options ? null : packaging;
   const savedPricingV5Lines = activeQuote ? listPricingV5SavedLineSummaries(activeQuote.lineItems as any[]) : [];
   const savedPricingV5FrameLines = activeQuote ? listPricingV5FrameSavedLineSummaries(activeQuote.lineItems as any[]) : [];
-  const quoteCurrency = String(activeQuote?.display_currency || activeQuote?.currency || data.lead?.deal_currency || 'INR').toUpperCase();
+  const quoteCurrency = String(activeQuote?.currency || data.lead?.deal_currency || 'INR').toUpperCase();
   const pricingLineTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.quantity||0)*Number(line.unit_price||line.catalog_price_amount||0)),0) : 0;
   const optionalChargeTotal = (packaging?.charges ?? []).reduce((sum:number,item:any)=>sum+Math.max(0,Number(item.amount??0)),0);
   const v5TaxTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.calculation_version)===5?Math.max(0,Number(line.pricing_breakdown_json?.selling_price?.gst??0)):0),0) : 0;
