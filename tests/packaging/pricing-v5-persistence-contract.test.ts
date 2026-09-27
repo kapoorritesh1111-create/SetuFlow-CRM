@@ -88,7 +88,7 @@ test('S52-PKG-V5: competitor benchmarks stay with the exact pricing revision',()
   assert.match(benchmarkScope,/c\.template_id=new\.template_id/);
   assert.match(matrixActions,/template_id:templateId/);
   assert.match(matrixActions,/loadPricingContextV5\(organization\.id,templateId\)/);
-  assert.match(matrixPage,/\.eq\('template_id',template\.id\)/);
+  assert.match(adminPage,/\.eq\('template_id',templateId\)/);
   assert.match(matrixWorkspace,/name="template_id" value=\{template\.id\}/);
 });
 
