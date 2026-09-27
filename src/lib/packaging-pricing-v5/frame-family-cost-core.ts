@@ -31,9 +31,8 @@ export type FrameFamilyPricingInputV5 = {
   print: 'CMYK' | 'CMYKW';
   quantity: number;
   /**
-   * Explicit on purpose. Akshay confirmed Center Seal/3SS use run length to select
-   * commercial treatment, but the exact cross-family bucket mapping still requires
-   * owner confirmation. We fail closed rather than silently inheriting an SUP bucket.
+   * Sales normally passes null. The engine then uses the template's provisional
+   * owner-selected default bucket. Admin/review tools may override it explicitly.
    */
   commercial_bucket: PricingBucketV5 | null;
 };
@@ -120,17 +119,23 @@ export function calculateFrameFamilyPriceReviewV5(
   if (!construction) errors.push('Selected Pricing v5 construction is not available for this review template.');
   if (construction) errors.push(...construction.validation_errors);
 
-  if (input.commercial_bucket == null) {
-    errors.push('Commercial bucket mapping requires Stark owner confirmation before this family can be priced in v5.');
+  const configuredBucket = Number(context.template.production_rules_json?.default_commercial_bucket ?? 0);
+  const resolvedBucket = input.commercial_bucket
+    ?? ([1,2,3,4,5].includes(configuredBucket) ? configuredBucket as PricingBucketV5 : null);
+  if (resolvedBucket == null) {
+    errors.push('Commercial bucket mapping is not configured for this frame-family Pricing v5 template.');
   }
 
   const framesExact = geometry.units_per_frame > 0 ? quantity / geometry.units_per_frame : 0;
   const runLengthM = framesExact * (geometry.material_run_mm_per_frame / 1000);
-  const band = input.commercial_bucket == null
+  const band = resolvedBucket == null
     ? null
-    : resolveCommercialBandV5(context.bands, input.commercial_bucket, runLengthM);
-  if (input.commercial_bucket != null && !band) {
-    errors.push(`No Pricing v5 commercial band is configured for bucket ${input.commercial_bucket}.`);
+    : resolveCommercialBandV5(context.bands, resolvedBucket, runLengthM);
+  if (resolvedBucket != null && !band) {
+    errors.push(`No Pricing v5 commercial band is configured for bucket ${resolvedBucket}.`);
+  }
+  if (input.commercial_bucket == null && resolvedBucket != null) {
+    warnings.push(`Using provisional owner-selected bucket ${resolvedBucket}; Stark may replace this with a dedicated Center Seal / 3SS bucket after review.`);
   }
 
   let materialPerFrame = 0;
@@ -216,7 +221,7 @@ export function calculateFrameFamilyPriceReviewV5(
     quantity,
     frames_exact: round(framesExact),
     run_length_m: round(runLengthM),
-    commercial_bucket: input.commercial_bucket,
+    commercial_bucket: resolvedBucket,
     wastage_pct: band?.wastage_pct ?? null,
     margin_per_frame: band?.margin_per_frame ?? null,
     cost_breakdown: {

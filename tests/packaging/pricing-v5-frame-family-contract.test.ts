@@ -32,9 +32,9 @@ test('Roll and Pouch forms do not share pouching behavior blindly',()=>{
   assert.match(core,/geometry\.apply_pouching/);
 });
 
-test('Other-family v5 review fails closed until owner confirms commercial bucket mapping',()=>{
+test('Center Seal and 3SS use provisional owner-selected default buckets when Sales does not choose one',()=>{
+  assert.match(core,/default_commercial_bucket/);
+  assert.match(core,/Using provisional owner-selected bucket/);
+  assert.match(core,/commercial_bucket: resolvedBucket/);
   assert.match(core,/commercial_bucket: PricingBucketV5 \| null/);
-  assert.match(core,/Commercial bucket mapping requires Stark owner confirmation/);
-  assert.match(core,/review_only: true/);
-  assert.match(core,/Existing v4 workbook matrix remains the production baseline/);
 });

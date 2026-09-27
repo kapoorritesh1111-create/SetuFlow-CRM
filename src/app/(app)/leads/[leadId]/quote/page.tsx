@@ -7,12 +7,15 @@ import WorkflowToast from '@/features/leads/canonical/WorkflowToast';
 import CanonicalQuoteBuilderApprovalQueueV2 from '@/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2';
 import PricingV4SalesConfigurator from '@/features/packaging/components/pricing-v4-sales-configurator';
 import PricingV5SalesConfigurator from '@/features/packaging/components/pricing-v5-sales-configurator';
+import PricingV5FrameSalesConfigurator from '@/features/packaging/components/pricing-v5-frame-sales-configurator';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { getPackagingFamilies, getPackagingTemplates, getQuoteOptionalCharges, getPackagingSavedSpecs } from '@/lib/packaging/queries';
 import { isPackagingPricingV4EnabledForOrg, listSalesPackagingPricingV4Options } from '@/lib/packaging-pricing/sales-options';
 import { isPackagingPricingV5EnabledForOrg, listSalesPackagingPricingV5Options } from '@/lib/packaging-pricing-v5/sales-options';
+import { listSalesPackagingFramePricingV5Options } from '@/lib/packaging-pricing-v5/frame-sales-options';
 import { listPricingV5SavedLineSummaries } from '@/lib/packaging-pricing-v5/saved-line';
+import { listPricingV5FrameSavedLineSummaries } from '@/lib/packaging-pricing-v5/frame-saved-line';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -73,6 +76,7 @@ export default async function QuotePage({
   // v5 gate fails, the existing v4 route is retained unchanged for rollback.
   let packaging: { enabled: boolean; families: any[]; templates: any[]; charges: any[]; savedSpecs: any[] } | null = null;
   let pricingV5Options: any | null = null;
+  let pricingV5FrameOptions: any | null = null;
   let pricingV4Options: any | null = null;
   try {
     const supabase = await createClient();
@@ -90,11 +94,15 @@ export default async function QuotePage({
       if (editableQuote) {
         const v5Enabled = await isPackagingPricingV5EnabledForOrg(workspace.organization.id);
         if (v5Enabled) {
-          const options = await listSalesPackagingPricingV5Options(workspace.organization.id);
+          const [options,frameOptions] = await Promise.all([
+            listSalesPackagingPricingV5Options(workspace.organization.id),
+            listSalesPackagingFramePricingV5Options(workspace.organization.id),
+          ]);
           if (options.families.length && options.templates.length && options.sizes.length && options.constructions.length) pricingV5Options = options;
+          if (frameOptions.families.length && frameOptions.templates.length) pricingV5FrameOptions = frameOptions;
         }
 
-        if (!pricingV5Options) {
+        if (!pricingV5Options && !pricingV5FrameOptions) {
           const v4Enabled = await isPackagingPricingV4EnabledForOrg(workspace.organization.id);
           if (v4Enabled) {
             const options = await listSalesPackagingPricingV4Options(workspace.organization.id);
@@ -107,11 +115,13 @@ export default async function QuotePage({
     // A v5 readiness/query failure cannot break quoting. Fall back to the
     // existing v4/legacy packaging behavior rather than exposing partial v5.
     pricingV5Options = null;
+    pricingV5FrameOptions = null;
     pricingV4Options = null;
   }
 
-  const canonicalPackaging = pricingV5Options || pricingV4Options ? null : packaging;
+  const canonicalPackaging = pricingV5Options || pricingV5FrameOptions || pricingV4Options ? null : packaging;
   const savedPricingV5Lines = activeQuote ? listPricingV5SavedLineSummaries(activeQuote.lineItems as any[]) : [];
+  const savedPricingV5FrameLines = activeQuote ? listPricingV5FrameSavedLineSummaries(activeQuote.lineItems as any[]) : [];
 
   return (
     <>
@@ -120,7 +130,13 @@ export default async function QuotePage({
         <div className="mb-4">
           <PricingV5SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV5Options} savedLines={savedPricingV5Lines} />
         </div>
-      ) : pricingV4Options && activeQuote ? (
+      ) : null}
+      {pricingV5FrameOptions && activeQuote ? (
+        <div className="mb-4">
+          <PricingV5FrameSalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV5FrameOptions} savedLines={savedPricingV5FrameLines} />
+        </div>
+      ) : null}
+      {!pricingV5Options && !pricingV5FrameOptions && pricingV4Options && activeQuote ? (
         <div className="mb-4">
           <PricingV4SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV4Options} />
         </div>

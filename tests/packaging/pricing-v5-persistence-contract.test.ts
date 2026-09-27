@@ -11,6 +11,10 @@ const persistence=fs.readFileSync('supabase/migrations/20260914013300_s52_pkg_v5
 const spotUvPersistence=fs.readFileSync('supabase/migrations/20260918200451_pricing_v5_manual_spot_uv_quote_charge.sql','utf8');
 const packagingActions=fs.readFileSync('src/features/packaging/server/actions.ts','utf8');
 const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','utf8');
+const frameSalesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-frame-sales-configurator.tsx','utf8');
+const frameSalesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/frame-sales-options.ts','utf8');
+const frameActions=fs.readFileSync('src/features/packaging/server/pricing-v5-frame-actions.ts','utf8');
+const frameMigration=fs.readFileSync('supabase/migrations/20260927070000_pricing_v5_frame_families_publish.sql','utf8');
 const canonicalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilder.tsx','utf8');
 const approvalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2.tsx','utf8');
 const quotePdf=fs.readFileSync('src/app/api/quotes/[quoteId]/pdf/route.ts','utf8');
@@ -141,7 +145,7 @@ test('S52-PKG-V5: v5 quote persistence has its own atomic RPC and snapshot names
 test('S52-PKG-V5: quote page keeps v4 as fallback unless v5 passes its own gates',()=>{
   assert.match(quotePage,/isPackagingPricingV5EnabledForOrg/);
   assert.match(quotePage,/if \(v5Enabled\)/);
-  assert.match(quotePage,/if \(!pricingV5Options\)[\s\S]*isPackagingPricingV4EnabledForOrg/);
+  assert.match(quotePage,/if \(!pricingV5Options && !pricingV5FrameOptions\)[\s\S]*isPackagingPricingV4EnabledForOrg/);
   assert.match(quotePage,/PricingV5SalesConfigurator/);
   assert.match(quotePage,/PricingV4SalesConfigurator/);
 });
@@ -313,4 +317,31 @@ test('S52-PKG-V5: seller gram guidance is owner-configured and does not alter pr
   assert.match(salesConfigurator,/Customer fill weight \(optional\)/);
   assert.match(salesConfigurator,/Suggested sizes/);
   assert.match(salesConfigurator,/does not change pricing/i);
+});
+
+
+test('S52-PKG-V5: Center Seal and 3SS are real quote-builder families with provisional hidden bucket defaults',()=>{
+  assert.match(quotePage,/PricingV5FrameSalesConfigurator/);
+  assert.match(quotePage,/listSalesPackagingFramePricingV5Options/);
+  assert.match(frameSalesOptions,/frame_formula_v5/);
+  assert.match(frameSalesConfigurator,/sellers do not choose a bucket/i);
+  assert.match(frameSalesConfigurator,/Suggested bucket/);
+  assert.doesNotMatch(frameSalesConfigurator,/commercial_bucket.*select/i);
+  assert.match(frameSalesConfigurator,/commercial_bucket:null/);
+  assert.match(frameMigration,/stark-center-seal-roll-v5-review/);
+  assert.match(frameMigration,/stark-3ss-pouch-v5-review/);
+  assert.match(frameMigration,/default_commercial_bucket/);
+  assert.match(frameMigration,/slug like 'stark-center-seal-%' then 3 else 2/);
+  assert.match(frameMigration,/status='published'/);
+  assert.match(frameMigration,/is_active=true/);
+});
+
+test('S52-PKG-V5: frame-family quote persistence is separate from SUP size persistence and keeps customer volume suggestions',()=>{
+  assert.match(frameActions,/app_save_packaging_v5_frame_quote_line_tx/);
+  assert.match(frameActions,/suggested_quantities/);
+  assert.match(frameActions,/QTY_LADDER/);
+  assert.match(frameMigration,/packaging_size_profile_v5_id=null/);
+  assert.match(frameMigration,/calculation_engine_key='frame_formula_v5'/);
+  assert.match(quoteReview,/suggested_quantities/);
+  assert.match(quotePdf,/suggested_quantities/);
 });
