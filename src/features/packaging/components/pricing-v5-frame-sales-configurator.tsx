@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { previewPackagingFramePricingV5, savePackagingFramePricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-frame-actions';
 
@@ -10,8 +10,8 @@ function money(value:any,currency='INR'){
 }
 
 export default function PricingV5FrameSalesConfigurator({
-  quoteId,leadId,options,savedLines=[],embedded=false
-}:{quoteId:string;leadId:string;options:any;savedLines?:any[];embedded?:boolean}){
+  quoteId,leadId,options,savedLines=[],embedded=false,focusLineId='',duplicateLineId=''
+}:{quoteId:string;leadId:string;options:any;savedLines?:any[];embedded?:boolean;focusLineId?:string;duplicateLineId?:string}){
   const router=useRouter();
   const templates=options?.templates??[];
   const [templateId,setTemplateId]=useState(templates[0]?.id??'');
@@ -91,6 +91,21 @@ export default function PricingV5FrameSalesConfigurator({
     setPreview(null);setSaved('');setError('');
   }
 
+  useEffect(()=>{
+    if(!focusLineId) return;
+    const line=savedLines.find((item:any)=>String(item.lineId)===String(focusLineId));
+    if(line) editSaved(line);
+  },[focusLineId]);
+
+  useEffect(()=>{
+    if(!duplicateLineId) return;
+    const line=savedLines.find((item:any)=>String(item.lineId)===String(duplicateLineId));
+    if(!line) return;
+    editSaved(line);
+    setEditingLineId(null);
+    setSaved('Duplicated specification loaded. Calculate and add as a new quote line.');
+  },[duplicateLineId]);
+
   if(!templates.length) return null;
 
   return <section className={embedded ? "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" : "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"}>
@@ -99,7 +114,7 @@ export default function PricingV5FrameSalesConfigurator({
       <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700">Owner pricing rules applied automatically</span>
     </div> : <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-700">Frame Family</div><h2 className="mt-1 text-lg font-black text-slate-950">{template?.supply_label??'Packaging form'}</h2></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700">Published V5</span></div>}
 
-    {savedLines.length?<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Saved frame-family lines</div><div className="mt-2 flex flex-wrap gap-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSaved(line)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">Edit {line.label} · {Number(line.quantity).toLocaleString()} pcs</button>)}</div></div>:null}
+    {!embedded&&savedLines.length?<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Saved frame-family lines</div><div className="mt-2 flex flex-wrap gap-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSaved(line)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">Edit {line.label} · {Number(line.quantity).toLocaleString()} pcs</button>)}</div></div>:null}
 
     <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       <label className="text-xs font-black text-slate-600">Family / form<select value={templateId} onChange={(e)=>changeTemplate(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold">{templates.map((item:any)=><option key={item.id} value={item.id}>{item.supply_label}</option>)}</select><span className="mt-1 block text-[10px] font-bold text-emerald-700">Commercial pricing is applied automatically</span></label>

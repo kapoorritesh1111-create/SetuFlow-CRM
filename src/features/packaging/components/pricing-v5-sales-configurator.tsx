@@ -32,7 +32,7 @@ function kldMatchesSize(item: any, size: any) {
   return file.includes(`${width}mmxh${height}mm`) || file.includes(`${width}x${height}`) || file.includes(`w${width}mmxh${height}mm`);
 }
 
-export default function PricingV5SalesConfigurator({ quoteId, leadId, options, savedLines = [], embedded = false }: { quoteId: string; leadId: string; options: any; savedLines?: any[]; embedded?: boolean }) {
+export default function PricingV5SalesConfigurator({ quoteId, leadId, options, savedLines = [], embedded = false, focusLineId = '', duplicateLineId = '' }: { quoteId: string; leadId: string; options: any; savedLines?: any[]; embedded?: boolean; focusLineId?: string; duplicateLineId?: string }) {
   const router = useRouter();
   const families = options?.families ?? [];
   const templates = options?.templates ?? [];
@@ -151,6 +151,21 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
     setError('');
   }
 
+  useEffect(() => {
+    if (!focusLineId) return;
+    const line=savedLines.find((item:any)=>String(item.lineId)===String(focusLineId));
+    if (line) editSavedLine(line);
+  }, [focusLineId]);
+
+  useEffect(() => {
+    if (!duplicateLineId) return;
+    const line=savedLines.find((item:any)=>String(item.lineId)===String(duplicateLineId));
+    if (!line) return;
+    editSavedLine(line);
+    setEditingLineId('');
+    setSaved('Duplicated specification loaded. Calculate and add as a new quote line.');
+  }, [duplicateLineId]);
+
   function startNewLine() {
     setEditingLineId('');
     setSizeId(sizes[0]?.id ?? '');
@@ -196,7 +211,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
       <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Published v5 pricing</span>
     </div> : <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-700">Stand Up Pouch</div><h2 className="mt-1 text-lg font-black text-slate-950">Configure customer pouch requirement</h2></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700">Published V5</span></div>}
 
-    {savedLines.length ? <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><div className="text-xs font-black text-slate-900">Saved Pricing v5 lines</div><div className="mt-0.5 text-[11px] font-semibold text-slate-500">Reopen a saved pouch line to change quantity, structure, printing, KLD or manual Spot UV without creating a duplicate line.</div></div><button type="button" onClick={startNewLine} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">New pouch line</button></div><div className="mt-3 grid gap-2 md:grid-cols-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSavedLine(line)} className={`rounded-xl border p-3 text-left ${editingLineId===line.lineId?'border-teal-400 bg-teal-50':'border-slate-200 bg-white hover:bg-slate-50'}`}><div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-slate-800">{Number(line.quantity).toLocaleString()} pcs</span><span className="text-xs font-black text-slate-950">{money(line.unitPrice,line.currency)} / pc</span></div><div className="mt-1 text-[11px] font-semibold text-slate-500">{editingLineId===line.lineId?'Editing this saved line':'Edit saved line'}</div></button>)}</div></div> : null}
+    {!embedded && savedLines.length ? <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><div className="text-xs font-black text-slate-900">Saved Pricing v5 lines</div><div className="mt-0.5 text-[11px] font-semibold text-slate-500">Reopen a saved pouch line to change quantity, structure, printing, KLD or manual Spot UV without creating a duplicate line.</div></div><button type="button" onClick={startNewLine} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">New pouch line</button></div><div className="mt-3 grid gap-2 md:grid-cols-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSavedLine(line)} className={`rounded-xl border p-3 text-left ${editingLineId===line.lineId?'border-teal-400 bg-teal-50':'border-slate-200 bg-white hover:bg-slate-50'}`}><div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-slate-800">{Number(line.quantity).toLocaleString()} pcs</span><span className="text-xs font-black text-slate-950">{money(line.unitPrice,line.currency)} / pc</span></div><div className="mt-1 text-[11px] font-semibold text-slate-500">{editingLineId===line.lineId?'Editing this saved line':'Edit saved line'}</div></button>)}</div></div> : null}
 
     <div className="mt-4 grid gap-2 sm:grid-cols-4">
       <Step number="1" title="Requirement" active />
