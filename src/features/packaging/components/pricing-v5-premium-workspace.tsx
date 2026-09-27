@@ -16,6 +16,7 @@ import {
 } from '@/features/packaging/server/pricing-v5-admin-actions';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
 import ConstructionLayerEditorV5 from '@/features/packaging/components/construction-layer-editor-v5';
+import PricingV5KldManager from '@/features/packaging/components/pricing-v5-kld-manager';
 import { allowedPeMicronsForSupSizeV5 } from '@/lib/packaging-pricing-v5/construction-compatibility';
 import type { BottomPrintModeV5 } from '@/lib/packaging-pricing-v5/types';
 
@@ -189,6 +190,7 @@ function Sizes({data,isDraft}:{data:any;isDraft:boolean}){
               <div><Label>Approved PE thickness</Label><div className="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3">{[60,75,95,120].map(m=><label key={m} className="text-sm font-bold text-slate-700"><input disabled={!isDraft} name={'pe_'+m} type="checkbox" defaultChecked={pe.includes(m)} className="mr-2"/>PE {m}µ</label>)}</div></div>
               <div className="flex flex-wrap items-center gap-5"><label className="text-sm font-bold text-slate-700"><input disabled={!isDraft} type="checkbox" name="is_active" defaultChecked={selected.is_active} className="mr-2"/>Active</label><label className="text-sm font-bold text-slate-700"><input disabled={!isDraft} type="checkbox" name="is_quoteable" defaultChecked={selected.is_quoteable} className="mr-2"/>Available for quoting</label><button disabled={!isDraft} className={primary}>Save Size</button></div>
             </form>
+            <div className="mt-4"><PricingV5KldManager templateId={data.template?.id??''} size={selected} klds={data.klds??[]}/></div>
           </div>
         </div>
       </Card>:null}

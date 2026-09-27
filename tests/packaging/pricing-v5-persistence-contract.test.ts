@@ -40,6 +40,8 @@ const lineCommercialMigration=fs.readFileSync('supabase/migrations/2026092716300
 const constructionLayerEditor=fs.readFileSync('src/features/packaging/components/construction-layer-editor-v5.tsx','utf8');
 const ownerControlCenter=fs.readFileSync('src/features/packaging/components/pricing-v5-owner-control-center.tsx','utf8');
 const matrixWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-price-matrix.tsx','utf8');
+const matrixCore=fs.readFileSync('src/lib/packaging-pricing-v5/price-matrix.ts','utf8');
+const kldManager=fs.readFileSync('src/features/packaging/components/pricing-v5-kld-manager.tsx','utf8');
 const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
 const starkSeed=fs.readFileSync('supabase/migrations/20260914013100_s52_pkg_v5_stark_master_seed.sql','utf8');
 
@@ -410,4 +412,38 @@ test('S52-PKG-V5: customer discounts support percent or amount per piece and pre
   assert.match(lineCommercialMigration,/override_status/);
   assert.match(lineCommercialMigration,/approval_required/);
   assert.match(lineCommercialMigration,/grant execute[\s\S]*to service_role/i);
+});
+
+
+test('S52-PKG-V5: SUP Admin matrix uses exact 1K through 50K quantity columns',()=>{
+  assert.match(matrixCore,/PRICING_V5_MATRIX_QUANTITIES = \[1000,2000,3000,5000,10000,20000,30000,50000\]/);
+  assert.match(matrixCore,/calculatePricingExactQuantityMatrixV5/);
+  assert.match(matrixActions,/calculatePricingExactQuantityMatrixV5/);
+  assert.match(matrixWorkspace,/EXACT_QUANTITIES=\[1000,2000,3000,5000,10000,20000,30000,50000\]/);
+  assert.match(matrixWorkspace,/Exact quantities only/);
+  assert.match(matrixWorkspace,/N\/A/);
+  assert.doesNotMatch(matrixWorkspace,/Target run/);
+  assert.doesNotMatch(matrixWorkspace,/Derived qty/);
+});
+
+test('S52-PKG-V5: Pricing Admin uses one family navigation for SUP, pouch families and rolls',()=>{
+  assert.match(adminPage,/Stand Up Pouches/);
+  assert.match(adminPage,/Center Seal Pouches/);
+  assert.match(adminPage,/3 Side Seal Pouches/);
+  assert.match(adminPage,/>Rolls</);
+  assert.match(adminPage,/Center Seal Roll/);
+  assert.match(adminPage,/3 Side Seal Roll/);
+  assert.match(adminPage,/view==='matrix'\|\|view==='competitor'/);
+});
+
+test('S52-PKG-V5: Admin can replace and reactivate versioned KLD PDFs for exact V5 sizes',()=>{
+  assert.match(adminActions,/uploadPackagingKldV5/);
+  assert.match(adminActions,/activatePackagingKldV5/);
+  assert.match(adminActions,/packaging-kld-v5/);
+  assert.match(adminActions,/spec_key:size\.size_key/);
+  assert.match(kldManager,/Replace KLD/);
+  assert.match(kldManager,/KLD version history/);
+  assert.match(kldManager,/Make Active/);
+  assert.match(kldManager,/api\/public\/packaging-kld/);
+  assert.match(salesConfigurator,/item\.spec_key\?\?item\.size_preset_key/);
 });

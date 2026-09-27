@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { loadPricingContextV5 } from '@/lib/packaging-pricing-v5/repository';
-import { calculatePricingMatrixRowV5, PRICING_V5_MATRIX_RUN_LENGTHS } from '@/lib/packaging-pricing-v5/price-matrix';
+import { calculatePricingExactQuantityMatrixV5 } from '@/lib/packaging-pricing-v5/price-matrix';
 import type { BottomPrintModeV5 } from '@/lib/packaging-pricing-v5/types';
 
 const ADMIN_PATH='/admin/packaging-pricing-v5';
@@ -18,8 +18,7 @@ export async function previewPackagingPricingMatrixV5(params:{templateId:string;
     const context=await loadPricingContextV5(organization.id,params.templateId);
     const size=context.sizeProfiles.find((item)=>item.id===params.sizeProfileId);
     if(!size) return {ok:false,error:'Pricing v5 size was not found.'};
-    const runLengths=size.pricing_bucket===1?PRICING_V5_MATRIX_RUN_LENGTHS.filter((value)=>value!==250):[...PRICING_V5_MATRIX_RUN_LENGTHS];
-    const cells=calculatePricingMatrixRowV5({context,sizeProfileId:params.sizeProfileId,constructionId:params.constructionId,print:params.print,bottomPrintMode:params.bottomPrintMode,selectedChargeCodes:params.selectedChargeCodes,runLengths});
+    const cells=calculatePricingExactQuantityMatrixV5({context,sizeProfileId:params.sizeProfileId,constructionId:params.constructionId,print:params.print,bottomPrintMode:params.bottomPrintMode,selectedChargeCodes:params.selectedChargeCodes});
     return {ok:cells.some((cell)=>cell.ok),cells,error:cells.every((cell)=>!cell.ok)?cells[0]?.error??'Matrix calculation failed.':undefined};
   }catch(error){return {ok:false,error:error instanceof Error?error.message:'Matrix calculation failed.'};}
 }

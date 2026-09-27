@@ -7,6 +7,9 @@ import { loadPricingContextV5 } from '@/lib/packaging-pricing-v5/repository';
 
 const ADMIN_PATH='/admin/packaging-pricing-v5';
 const V5_ENGINES=['sup_formula_v5','frame_formula_v5'];
+const KLD_BUCKET='compliance-docs';
+const MAX_KLD_BYTES=10*1024*1024;
+function safeFileName(value:string){const last=value.split(/[\\/]/).pop()||'kld.pdf';return last.replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/-+/g,'-');}
 function text(formData:FormData,key:string){ return String(formData.get(key)??'').trim(); }
 function numberValue(formData:FormData,key:string,label:string,{min=0,max}:{min?:number;max?:number}={}){
   const raw=text(formData,key); const value=Number(raw);
@@ -459,5 +462,95 @@ export async function savePackagingFrameTemplateSettingsV5(formData:FormData){
     .update({production_rules_json:rules,updated_at:new Date().toISOString()})
     .eq('organization_id',organization.id).eq('id',templateId).eq('status','draft').select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Frame-family commercial settings could not be saved.');
+  revalidatePath(ADMIN_PATH);
+}
+
+
+export type PackagingKldV5Result={ok:boolean;error?:string;fileName?:string;version?:number};
+
+export async function uploadPackagingKldV5(formData:FormData):Promise<PackagingKldV5Result>{
+  try{
+    const {organization,user,supabase}=await adminDb();
+    const templateId=text(formData,'template_id');
+    const sizeProfileId=text(formData,'size_profile_id');
+    const file=formData.get('file');
+    if(!templateId||!sizeProfileId) return {ok:false,error:'Pricing V5 template and size are required.'};
+    if(!(file instanceof File)) return {ok:false,error:'Choose a PDF KLD file.'};
+    if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')) return {ok:false,error:'KLD files must be PDF.'};
+    if(file.size<=0||file.size>MAX_KLD_BYTES) return {ok:false,error:'KLD PDF must be 10 MB or smaller.'};
+
+    const [{data:template,error:templateError},{data:size,error:sizeError}]=await Promise.all([
+      supabase.from('packaging_pricing_templates').select('id,family_id,status,calculation_version').eq('organization_id',organization.id).eq('id',templateId).eq('calculation_version',5).maybeSingle(),
+      supabase.from('packaging_size_profiles_v5').select('id,template_id,family_id,size_key,name,metadata').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',sizeProfileId).maybeSingle(),
+    ]);
+    if(templateError||!template?.id) return {ok:false,error:templateError?.message??'Pricing V5 template was not found.'};
+    if(sizeError||!size?.id||size.family_id!==template.family_id) return {ok:false,error:sizeError?.message??'Pricing V5 size was not found in this revision.'};
+
+    const {data:previous,error:previousError}=await supabase.from('packaging_kld_files')
+      .select('id,version').eq('organization_id',organization.id).eq('family_id',template.family_id).eq('spec_key',size.size_key)
+      .order('version',{ascending:false}).limit(1);
+    if(previousError) return {ok:false,error:previousError.message};
+    const version=Number(previous?.[0]?.version??0)+1;
+    const fileName=safeFileName(file.name);
+    const path=\`\${organization.id}/packaging-kld-v5/\${template.family_id}/\${size.size_key}/v\${version}-\${Date.now()}-\${fileName}\`;
+    const {error:uploadError}=await supabase.storage.from(KLD_BUCKET).upload(path,file,{cacheControl:'3600',contentType:'application/pdf',upsert:false});
+    if(uploadError) return {ok:false,error:uploadError.message};
+
+    const {data:inserted,error:insertError}=await supabase.from('packaging_kld_files').insert({
+      organization_id:organization.id,family_id:template.family_id,template_id:template.id,size_preset_key:size.size_key,
+      file_path:path,file_name:file.name,mime_type:'application/pdf',file_size:file.size,version,is_active:true,uploaded_by:user.id,
+      product_variation_id:null,spec_key:size.size_key,
+    }).select('id').single();
+    if(insertError||!inserted?.id){
+      await supabase.storage.from(KLD_BUCKET).remove([path]);
+      return {ok:false,error:insertError?.message??'KLD metadata could not be saved.'};
+    }
+
+    const {error:archiveError}=await supabase.from('packaging_kld_files').update({is_active:false,updated_at:new Date().toISOString()})
+      .eq('organization_id',organization.id).eq('family_id',template.family_id).eq('spec_key',size.size_key).neq('id',inserted.id).eq('is_active',true);
+    if(archiveError) return {ok:false,error:archiveError.message};
+
+    if(template.status==='draft'){
+      const metadata={...(size.metadata??{}),kld_status:'approved',kld_version:version,kld_file_id:inserted.id};
+      const {error:sizeUpdateError}=await supabase.from('packaging_size_profiles_v5').update({metadata,updated_by:user.id,updated_at:new Date().toISOString()})
+        .eq('organization_id',organization.id).eq('template_id',templateId).eq('id',sizeProfileId);
+      if(sizeUpdateError) return {ok:false,error:sizeUpdateError.message};
+    }
+    revalidatePath(ADMIN_PATH);
+    return {ok:true,fileName:file.name,version};
+  }catch(error){
+    return {ok:false,error:error instanceof Error?error.message:'KLD upload failed.'};
+  }
+}
+
+export async function activatePackagingKldV5(formData:FormData){
+  const {organization,user,supabase}=await adminDb();
+  const templateId=text(formData,'template_id');
+  const sizeProfileId=text(formData,'size_profile_id');
+  const kldId=text(formData,'kld_id');
+  if(!templateId||!sizeProfileId||!kldId) throw new Error('Template, size and KLD version are required.');
+  const [{data:template,error:templateError},{data:size,error:sizeError},{data:kld,error:kldError}]=await Promise.all([
+    supabase.from('packaging_pricing_templates').select('id,family_id,status').eq('organization_id',organization.id).eq('id',templateId).eq('calculation_version',5).maybeSingle(),
+    supabase.from('packaging_size_profiles_v5').select('id,family_id,size_key,metadata').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',sizeProfileId).maybeSingle(),
+    supabase.from('packaging_kld_files').select('id,family_id,spec_key,version').eq('organization_id',organization.id).eq('id',kldId).maybeSingle(),
+  ]);
+  if(templateError||!template?.id) throw new Error(templateError?.message??'Pricing V5 template was not found.');
+  if(sizeError||!size?.id||size.family_id!==template.family_id) throw new Error(sizeError?.message??'Pricing V5 size was not found.');
+  if(kldError||!kld?.id||kld.family_id!==template.family_id||kld.spec_key!==size.size_key) throw new Error(kldError?.message??'KLD version does not match this size.');
+
+  const now=new Date().toISOString();
+  const {error:archiveError}=await supabase.from('packaging_kld_files').update({is_active:false,updated_at:now})
+    .eq('organization_id',organization.id).eq('family_id',template.family_id).eq('spec_key',size.size_key).eq('is_active',true);
+  if(archiveError) throw new Error(archiveError.message);
+  const {error:activateError}=await supabase.from('packaging_kld_files').update({is_active:true,updated_at:now})
+    .eq('organization_id',organization.id).eq('id',kldId);
+  if(activateError) throw new Error(activateError.message);
+
+  if(template.status==='draft'){
+    const metadata={...(size.metadata??{}),kld_status:'approved',kld_version:Number(kld.version??1),kld_file_id:kldId};
+    const {error:sizeUpdateError}=await supabase.from('packaging_size_profiles_v5').update({metadata,updated_by:user.id,updated_at:now})
+      .eq('organization_id',organization.id).eq('template_id',templateId).eq('id',sizeProfileId);
+    if(sizeUpdateError) throw new Error(sizeUpdateError.message);
+  }
   revalidatePath(ADMIN_PATH);
 }
