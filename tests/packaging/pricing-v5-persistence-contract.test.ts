@@ -268,3 +268,14 @@ test('S52-PKG-V5: snapshotted GST reconciles from Sales pricing through review, 
   assert.match(quotePdf,/taxLabel: v5TaxTotal > 0 \? 'GST'/);
   assert.match(quotePdf,/const total = subtotal \+ taxTotal/);
 });
+
+
+test('Pricing v5 Admin matrix uses approved PE compatibility and engine-backed price detail',()=>{
+  assert.match(matrixWorkspace,/constructionAllowedForSizeV5/);
+  assert.match(matrixWorkspace,/approved PE-compatible constructions/);
+  assert.match(matrixWorkspace,/previewPackagingPricingV5/);
+  assert.match(matrixWorkspace,/Engine-backed price detail/);
+  assert.match(matrixWorkspace,/reconciliation_delta/);
+  assert.match(adminWorkspace,/Build 1K–50K matrix/);
+  assert.match(adminWorkspace,/20000, 30000, 50000/);
+});
