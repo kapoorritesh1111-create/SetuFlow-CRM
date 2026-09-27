@@ -375,7 +375,7 @@ export async function validatePackagingTemplateV5(templateId:string){
   const quoteableConstructions=activeConstructions.filter((item)=>item.is_quoteable);
   const isFrame=template.calculation_engine_key==='frame_formula_v5';
   if(!isFrame){
-    if(activeSizes.length<20) errors.push('Pricing v5 must retain the 20 approved workbook sizes; found only '+activeSizes.length+' active sizes.');
+    if(activeSizes.length!==20) errors.push('Pricing v5 must retain exactly the 20 approved workbook sizes; found '+activeSizes.length+' active sizes.');
     if(activeConstructions.length<44) errors.push('Pricing v5 must retain at least the 44 approved workbook constructions; found '+activeConstructions.length+'.');
     if(!quoteableSizes.length) errors.push('At least one Pricing v5 size must be quoteable.');
   }else{
