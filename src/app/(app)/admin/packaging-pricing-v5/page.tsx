@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { StateMessage } from '@/components/ui/state-message';
 import { AdminSettingsShell } from '@/features/admin/components/admin-settings-shell';
 import PricingV5AdminWorkspace from '@/features/packaging/components/pricing-v5-admin-workspace';
-import PricingV5OwnerControlCenter from '@/features/packaging/components/pricing-v5-owner-control-center';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -75,9 +74,6 @@ export default async function PackagingPricingV5AdminPage(){
     {label:`${missingChargeRates} missing charge rates`,tone:missingChargeRates===0?'ok':'warn'},
     {label:'v4 rates isolated',tone:'info'},
   ]}>
-    <div className="space-y-4">
-      <PricingV5OwnerControlCenter data={data}/>
-      <PricingV5AdminWorkspace data={data}/>
-    </div>
+    <PricingV5AdminWorkspace data={data}/>
   </AdminSettingsShell>;
 }

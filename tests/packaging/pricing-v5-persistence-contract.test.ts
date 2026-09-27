@@ -16,6 +16,7 @@ const approvalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/Canoni
 const quotePdf=fs.readFileSync('src/app/api/quotes/[quoteId]/pdf/route.ts','utf8');
 const quoteReview=fs.readFileSync('src/app/quote-review/[token]/page.tsx','utf8');
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
+const adminPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
 const salesProjection=fs.readFileSync('src/lib/packaging-pricing-v5/engine-registry.ts','utf8');
@@ -255,7 +256,7 @@ test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review re
   assert.doesNotMatch(quoteProjection,/source_hash: result\.source_hash/);
   assert.doesNotMatch(quoteProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
   assert.doesNotMatch(quoteProjection,/units_per_frame: component\.units_per_frame/);
-  assert.doesNotMatch(quoteProjection,/alternative_quantities/);
+  assert.doesNotMatch(quoteProjection,/alternative_quantities\s*:/);
   assert.match(quoteProjection,/suggested_quantities: result\.alternative_quantities/);
   assert.match(salesActions,/toSalesQuotePricingResultV5/);
   assert.doesNotMatch(salesActions,/toSalesPricingResultV5/);
@@ -292,6 +293,24 @@ test('Pricing v5 Admin matrix uses approved PE compatibility and engine-backed p
   assert.match(matrixWorkspace,/previewPackagingPricingV5/);
   assert.match(matrixWorkspace,/Engine-backed price detail/);
   assert.match(matrixWorkspace,/reconciliation_delta/);
-  assert.match(ownerControlCenter,/Build 1K–50K matrix/);
-  assert.match(ownerControlCenter,/20000, 30000, 50000/);
+});
+
+test('S52-PKG-V5: real Admin is one workspace with ERP-style layer editing and Admin-only matrix navigation',()=>{
+  assert.match(adminPage,/PricingV5AdminWorkspace/);
+  assert.doesNotMatch(adminPage,/PricingV5OwnerControlCenter/);
+  assert.match(adminPage,/Open price matrix/);
+  assert.match(adminWorkspace,/ERP-style recipe/);
+  assert.match(adminWorkspace,/Save layer stack/);
+  assert.match(adminActions,/savePackagingConstructionLayersV5/);
+  assert.match(adminActions,/final construction layer must be a PE sealant material/i);
+  assert.match(adminActions,/layer_count:layerIds\.length/);
+  assert.match(adminActions,/sealant_code:sealant\.code/);
+});
+
+test('S52-PKG-V5: seller gram guidance is owner-configured and does not alter pricing',()=>{
+  assert.match(salesOptions,/recommended_fill_grams/);
+  assert.match(salesOptions,/application_examples/);
+  assert.match(salesConfigurator,/Customer fill weight \(optional\)/);
+  assert.match(salesConfigurator,/Suggested sizes/);
+  assert.match(salesConfigurator,/does not change pricing/i);
 });

@@ -49,6 +49,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
   const [constructionId, setConstructionId] = useState(constructions[0]?.id ?? '');
   const [print, setPrint] = useState<'CMYK' | 'CMYKW'>('CMYKW');
   const [quantity, setQuantity] = useState(1000);
+  const [fillGrams, setFillGrams] = useState('');
   const [bottomPrintMode, setBottomPrintMode] = useState<'solid_unregistered' | 'registered_artwork' | ''>('');
   const [selectedChargeCodes, setSelectedChargeCodes] = useState<string[]>(() => charges.some((item: any) => item.code === 'EXTRA_ZIPPER') ? ['EXTRA_ZIPPER'] : []);
   const [kldFileId, setKldFileId] = useState('');
@@ -68,6 +69,16 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
   const askBottomPrint = size?.bottom_registration_mode === 'optional' && size?.gusset_production_mode === 'conditional';
   const matchingKlds = useMemo(() => klds.filter((item: any) => kldMatchesSize(item, size)), [klds, size]);
   const validQuantities = useMemo(() => [1000,2000,3000,5000,10000,20000,30000,50000].filter((value)=>quantityAllowedForSize(size,value)), [size]);
+  const suggestedSizesByFill = useMemo(() => {
+    const grams=Number(fillGrams);
+    if(!Number.isFinite(grams)||grams<=0) return [];
+    return sizes
+      .map((item:any)=>({item,distance:Math.min(...((item.recommended_fill_grams??[]).map((value:any)=>Math.abs(Number(value)-grams))))}))
+      .filter((row:any)=>Number.isFinite(row.distance))
+      .sort((a:any,b:any)=>a.distance-b.distance)
+      .slice(0,3)
+      .map((row:any)=>row.item);
+  }, [fillGrams,sizes]);
   const quantityAllowed = quantityAllowedForSize(size, quantity);
   const manualSpotUvValid = !spotUvEnabled || (Number.isFinite(Number(spotUvAmount)) && Number(spotUvAmount) > 0);
   const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && manualSpotUvValid && (!askBottomPrint || bottomPrintMode));
@@ -203,6 +214,8 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
         <div className="rounded-2xl border border-slate-200 p-4">
           <div className="flex items-center justify-between gap-2"><div><div className="text-xs font-black text-slate-900">1. Customer requirement</div><div className="mt-1 text-[11px] text-slate-500">Choose only what Sales should know. Internal costing remains hidden.</div></div><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600">Sales view</span></div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <label className="text-xs font-black text-slate-600">Customer fill weight (optional)<div className="mt-1 flex gap-2"><input type="number" min="1" step="1" value={fillGrams} onChange={(e)=>setFillGrams(e.target.value)} placeholder="e.g. 100" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900"/><span className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-500">g</span></div>{fillGrams?<span className="mt-1 block text-[11px] font-semibold text-slate-500">Used only to suggest owner-configured pouch sizes. It does not change pricing.</span>:null}</label>
+            <div className="rounded-xl border border-cyan-200 bg-cyan-50/50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-cyan-700">Suggested sizes</div>{suggestedSizesByFill.length?<div className="mt-2 flex flex-wrap gap-2">{suggestedSizesByFill.map((item:any)=><button type="button" key={item.id} onClick={()=>{setSizeId(item.id);setKldFileId('');invalidate();}} className="rounded-lg border border-cyan-200 bg-white px-2.5 py-2 text-left text-xs font-black text-slate-700">{item.name}{item.application_examples?<span className="ml-1 font-semibold text-slate-400">· {item.application_examples}</span>:null}</button>)}</div>:<p className="mt-1 text-[11px] font-semibold text-slate-500">{fillGrams?'No owner-configured gram mapping yet. Choose size manually.':'Enter grams to use the owner-configured guidance.'}</p>}</div>
             <label className="text-xs font-black text-slate-600">Pouch size<select value={size?.id ?? ''} onChange={(e) => { setSizeId(e.target.value); setKldFileId(''); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Dimensions</div><div className="mt-1 text-sm font-black text-slate-800">{size?.width_mm} × {size?.height_mm} mm · BG {size?.bottom_gusset_each_mm}+{size?.bottom_gusset_each_mm}</div></div>
             <label className="text-xs font-black text-slate-600">Material & finish<select value={construction?.id ?? ''} disabled={!compatibleConstructions.length} onChange={(e) => { setConstructionId(e.target.value); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 disabled:bg-slate-100">{compatibleConstructions.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="mt-1 block text-[11px] font-semibold text-teal-700">{compatibleConstructions.length ? `Approved PE ${(size?.allowed_pe_microns ?? []).join(' / ')}µ · ${compatibleConstructions.length} compatible construction${compatibleConstructions.length===1?'':'s'}` : 'No approved construction is configured for this size.'}</span></label>

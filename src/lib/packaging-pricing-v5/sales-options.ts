@@ -41,6 +41,8 @@ export async function listSalesPackagingPricingV5Options(organizationId:string){
       allowed_quantities:Array.isArray(item.metadata?.allowed_quantities)?item.metadata.allowed_quantities:[],
       blocked_quantities:Array.isArray(item.metadata?.blocked_quantities)?item.metadata.blocked_quantities:[],
     },
+    recommended_fill_grams:Array.isArray(item.metadata?.recommended_fill_grams)?item.metadata.recommended_fill_grams.map(Number).filter((value:any)=>Number.isFinite(value)&&value>0):[],
+    application_examples:typeof item.metadata?.application_examples==='string'?item.metadata.application_examples:'',
   }));
   const constructions=context.constructions.filter((item)=>item.is_active&&item.is_quoteable).map((item)=>{
     const resolved=resolveConstructionV5(item.id,context.constructions,context.constructionLayers,context.masters);
