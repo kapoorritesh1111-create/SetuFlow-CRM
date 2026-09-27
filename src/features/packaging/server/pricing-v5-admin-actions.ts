@@ -51,10 +51,28 @@ export async function savePackagingSizeProfileV5(formData:FormData){
   const registrationMode=text(formData,'bottom_registration_mode');
   if(!['integrated','separate','conditional'].includes(gussetMode)) throw new Error('Unsupported gusset production mode.');
   if(!['not_applicable','optional','required_registered','required_unregistered'].includes(registrationMode)) throw new Error('Unsupported bottom registration mode.');
-  const payload={pricing_bucket:bucket,production_profile_key:text(formData,'production_profile_key')||null,gusset_production_mode:gussetMode,bottom_registration_mode:registrationMode,is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),updated_by:user.id,updated_at:new Date().toISOString()};
+  const allowedPeMicrons=[60,75,95,120].filter((micron)=>checked(formData,`pe_${micron}`));
+  if(!allowedPeMicrons.length) throw new Error('Select at least one approved PE option for this size.');
+  const fillRaw=text(formData,'recommended_fill_grams');
+  const recommendedFillGrams=fillRaw
+    ? [...new Set(fillRaw.split(',').map((item)=>Number(item.trim())).filter((item)=>Number.isFinite(item)&&item>0).map((item)=>Math.round(item)))].sort((a,b)=>a-b)
+    : [];
+  const applicationExamples=text(formData,'application_examples');
+  const {data:existing,error:existingError}=await supabase.from('packaging_size_profiles_v5')
+    .select('metadata').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).maybeSingle();
+  if(existingError||!existing) throw new Error(existingError?.message??'Pricing v5 size was not found in this revision.');
+  const metadata={
+    ...(existing.metadata??{}),
+    allowed_pe_microns:allowedPeMicrons,
+    recommended_fill_grams:recommendedFillGrams,
+    application_examples:applicationExamples||null,
+    owner_review_source:'2026-09-25 transcript + approved PE options sheet',
+  };
+  const payload={pricing_bucket:bucket,production_profile_key:text(formData,'production_profile_key')||null,gusset_production_mode:gussetMode,bottom_registration_mode:registrationMode,is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),metadata,updated_by:user.id,updated_at:new Date().toISOString()};
   const {data,error}=await supabase.from('packaging_size_profiles_v5').update(payload).eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 size was not found in this revision.');
   revalidatePath(ADMIN_PATH);
+  revalidatePath(`${ADMIN_PATH}/matrix`);
 }
 
 export async function savePackagingCommercialBandV5(formData:FormData){

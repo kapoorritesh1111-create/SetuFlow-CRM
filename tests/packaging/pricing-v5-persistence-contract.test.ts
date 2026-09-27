@@ -170,8 +170,10 @@ test('S52-PKG-V5: Sales filters constructions by approved PE thickness and engin
   assert.match(salesOptions,/pe_micron/);
   assert.match(salesConfigurator,/compatibleConstructions/);
   assert.match(salesConfigurator,/Approved PE/);
-  assert.match(compatibility,/170x250_bg50_50':\[95\]/);
-  assert.match(compatibility,/280x360_bg60_60':\[120\]/);
+  assert.match(compatibility,/80x130_bg25_25':\[60,75\]/);
+  assert.match(compatibility,/150x220_bg50_50':\[75,95\]/);
+  assert.match(compatibility,/200x300_bg55_55':\[95,120\]/);
+  assert.match(compatibility,/280x360_bg60_60':\[95,120\]/);
   assert.match(engine,/constructionAllowedForSizeV5/);
   assert.match(engine,/constructionCompatibilityErrorV5/);
 });
