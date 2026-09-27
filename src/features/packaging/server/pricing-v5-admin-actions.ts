@@ -51,10 +51,28 @@ export async function savePackagingSizeProfileV5(formData:FormData){
   const registrationMode=text(formData,'bottom_registration_mode');
   if(!['integrated','separate','conditional'].includes(gussetMode)) throw new Error('Unsupported gusset production mode.');
   if(!['not_applicable','optional','required_registered','required_unregistered'].includes(registrationMode)) throw new Error('Unsupported bottom registration mode.');
-  const payload={pricing_bucket:bucket,production_profile_key:text(formData,'production_profile_key')||null,gusset_production_mode:gussetMode,bottom_registration_mode:registrationMode,is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),updated_by:user.id,updated_at:new Date().toISOString()};
+  const allowedPeMicrons=[60,75,95,120].filter((micron)=>checked(formData,`pe_${micron}`));
+  if(!allowedPeMicrons.length) throw new Error('Select at least one approved PE option for this size.');
+  const fillRaw=text(formData,'recommended_fill_grams');
+  const recommendedFillGrams=fillRaw
+    ? [...new Set(fillRaw.split(',').map((item)=>Number(item.trim())).filter((item)=>Number.isFinite(item)&&item>0).map((item)=>Math.round(item)))].sort((a,b)=>a-b)
+    : [];
+  const applicationExamples=text(formData,'application_examples');
+  const {data:existing,error:existingError}=await supabase.from('packaging_size_profiles_v5')
+    .select('metadata').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).maybeSingle();
+  if(existingError||!existing) throw new Error(existingError?.message??'Pricing v5 size was not found in this revision.');
+  const metadata={
+    ...(existing.metadata??{}),
+    allowed_pe_microns:allowedPeMicrons,
+    recommended_fill_grams:recommendedFillGrams,
+    application_examples:applicationExamples||null,
+    owner_review_source:'2026-09-25 transcript + approved PE options sheet',
+  };
+  const payload={pricing_bucket:bucket,production_profile_key:text(formData,'production_profile_key')||null,gusset_production_mode:gussetMode,bottom_registration_mode:registrationMode,is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),metadata,updated_by:user.id,updated_at:new Date().toISOString()};
   const {data,error}=await supabase.from('packaging_size_profiles_v5').update(payload).eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 size was not found in this revision.');
   revalidatePath(ADMIN_PATH);
+  revalidatePath(`${ADMIN_PATH}/matrix`);
 }
 
 export async function savePackagingCommercialBandV5(formData:FormData){
@@ -119,6 +137,64 @@ export async function setPackagingConstructionQuoteableV5(formData:FormData){
   const {data,error}=await supabase.from('packaging_constructions_v5').update({is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),updated_by:user.id,updated_at:new Date().toISOString()}).eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Construction was not found in this revision.');
   revalidatePath(ADMIN_PATH);
+}
+
+export async function savePackagingConstructionLayersV5(formData:FormData){
+  const {organization,user,supabase}=await adminDb();
+  const id=text(formData,'id');
+  const templateId=text(formData,'template_id');
+  if(!id) throw new Error('Construction is required.');
+  await requireDraftTemplate(supabase,organization.id,templateId);
+
+  const rawLayerIds=[1,2,3,4,5,6].map((position)=>text(formData,`layer_${position}`));
+  const layerIds=rawLayerIds.filter(Boolean);
+  if(layerIds.length<2||layerIds.length>6) throw new Error('A construction requires between 2 and 6 material layers.');
+  const firstGap=rawLayerIds.findIndex((value,index)=>!value&&rawLayerIds.slice(index+1).some(Boolean));
+  if(firstGap>=0) throw new Error('Construction layers must be contiguous. Remove empty gaps between layers.');
+
+  const uniqueLayerIds=[...new Set(layerIds)];
+  const {data:materials,error:materialError}=await supabase.from('packaging_cost_master_items')
+    .select('id,code,item_type,rate_basis,is_active')
+    .eq('organization_id',organization.id).in('id',uniqueLayerIds);
+  if(materialError) throw new Error(materialError.message);
+  if((materials??[]).length!==uniqueLayerIds.length||(materials??[]).some((item:any)=>item.item_type!=='material'||item.rate_basis!=='per_kg'||!item.is_active)){
+    throw new Error('Every construction layer must map to an active per-kg film material.');
+  }
+  const materialById=new Map<string,any>((materials??[]).map((item:any)=>[String(item.id),item]));
+  const sealant=materialById.get(layerIds[layerIds.length-1]);
+  if(!sealant?.code?.startsWith('MAT_PE_')) throw new Error('The final construction layer must be a PE sealant material.');
+
+  const {data:construction,error:constructionError}=await supabase.from('packaging_constructions_v5')
+    .select('id').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).maybeSingle();
+  if(constructionError||!construction?.id) throw new Error(constructionError?.message??'Construction was not found in this revision.');
+
+  const now=new Date().toISOString();
+  const rows=layerIds.map((masterId,idx)=>({
+    organization_id:organization.id,
+    template_id:templateId,
+    construction_id:id,
+    layer_position:idx+1,
+    role_key:idx===0?'print_layer':idx===layerIds.length-1?'sealant_layer':`middle_layer_${idx}`,
+    cost_master_item_id:masterId,
+    is_print_layer:idx===0,
+    is_sealant_layer:idx===layerIds.length-1,
+    created_by:user.id,
+  }));
+  const {error:upsertError}=await supabase.from('packaging_construction_layers_v5')
+    .upsert(rows,{onConflict:'organization_id,construction_id,layer_position'});
+  if(upsertError) throw new Error(upsertError.message);
+
+  const {error:deleteError}=await supabase.from('packaging_construction_layers_v5')
+    .delete().eq('organization_id',organization.id).eq('template_id',templateId).eq('construction_id',id).gt('layer_position',layerIds.length);
+  if(deleteError) throw new Error(deleteError.message);
+
+  const {error:updateError}=await supabase.from('packaging_constructions_v5')
+    .update({layer_count:layerIds.length,sealant_code:sealant.code,updated_by:user.id,updated_at:now})
+    .eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id);
+  if(updateError) throw new Error(updateError.message);
+
+  revalidatePath(ADMIN_PATH);
+  revalidatePath(`${ADMIN_PATH}/matrix`);
 }
 
 export async function createPackagingConstructionV5(formData:FormData){

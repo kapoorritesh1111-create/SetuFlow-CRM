@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState, useTransition } from 'react';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
 
-const RUN_QUANTITIES = [250, 500, 1000, 2000, 3000, 5000, 10000];
+const RUN_QUANTITIES = [1000, 2000, 3000, 5000, 10000, 20000, 30000, 50000];
 
 function money(value: unknown, currency = 'INR') {
   const amount = Number(value ?? 0);
@@ -143,7 +143,7 @@ export default function PricingV5OwnerControlCenter({ data }: { data: any }) {
         {error ? <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" onClick={calculate} disabled={pending || (askBottom && !bottomPrintMode)} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:opacity-40">{pending ? 'Calculating…' : 'Calculate price'}</button>
-          <button type="button" onClick={buildMatrix} disabled={pending || (askBottom && !bottomPrintMode)} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-black text-slate-800 disabled:opacity-40">Build 250–10,000 matrix</button>
+          <button type="button" onClick={buildMatrix} disabled={pending || (askBottom && !bottomPrintMode)} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-black text-slate-800 disabled:opacity-40">Build 1K–50K matrix</button>
         </div>
 
         {matrix.length ? <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">

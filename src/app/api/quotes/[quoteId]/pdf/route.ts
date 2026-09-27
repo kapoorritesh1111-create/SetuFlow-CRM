@@ -19,6 +19,7 @@ type PdfText = { x: number; y: number; text: string; size: number; bold: boolean
 type PdfRow = { sku: string; product: string; qty: number; basis: string; casePrice: number; total: number };
 type PdfData = {
   quoteNo: string;
+  volumeSuggestions?: string[];
   org: any;
   buyer: any;
   market: string;
@@ -197,8 +198,23 @@ function buildPdf(data: PdfData) {
 
   y -= 90;
   box(left, y - 76, right - left, 76, '#ffffff', LINE);
-  put(36, y - 15, 'TERMS & CONDITIONS', 7, true, NAVY);
-  [`Quote valid until ${data.validUntil}.`, `Prices quoted on ${data.basis} basis from ${data.place}.`, 'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.', 'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.', clip(data.terms, 118)].forEach((lineText, index) => put(36, y - 31 - index * 9.5, clip(lineText, 135), 5.2, false, MUTED));
+  const suggestionLines=(data.volumeSuggestions ?? []).slice(0,2);
+  put(36, y - 15, suggestionLines.length ? 'VOLUME SAVINGS & TERMS' : 'TERMS & CONDITIONS', 7, true, NAVY);
+  const termLines = suggestionLines.length
+    ? [
+        ...suggestionLines.map((item)=>`More quantity: ${item}`),
+        `Quote valid until ${data.validUntil}.`,
+        `Prices quoted on ${data.basis} basis from ${data.place}.`,
+        'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.',
+      ]
+    : [
+        `Quote valid until ${data.validUntil}.`,
+        `Prices quoted on ${data.basis} basis from ${data.place}.`,
+        'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.',
+        'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.',
+        clip(data.terms, 118),
+      ];
+  termLines.slice(0,5).forEach((lineText, index) => put(36, y - 31 - index * 9.5, clip(lineText, 135), 5.2, index < suggestionLines.length, index < suggestionLines.length ? BLUE : MUTED));
 
   put(36, 54, 'Generated from the seller workspace. This quotation is intended for the named buyer.', 5.4, false, MUTED);
 
@@ -286,6 +302,20 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     if (amount > 0) rows.push({ sku: '—', product: text(charge.label, 'Additional charge'), qty: 1, basis: quoteBase, casePrice: amount, total: amount });
   }
 
+  const volumeSuggestions = lines
+    .filter((line) => line.line_type === 'packaging' && Number(line.calculation_version) === 5)
+    .flatMap((line, lineIndex) => {
+      const suggestions = Array.isArray(line.pricing_breakdown_json?.suggested_quantities)
+        ? line.pricing_breakdown_json.suggested_quantities.slice(0, 3)
+        : [];
+      if (!suggestions.length) return [];
+      const prefix = lines.filter((item) => item.line_type === 'packaging' && Number(item.calculation_version) === 5).length > 1
+        ? `Item ${lineIndex + 1}: `
+        : '';
+      const summary = suggestions.map((item: any) => `${Number(item.quantity).toLocaleString()} pcs @ ${money(item.unit_price, currency)}/pc`).join(' | ');
+      return [`${prefix}${summary}`];
+    });
+
   const bytes = buildPdf({
     quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
     org: org ?? { name: workspace.organization?.name },
@@ -299,6 +329,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     validUntil: dateText(quote.valid_until),
     terms: text(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'),
     rows,
+    volumeSuggestions,
     taxTotal: v5TaxTotal,
     taxLabel: v5TaxTotal > 0 ? 'GST' : undefined,
     logoImage,

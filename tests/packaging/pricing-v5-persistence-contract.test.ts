@@ -14,7 +14,9 @@ const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','u
 const canonicalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilder.tsx','utf8');
 const approvalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2.tsx','utf8');
 const quotePdf=fs.readFileSync('src/app/api/quotes/[quoteId]/pdf/route.ts','utf8');
+const quoteReview=fs.readFileSync('src/app/quote-review/[token]/page.tsx','utf8');
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
+const adminPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
 const salesProjection=fs.readFileSync('src/lib/packaging-pricing-v5/engine-registry.ts','utf8');
@@ -26,6 +28,7 @@ const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts
 const adminActions=fs.readFileSync('src/features/packaging/server/pricing-v5-admin-actions.ts','utf8');
 const matrixActions=fs.readFileSync('src/features/packaging/server/pricing-v5-matrix-actions.ts','utf8');
 const adminWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-admin-workspace.tsx','utf8');
+const ownerControlCenter=fs.readFileSync('src/features/packaging/components/pricing-v5-owner-control-center.tsx','utf8');
 const matrixWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-price-matrix.tsx','utf8');
 const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
 const starkSeed=fs.readFileSync('supabase/migrations/20260914013100_s52_pkg_v5_stark_master_seed.sql','utf8');
@@ -169,8 +172,10 @@ test('S52-PKG-V5: Sales filters constructions by approved PE thickness and engin
   assert.match(salesOptions,/pe_micron/);
   assert.match(salesConfigurator,/compatibleConstructions/);
   assert.match(salesConfigurator,/Approved PE/);
-  assert.match(compatibility,/170x250_bg50_50':\[95\]/);
-  assert.match(compatibility,/280x360_bg60_60':\[120\]/);
+  assert.match(compatibility,/80x130_bg25_25':\[60,75\]/);
+  assert.match(compatibility,/150x220_bg50_50':\[75,95\]/);
+  assert.match(compatibility,/200x300_bg55_55':\[95,120\]/);
+  assert.match(compatibility,/280x360_bg60_60':\[95,120\]/);
   assert.match(engine,/constructionAllowedForSizeV5/);
   assert.match(engine,/constructionCompatibilityErrorV5/);
 });
@@ -222,12 +227,23 @@ test('S52-PKG-V5: changing quantity keeps a selected KLD while changing size cle
   assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId, askBottomPrint, size, quantity\]\);/);
 });
 
-test('S52-PKG-V5: Sales shows only the next three producible quantity suggestions with unit-price savings',()=>{
-  assert.match(salesConfigurator,/filter\(\(row: any\) => Number\(row\.quantity\) > quantity\)/);
-  assert.match(salesConfigurator,/\.slice\(0, 3\)/);
-  assert.match(salesConfigurator,/Suggested higher quantities/);
-  assert.match(salesConfigurator,/saving_per_unit/);
-  assert.match(salesConfigurator,/Save \{money\(row\.saving_per_unit,currency\)\} \/ pc/);
+test('S52-PKG-V5: real Sales quote builder never exposes a pricing matrix or alternate-quantity price ladder',()=>{
+  assert.doesNotMatch(salesConfigurator,/Suggested higher quantities/);
+  assert.doesNotMatch(salesConfigurator,/alternativeRows/);
+  assert.doesNotMatch(salesConfigurator,/saving_per_unit/);
+  assert.doesNotMatch(salesConfigurator,/Build 1K–50K matrix/);
+  assert.doesNotMatch(salesConfigurator,/pricing matrix/i);
+});
+
+test('S52-PKG-V5: customer quote receives up to three suggestive higher-volume prices while Sales stays single-price',()=>{
+  assert.match(salesProjection,/suggested_quantities: result\.alternative_quantities/);
+  assert.match(salesProjection,/\.filter\(\(item\) => Number\(item\.quantity\) > Number\(result\.customer_requirement\.quantity\)\)/);
+  assert.match(salesProjection,/\.slice\(0, 3\)/);
+  assert.match(quoteReview,/pricing_breakdown_json\?\.suggested_quantities/);
+  assert.match(quoteReview,/Save more at higher quantities/);
+  assert.match(quotePdf,/VOLUME SAVINGS & TERMS/);
+  assert.match(quotePdf,/pricing_breakdown_json\?\.suggested_quantities/);
+  assert.doesNotMatch(salesConfigurator,/suggested_quantities/);
 });
 
 test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review retains engine reconciliation detail',()=>{
@@ -240,7 +256,8 @@ test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review re
   assert.doesNotMatch(quoteProjection,/source_hash: result\.source_hash/);
   assert.doesNotMatch(quoteProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
   assert.doesNotMatch(quoteProjection,/units_per_frame: component\.units_per_frame/);
-  assert.match(quoteProjection,/alternative_quantities: result\.alternative_quantities\.map/);
+  assert.doesNotMatch(quoteProjection,/alternative_quantities\s*:/);
+  assert.match(quoteProjection,/suggested_quantities: result\.alternative_quantities/);
   assert.match(salesActions,/toSalesQuotePricingResultV5/);
   assert.doesNotMatch(salesActions,/toSalesPricingResultV5/);
 });
@@ -267,4 +284,33 @@ test('S52-PKG-V5: snapshotted GST reconciles from Sales pricing through review, 
   assert.match(quotePdf,/const v5TaxTotal/);
   assert.match(quotePdf,/taxLabel: v5TaxTotal > 0 \? 'GST'/);
   assert.match(quotePdf,/const total = subtotal \+ taxTotal/);
+});
+
+
+test('Pricing v5 Admin matrix uses approved PE compatibility and engine-backed price detail',()=>{
+  assert.match(matrixWorkspace,/constructionAllowedForSizeV5/);
+  assert.match(matrixWorkspace,/approved PE-compatible constructions/);
+  assert.match(matrixWorkspace,/previewPackagingPricingV5/);
+  assert.match(matrixWorkspace,/Engine-backed price detail/);
+  assert.match(matrixWorkspace,/reconciliation_delta/);
+});
+
+test('S52-PKG-V5: real Admin is one workspace with ERP-style layer editing and Admin-only matrix navigation',()=>{
+  assert.match(adminPage,/PricingV5AdminWorkspace/);
+  assert.doesNotMatch(adminPage,/PricingV5OwnerControlCenter/);
+  assert.match(adminPage,/Open price matrix/);
+  assert.match(adminWorkspace,/ERP-style recipe/);
+  assert.match(adminWorkspace,/Save layer stack/);
+  assert.match(adminActions,/savePackagingConstructionLayersV5/);
+  assert.match(adminActions,/final construction layer must be a PE sealant material/i);
+  assert.match(adminActions,/layer_count:layerIds\.length/);
+  assert.match(adminActions,/sealant_code:sealant\.code/);
+});
+
+test('S52-PKG-V5: seller gram guidance is owner-configured and does not alter pricing',()=>{
+  assert.match(salesOptions,/recommended_fill_grams/);
+  assert.match(salesOptions,/application_examples/);
+  assert.match(salesConfigurator,/Customer fill weight \(optional\)/);
+  assert.match(salesConfigurator,/Suggested sizes/);
+  assert.match(salesConfigurator,/does not change pricing/i);
 });

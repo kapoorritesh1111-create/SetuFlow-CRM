@@ -374,45 +374,49 @@ test('S52-PKG-V5: owner clarification blocks 1K and 2K for N/A small-size rows',
   assert.ok(q3.alternative_quantities.every((item)=>![1000,2000].includes(item.quantity)));
 });
 
-test('S52-PKG-V5: Akshay 98x150 registered model uses 10mm trim and resolves 22 units per frame',()=>{
+test('S52-PKG-V5: Sep 25 owner correction keeps 98x150 integrated with the 10mm trim geometry',()=>{
   const context:PricingContextV5={...base,sizeProfiles:[{
     ...base.sizeProfiles[0],id:'small98',size_key:'98x150_bg30_30',name:'98 x 150',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,
-    pricing_bucket:1,gusset_production_mode:'conditional',production_profile_key:'sup_98x150_conditional',bottom_registration_mode:'optional',
-    metadata:{trim_allowance_mm:10},
+    pricing_bucket:1,gusset_production_mode:'integrated',production_profile_key:'sup_integrated',bottom_registration_mode:'not_applicable',
+    metadata:{trim_allowance_mm:10,allowed_pe_microns:[60,75]},
   }]};
-  const result=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'registered_artwork'});
+  const result=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,true,result.validation_errors.join(' '));
   const body=result.production_route.components[0];
+  assert.equal(result.production_route.route_type,'integrated');
+  assert.equal(result.production_route.components.length,1);
   assert.equal(body.web_width_mm,370);
   assert.equal(body.lanes_across,2);
   assert.equal(body.repeats_along,11);
   assert.equal(body.units_per_frame,22);
 });
 
-test('S52-PKG-V5: Akshay 98x150 unregistered model stays a distinct split-gusset price route',()=>{
+test('S52-PKG-V5: Sep 25 owner review keeps 110x170 as the conditional registered versus split-gusset workflow',()=>{
   const context:PricingContextV5={...base,sizeProfiles:[{
-    ...base.sizeProfiles[0],id:'small98',size_key:'98x150_bg30_30',name:'98 x 150',width_mm:98,height_mm:150,bottom_gusset_each_mm:30,
-    pricing_bucket:1,gusset_production_mode:'conditional',production_profile_key:'sup_98x150_conditional',bottom_registration_mode:'optional',
-    metadata:{trim_allowance_mm:10},
+    ...base.sizeProfiles[0],id:'small110',size_key:'110x170_bg30_30',name:'110 x 170',width_mm:110,height_mm:170,bottom_gusset_each_mm:30,
+    pricing_bucket:2,gusset_production_mode:'conditional',production_profile_key:'sup_110x170_conditional',bottom_registration_mode:'optional',
+    metadata:{trim_allowance_mm:20,allowed_pe_microns:[60,75]},
   }]};
-  const registered=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'registered_artwork'});
-  const unregistered=calculateSupFormulaV5(context,{size_profile_id:'small98',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'solid_unregistered'});
+  const registered=calculateSupFormulaV5(context,{size_profile_id:'small110',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'registered_artwork'});
+  const unregistered=calculateSupFormulaV5(context,{size_profile_id:'small110',construction_id:'c3',print:'CMYKW',quantity:5000,bottom_print_mode:'solid_unregistered'});
+  assert.equal(registered.ok,true,registered.validation_errors.join(' '));
   assert.equal(unregistered.ok,true,unregistered.validation_errors.join(' '));
+  assert.equal(registered.production_route.components.length,1);
   assert.equal(unregistered.production_route.components.length,2);
   assert.notEqual(unregistered.selling_price.unit_price,registered.selling_price.unit_price);
 });
 
 
-test('S52-PKG-V5: approved SUP size mapping restricts Sales to the source PE thickness',()=>{
-  const expected:Record<string,number> = {
-    '80x130_bg25_25':60,'98x150_bg30_30':60,'110x170_bg30_30':75,'150x150_bg40_40':75,
-    '120x210_bg40_40':75,'125x210_bg40_40':75,'130x210_bg40_40':75,'140x210_bg40_40':75,
-    '145x210_bg40_40':75,'150x220_bg50_50':75,'160x240_bg50_50':75,'170x250_bg50_50':95,
-    '185x270_bg50_50':95,'200x300_bg55_55':95,'210x300_bg55_55':95,'220x300_bg55_55':95,
-    '230x310_bg55_55':95,'245x320_bg55_55':95,'260x340_bg60_60':95,'280x360_bg60_60':120,
+test('S52-PKG-V5: Sep 25 approved SUP size mapping exposes one or two PE thicknesses per size',()=>{
+  const expected:Record<string,number[]> = {
+    '80x130_bg25_25':[60,75],'98x150_bg30_30':[60,75],'110x170_bg30_30':[60,75],'150x150_bg40_40':[60,75],
+    '120x210_bg40_40':[75],'125x210_bg40_40':[75],'130x210_bg40_40':[75],'140x210_bg40_40':[75],
+    '145x210_bg40_40':[75],'150x220_bg50_50':[75,95],'160x240_bg50_50':[75,95],'170x250_bg50_50':[75,95],
+    '185x270_bg50_50':[75,95],'200x300_bg55_55':[95,120],'210x300_bg55_55':[95,120],'220x300_bg55_55':[95,120],
+    '230x310_bg55_55':[95,120],'245x320_bg55_55':[95,120],'260x340_bg60_60':[95,120],'280x360_bg60_60':[95,120],
   };
-  for(const [size_key,micron] of Object.entries(expected)){
-    assert.deepEqual(allowedPeMicronsForSupSizeV5({size_key,metadata:{}} as any),[micron],size_key);
+  for(const [size_key,microns] of Object.entries(expected)){
+    assert.deepEqual(allowedPeMicronsForSupSizeV5({size_key,metadata:{}} as any),microns,size_key);
   }
 });
 
@@ -425,7 +429,7 @@ test('S52-PKG-V5: quoteable size-construction combinations fail closed when PE t
   }));
   const context:PricingContextV5={
     ...base,
-    sizeProfiles:[{...base.sizeProfiles[0],id:'size170',size_key:'170x250_bg50_50',name:'170 x 250',width_mm:170,height_mm:250,is_quoteable:true}],
+    sizeProfiles:[{...base.sizeProfiles[0],id:'size170',size_key:'170x250_bg50_50',name:'170 x 250',width_mm:170,height_mm:250,is_quoteable:true,metadata:{...(base.sizeProfiles[0].metadata??{}),allowed_pe_microns:[95]}}],
     constructions:[c75,c95],
     constructionLayers:[...base.constructionLayers.filter((item)=>item.construction_id==='c3'),...c95Layers],
     masters:[...base.masters,pe95],
@@ -472,28 +476,18 @@ test('S52-PKG-V5: Spot UV is manual quote-level pricing while automatic Spot UV 
 });
 
 
-test('S52-PKG-V5: Sales payload exposes selling prices but redacts COGS, run length, wastage and margin',()=>{
+test('S52-PKG-V5: Sales payload exposes one selected-price result and redacts internal matrix/costing detail',()=>{
   const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.ok(result.alternative_quantities.length>0,'engine may keep alternatives for Admin review');
   const sales:any=toSalesQuotePricingResultV5(result);
   assert.equal(sales.selling_price.unit_price,result.selling_price.unit_price);
   assert.equal('cost_breakdown' in sales,false);
   assert.equal('commercial_rules' in sales,false);
   assert.equal('source_hash' in sales,false);
+  assert.equal('alternative_quantities' in sales,false);
+  assert.ok(Array.isArray(sales.suggested_quantities));
+  assert.deepEqual(sales.suggested_quantities.map((item:any)=>item.quantity),[10000,20000,30000]);
   assert.equal('pricing_bucket' in sales.production_route,false);
   assert.ok(sales.production_route.components.every((item:any)=>!('units_per_frame' in item)&&!('run_length_m' in item)));
-  assert.ok(sales.alternative_quantities.length>0);
-  assert.ok(sales.alternative_quantities.every((item:any)=>{
-    const keys=Object.keys(item).sort();
-    return JSON.stringify(keys)===JSON.stringify(['product_total','quantity','unit_price']);
-  }));
-});
-
-test('S52-PKG-V5: Sales higher-quantity suggestions have at least three valid engine-calculated steps when available',()=>{
-  const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
-  assert.equal(result.ok,true,result.validation_errors.join(' '));
-  const sales:any=toSalesQuotePricingResultV5(result);
-  const next=sales.alternative_quantities.filter((item:any)=>Number(item.quantity)>5000).slice(0,3);
-  assert.deepEqual(next.map((item:any)=>item.quantity),[10000,20000,30000]);
-  assert.ok(next.every((item:any)=>Number.isFinite(item.unit_price)&&Number.isFinite(item.product_total)));
 });

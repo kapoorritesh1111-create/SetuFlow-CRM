@@ -49,6 +49,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
   const [constructionId, setConstructionId] = useState(constructions[0]?.id ?? '');
   const [print, setPrint] = useState<'CMYK' | 'CMYKW'>('CMYKW');
   const [quantity, setQuantity] = useState(1000);
+  const [fillGrams, setFillGrams] = useState('');
   const [bottomPrintMode, setBottomPrintMode] = useState<'solid_unregistered' | 'registered_artwork' | ''>('');
   const [selectedChargeCodes, setSelectedChargeCodes] = useState<string[]>(() => charges.some((item: any) => item.code === 'EXTRA_ZIPPER') ? ['EXTRA_ZIPPER'] : []);
   const [kldFileId, setKldFileId] = useState('');
@@ -68,22 +69,20 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
   const askBottomPrint = size?.bottom_registration_mode === 'optional' && size?.gusset_production_mode === 'conditional';
   const matchingKlds = useMemo(() => klds.filter((item: any) => kldMatchesSize(item, size)), [klds, size]);
   const validQuantities = useMemo(() => [1000,2000,3000,5000,10000,20000,30000,50000].filter((value)=>quantityAllowedForSize(size,value)), [size]);
+  const suggestedSizesByFill = useMemo(() => {
+    const grams=Number(fillGrams);
+    if(!Number.isFinite(grams)||grams<=0) return [];
+    return sizes
+      .map((item:any)=>({item,distance:Math.min(...((item.recommended_fill_grams??[]).map((value:any)=>Math.abs(Number(value)-grams))))}))
+      .filter((row:any)=>Number.isFinite(row.distance))
+      .sort((a:any,b:any)=>a.distance-b.distance)
+      .slice(0,3)
+      .map((row:any)=>row.item);
+  }, [fillGrams,sizes]);
   const quantityAllowed = quantityAllowedForSize(size, quantity);
   const manualSpotUvValid = !spotUvEnabled || (Number.isFinite(Number(spotUvAmount)) && Number(spotUvAmount) > 0);
   const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && manualSpotUvValid && (!askBottomPrint || bottomPrintMode));
   const currency = preview?.selling_price?.currency ?? template?.currency ?? 'INR';
-  const alternativeRows = useMemo(() => {
-    const currentUnit = Number(preview?.selling_price?.unit_price ?? 0);
-    return (preview?.alternative_quantities ?? [])
-      .filter((row: any) => Number(row.quantity) > quantity)
-      .slice(0, 3)
-      .map((row: any) => ({
-        ...row,
-        saving_per_unit: Math.max(0, currentUnit - Number(row.unit_price ?? 0)),
-        saving_pct: currentUnit > 0 ? Math.max(0, ((currentUnit - Number(row.unit_price ?? 0)) / currentUnit) * 100) : 0,
-      }));
-  }, [preview, quantity]);
-
   useEffect(() => {
     if (!sizes.some((item: any) => item.id === sizeId)) setSizeId(sizes[0]?.id ?? '');
   }, [sizes, sizeId]);
@@ -196,7 +195,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-teal-700">Packaging Pricing v5</p>
         <h2 className="mt-1 text-xl font-black text-slate-950">Build a stand-up pouch quote</h2>
-        <p className="mt-1 max-w-3xl text-sm font-semibold text-slate-500">Sales enters the customer requirement. SETU applies the approved construction, production route, commercial band and selling price automatically.</p>
+        <p className="mt-1 max-w-3xl text-sm font-semibold text-slate-500">Sales enters one customer requirement and quantity. SETU applies the approved construction, production route, commercial band and selling price automatically.</p>
       </div>
       <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Published v5 pricing</span>
     </div>
@@ -215,6 +214,8 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
         <div className="rounded-2xl border border-slate-200 p-4">
           <div className="flex items-center justify-between gap-2"><div><div className="text-xs font-black text-slate-900">1. Customer requirement</div><div className="mt-1 text-[11px] text-slate-500">Choose only what Sales should know. Internal costing remains hidden.</div></div><span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-600">Sales view</span></div>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <label className="text-xs font-black text-slate-600">Customer fill weight (optional)<div className="mt-1 flex gap-2"><input type="number" min="1" step="1" value={fillGrams} onChange={(e)=>setFillGrams(e.target.value)} placeholder="e.g. 100" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900"/><span className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-500">g</span></div>{fillGrams?<span className="mt-1 block text-[11px] font-semibold text-slate-500">Used only to suggest owner-configured pouch sizes. It does not change pricing.</span>:null}</label>
+            <div className="rounded-xl border border-cyan-200 bg-cyan-50/50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-cyan-700">Suggested sizes</div>{suggestedSizesByFill.length?<div className="mt-2 flex flex-wrap gap-2">{suggestedSizesByFill.map((item:any)=><button type="button" key={item.id} onClick={()=>{setSizeId(item.id);setKldFileId('');invalidate();}} className="rounded-lg border border-cyan-200 bg-white px-2.5 py-2 text-left text-xs font-black text-slate-700">{item.name}{item.application_examples?<span className="ml-1 font-semibold text-slate-400">· {item.application_examples}</span>:null}</button>)}</div>:<p className="mt-1 text-[11px] font-semibold text-slate-500">{fillGrams?'No owner-configured gram mapping yet. Choose size manually.':'Enter grams to use the owner-configured guidance.'}</p>}</div>
             <label className="text-xs font-black text-slate-600">Pouch size<select value={size?.id ?? ''} onChange={(e) => { setSizeId(e.target.value); setKldFileId(''); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Dimensions</div><div className="mt-1 text-sm font-black text-slate-800">{size?.width_mm} × {size?.height_mm} mm · BG {size?.bottom_gusset_each_mm}+{size?.bottom_gusset_each_mm}</div></div>
             <label className="text-xs font-black text-slate-600">Material & finish<select value={construction?.id ?? ''} disabled={!compatibleConstructions.length} onChange={(e) => { setConstructionId(e.target.value); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 disabled:bg-slate-100">{compatibleConstructions.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="mt-1 block text-[11px] font-semibold text-teal-700">{compatibleConstructions.length ? `Approved PE ${(size?.allowed_pe_microns ?? []).join(' / ')}µ · ${compatibleConstructions.length} compatible construction${compatibleConstructions.length===1?'':'s'}` : 'No approved construction is configured for this size.'}</span></label>
@@ -247,8 +248,6 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
         <div className="rounded-2xl bg-slate-950 p-4 text-white"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-300">Customer price</div>{preview?.ok ? <><div className="mt-3 text-3xl font-black">{money(preview.selling_price.unit_price, currency)}</div><div className="text-xs font-bold text-white/50">per pouch</div><div className="mt-4 border-t border-white/10 pt-3"><div className="flex justify-between text-xs text-white/60"><span>Pouch order total</span><span className="font-black text-white">{money(preview.selling_price.product_total, currency)}</span></div>{(preview.applied_charges ?? []).filter((item:any)=>item.application_stage==='separate_quote_line').map((item:any)=><div key={item.code} className="mt-2 flex justify-between text-xs text-white/60"><span>{item.code==='EXTRA_SPOT_UV'?'Spot UV — Manual Price':item.name}</span><span>{money(item.amount,currency)}</span></div>)}{Number(preview.selling_price.separate_charges_total||0)>0?<div className="mt-2 flex justify-between border-t border-white/10 pt-2 text-xs text-white/60"><span>Subtotal before GST</span><span>{money(preview.selling_price.subtotal_before_gst,currency)}</span></div>:null}<div className="mt-2 flex justify-between text-xs text-white/60"><span>GST</span><span>{money(preview.selling_price.gst, currency)}</span></div><div className="mt-2 flex justify-between text-xs text-white/60"><span>Total incl. GST</span><span className="font-black text-white">{money(preview.selling_price.grand_total_before_freight, currency)}</span></div></div></> : <div className="mt-3 text-sm font-bold text-white/55">Calculate to see the approved selling price.</div>}</div>
 
         {preview?.construction ? <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Quote summary</div><div className="mt-2 text-sm font-black text-slate-900">{preview.construction.name}</div><div className="mt-1 text-xs text-slate-500">{preview.construction.structure_label}</div>{preview.production_route?.components?.length > 1 ? <div className="mt-2 rounded-lg bg-cyan-50 px-2.5 py-2 text-xs font-bold text-cyan-800">SETU automatically applied split-gusset production.</div> : null}</div> : null}
-
-        {alternativeRows.length ? <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-[10px] font-black uppercase text-slate-400">Suggested higher quantities</div><div className="mt-1 text-[11px] font-semibold text-slate-500">Up to 3 higher producible quantities showing how the approved unit price can reduce.</div><div className="mt-2 space-y-2">{alternativeRows.map((row: any) => <button type="button" key={row.quantity} onClick={() => { setQuantity(Number(row.quantity)); setPreview(null); }} className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-left hover:bg-slate-50"><div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-slate-700">{Number(row.quantity).toLocaleString()} pcs</span><span className="text-xs font-black text-slate-950">{money(row.unit_price, currency)} / pc</span></div><div className="mt-1 flex items-center justify-between gap-2 text-[11px]"><span className="text-slate-500">Order {money(row.product_total, currency)}</span>{row.saving_per_unit>0?<span className="font-black text-emerald-700">Save {money(row.saving_per_unit,currency)} / pc · {row.saving_pct.toFixed(1)}%</span>:<span className="font-bold text-slate-400">Same unit price</span>}</div></button>)}</div></div> : null}
 
         <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3"><div className="text-[10px] font-black uppercase text-blue-500">What Sales does not see</div><p className="mt-1 text-xs font-semibold text-slate-600">Raw material rates, COGS, wastage, margin/frame and internal competitor intelligence stay in Admin.</p></div>
       </aside>
