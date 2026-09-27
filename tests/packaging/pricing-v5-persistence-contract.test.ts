@@ -241,14 +241,16 @@ test('S52-PKG-V5: real Sales quote builder never exposes a pricing matrix or alt
   assert.doesNotMatch(salesConfigurator,/pricing matrix/i);
 });
 
-test('S52-PKG-V5: customer quote receives up to three suggestive higher-volume prices while Sales stays single-price',()=>{
-  assert.match(salesProjection,/suggested_quantities: result\.alternative_quantities/);
-  assert.match(salesProjection,/\.filter\(\(item\) => Number\(item\.quantity\) > Number\(result\.customer_requirement\.quantity\)\)/);
-  assert.match(salesProjection,/\.slice\(0, 3\)/);
+test('S52-PKG-V5: customer quote receives up to three valid higher-volume savings while Sales stays single-price',()=>{
+  assert.match(salesProjection,/customerVolumeSuggestions/);
+  assert.match(salesProjection,/result\.alternative_quantities/);
+  assert.match(quoteReview,/customerVolumeSuggestions/);
   assert.match(quoteReview,/pricing_breakdown_json\?\.suggested_quantities/);
   assert.match(quoteReview,/Save more at higher quantities/);
+  assert.match(quoteReview,/savings_pct/);
   assert.match(quotePdf,/VOLUME SAVINGS & TERMS/);
-  assert.match(quotePdf,/pricing_breakdown_json\?\.suggested_quantities/);
+  assert.match(quotePdf,/customerVolumeSuggestions/);
+  assert.match(quotePdf,/lower\/pc/);
   assert.doesNotMatch(salesConfigurator,/suggested_quantities/);
 });
 
@@ -263,7 +265,8 @@ test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review re
   assert.doesNotMatch(quoteProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
   assert.doesNotMatch(quoteProjection,/units_per_frame: component\.units_per_frame/);
   assert.doesNotMatch(quoteProjection,/alternative_quantities\s*:/);
-  assert.match(quoteProjection,/suggested_quantities: result\.alternative_quantities/);
+  assert.match(quoteProjection,/suggested_quantities: customerVolumeSuggestions/);
+  assert.match(quoteProjection,/result\.alternative_quantities/);
   assert.match(salesActions,/toSalesQuotePricingResultV5/);
   assert.doesNotMatch(salesActions,/toSalesPricingResultV5/);
 });
@@ -318,8 +321,8 @@ test('S52-PKG-V5: seller gram guidance is owner-configured and does not alter pr
   assert.match(salesOptions,/recommended_fill_grams/);
   assert.match(salesOptions,/application_examples/);
   assert.match(salesConfigurator,/Customer fill weight \(optional\)/);
-  assert.match(salesConfigurator,/Suggested sizes/);
-  assert.match(salesConfigurator,/does not change pricing/i);
+  assert.match(salesConfigurator,/Suggested approved sizes/);
+  assert.match(salesConfigurator,/never changes the price/i);
 });
 
 
