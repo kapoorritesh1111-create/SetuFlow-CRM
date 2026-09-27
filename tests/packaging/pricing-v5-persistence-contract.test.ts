@@ -225,12 +225,12 @@ test('S52-PKG-V5: changing quantity keeps a selected KLD while changing size cle
   assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId, askBottomPrint, size, quantity\]\);/);
 });
 
-test('S52-PKG-V5: Sales shows only the next three producible quantity suggestions with unit-price savings',()=>{
-  assert.match(salesConfigurator,/filter\(\(row: any\) => Number\(row\.quantity\) > quantity\)/);
-  assert.match(salesConfigurator,/\.slice\(0, 3\)/);
-  assert.match(salesConfigurator,/Suggested higher quantities/);
-  assert.match(salesConfigurator,/saving_per_unit/);
-  assert.match(salesConfigurator,/Save \{money\(row\.saving_per_unit,currency\)\} \/ pc/);
+test('S52-PKG-V5: real Sales quote builder never exposes a pricing matrix or alternate-quantity price ladder',()=>{
+  assert.doesNotMatch(salesConfigurator,/Suggested higher quantities/);
+  assert.doesNotMatch(salesConfigurator,/alternativeRows/);
+  assert.doesNotMatch(salesConfigurator,/saving_per_unit/);
+  assert.doesNotMatch(salesConfigurator,/Build 1K–50K matrix/);
+  assert.doesNotMatch(salesConfigurator,/pricing matrix/i);
 });
 
 test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review retains engine reconciliation detail',()=>{
@@ -243,7 +243,7 @@ test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review re
   assert.doesNotMatch(quoteProjection,/source_hash: result\.source_hash/);
   assert.doesNotMatch(quoteProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
   assert.doesNotMatch(quoteProjection,/units_per_frame: component\.units_per_frame/);
-  assert.match(quoteProjection,/alternative_quantities: result\.alternative_quantities\.map/);
+  assert.doesNotMatch(quoteProjection,/alternative_quantities/);
   assert.match(salesActions,/toSalesQuotePricingResultV5/);
   assert.doesNotMatch(salesActions,/toSalesPricingResultV5/);
 });

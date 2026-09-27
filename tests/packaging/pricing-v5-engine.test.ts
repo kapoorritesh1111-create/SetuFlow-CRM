@@ -476,28 +476,16 @@ test('S52-PKG-V5: Spot UV is manual quote-level pricing while automatic Spot UV 
 });
 
 
-test('S52-PKG-V5: Sales payload exposes selling prices but redacts COGS, run length, wastage and margin',()=>{
+test('S52-PKG-V5: Sales payload exposes one selected-price result and redacts internal matrix/costing detail',()=>{
   const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
   assert.equal(result.ok,true,result.validation_errors.join(' '));
+  assert.ok(result.alternative_quantities.length>0,'engine may keep alternatives for Admin review');
   const sales:any=toSalesQuotePricingResultV5(result);
   assert.equal(sales.selling_price.unit_price,result.selling_price.unit_price);
   assert.equal('cost_breakdown' in sales,false);
   assert.equal('commercial_rules' in sales,false);
   assert.equal('source_hash' in sales,false);
+  assert.equal('alternative_quantities' in sales,false);
   assert.equal('pricing_bucket' in sales.production_route,false);
   assert.ok(sales.production_route.components.every((item:any)=>!('units_per_frame' in item)&&!('run_length_m' in item)));
-  assert.ok(sales.alternative_quantities.length>0);
-  assert.ok(sales.alternative_quantities.every((item:any)=>{
-    const keys=Object.keys(item).sort();
-    return JSON.stringify(keys)===JSON.stringify(['product_total','quantity','unit_price']);
-  }));
-});
-
-test('S52-PKG-V5: Sales higher-quantity suggestions have at least three valid engine-calculated steps when available',()=>{
-  const result=calculateSupFormulaV5(base,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:5000});
-  assert.equal(result.ok,true,result.validation_errors.join(' '));
-  const sales:any=toSalesQuotePricingResultV5(result);
-  const next=sales.alternative_quantities.filter((item:any)=>Number(item.quantity)>5000).slice(0,3);
-  assert.deepEqual(next.map((item:any)=>item.quantity),[10000,20000,30000]);
-  assert.ok(next.every((item:any)=>Number.isFinite(item.unit_price)&&Number.isFinite(item.product_total)));
 });
