@@ -39,7 +39,7 @@ export type FrameFamilyPricingInputV5 = {
 
 export type FrameFamilyPricingReviewResultV5 = {
   ok: boolean;
-  review_only: true;
+  review_only: boolean;
   supply_form: FrameFamilySupplyFormV5;
   geometry: ReturnType<typeof resolveFrameFamilyGeometryV5>;
   construction: {
@@ -93,9 +93,10 @@ export function calculateFrameFamilyPriceReviewV5(
   input: FrameFamilyPricingInputV5,
 ): FrameFamilyPricingReviewResultV5 {
   const errors: string[] = [];
-  const warnings: string[] = [
-    'Review-only calculation. Existing v4 workbook matrix remains the production baseline until Stark Packmate explicitly approves migration.',
-  ];
+  const reviewOnly=Boolean(context.template.quote_config_json?.review_only);
+  const warnings: string[] = reviewOnly
+    ? ['Review-only calculation. Existing v4 workbook matrix remains the production baseline until Stark Packmate explicitly approves migration.']
+    : [];
 
   const quantity = Math.max(0, Math.floor(n(input.quantity)));
   if (!quantity) errors.push('Quantity is required.');
@@ -209,7 +210,7 @@ export function calculateFrameFamilyPriceReviewV5(
 
   return {
     ok: errors.length === 0,
-    review_only: true,
+    review_only: reviewOnly,
     supply_form: input.supply_form,
     geometry,
     construction: construction ? {

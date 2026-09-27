@@ -38,3 +38,9 @@ test('Center Seal and 3SS use provisional owner-selected default buckets when Sa
   assert.match(core,/commercial_bucket: resolvedBucket/);
   assert.match(core,/commercial_bucket: PricingBucketV5 \| null/);
 });
+
+
+test('Published frame families stop identifying themselves as review-only after activation',()=>{
+  assert.match(core,/const reviewOnly=Boolean\(context\.template\.quote_config_json\?\.review_only\)/);
+  assert.match(core,/review_only: reviewOnly/);
+});
