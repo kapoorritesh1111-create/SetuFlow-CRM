@@ -301,10 +301,10 @@ test('Sales Quote enforces MOQ, conditional gusset, stale-action safety and KLD 
 
   await page.locator('#salesSize').selectOption('s4');
   await expect(page.locator('#salesBottomGusset')).toBeVisible();
-  await expect(page.locator('#salesQty option')).toHaveCount(6);
+  await expect(page.locator('#salesQty option')).toHaveCount(8);
   const qTexts=await page.locator('#salesQty option').allTextContents();
-  expect(qTexts).not.toContain('1,000');
-  expect(qTexts).not.toContain('2,000');
+  expect(qTexts).toContain('1,000');
+  expect(qTexts).toContain('2,000');
 
   await page.locator('#salesBottomGusset').selectOption('solid_unregistered');
   await expect(page.locator('#salesQuoteStatus')).toContainText('Live Pricing v5 quote calculated');
