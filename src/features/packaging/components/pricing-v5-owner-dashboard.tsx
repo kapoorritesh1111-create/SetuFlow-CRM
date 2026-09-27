@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
+import type { BottomPrintModeV5 } from '@/lib/packaging-pricing-v5/types';
 
 function money(value:unknown,currency='INR'){
   const amount=Number(value??0);
@@ -19,7 +20,7 @@ export default function PricingV5OwnerDashboard({data}:{data:any}){
   const [print,setPrint]=useState<'CMYK'|'CMYKW'>('CMYKW');
   const [quantity,setQuantity]=useState(20000);
   const [zipper,setZipper]=useState(charges.some((x:any)=>x.code==='EXTRA_ZIPPER'));
-  const [bottomMode,setBottomMode]=useState('');
+  const [bottomMode,setBottomMode]=useState<BottomPrintModeV5 | ''>('');
   const [preview,setPreview]=useState<any>(null);
   const [error,setError]=useState('');
   const [pending,startTransition]=useTransition();
@@ -69,7 +70,7 @@ export default function PricingV5OwnerDashboard({data}:{data:any}){
           <Field label="Construction"><select className="input" value={construction?.id??''} onChange={(e)=>{setConstructionId(e.target.value);setPreview(null);}}>{constructions.map((x:any)=><option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
           <Field label="Printing"><select className="input" value={print} onChange={(e)=>{setPrint(e.target.value as any);setPreview(null);}}><option value="CMYK">Gravure (CMYK)</option><option value="CMYKW">Gravure (CMYKW)</option></select></Field>
           <Field label="Add-on"><label className="input flex items-center gap-2"><input type="checkbox" checked={zipper} onChange={(e)=>{setZipper(e.target.checked);setPreview(null);}}/> Zipper</label></Field>
-          {askBottom?<Field label="Bottom Gusset"><select className="input" value={bottomMode} onChange={(e)=>{setBottomMode(e.target.value);setPreview(null);}}><option value="">Choose</option><option value="solid_unregistered">Solid / unregistered</option><option value="registered_artwork">Registered artwork</option></select></Field>:<Field label="Bottom Gusset"><div className="input flex items-center">{size?.gusset_production_mode==='separate'?'Separate':'Integrated'}</div></Field>}
+          {askBottom?<Field label="Bottom Gusset"><select className="input" value={bottomMode} onChange={(e)=>{setBottomMode(e.target.value as BottomPrintModeV5 | '');setPreview(null);}}><option value="">Choose</option><option value="solid_unregistered">Solid / unregistered</option><option value="registered_artwork">Registered artwork</option></select></Field>:<Field label="Bottom Gusset"><div className="input flex items-center">{size?.gusset_production_mode==='separate'?'Separate':'Integrated'}</div></Field>}
           <Field label="Quantity (pcs)"><input className="input" type="number" min={1} value={quantity} onChange={(e)=>{setQuantity(Math.max(1,Number(e.target.value)));setPreview(null);}}/></Field>
         </div>
         {error?<div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div>:null}
