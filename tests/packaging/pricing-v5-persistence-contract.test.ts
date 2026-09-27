@@ -14,6 +14,7 @@ const quotePage=fs.readFileSync('src/app/(app)/leads/[leadId]/quote/page.tsx','u
 const canonicalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilder.tsx','utf8');
 const approvalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/CanonicalQuoteBuilderApprovalQueueV2.tsx','utf8');
 const quotePdf=fs.readFileSync('src/app/api/quotes/[quoteId]/pdf/route.ts','utf8');
+const quoteReview=fs.readFileSync('src/app/quote-review/[token]/page.tsx','utf8');
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
@@ -233,6 +234,17 @@ test('S52-PKG-V5: real Sales quote builder never exposes a pricing matrix or alt
   assert.doesNotMatch(salesConfigurator,/pricing matrix/i);
 });
 
+test('S52-PKG-V5: customer quote receives up to three suggestive higher-volume prices while Sales stays single-price',()=>{
+  assert.match(salesProjection,/suggested_quantities: result\.alternative_quantities/);
+  assert.match(salesProjection,/\.filter\(\(item\) => Number\(item\.quantity\) > Number\(result\.customer_requirement\.quantity\)\)/);
+  assert.match(salesProjection,/\.slice\(0, 3\)/);
+  assert.match(quoteReview,/pricing_breakdown_json\?\.suggested_quantities/);
+  assert.match(quoteReview,/Save more at higher quantities/);
+  assert.match(quotePdf,/VOLUME SAVINGS & TERMS/);
+  assert.match(quotePdf,/pricing_breakdown_json\?\.suggested_quantities/);
+  assert.doesNotMatch(salesConfigurator,/suggested_quantities/);
+});
+
 test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review retains engine reconciliation detail',()=>{
   assert.match(salesProjection,/export function toSalesPricingResultV5/);
   assert.match(salesProjection,/cost_breakdown: result\.cost_breakdown/);
@@ -244,6 +256,7 @@ test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review re
   assert.doesNotMatch(quoteProjection,/pricing_bucket: result\.production_route\.pricing_bucket/);
   assert.doesNotMatch(quoteProjection,/units_per_frame: component\.units_per_frame/);
   assert.doesNotMatch(quoteProjection,/alternative_quantities/);
+  assert.match(quoteProjection,/suggested_quantities: result\.alternative_quantities/);
   assert.match(salesActions,/toSalesQuotePricingResultV5/);
   assert.doesNotMatch(salesActions,/toSalesPricingResultV5/);
 });

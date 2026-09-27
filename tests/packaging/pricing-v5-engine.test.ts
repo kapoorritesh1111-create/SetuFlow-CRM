@@ -429,7 +429,7 @@ test('S52-PKG-V5: quoteable size-construction combinations fail closed when PE t
   }));
   const context:PricingContextV5={
     ...base,
-    sizeProfiles:[{...base.sizeProfiles[0],id:'size170',size_key:'170x250_bg50_50',name:'170 x 250',width_mm:170,height_mm:250,is_quoteable:true}],
+    sizeProfiles:[{...base.sizeProfiles[0],id:'size170',size_key:'170x250_bg50_50',name:'170 x 250',width_mm:170,height_mm:250,is_quoteable:true,metadata:{...(base.sizeProfiles[0].metadata??{}),allowed_pe_microns:[95]}}],
     constructions:[c75,c95],
     constructionLayers:[...base.constructionLayers.filter((item)=>item.construction_id==='c3'),...c95Layers],
     masters:[...base.masters,pe95],
@@ -486,6 +486,8 @@ test('S52-PKG-V5: Sales payload exposes one selected-price result and redacts in
   assert.equal('commercial_rules' in sales,false);
   assert.equal('source_hash' in sales,false);
   assert.equal('alternative_quantities' in sales,false);
+  assert.ok(Array.isArray(sales.suggested_quantities));
+  assert.deepEqual(sales.suggested_quantities.map((item:any)=>item.quantity),[10000,20000,30000]);
   assert.equal('pricing_bucket' in sales.production_route,false);
   assert.ok(sales.production_route.components.every((item:any)=>!('units_per_frame' in item)&&!('run_length_m' in item)));
 });

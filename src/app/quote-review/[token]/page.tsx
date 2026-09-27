@@ -87,8 +87,8 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               const kld = line.packaging_kld_file_id ? byKld.get(String(line.packaging_kld_file_id)) : null;
               const name = product?.name || variation?.name || family?.name || line.notes || `Packaging item ${index + 1}`;
               const lineTotal = Number(line.quantity || 0) * Number(line.unit_price || 0);
-              const alternatives = Array.isArray(line.pricing_breakdown_json?.alternative_quantities)
-                ? line.pricing_breakdown_json.alternative_quantities.filter((row: any) => Number(row.quantity) > Number(line.quantity || 0)).slice(0, 5)
+              const alternatives = Array.isArray(line.pricing_breakdown_json?.suggested_quantities)
+                ? line.pricing_breakdown_json.suggested_quantities.slice(0, 3)
                 : [];
               return (
                 <article key={line.id} className="rounded-2xl border border-slate-200 p-4">
@@ -98,9 +98,9 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
                   </div>
 
                   {alternatives.length ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Higher-volume options</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-600">Higher quantities can reduce the per-piece manufacturing cost. These are options only; your requested quantity is not changed automatically.</p>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                    <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Save more at higher quantities</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-600">Your quoted quantity stays unchanged. If you increase the order quantity, these suggested prices show how the approved per-piece price can reduce.</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {alternatives.map((row: any) => {
                         const saving = Number(line.unit_price || 0) > 0 ? ((Number(line.unit_price) - Number(row.unit_price)) / Number(line.unit_price)) * 100 : 0;
                         return <div key={row.quantity} className="rounded-xl border border-emerald-200 bg-white p-3">

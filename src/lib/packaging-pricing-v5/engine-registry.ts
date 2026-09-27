@@ -65,6 +65,14 @@ export function toSalesQuotePricingResultV5(result: PackagingPricingResultV5) {
       .filter((charge) => charge.application_stage === 'separate_quote_line')
       .map((charge) => ({ ...charge })),
     selling_price: result.selling_price,
+    suggested_quantities: result.alternative_quantities
+      .filter((item) => Number(item.quantity) > Number(result.customer_requirement.quantity))
+      .slice(0, 3)
+      .map((item) => ({
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        product_total: item.product_total,
+      })),
     validation_errors: result.validation_errors,
     warnings: result.warnings,
   };
