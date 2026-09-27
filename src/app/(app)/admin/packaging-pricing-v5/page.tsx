@@ -4,6 +4,7 @@ import { AdminSettingsShell } from '@/features/admin/components/admin-settings-s
 import PricingV5AdminNav from '@/features/packaging/components/pricing-v5-admin-nav';
 import PricingV5PremiumWorkspace from '@/features/packaging/components/pricing-v5-premium-workspace';
 import PricingV5FrameOwnerWorkspace from '@/features/packaging/components/pricing-v5-frame-owner-workspace';
+import PricingV5PriceMatrix from '@/features/packaging/components/pricing-v5-price-matrix';
 import { clonePackagingTemplateRevisionV5, publishPackagingTemplateV5 } from '@/features/packaging/server/pricing-v5-admin-actions';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
@@ -11,7 +12,7 @@ import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 
 export const dynamic='force-dynamic';
-type View='dashboard'|'sizes'|'constructions'|'rates'|'waste'|'matrix';
+type View='dashboard'|'sizes'|'constructions'|'rates'|'waste'|'matrix'|'competitor';
 
 const FAMILY_CONFIG={
   sup:{label:'Stand Up Pouches',slug:'standup-pouches',engine:'sup_formula_v5',model:'sup' as const},
@@ -43,7 +44,7 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
   const config=FAMILY_CONFIG[familyKey as keyof typeof FAMILY_CONFIG];
   const form=params?.form==='roll'?'roll':'pouch';
   const requested=(params?.view??'dashboard') as View;
-  const allowedViews:View[]=config.model==='sup'?['dashboard','sizes','constructions','rates','waste']:['dashboard','constructions','rates','waste','matrix'];
+  const allowedViews:View[]=config.model==='sup'?['dashboard','sizes','constructions','rates','waste','matrix','competitor']:['dashboard','constructions','rates','waste','matrix'];
   const view:View=allowedViews.includes(requested)?requested:'dashboard';
 
   const familyResult=await supabase.from('packaging_service_families')
@@ -63,7 +64,7 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
   if(!template?.id) return <StateMessage title="Pricing v5 template is not ready" description="The selected family/form does not have a Pricing V5 template yet." tone="info"/>;
   const templateId=String(template.id);
 
-  const [sizes,constructions,layers,costs,costRates,bands,charges,chargeRates,chargeLinks,flag,benchmarks]=await Promise.all([
+  const [sizes,constructions,layers,costs,costRates,bands,charges,chargeRates,chargeLinks,flag,benchmarks,klds]=await Promise.all([
     supabase.from('packaging_size_profiles_v5').select('id,template_id,family_id,size_key,name,width_mm,height_mm,bottom_gusset_each_mm,pricing_bucket,production_profile_key,gusset_production_mode,bottom_registration_mode,is_active,is_quoteable,sort_order,metadata').eq('organization_id',organization.id).eq('template_id',templateId).order('sort_order'),
     supabase.from('packaging_constructions_v5').select('id,template_id,family_id,construction_key,construction_family_key,name,finish_type,barrier_type,sealant_code,layer_count,is_active,is_quoteable,sort_order,metadata').eq('organization_id',organization.id).eq('template_id',templateId).order('sort_order'),
     supabase.from('packaging_construction_layers_v5').select('id,template_id,construction_id,layer_position,role_key,cost_master_item_id,is_print_layer,is_sealant_layer').eq('organization_id',organization.id).eq('template_id',templateId).order('layer_position'),
@@ -75,8 +76,9 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
     supabase.from('packaging_charge_master_family_links').select('charge_master_item_id,family_id').eq('organization_id',organization.id).eq('family_id',familyId),
     supabase.from('smc_feature_flags').select('enabled,rollout_percentage,allowed_orgs').eq('flag_key','packaging_pricing_v5').maybeSingle(),
     supabase.from('packaging_pricing_competitor_benchmarks_v5').select('id,template_id,family_id,size_profile_id,construction_id,quantity,unit_price,currency,competitor_name,customer_reference,notes,observed_at,created_at').eq('organization_id',organization.id).eq('template_id',templateId).order('observed_at',{ascending:false}),
+    supabase.from('packaging_kld_files').select('id,family_id,template_id,size_preset_key,spec_key,file_name,file_path,mime_type,file_size,version,public_token,is_active,created_at').eq('organization_id',organization.id).eq('family_id',familyId).order('version',{ascending:false}),
   ]);
-  const error=[sizes,constructions,layers,costs,costRates,bands,charges,chargeRates,chargeLinks,benchmarks].map((r:any)=>r.error).find(Boolean);
+  const error=[sizes,constructions,layers,costs,costRates,bands,charges,chargeRates,chargeLinks,benchmarks,klds].map((r:any)=>r.error).find(Boolean);
   if(error) return <StateMessage title="Pricing v5 could not be loaded" description={error.message} tone="warning"/>;
 
   const rateByMaster=new Map((costRates.data??[]).map((row:any)=>[String(row.cost_master_item_id),row.current_rate]));
@@ -84,7 +86,7 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
   const linkedChargeIds=new Set((chargeLinks.data??[]).map((row:any)=>String(row.charge_master_item_id)));
   const rateByCharge=new Map((chargeRates.data??[]).map((row:any)=>[String(row.charge_master_item_id),row.current_rate]));
   const v5Charges=(charges.data??[]).filter((item:any)=>linkedChargeIds.has(String(item.id))).map((item:any)=>({...item,current_rate:rateByCharge.has(String(item.id))?rateByCharge.get(String(item.id)):null}));
-  const data={template,sizes:sizes.data??[],constructions:constructions.data??[],layers:layers.data??[],costs:v5Costs,charges:v5Charges,bands:bands.data??[],benchmarks:benchmarks.data??[],featureFlag:flag.data??null,supplyLabel:supplyLabelFor(familyKey,form)};
+  const data={template,sizes:sizes.data??[],constructions:constructions.data??[],layers:layers.data??[],costs:v5Costs,charges:v5Charges,bands:bands.data??[],benchmarks:benchmarks.data??[],klds:klds.data??[],featureFlag:flag.data??null,supplyLabel:supplyLabelFor(familyKey,form)};
   const isDraft=template.status==='draft';
   const modelHref=(family:string,targetForm='pouch')=>family==='sup'?'/admin/packaging-pricing-v5':`/admin/packaging-pricing-v5?family=${family}&form=${targetForm}`;
 
@@ -102,18 +104,18 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
       </div>
 
       <div className="border-t border-slate-200 bg-white px-5 py-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {[
-            ['sup','Stand Up Pouches'],
-            ['center-seal','Center Seal'],
-            ['3ss','3 Side Seal'],
-          ].map(([key,label])=><Link key={key} href={modelHref(key)} className={'rounded-xl border px-4 py-2 text-xs font-black '+(familyKey===key?'border-blue-600 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>{label}</Link>)}
-          {config.model==='frame'?<div className="ml-0 flex rounded-xl border border-slate-200 bg-slate-50 p-1 sm:ml-2"><Link href={modelHref(familyKey,'pouch')} className={'rounded-lg px-3 py-1.5 text-xs font-black '+(form==='pouch'?'bg-white text-blue-700 shadow-sm':'text-slate-500')}>Pouch Form</Link><Link href={modelHref(familyKey,'roll')} className={'rounded-lg px-3 py-1.5 text-xs font-black '+(form==='roll'?'bg-white text-blue-700 shadow-sm':'text-slate-500')}>Roll Form</Link></div>:null}
+        <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Packaging Family</div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Link href="/admin/packaging-pricing-v5" className={'rounded-xl border px-4 py-2 text-xs font-black '+(familyKey==='sup'?'border-blue-600 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>Stand Up Pouches</Link>
+          <Link href="/admin/packaging-pricing-v5?family=center-seal&form=pouch" className={'rounded-xl border px-4 py-2 text-xs font-black '+(familyKey==='center-seal'&&form==='pouch'?'border-blue-600 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>Center Seal Pouches</Link>
+          <Link href="/admin/packaging-pricing-v5?family=3ss&form=pouch" className={'rounded-xl border px-4 py-2 text-xs font-black '+(familyKey==='3ss'&&form==='pouch'?'border-blue-600 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>3 Side Seal Pouches</Link>
+          <Link href="/admin/packaging-pricing-v5?family=center-seal&form=roll" className={'rounded-xl border px-4 py-2 text-xs font-black '+(config.model==='frame'&&form==='roll'?'border-blue-600 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>Rolls</Link>
         </div>
+        {config.model==='frame'&&form==='roll'?<div className="mt-2 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1"><Link href="/admin/packaging-pricing-v5?family=center-seal&form=roll" className={'rounded-lg px-3 py-1.5 text-xs font-black '+(familyKey==='center-seal'?'bg-white text-blue-700 shadow-sm':'text-slate-500')}>Center Seal Roll</Link><Link href="/admin/packaging-pricing-v5?family=3ss&form=roll" className={'rounded-lg px-3 py-1.5 text-xs font-black '+(familyKey==='3ss'?'bg-white text-blue-700 shadow-sm':'text-slate-500')}>3 Side Seal Roll</Link></div>:null}
       </div>
 
       <PricingV5AdminNav active={view} model={config.model} family={familyKey} form={form} constructionCount={(constructions.data??[]).filter((x:any)=>x.is_quoteable).length} sizeCount={(sizes.data??[]).filter((x:any)=>x.is_quoteable).length}/>
-      <div className="p-4 md:p-5">{config.model==='sup'?<PricingV5PremiumWorkspace data={data} view={view as any}/>:<PricingV5FrameOwnerWorkspace data={data} view={view as any}/>}</div>
+      <div className="p-4 md:p-5">{view==='matrix'||view==='competitor'?<PricingV5PriceMatrix data={data} mode={view==='competitor'?'competitor':'matrix'}/>:config.model==='sup'?<PricingV5PremiumWorkspace data={data} view={view as any}/>:<PricingV5FrameOwnerWorkspace data={data} view={view as any}/>}</div>
     </div>
   </AdminSettingsShell>;
 }

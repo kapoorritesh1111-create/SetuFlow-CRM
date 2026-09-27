@@ -26,6 +26,8 @@ function firstValidReviewQuantity(size: any) {
 
 function kldMatchesSize(item: any, size: any) {
   if (!item || !size) return false;
+  const specKey=String(item.spec_key??item.size_preset_key??'').trim();
+  if(specKey&&specKey===String(size.size_key??'')) return true;
   const file = String(item.file_name ?? '').toLowerCase().replace(/\s+/g, '');
   const width = String(Number(size.width_mm));
   const height = String(Number(size.height_mm));
