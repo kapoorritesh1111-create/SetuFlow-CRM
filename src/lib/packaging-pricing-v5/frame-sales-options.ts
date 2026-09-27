@@ -35,7 +35,7 @@ export async function listSalesPackagingFramePricingV5Options(organizationId:str
   const familyById=new Map((families??[]).map((item:any)=>[String(item.id),item]));
   const resultTemplates:any[]=[];
   for(const template of templates??[]){
-    const family=familyById.get(String(template.family_id));
+    const family:any=familyById.get(String(template.family_id));
     if(!family) continue;
     const context=await loadPricingContextV5(organizationId,template.id,{publishedOnly:true});
     const constructions=context.constructions
