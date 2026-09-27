@@ -4,12 +4,15 @@ import { AdminSettingsShell } from '@/features/admin/components/admin-settings-s
 import PricingV5AdminWorkspace from '@/features/packaging/components/pricing-v5-admin-workspace';
 import PricingV5AdminNav from '@/features/packaging/components/pricing-v5-admin-nav';
 import PricingV5OwnerDashboard from '@/features/packaging/components/pricing-v5-owner-dashboard';
+import { clonePackagingTemplateRevisionV5, publishPackagingTemplateV5 } from '@/features/packaging/server/pricing-v5-admin-actions';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 
 export const dynamic='force-dynamic';
+
+type View='dashboard'|'sizes'|'constructions'|'rates'|'waste';
 
 export default async function PackagingPricingV5AdminPage({searchParams}:{searchParams?:Promise<{view?:string}>}){
   if(!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment." tone="warning"/>;
@@ -20,16 +23,17 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
   if(!verticals.packagingEnabled) return <StateMessage title="Packaging vertical is not enabled" description="Pricing v5 is available only for packaging workspaces." tone="info"/>;
 
   const params=await searchParams;
-  const view=(params?.view??'dashboard') as 'dashboard'|'sizes'|'constructions'|'rates'|'waste';
+  const requested=(params?.view??'dashboard') as View;
+  const view:View=['dashboard','sizes','constructions','rates','waste'].includes(requested)?requested:'dashboard';
 
   const template=await supabase.from('packaging_pricing_templates')
-    .select('id,family_id,name,slug,status,is_active,calculation_version,calculation_engine_key,published_at,supersedes_template_id,production_rules_json,quote_config_json,currency')
+    .select('id,family_id,name,slug,status,is_active,calculation_version,calculation_engine_key,published_at,supersedes_template_id,production_rules_json,quote_config_json,currency,created_at')
     .eq('organization_id',organization.id).eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5')
     .order('created_at',{ascending:false}).limit(1).maybeSingle();
   if(template.error) return <StateMessage title="Pricing v5 could not be loaded" description={template.error.message} tone="warning"/>;
   const templateId=template.data?.id??null;
   const familyId=template.data?.family_id??null;
-  if(!templateId||!familyId) return <StateMessage title="Pricing v5 template is not seeded" description="Apply the Pricing v5 migrations before configuring pricing." tone="info"/>;
+  if(!templateId||!familyId) return <StateMessage title="Pricing v5 template is not ready" description="Create the Pricing v5 template before configuring pricing." tone="info"/>;
 
   const [sizes,constructions,layers,costs,costRates,bands,charges,chargeRates,chargeLinks,flag,benchmarks]=await Promise.all([
     supabase.from('packaging_size_profiles_v5').select('id,template_id,family_id,size_key,name,width_mm,height_mm,bottom_gusset_each_mm,pricing_bucket,production_profile_key,gusset_production_mode,bottom_registration_mode,is_active,is_quoteable,sort_order,metadata').eq('organization_id',organization.id).eq('template_id',templateId).order('sort_order'),
@@ -55,16 +59,33 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
   const data={template:template.data,sizes:sizes.data??[],constructions:constructions.data??[],layers:layers.data??[],costs:v5Costs,charges:v5Charges,bands:bands.data??[],benchmarks:benchmarks.data??[],featureFlag:flag.data??null};
 
   const tab=view==='sizes'?'Sizes & Routes':view==='constructions'?'Constructions':view==='rates'?'Materials & Processes':view==='waste'?'Commercial Buckets':'Overview';
+  const isDraft=template.data?.status==='draft';
 
-  return <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Pricing Dashboard" tbarAction={<div className="flex gap-2"><Link href="/admin/packaging-templates?mode=v4" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">V4 Baseline</Link></div>}>
+  return <AdminSettingsShell active="packaging-templates" organizationName={organization.name} sectionTitle="Pricing Dashboard">
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-5 py-4">
-        <div><h1 className="text-2xl font-black text-slate-950">Pricing V5</h1><p className="mt-1 text-sm text-slate-500">Manage sizes, constructions, rates, charges, waste, margins and price review.</p></div>
-        <div className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">{template.data?.status==='published'?'Published':'Draft'}</div>
+        <div>
+          <h1 className="text-2xl font-black text-slate-950">Pricing V5</h1>
+          <p className="mt-1 text-sm text-slate-500">Review and update Stand Up Pouch pricing, rates, waste, margins and pricing rules.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/admin/packaging-templates?mode=v4" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">V4 Baseline</Link>
+          {isDraft?
+            <form action={publishPackagingTemplateV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Publish Changes</button></form>
+            :
+            <form action={clonePackagingTemplateRevisionV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Edit Pricing</button></form>}
+          <span className={`rounded-full px-3 py-1.5 text-xs font-black ${isDraft?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700'}`}>{isDraft?'Draft — editing':'Published'}</span>
+        </div>
       </div>
+
       <PricingV5AdminNav active={view}/>
+
+      {!isDraft&&view!=='dashboard'?<div className="mx-4 mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 md:mx-5">
+        <b>Click Edit Pricing to make changes.</b> A working draft will be created from the current published prices. Published pricing remains live until you publish the draft.
+      </div>:null}
+
       <div className="p-4 md:p-5">
-        {view==='dashboard'?<PricingV5OwnerDashboard data={data}/>:<PricingV5AdminWorkspace data={data} initialTab={tab as any}/>}
+        {view==='dashboard'?<PricingV5OwnerDashboard data={data}/>:<PricingV5AdminWorkspace data={data} initialTab={tab as any} embedded/>}
       </div>
     </div>
   </AdminSettingsShell>;
