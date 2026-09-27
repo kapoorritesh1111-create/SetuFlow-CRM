@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     if (!width || !height || !quantity || !String(body.construction_id || '')) {
       return NextResponse.json({ ok: false, error: 'width_height_quantity_and_construction_required' }, { status: 400 });
     }
-    if (bucket != null && ![1,2,3,4,5].includes(bucket)) {
+    if (bucket != null && (!Number.isInteger(bucket) || bucket < 1 || bucket > 99)) {
       return NextResponse.json({ ok: false, error: 'invalid_commercial_bucket' }, { status: 400 });
     }
 

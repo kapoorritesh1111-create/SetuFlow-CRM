@@ -11,9 +11,9 @@ test('S51-PKG-048: Packaging Admin uses the approved Products Components Builder
   const shell = read('src/features/admin/components/admin-settings-shell.tsx');
   assert.match(shell, /label: 'Packaging Products'/);
   assert.match(shell, /label: 'Pricing Components'/);
-  assert.match(shell, /label: 'Pricing Builder'/);
+  assert.match(shell, /label: 'Pricing Dashboard'/);
   assert.match(shell, /Products, sizes & KLDs/);
-  assert.match(shell, /Recipes, rules & live preview/);
+  assert.match(shell, /V5 pricing, rates, matrix & review/);
 });
 
 test('S51-PKG-048: Packaging Products owns sizes and KLD UX', () => {
