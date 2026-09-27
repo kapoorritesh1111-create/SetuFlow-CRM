@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { StateMessage } from '@/components/ui/state-message';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -9,7 +10,7 @@ import { AdminSettingsShell } from '@/features/admin/components/admin-settings-s
 export const dynamic = 'force-dynamic';
 
 // Pricing Builder intentionally exposes only the v4 guided recipe workspace. Legacy v3 data remains untouched for compatibility but is no longer rendered in Admin.
-export default async function PackagingTemplatesAdminPage() {
+export default async function PackagingTemplatesAdminPage({ searchParams }: { searchParams?: { mode?: string | string[] } }) {
   if (!hasSupabaseEnv) return <StateMessage title="Supabase environment variables are missing" description="Configure the application environment." tone="warning" />;
   const { missingEnv, organization } = await requireAdminWorkspace();
   if (missingEnv || !organization) return null;
@@ -17,6 +18,21 @@ export default async function PackagingTemplatesAdminPage() {
   const supabase: any = await createClient();
   const verticals = await getOrganizationVerticals(organization.id, supabase);
   if (!verticals.packagingEnabled) return <StateMessage title="Packaging vertical is not enabled" description="Pricing Builder is available for packaging-vertical workspaces. Contact SETU Flow to enable it." tone="info" />;
+
+  const mode = Array.isArray(searchParams?.mode) ? searchParams?.mode[0] : searchParams?.mode;
+  const { data: v5Flag } = await supabase.from('smc_feature_flags')
+    .select('enabled,rollout_percentage,allowed_orgs,blocked_orgs')
+    .eq('flag_key','packaging_pricing_v5')
+    .maybeSingle();
+  const v5Allowed = Array.isArray(v5Flag?.allowed_orgs) ? v5Flag.allowed_orgs : [];
+  const v5Blocked = Array.isArray(v5Flag?.blocked_orgs) ? v5Flag.blocked_orgs : [];
+  const v5Enabled = Boolean(
+    v5Flag?.enabled &&
+    Number(v5Flag?.rollout_percentage ?? 0) > 0 &&
+    !v5Blocked.includes(organization.id) &&
+    (!v5Allowed.length || v5Allowed.includes(organization.id))
+  );
+  if (mode !== 'v4' && v5Enabled) redirect('/admin/packaging-pricing-v5');
 
   const [families, variations, costs, charges, templates, bands, matrixRows, recipes, chargeLinks, flag] = await Promise.all([
     supabase.from('packaging_service_families').select('id,slug,name,description,pricing_mode,product_setup_mode,pricing_engine_type,default_uom,is_quoteable,is_active,sort_order').eq('organization_id', organization.id).order('sort_order'),

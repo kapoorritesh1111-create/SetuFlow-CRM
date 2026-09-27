@@ -86,7 +86,7 @@ const nav: Array<{ label: string; items: AdminNavItem[]; internalSection?: boole
       { key: 'trade-events', href: '/admin/trade-events', icon: 'calendar', label: 'Trade Events', statusDot: 'ok' },
       { key: 'packaging-families', href: '/admin/packaging-families', icon: 'tag', label: 'Packaging Products', sublabel: 'Products, sizes & KLDs', statusDot: 'ok', packagingOnly: true },
       { key: 'packaging-reference-library', href: '/admin/packaging-reference-library', icon: 'layers', label: 'Pricing Components', sublabel: 'Materials, processes, extras & rates', statusDot: 'ok', packagingOnly: true },
-      { key: 'packaging-templates', href: '/admin/packaging-templates', icon: 'box', label: 'Pricing Builder', sublabel: 'Recipes, rules & live preview', statusDot: 'ok', packagingOnly: true },
+      { key: 'packaging-templates', href: '/admin/packaging-pricing-v5', icon: 'box', label: 'Pricing Dashboard', sublabel: 'V5 pricing, rates, matrix & review', statusDot: 'ok', packagingOnly: true },
     ],
   },
   {
