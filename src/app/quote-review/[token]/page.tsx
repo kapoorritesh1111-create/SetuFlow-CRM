@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import QuoteDecisionForm from './quote-decision-form';
+import { customerVolumeSuggestions } from '@/lib/packaging-pricing-v5/volume-suggestions';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,9 +88,12 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               const kld = line.packaging_kld_file_id ? byKld.get(String(line.packaging_kld_file_id)) : null;
               const name = product?.name || variation?.name || family?.name || line.notes || `Packaging item ${index + 1}`;
               const lineTotal = Number(line.quantity || 0) * Number(line.unit_price || 0);
-              const alternatives = Array.isArray(line.pricing_breakdown_json?.suggested_quantities)
-                ? line.pricing_breakdown_json.suggested_quantities.slice(0, 3)
-                : [];
+              const alternatives = customerVolumeSuggestions(
+                line.quantity,
+                line.unit_price,
+                Array.isArray(line.pricing_breakdown_json?.suggested_quantities) ? line.pricing_breakdown_json.suggested_quantities : [],
+                3,
+              );
               return (
                 <article key={line.id} className="rounded-2xl border border-slate-200 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
@@ -102,7 +106,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
                     <p className="mt-1 text-xs font-semibold text-slate-600">Your quoted quantity stays unchanged. If you increase the order quantity, these suggested prices show how the approved per-piece price can reduce.</p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {alternatives.map((row: any) => {
-                        const saving = Number(line.unit_price || 0) > 0 ? ((Number(line.unit_price) - Number(row.unit_price)) / Number(line.unit_price)) * 100 : 0;
+                        const saving = Number(row.savings_pct ?? 0);
                         return <div key={row.quantity} className="rounded-xl border border-emerald-200 bg-white p-3">
                           <div className="text-xs font-black text-slate-900">{Number(row.quantity).toLocaleString()} pcs</div>
                           <div className="mt-1 text-sm font-black text-emerald-700">{money(row.unit_price, line.currency || currency)} / pc</div>

@@ -8,6 +8,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { loadPricingContextV5 } from '@/lib/packaging-pricing-v5/repository';
 import { calculateFrameFamilyPriceReviewV5, type FrameFamilyPricingInputV5 } from '@/lib/packaging-pricing-v5/frame-family-cost-core';
 import type { FrameFamilySupplyFormV5 } from '@/lib/packaging-pricing-v5/frame-family-geometry';
+import { customerVolumeSuggestions } from '@/lib/packaging-pricing-v5/volume-suggestions';
 
 const QTY_LADDER=[1000,2000,3000,5000,10000,20000,30000,50000];
 
@@ -18,6 +19,7 @@ async function workspaceContext(){
 }
 
 function safeProjection(result:any,suggestions:any[]){
+  const customerSuggestions=customerVolumeSuggestions(result.quantity,result.selling_price?.unit_price,suggestions,3);
   return {
     ok:result.ok,
     engine_version:5,
@@ -31,7 +33,7 @@ function safeProjection(result:any,suggestions:any[]){
     },
     construction:result.construction,
     selling_price:result.selling_price,
-    suggested_quantities:suggestions,
+    suggested_quantities:customerSuggestions,
     validation_errors:result.validation_errors,
     warnings:result.warnings,
   };
@@ -46,7 +48,7 @@ async function calculate(params:{templateId:string;input:FrameFamilyPricingInput
   const context=await loadPricingContextV5(workspace.organization!.id,params.templateId,{publishedOnly:!workspace.canAccessAdmin});
   if(context.template.calculation_engine_key!=='frame_formula_v5') throw new Error('Selected template is not a frame-family Pricing v5 model.');
   const result=calculateFrameFamilyPriceReviewV5(context,params.input);
-  const next=QTY_LADDER.filter((qty)=>qty>Number(params.input.quantity)).slice(0,3);
+  const next=QTY_LADDER.filter((qty)=>qty>Number(params.input.quantity));
   const suggestions=next.map((qty)=>{
     const candidate=calculateFrameFamilyPriceReviewV5(context,{...params.input,quantity:qty});
     return candidate.ok?{
@@ -62,7 +64,7 @@ export async function previewPackagingFramePricingV5(params:{templateId:string;i
   try{
     const {workspace,result,suggestions}=await calculate(params);
     const safe=safeProjection(result,suggestions);
-    return {ok:result.ok,result:workspace.canAccessAdmin?{...result,suggested_quantities:suggestions}:safe,error:result.ok?undefined:result.validation_errors.join(' ')};
+    return {ok:result.ok,result:workspace.canAccessAdmin?{...result,suggested_quantities:customerVolumeSuggestions(result.quantity,result.selling_price?.unit_price,suggestions,3)}:safe,error:result.ok?undefined:result.validation_errors.join(' ')};
   }catch(error){
     return {ok:false,error:error instanceof Error?error.message:'Frame-family Pricing v5 preview failed.'};
   }
