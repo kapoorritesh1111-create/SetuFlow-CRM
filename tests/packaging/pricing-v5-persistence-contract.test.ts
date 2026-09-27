@@ -34,6 +34,8 @@ const matrixActions=fs.readFileSync('src/features/packaging/server/pricing-v5-ma
 const adminWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-admin-workspace.tsx','utf8');
 const premiumWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-premium-workspace.tsx','utf8');
 const frameOwnerWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-frame-owner-workspace.tsx','utf8');
+const premiumQuoteStudio=fs.readFileSync('src/features/packaging/components/premium-packaging-quote-builder-v5.tsx','utf8');
+const constructionLayerEditor=fs.readFileSync('src/features/packaging/components/construction-layer-editor-v5.tsx','utf8');
 const ownerControlCenter=fs.readFileSync('src/features/packaging/components/pricing-v5-owner-control-center.tsx','utf8');
 const matrixWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-price-matrix.tsx','utf8');
 const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
@@ -148,7 +150,8 @@ test('S52-PKG-V5: quote page keeps v4 as fallback unless v5 passes its own gates
   assert.match(quotePage,/isPackagingPricingV5EnabledForOrg/);
   assert.match(quotePage,/if \(v5Enabled\)/);
   assert.match(quotePage,/if \(!pricingV5Options && !pricingV5FrameOptions\)[\s\S]*isPackagingPricingV4EnabledForOrg/);
-  assert.match(quotePage,/PricingV5SalesConfigurator/);
+  assert.match(quotePage,/PremiumPackagingQuoteBuilderV5/);
+  assert.match(premiumQuoteStudio,/PricingV5SalesConfigurator/);
   assert.match(quotePage,/PricingV4SalesConfigurator/);
 });
 
@@ -217,7 +220,8 @@ test('S52-PKG-V5: manual Spot UV stays outside pouch unit price and persists as 
 
 test('S52-PKG-V5: Sales Quote supports editing an existing v5 line without duplicating it',()=>{
   assert.match(quotePage,/listPricingV5SavedLineSummaries/);
-  assert.match(quotePage,/savedLines=\{savedPricingV5Lines\}/);
+  assert.match(quotePage,/supSavedLines=\{savedPricingV5Lines\}/);
+  assert.match(premiumQuoteStudio,/savedLines=\{supSavedLines\}/);
   assert.match(salesConfigurator,/savedLines = \[\]/);
   assert.match(salesConfigurator,/function editSavedLine/);
   assert.match(salesConfigurator,/lineId: editingLineId \|\| null/);
@@ -309,7 +313,10 @@ test('S52-PKG-V5: real Admin provides SUP and frame-family owner workspaces with
   assert.match(adminPage,/PricingV5FrameOwnerWorkspace/);
   assert.doesNotMatch(adminPage,/PricingV5OwnerControlCenter/);
   assert.match(premiumWorkspace,/Price Matrix/);
-  assert.match(frameOwnerWorkspace,/Save Layer Recipe/);
+  assert.match(frameOwnerWorkspace,/ConstructionLayerEditorV5/);
+  assert.match(constructionLayerEditor,/Save Layer Recipe/);
+  assert.match(constructionLayerEditor,/Move layer up/);
+  assert.match(constructionLayerEditor,/Remove layer/);
   assert.match(frameOwnerWorkspace,/Build 1K–50K Matrix/);
   assert.match(adminActions,/savePackagingConstructionLayersV5/);
   assert.match(adminActions,/final construction layer must be a PE sealant material/i);
@@ -327,7 +334,8 @@ test('S52-PKG-V5: seller gram guidance is owner-configured and does not alter pr
 
 
 test('S52-PKG-V5: Center Seal and 3SS are real quote-builder families with provisional hidden bucket defaults',()=>{
-  assert.match(quotePage,/PricingV5FrameSalesConfigurator/);
+  assert.match(quotePage,/PremiumPackagingQuoteBuilderV5/);
+  assert.match(premiumQuoteStudio,/PricingV5FrameSalesConfigurator/);
   assert.match(quotePage,/listSalesPackagingFramePricingV5Options/);
   assert.match(frameSalesOptions,/frame_formula_v5/);
   assert.match(frameSalesConfigurator,/sellers do not choose a bucket/i);
@@ -351,4 +359,22 @@ test('S52-PKG-V5: frame-family quote persistence is separate from SUP size persi
   assert.match(frameMigration,/calculation_engine_key='frame_formula_v5'/);
   assert.match(quoteReview,/suggested_quantities/);
   assert.match(quotePdf,/suggested_quantities/);
+});
+
+
+test('S52-PKG-V5: premium packaging Quote Studio implements the eight-step packaging workflow',()=>{
+  assert.match(premiumQuoteStudio,/Packaging Quote Studio/);
+  assert.match(premiumQuoteStudio,/Customer Requirement & Size Guidance/);
+  assert.match(premiumQuoteStudio,/Specification & Construction/);
+  assert.match(premiumQuoteStudio,/Quantity & Pricing/);
+  assert.match(premiumQuoteStudio,/Add to Quote/);
+  assert.match(premiumQuoteStudio,/Quote Lines Management/);
+  assert.match(premiumQuoteStudio,/Commercials & Terms/);
+  assert.match(premiumQuoteStudio,/Review & Generate Quote/);
+  assert.match(premiumQuoteStudio,/Flat Bottom Pouch/);
+  assert.match(premiumQuoteStudio,/Shrink Sleeves/);
+  assert.match(premiumQuoteStudio,/Coming soon/);
+  assert.match(premiumQuoteStudio,/Duplicate/);
+  assert.match(premiumQuoteStudio,/Generate \/ Preview PDF/);
+  assert.doesNotMatch(premiumQuoteStudio,/wastage_pct|margin_per_frame|pricing_bucket|cost_breakdown/);
 });
