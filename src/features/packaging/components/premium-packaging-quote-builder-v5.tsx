@@ -1,8 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import PricingV5SalesConfigurator from '@/features/packaging/components/pricing-v5-sales-configurator';
 import PricingV5FrameSalesConfigurator from '@/features/packaging/components/pricing-v5-frame-sales-configurator';
+import { adjustPackagingPricingV5QuoteLine, removePackagingPricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-line-commercial-actions';
 
 type FamilyKey='sup'|'center-seal'|'3ss';
 type Intent={lineId:string;mode:'edit'|'duplicate'}|null;
@@ -38,6 +40,14 @@ export default function PremiumPackagingQuoteBuilderV5({
   const [active,setActive]=useState<FamilyKey>(available[0]??'sup');
   const [step,setStep]=useState(1);
   const [intent,setIntent]=useState<Intent>(null);
+  const router=useRouter();
+  const [pending,startTransition]=useTransition();
+  const [adjustingLineId,setAdjustingLineId]=useState('');
+  const [discountType,setDiscountType]=useState<'percent'|'amount'>('percent');
+  const [discountValue,setDiscountValue]=useState('');
+  const [discountReason,setDiscountReason]=useState('');
+  const [lineNotice,setLineNotice]=useState('');
+  const [lineError,setLineError]=useState('');
 
   const filteredFrame=useMemo(()=>{
     if(!frameOptions) return null;
@@ -61,6 +71,45 @@ export default function PremiumPackagingQuoteBuilderV5({
   function configure(){setIntent(null);setStep(step<2?2:step);}
   function manageLine(lineId:string,family:FamilyKey,mode:'edit'|'duplicate'){
     setActive(family);setIntent({lineId,mode});setStep(2);
+  }
+  function beginAdjust(line:any){
+    setAdjustingLineId(String(line.lineId));
+    setDiscountType(line.discountType==='amount'?'amount':'percent');
+    setDiscountValue(line.discountType==='none'?'':String(line.discountValue??''));
+    setDiscountReason(String(line.discountReason??''));
+    setLineNotice('');setLineError('');
+  }
+  function saveAdjustment(line:any){
+    const value=Number(discountValue||0);
+    setLineError('');setLineNotice('');
+    startTransition(async()=>{
+      const response:any=await adjustPackagingPricingV5QuoteLine({quoteId,leadId,lineId:String(line.lineId),discountType,discountValue:value,reason:discountReason});
+      if(!response.ok){setLineError(response.error??'Price adjustment could not be saved.');return;}
+      setLineNotice(response.approvalRequired?`Discount saved — ${Number(response.discountPercent).toFixed(2)}% requires approval before send.`:'Discount saved within the current approval threshold.');
+      setAdjustingLineId('');
+      router.refresh();
+    });
+  }
+  function clearAdjustment(line:any){
+    setLineError('');setLineNotice('');
+    startTransition(async()=>{
+      const response:any=await adjustPackagingPricingV5QuoteLine({quoteId,leadId,lineId:String(line.lineId),discountType:'none',discountValue:0,reason:''});
+      if(!response.ok){setLineError(response.error??'Price adjustment could not be cleared.');return;}
+      setLineNotice('Customer discount removed. Engine selling price restored.');
+      setAdjustingLineId('');
+      router.refresh();
+    });
+  }
+  function removeLine(line:any){
+    if(typeof window!=='undefined'&&!window.confirm('Remove this packaging line from the quote? This cannot be undone.')) return;
+    setLineError('');setLineNotice('');
+    startTransition(async()=>{
+      const response:any=await removePackagingPricingV5QuoteLine({quoteId,leadId,lineId:String(line.lineId)});
+      if(!response.ok){setLineError(response.error??'Quote line could not be removed.');return;}
+      setLineNotice('Packaging quote line removed.');
+      if(adjustingLineId===String(line.lineId)) setAdjustingLineId('');
+      router.refresh();
+    });
   }
   const supSizeById=new Map((supOptions?.sizes??[]).map((x:any)=>[String(x.id),x]));
   const supConstructionById=new Map((supOptions?.constructions??[]).map((x:any)=>[String(x.id),x]));
@@ -92,10 +141,14 @@ export default function PremiumPackagingQuoteBuilderV5({
 
     {step===5?<div className="bg-white p-5 sm:p-6"><div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><div className="text-sm font-black text-emerald-800">✓ Quote line workflow ready</div><p className="mt-1 text-xs font-semibold text-emerald-700">Calculate and add the packaging line from the configurator. Saved lines refresh into this studio automatically.</p></div><div className="mt-4 grid gap-3 md:grid-cols-2"><button type="button" onClick={()=>{setIntent(null);setStep(1);}} className="rounded-2xl border border-blue-200 bg-white p-5 text-left"><div className="text-sm font-black text-blue-700">+ Add Another Line</div><div className="mt-1 text-xs font-semibold text-slate-500">Choose another packaging family or requirement.</div></button><button type="button" onClick={()=>setStep(6)} className="rounded-2xl bg-blue-600 p-5 text-left text-white"><div className="text-sm font-black">Continue to Quote Lines →</div><div className="mt-1 text-xs font-semibold text-blue-100">Review and manage all packaging options.</div></button></div></div>:null}
 
-    {step===6?<div className="bg-white p-5 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 6 · Quote Lines</div><h2 className="mt-1 text-2xl font-black text-slate-950">Quote Lines Management</h2></div><button type="button" onClick={()=>setStep(1)} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">+ Add New Line</button></div><div className="mt-5 space-y-3">
+    {step===6?<div className="bg-white p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 6 · Quote Lines</div><h2 className="mt-1 text-2xl font-black text-slate-950">Quote Lines Management</h2><p className="mt-1 text-xs font-semibold text-slate-500">Edit specifications, duplicate a line, apply a customer discount, or remove a line before approval/send.</p></div><button type="button" onClick={()=>setStep(1)} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">+ Add New Line</button></div>
+      {lineNotice?<div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-700">{lineNotice}</div>:null}
+      {lineError?<div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">{lineError}</div>:null}
+      <div className="mt-5 space-y-3">
       {lineCount===0?<div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm font-semibold text-slate-500">No V5 packaging lines have been added yet.</div>:null}
-      {supSavedLines.map((line:any)=>{const s:any=supSizeById.get(String(line.sizeProfileId));const c:any=supConstructionById.get(String(line.constructionId));return <div key={line.lineId} className="grid items-center gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[64px_minmax(0,1fr)_auto]"><Shape kind="sup"/><div><div className="text-sm font-black text-slate-950">Stand Up Pouch · {s?.name??'Approved size'}</div><div className="mt-1 text-xs font-semibold text-slate-500">{c?.name??'Approved construction'} · {line.print} · {Number(line.quantity).toLocaleString()} pcs</div><div className="mt-1 text-xs font-black text-slate-900">{money(Number(line.unitPrice),line.currency)}/pc</div></div><div className="flex gap-2"><button type="button" onClick={()=>manageLine(line.lineId,'sup','edit')} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black">Edit</button><button type="button" onClick={()=>manageLine(line.lineId,'sup','duplicate')} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">Duplicate</button></div></div>})}
-      {frameSavedLines.map((line:any)=>{const family:FamilyKey=line.supplyForm?.includes('three_side')?'3ss':'center-seal';return <div key={line.lineId} className="grid items-center gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[64px_minmax(0,1fr)_auto]"><Shape kind={family}/><div><div className="text-sm font-black text-slate-950">{line.label}</div><div className="mt-1 text-xs font-semibold text-slate-500">{line.widthMm}×{line.heightMm} mm · {line.print} · {Number(line.quantity).toLocaleString()} pcs</div></div><div className="flex gap-2"><button type="button" onClick={()=>manageLine(line.lineId,family,'edit')} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black">Edit</button><button type="button" onClick={()=>manageLine(line.lineId,family,'duplicate')} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">Duplicate</button></div></div>})}
+      {supSavedLines.map((line:any)=>{const s:any=supSizeById.get(String(line.sizeProfileId));const con:any=supConstructionById.get(String(line.constructionId));const discounted=Number(line.discountPercent??0)>0;return <div key={line.lineId} className="rounded-2xl border border-slate-200 p-4"><div className="grid items-center gap-3 md:grid-cols-[64px_minmax(0,1fr)_auto]"><Shape kind="sup"/><div><div className="text-sm font-black text-slate-950">Stand Up Pouch · {s?.name??'Approved size'}</div><div className="mt-1 text-xs font-semibold text-slate-500">{con?.name??'Approved construction'} · {line.print} · {Number(line.quantity).toLocaleString()} pcs</div><div className="mt-2 flex flex-wrap items-center gap-2 text-xs"><span className="font-black text-slate-900">{money(Number(line.unitPrice),line.currency)}/pc</span>{discounted?<><span className="text-slate-400 line-through">{money(Number(line.baseUnitPrice),line.currency)}</span><span className="rounded-full bg-amber-50 px-2 py-1 font-black text-amber-700">{Number(line.discountPercent).toFixed(2)}% discount</span></>:null}{line.approvalRequired?<span className="rounded-full bg-rose-50 px-2 py-1 font-black text-rose-700">Approval required</span>:null}</div></div><div className="flex flex-wrap gap-2"><button type="button" onClick={()=>manageLine(line.lineId,'sup','edit')} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black">Edit</button><button type="button" onClick={()=>manageLine(line.lineId,'sup','duplicate')} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">Duplicate</button><button type="button" onClick={()=>beginAdjust(line)} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-700">Adjust Price</button><button type="button" disabled={pending} onClick={()=>removeLine(line)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 disabled:opacity-50">Remove</button></div></div>{adjustingLineId===String(line.lineId)?<div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4"><div className="grid gap-3 md:grid-cols-[160px_160px_minmax(0,1fr)_auto]"><label className="text-xs font-black text-slate-600">Discount method<select value={discountType} onChange={(e)=>setDiscountType(e.target.value as any)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"><option value="percent">% discount</option><option value="amount">{line.currency} / pc discount</option></select></label><label className="text-xs font-black text-slate-600">Discount value<input type="number" min="0" step="0.01" value={discountValue} onChange={(e)=>setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"/></label><label className="text-xs font-black text-slate-600">Reason / customer context<input value={discountReason} onChange={(e)=>setDiscountReason(e.target.value)} placeholder="Existing customer, introductory price, negotiated renewal…" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"/></label><div className="flex items-end gap-2"><button type="button" disabled={pending} onClick={()=>saveAdjustment(line)} className="rounded-lg bg-slate-950 px-4 py-2 text-xs font-black text-white disabled:opacity-50">Save</button>{discounted?<button type="button" disabled={pending} onClick={()=>clearAdjustment(line)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black">Restore</button>:null}</div></div><p className="mt-2 text-[10px] font-semibold text-slate-500">Discount is applied to the engine selling price. Above 15% automatically enters the existing quote approval workflow.</p></div>:null}</div>})}
+      {frameSavedLines.map((line:any)=>{const family:FamilyKey=line.supplyForm?.includes('three_side')?'3ss':'center-seal';const discounted=Number(line.discountPercent??0)>0;return <div key={line.lineId} className="rounded-2xl border border-slate-200 p-4"><div className="grid items-center gap-3 md:grid-cols-[64px_minmax(0,1fr)_auto]"><Shape kind={family}/><div><div className="text-sm font-black text-slate-950">{line.label}</div><div className="mt-1 text-xs font-semibold text-slate-500">{line.widthMm}×{line.heightMm} mm · {line.print} · {Number(line.quantity).toLocaleString()} pcs</div><div className="mt-2 flex flex-wrap items-center gap-2 text-xs"><span className="font-black text-slate-900">{money(Number(line.unitPrice),line.currency)}/pc</span>{discounted?<><span className="text-slate-400 line-through">{money(Number(line.baseUnitPrice),line.currency)}</span><span className="rounded-full bg-amber-50 px-2 py-1 font-black text-amber-700">{Number(line.discountPercent).toFixed(2)}% discount</span></>:null}{line.approvalRequired?<span className="rounded-full bg-rose-50 px-2 py-1 font-black text-rose-700">Approval required</span>:null}</div></div><div className="flex flex-wrap gap-2"><button type="button" onClick={()=>manageLine(line.lineId,family,'edit')} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-black">Edit</button><button type="button" onClick={()=>manageLine(line.lineId,family,'duplicate')} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">Duplicate</button><button type="button" onClick={()=>beginAdjust(line)} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-700">Adjust Price</button><button type="button" disabled={pending} onClick={()=>removeLine(line)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 disabled:opacity-50">Remove</button></div></div>{adjustingLineId===String(line.lineId)?<div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4"><div className="grid gap-3 md:grid-cols-[160px_160px_minmax(0,1fr)_auto]"><label className="text-xs font-black text-slate-600">Discount method<select value={discountType} onChange={(e)=>setDiscountType(e.target.value as any)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"><option value="percent">% discount</option><option value="amount">{line.currency} / pc discount</option></select></label><label className="text-xs font-black text-slate-600">Discount value<input type="number" min="0" step="0.01" value={discountValue} onChange={(e)=>setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"/></label><label className="text-xs font-black text-slate-600">Reason / customer context<input value={discountReason} onChange={(e)=>setDiscountReason(e.target.value)} placeholder="Existing customer, introductory price, negotiated renewal…" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"/></label><div className="flex items-end gap-2"><button type="button" disabled={pending} onClick={()=>saveAdjustment(line)} className="rounded-lg bg-slate-950 px-4 py-2 text-xs font-black text-white disabled:opacity-50">Save</button>{discounted?<button type="button" disabled={pending} onClick={()=>clearAdjustment(line)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black">Restore</button>:null}</div></div><p className="mt-2 text-[10px] font-semibold text-slate-500">Discount is applied to the engine selling price. Above 15% automatically enters the existing quote approval workflow.</p></div>:null}</div>})}
     </div><div className="mt-5 flex justify-end"><button type="button" onClick={()=>setStep(7)} className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white">Continue to Commercials →</button></div></div>:null}
 
     {step===7?<div className="bg-white p-5 sm:p-6"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 7 · Commercials & Terms</div><h2 className="mt-1 text-2xl font-black text-slate-950">Commercial Details</h2><p className="mt-2 max-w-2xl text-sm font-semibold text-slate-500">Payment terms, validity, delivery, shipping and notes continue in the canonical quote terms workflow below so we retain existing approvals and versioning.</p><div className="mt-5 grid gap-3 md:grid-cols-4">{[['Payment Terms','Advance / balance'],['Validity','30 days'],['Delivery Timeline','3–4 weeks'],['Shipping Terms','Per quote terms']].map(([a,b])=><div key={a} className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">{a}</div><div className="mt-2 text-sm font-black text-slate-900">{b}</div></div>)}</div><div className="mt-5 flex flex-wrap justify-end gap-2"><a href="#quote-commercial-review" className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-700">Open Terms Editor</a><button type="button" onClick={()=>setStep(8)} className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white">Continue to Review →</button></div></div>:null}
