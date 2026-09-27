@@ -6,14 +6,6 @@ import { createClient } from '@/lib/supabase/server';
 import { loadPricingContextV5 } from '@/lib/packaging-pricing-v5/repository';
 
 const ADMIN_PATH='/admin/packaging-pricing-v5';
-const EXPECTED_BANDS:Record<number,number[]>={
-  1:[500,1000,2000,3000,5000,10000],
-  2:[250,500,1000,2000,3000,5000,10000],
-  3:[250,500,1000,2000,3000,5000,10000],
-  4:[250,500,1000,2000,3000,5000,10000],
-  5:[250,500,1000,2000,3000,5000,10000],
-};
-
 function text(formData:FormData,key:string){ return String(formData.get(key)??'').trim(); }
 function numberValue(formData:FormData,key:string,label:string,{min=0,max}:{min?:number;max?:number}={}){
   const raw=text(formData,key); const value=Number(raw);
@@ -46,7 +38,7 @@ export async function savePackagingSizeProfileV5(formData:FormData){
   const templateId=text(formData,'template_id');
   if(!id) throw new Error('Pricing v5 size is required.');
   await requireDraftTemplate(supabase,organization.id,templateId);
-  const bucket=Math.trunc(numberValue(formData,'pricing_bucket','Pricing bucket',{min:1,max:5}));
+  const bucket=Math.trunc(numberValue(formData,'pricing_bucket','Pricing group',{min:1,max:99}));
   const gussetMode=text(formData,'gusset_production_mode');
   const registrationMode=text(formData,'bottom_registration_mode');
   if(!['integrated','separate','conditional'].includes(gussetMode)) throw new Error('Unsupported gusset production mode.');
@@ -59,7 +51,7 @@ export async function savePackagingSizeProfileV5(formData:FormData){
     : [];
   const applicationExamples=text(formData,'application_examples');
   const {data:existing,error:existingError}=await supabase.from('packaging_size_profiles_v5')
-    .select('metadata').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).maybeSingle();
+    .select('metadata,width_mm,height_mm,bottom_gusset_each_mm').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).maybeSingle();
   if(existingError||!existing) throw new Error(existingError?.message??'Pricing v5 size was not found in this revision.');
   const metadata={
     ...(existing.metadata??{}),
@@ -68,7 +60,13 @@ export async function savePackagingSizeProfileV5(formData:FormData){
     application_examples:applicationExamples||null,
     owner_review_source:'2026-09-25 transcript + approved PE options sheet',
   };
-  const payload={pricing_bucket:bucket,production_profile_key:text(formData,'production_profile_key')||null,gusset_production_mode:gussetMode,bottom_registration_mode:registrationMode,is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),metadata,updated_by:user.id,updated_at:new Date().toISOString()};
+  const name=text(formData,'name')||undefined;
+  const width=numberValue(formData,'width_mm','Width',{min:1,max:5000});
+  const height=numberValue(formData,'height_mm','Height',{min:1,max:5000});
+  const bottomGusset=numberValue(formData,'bottom_gusset_each_mm','Bottom gusset',{min:0,max:2000});
+  const dimensionsChanged=Number(existing.width_mm)!==width||Number(existing.height_mm)!==height||Number(existing.bottom_gusset_each_mm)!==bottomGusset;
+  if(dimensionsChanged) metadata.kld_status='needs_regeneration';
+  const payload={name:name||undefined,width_mm:width,height_mm:height,bottom_gusset_each_mm:bottomGusset,pricing_bucket:bucket,production_profile_key:text(formData,'production_profile_key')||null,gusset_production_mode:gussetMode,bottom_registration_mode:registrationMode,is_quoteable:checked(formData,'is_quoteable'),is_active:checked(formData,'is_active'),metadata,updated_by:user.id,updated_at:new Date().toISOString()};
   const {data,error}=await supabase.from('packaging_size_profiles_v5').update(payload).eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 size was not found in this revision.');
   revalidatePath(ADMIN_PATH);
@@ -227,6 +225,77 @@ export async function createPackagingConstructionV5(formData:FormData){
   revalidatePath(ADMIN_PATH);
 }
 
+
+export async function createPackagingSizeProfileV5(formData:FormData){
+  const {organization,user,supabase}=await adminDb();
+  const templateId=text(formData,'template_id');
+  const template=await requireDraftTemplate(supabase,organization.id,templateId);
+  const width=numberValue(formData,'width_mm','Width',{min:1,max:5000});
+  const height=numberValue(formData,'height_mm','Height',{min:1,max:5000});
+  const bottomGusset=numberValue(formData,'bottom_gusset_each_mm','Bottom gusset',{min:0,max:2000});
+  const bucket=Math.trunc(numberValue(formData,'pricing_bucket','Pricing group',{min:1,max:99}));
+  const name=text(formData,'name')||(width+' x '+height+' mm');
+  const gussetMode=text(formData,'gusset_production_mode')||'integrated';
+  const registrationMode=text(formData,'bottom_registration_mode')||'not_applicable';
+  if(!['integrated','separate','conditional'].includes(gussetMode)) throw new Error('Unsupported gusset production mode.');
+  if(!['not_applicable','optional','required_registered','required_unregistered'].includes(registrationMode)) throw new Error('Unsupported bottom registration mode.');
+  const allowedPeMicrons=[60,75,95,120].filter((micron)=>checked(formData,'pe_'+micron));
+  if(!allowedPeMicrons.length) throw new Error('Select at least one approved PE option for this size.');
+  const keyBase=slug(text(formData,'size_key')||(width+'x'+height+'_bg'+bottomGusset+'_'+bottomGusset));
+  if(!keyBase) throw new Error('Size key could not be generated.');
+  const now=new Date().toISOString();
+  const {error}=await supabase.from('packaging_size_profiles_v5').insert({
+    organization_id:organization.id,template_id:templateId,family_id:template.family_id,size_key:keyBase,name,
+    width_mm:width,height_mm:height,bottom_gusset_each_mm:bottomGusset,pricing_bucket:bucket,
+    production_profile_key:text(formData,'production_profile_key')||null,
+    gusset_production_mode:gussetMode,bottom_registration_mode:registrationMode,
+    is_active:true,is_quoteable:false,sort_order:900,
+    metadata:{source:'pricing_v5_admin_custom',custom_size:true,kld_status:'needs_regeneration',allowed_pe_microns:allowedPeMicrons},
+    created_by:user.id,updated_by:user.id,created_at:now,updated_at:now,
+  });
+  if(error) throw new Error(error.message);
+  revalidatePath(ADMIN_PATH);
+  revalidatePath(ADMIN_PATH+'/matrix');
+}
+
+export async function createPackagingCommercialBandV5(formData:FormData){
+  const {organization,user,supabase}=await adminDb();
+  const templateId=text(formData,'template_id');
+  await requireDraftTemplate(supabase,organization.id,templateId);
+  const bucket=Math.trunc(numberValue(formData,'pricing_bucket','Pricing group',{min:1,max:99}));
+  const runLength=numberValue(formData,'run_length_max_m','Run length',{min:1,max:100000000});
+  const wastage=numberValue(formData,'wastage_pct','Wastage',{min:0,max:100});
+  const margin=numberValue(formData,'margin_per_frame','Margin per frame',{min:0,max:1000000});
+  const {data:maxSort,error:sortError}=await supabase.from('packaging_pricing_commercial_bands_v5').select('sort_order').eq('organization_id',organization.id).eq('template_id',templateId).eq('pricing_bucket',bucket).order('sort_order',{ascending:false}).limit(1).maybeSingle();
+  if(sortError) throw new Error(sortError.message);
+  const now=new Date().toISOString();
+  const {error}=await supabase.from('packaging_pricing_commercial_bands_v5').insert({
+    organization_id:organization.id,template_id:templateId,pricing_bucket:bucket,run_length_max_m:runLength,
+    wastage_pct:wastage,margin_per_frame:margin,sort_order:Number(maxSort?.sort_order??0)+10,
+    metadata:{source:'pricing_v5_admin_custom'},created_by:user.id,updated_by:user.id,created_at:now,updated_at:now,
+  });
+  if(error) throw new Error(error.message);
+  revalidatePath(ADMIN_PATH);
+  revalidatePath(ADMIN_PATH+'/matrix');
+}
+
+export async function deletePackagingCommercialBandV5(formData:FormData){
+  const {organization,supabase}=await adminDb();
+  const templateId=text(formData,'template_id');
+  const id=text(formData,'id');
+  await requireDraftTemplate(supabase,organization.id,templateId);
+  if(!id) throw new Error('Commercial band is required.');
+  const {data:band,error:bandError}=await supabase.from('packaging_pricing_commercial_bands_v5').select('pricing_bucket').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).maybeSingle();
+  if(bandError||!band) throw new Error(bandError?.message??'Commercial band was not found.');
+  const {count,error:countError}=await supabase.from('packaging_pricing_commercial_bands_v5').select('id',{count:'exact',head:true}).eq('organization_id',organization.id).eq('template_id',templateId).eq('pricing_bucket',band.pricing_bucket);
+  if(countError) throw new Error(countError.message);
+  if((count??0)<=1) throw new Error('A pricing group must keep at least one commercial band.');
+  const {error}=await supabase.from('packaging_pricing_commercial_bands_v5').delete().eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id);
+  if(error) throw new Error(error.message);
+  revalidatePath(ADMIN_PATH);
+  revalidatePath(ADMIN_PATH+'/matrix');
+}
+
 export async function clonePackagingTemplateRevisionV5(formData:FormData){
   const {organization,user,supabase}=await adminDb();
   const sourceId=text(formData,'template_id');
@@ -294,15 +363,25 @@ export async function validatePackagingTemplateV5(templateId:string){
   const quoteableSizes=activeSizes.filter((item)=>item.is_quoteable);
   const activeConstructions=context.constructions.filter((item)=>item.is_active);
   const quoteableConstructions=activeConstructions.filter((item)=>item.is_quoteable);
-  if(activeSizes.length!==20) errors.push(`Pricing v5 must contain exactly 20 active workbook sizes; found ${activeSizes.length}.`);
-  if(activeConstructions.length<44) errors.push(`Pricing v5 must contain at least the 44 approved workbook constructions; found ${activeConstructions.length}.`);
+  if(activeSizes.length<20) errors.push('Pricing v5 must retain the 20 approved workbook sizes; found only '+activeSizes.length+' active sizes.');
+  if(activeConstructions.length<44) errors.push('Pricing v5 must retain at least the 44 approved workbook constructions; found '+activeConstructions.length+'.');
   if(!quoteableSizes.length) errors.push('At least one Pricing v5 size must be quoteable.');
   if(!quoteableConstructions.length) errors.push('At least one Pricing v5 construction must be quoteable.');
-  for(const bucket of [1,2,3,4,5]){
-    const actual=context.bands.filter((band)=>band.pricing_bucket===bucket).map((band)=>Number(band.run_length_max_m)).sort((a,b)=>a-b);
-    const expected=EXPECTED_BANDS[bucket];
-    if(actual.length!==expected.length||expected.some((value,index)=>actual[index]!==value)) errors.push(`Bucket ${bucket} does not match the approved run-length schedule.`);
+  const buckets=[...new Set(context.bands.map((band)=>Number(band.pricing_bucket)))].sort((a,b)=>a-b);
+  if(!buckets.length) errors.push('At least one pricing group is required.');
+  for(const bucket of buckets){
+    const rows=context.bands.filter((band)=>Number(band.pricing_bucket)===bucket).sort((a,b)=>Number(a.run_length_max_m)-Number(b.run_length_max_m));
+    let previous=0;
+    for(const row of rows){
+      const max=Number(row.run_length_max_m), waste=Number(row.wastage_pct), margin=Number(row.margin_per_frame);
+      if(!Number.isFinite(max)||max<=previous) errors.push('Pricing group PG'+String(bucket).padStart(2,'0')+' must have strictly increasing run-length limits.');
+      if(!Number.isFinite(waste)||waste<0||waste>100) errors.push('Pricing group PG'+String(bucket).padStart(2,'0')+' has an invalid wastage value.');
+      if(!Number.isFinite(margin)||margin<0) errors.push('Pricing group PG'+String(bucket).padStart(2,'0')+' has an invalid margin value.');
+      previous=max;
+    }
   }
+  const configuredBuckets=new Set(buckets);
+  for(const size of quoteableSizes) if(!configuredBuckets.has(Number(size.pricing_bucket))) errors.push(size.name+' is assigned to PG'+String(size.pricing_bucket).padStart(2,'0')+', but that pricing group has no bands.');
   for(const size of quoteableSizes){
     if(!size.pricing_bucket) errors.push(`${size.name} does not have a pricing bucket.`);
     if(!size.production_profile_key) errors.push(`${size.name} does not have a production profile.`);
