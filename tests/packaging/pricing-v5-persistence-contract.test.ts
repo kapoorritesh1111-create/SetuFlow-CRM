@@ -145,7 +145,7 @@ test('S52-PKG-V5: v5 quote persistence has its own atomic RPC and snapshot names
 test('S52-PKG-V5: quote page keeps v4 as fallback unless v5 passes its own gates',()=>{
   assert.match(quotePage,/isPackagingPricingV5EnabledForOrg/);
   assert.match(quotePage,/if \(v5Enabled\)/);
-  assert.match(quotePage,/if \(!pricingV5Options\)[\s\S]*isPackagingPricingV4EnabledForOrg/);
+  assert.match(quotePage,/if \(!pricingV5Options && !pricingV5FrameOptions\)[\s\S]*isPackagingPricingV4EnabledForOrg/);
   assert.match(quotePage,/PricingV5SalesConfigurator/);
   assert.match(quotePage,/PricingV4SalesConfigurator/);
 });
@@ -327,7 +327,7 @@ test('S52-PKG-V5: Center Seal and 3SS are real quote-builder families with provi
   assert.match(frameSalesConfigurator,/sellers do not choose a bucket/i);
   assert.match(frameSalesConfigurator,/Suggested bucket/);
   assert.doesNotMatch(frameSalesConfigurator,/commercial_bucket.*select/i);
-  assert.match(frameActions,/commercial_bucket:null/);
+  assert.match(frameSalesConfigurator,/commercial_bucket:null/);
   assert.match(frameMigration,/stark-center-seal-roll-v5-review/);
   assert.match(frameMigration,/stark-3ss-pouch-v5-review/);
   assert.match(frameMigration,/default_commercial_bucket/);
