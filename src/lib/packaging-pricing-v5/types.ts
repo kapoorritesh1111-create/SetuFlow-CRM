@@ -1,6 +1,6 @@
 export const PACKAGING_PRICING_ENGINE_VERSION_V5 = 5 as const;
 
-export type PricingBucketV5 = 1 | 2 | 3 | 4 | 5;
+export type PricingBucketV5 = number;
 export type GussetProductionModeV5 = 'integrated' | 'separate' | 'conditional';
 export type BottomRegistrationModeV5 = 'not_applicable' | 'optional' | 'required_registered' | 'required_unregistered';
 export type BottomPrintModeV5 = 'solid_unregistered' | 'registered_artwork';

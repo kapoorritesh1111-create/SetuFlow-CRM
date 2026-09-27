@@ -53,7 +53,7 @@ export async function savePackagingSizeProfileV5(formData:FormData){
   const {data:existing,error:existingError}=await supabase.from('packaging_size_profiles_v5')
     .select('metadata,width_mm,height_mm,bottom_gusset_each_mm').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).maybeSingle();
   if(existingError||!existing) throw new Error(existingError?.message??'Pricing v5 size was not found in this revision.');
-  const metadata={
+  const metadata:any={
     ...(existing.metadata??{}),
     allowed_pe_microns:allowedPeMicrons,
     recommended_fill_grams:recommendedFillGrams,
@@ -79,9 +79,10 @@ export async function savePackagingCommercialBandV5(formData:FormData){
   const templateId=text(formData,'template_id');
   if(!id) throw new Error('Pricing v5 commercial band is required.');
   await requireDraftTemplate(supabase,organization.id,templateId);
+  const runLength=numberValue(formData,'run_length_max_m','Run length',{min:1,max:100000000});
   const wastage=numberValue(formData,'wastage_pct','Wastage',{min:0,max:100});
   const margin=numberValue(formData,'margin_per_frame','Margin per frame',{min:0,max:1000000});
-  const {data,error}=await supabase.from('packaging_pricing_commercial_bands_v5').update({wastage_pct:wastage,margin_per_frame:margin,updated_by:user.id,updated_at:new Date().toISOString()}).eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).select('id').maybeSingle();
+  const {data,error}=await supabase.from('packaging_pricing_commercial_bands_v5').update({run_length_max_m:runLength,wastage_pct:wastage,margin_per_frame:margin,updated_by:user.id,updated_at:new Date().toISOString()}).eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 commercial band was not found.');
   revalidatePath(ADMIN_PATH);
 }
