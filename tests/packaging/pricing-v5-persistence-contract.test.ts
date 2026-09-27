@@ -26,6 +26,7 @@ const engine=fs.readFileSync('src/lib/packaging-pricing-v5/sup-formula-engine.ts
 const adminActions=fs.readFileSync('src/features/packaging/server/pricing-v5-admin-actions.ts','utf8');
 const matrixActions=fs.readFileSync('src/features/packaging/server/pricing-v5-matrix-actions.ts','utf8');
 const adminWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-admin-workspace.tsx','utf8');
+const ownerControlCenter=fs.readFileSync('src/features/packaging/components/pricing-v5-owner-control-center.tsx','utf8');
 const matrixWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-price-matrix.tsx','utf8');
 const repository=fs.readFileSync('src/lib/packaging-pricing-v5/repository.ts','utf8');
 const starkSeed=fs.readFileSync('supabase/migrations/20260914013100_s52_pkg_v5_stark_master_seed.sql','utf8');
@@ -276,6 +277,6 @@ test('Pricing v5 Admin matrix uses approved PE compatibility and engine-backed p
   assert.match(matrixWorkspace,/previewPackagingPricingV5/);
   assert.match(matrixWorkspace,/Engine-backed price detail/);
   assert.match(matrixWorkspace,/reconciliation_delta/);
-  assert.match(adminWorkspace,/Build 1K–50K matrix/);
-  assert.match(adminWorkspace,/20000, 30000, 50000/);
+  assert.match(ownerControlCenter,/Build 1K–50K matrix/);
+  assert.match(ownerControlCenter,/20000, 30000, 50000/);
 });
