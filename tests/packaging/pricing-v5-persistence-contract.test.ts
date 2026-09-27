@@ -35,6 +35,8 @@ const adminWorkspace=fs.readFileSync('src/features/packaging/components/pricing-
 const premiumWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-premium-workspace.tsx','utf8');
 const frameOwnerWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-frame-owner-workspace.tsx','utf8');
 const premiumQuoteStudio=fs.readFileSync('src/features/packaging/components/premium-packaging-quote-builder-v5.tsx','utf8');
+const lineCommercialActions=fs.readFileSync('src/features/packaging/server/pricing-v5-line-commercial-actions.ts','utf8');
+const lineCommercialMigration=fs.readFileSync('supabase/migrations/20260927163000_pricing_v5_quote_line_commercial_controls.sql','utf8');
 const constructionLayerEditor=fs.readFileSync('src/features/packaging/components/construction-layer-editor-v5.tsx','utf8');
 const ownerControlCenter=fs.readFileSync('src/features/packaging/components/pricing-v5-owner-control-center.tsx','utf8');
 const matrixWorkspace=fs.readFileSync('src/features/packaging/components/pricing-v5-price-matrix.tsx','utf8');
@@ -227,8 +229,9 @@ test('S52-PKG-V5: Sales Quote supports editing an existing v5 line without dupli
   assert.match(salesConfigurator,/lineId: editingLineId \|\| null/);
   assert.match(salesConfigurator,/Update quote line/);
   assert.match(savedLineProjection,/input_snapshot_json\?\.input/);
-  assert.doesNotMatch(savedLineProjection,/pricing_breakdown_json/);
+  assert.match(savedLineProjection,/pricing_breakdown_json\?\.price_adjustment/);
   assert.doesNotMatch(savedLineProjection,/cost_breakdown/);
+  assert.doesNotMatch(savedLineProjection,/commercial_rules|pricing_bucket|wastage_pct|margin_per_frame/);
 });
 
 test('S52-PKG-V5: changing quantity keeps a selected KLD while changing size clears it',()=>{
@@ -377,4 +380,34 @@ test('S52-PKG-V5: premium packaging Quote Studio implements the eight-step packa
   assert.match(premiumQuoteStudio,/Duplicate/);
   assert.match(premiumQuoteStudio,/Generate \/ Preview PDF/);
   assert.doesNotMatch(premiumQuoteStudio,/wastage_pct|margin_per_frame|pricing_bucket|cost_breakdown/);
+});
+
+
+test('S52-PKG-V5: Quote Studio can remove mutable Pricing v5 packaging lines atomically',()=>{
+  assert.match(premiumQuoteStudio,/Remove/);
+  assert.match(premiumQuoteStudio,/removePackagingPricingV5QuoteLine/);
+  assert.match(lineCommercialActions,/app_delete_packaging_v5_quote_line_tx/);
+  assert.match(lineCommercialMigration,/create or replace function public\.app_delete_packaging_v5_quote_line_tx/);
+  assert.match(lineCommercialMigration,/delete from public\.quote_optional_charges/);
+  assert.match(lineCommercialMigration,/delete from public\.quote_version_line_items/);
+  assert.match(lineCommercialMigration,/delete from public\.quote_line_items/);
+  assert.match(lineCommercialMigration,/packaging_pricing_v5/);
+  assert.match(lineCommercialMigration,/grant execute[\s\S]*to service_role/i);
+});
+
+test('S52-PKG-V5: customer discounts support percent or amount per piece and preserve approval controls',()=>{
+  assert.match(premiumQuoteStudio,/Adjust Price/);
+  assert.match(premiumQuoteStudio,/% discount/);
+  assert.match(premiumQuoteStudio,/\/ pc discount/);
+  assert.match(premiumQuoteStudio,/Above 15% automatically enters the existing quote approval workflow/);
+  assert.match(lineCommercialActions,/APPROVAL_THRESHOLD_PERCENT=15/);
+  assert.match(lineCommercialActions,/app_adjust_packaging_v5_quote_line_tx/);
+  assert.match(lineCommercialMigration,/p_discount_type text/);
+  assert.match(lineCommercialMigration,/p_discount_value numeric/);
+  assert.match(lineCommercialMigration,/v_requires:=v_pct>coalesce\(p_approval_threshold_percent,15\)/);
+  assert.match(lineCommercialMigration,/price_adjustment/);
+  assert.match(lineCommercialMigration,/subtotal_before_gst/);
+  assert.match(lineCommercialMigration,/override_status/);
+  assert.match(lineCommercialMigration,/approval_required/);
+  assert.match(lineCommercialMigration,/grant execute[\s\S]*to service_role/i);
 });
