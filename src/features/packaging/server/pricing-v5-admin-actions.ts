@@ -508,7 +508,11 @@ export async function uploadPackagingKldV5(formData:FormData):Promise<PackagingK
 
     const {error:archiveError}=await supabase.from('packaging_kld_files').update({is_active:false,updated_at:new Date().toISOString()})
       .eq('organization_id',organization.id).eq('family_id',template.family_id).eq('spec_key',size.size_key).neq('id',inserted.id).eq('is_active',true);
-    if(archiveError) return {ok:false,error:archiveError.message};
+    if(archiveError){
+      await supabase.from('packaging_kld_files').update({is_active:false,updated_at:new Date().toISOString()}).eq('organization_id',organization.id).eq('id',inserted.id);
+      await supabase.storage.from(KLD_BUCKET).remove([path]);
+      return {ok:false,error:archiveError.message};
+    }
 
     if(template.status==='draft'){
       const metadata={...(size.metadata??{}),kld_status:'approved',kld_version:version,kld_file_id:inserted.id};
@@ -539,12 +543,19 @@ export async function activatePackagingKldV5(formData:FormData){
   if(kldError||!kld?.id||kld.family_id!==template.family_id||kld.spec_key!==size.size_key) throw new Error(kldError?.message??'KLD version does not match this size.');
 
   const now=new Date().toISOString();
+  const {data:previousActive,error:previousActiveError}=await supabase.from('packaging_kld_files').select('id')
+    .eq('organization_id',organization.id).eq('family_id',template.family_id).eq('spec_key',size.size_key).eq('is_active',true);
+  if(previousActiveError) throw new Error(previousActiveError.message);
   const {error:archiveError}=await supabase.from('packaging_kld_files').update({is_active:false,updated_at:now})
     .eq('organization_id',organization.id).eq('family_id',template.family_id).eq('spec_key',size.size_key).eq('is_active',true);
   if(archiveError) throw new Error(archiveError.message);
   const {error:activateError}=await supabase.from('packaging_kld_files').update({is_active:true,updated_at:now})
     .eq('organization_id',organization.id).eq('id',kldId);
-  if(activateError) throw new Error(activateError.message);
+  if(activateError){
+    const restoreIds=(previousActive??[]).map((item:any)=>String(item.id)).filter(Boolean);
+    if(restoreIds.length) await supabase.from('packaging_kld_files').update({is_active:true,updated_at:new Date().toISOString()}).eq('organization_id',organization.id).in('id',restoreIds);
+    throw new Error(activateError.message);
+  }
 
   if(template.status==='draft'){
     const metadata={...(size.metadata??{}),kld_status:'approved',kld_version:Number(kld.version??1),kld_file_id:kldId};

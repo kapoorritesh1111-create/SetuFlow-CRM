@@ -20,6 +20,7 @@ const approvalQuoteBuilder=fs.readFileSync('src/features/quotes/canonical/Canoni
 const quotePdf=fs.readFileSync('src/app/api/quotes/[quoteId]/pdf/route.ts','utf8');
 const quoteReview=fs.readFileSync('src/app/quote-review/[token]/page.tsx','utf8');
 const matrixPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/matrix/page.tsx','utf8');
+const legacyMatrixPage=matrixPage;
 const adminPage=fs.readFileSync('src/app/(app)/admin/packaging-pricing-v5/page.tsx','utf8');
 const salesOptions=fs.readFileSync('src/lib/packaging-pricing-v5/sales-options.ts','utf8');
 const salesConfigurator=fs.readFileSync('src/features/packaging/components/pricing-v5-sales-configurator.tsx','utf8');
@@ -446,4 +447,20 @@ test('S52-PKG-V5: Admin can replace and reactivate versioned KLD PDFs for exact 
   assert.match(kldManager,/Make Active/);
   assert.match(kldManager,/api\/public\/packaging-kld/);
   assert.match(salesConfigurator,/item\.spec_key\?\?item\.size_preset_key/);
+});
+
+
+test('S52-PKG-V5: legacy matrix URL redirects into the unified Pricing V5 family shell',()=>{
+  assert.match(legacyMatrixPage,/redirect\('\/admin\/packaging-pricing-v5\?view='\+view\)/);
+  assert.doesNotMatch(premiumWorkspace,/href="\/admin\/packaging-pricing-v5\/matrix"/);
+  assert.match(premiumWorkspace,/href="\/admin\/packaging-pricing-v5\?view=matrix"/);
+});
+
+test('S52-PKG-V5: KLD replacement failures do not leave duplicate or missing active versions',()=>{
+  assert.match(adminActions,/archiveError\)\{[\s\S]*inserted\.id[\s\S]*storage\.from\(KLD_BUCKET\)\.remove/);
+  assert.match(adminActions,/previousActive/);
+  assert.match(adminActions,/restoreIds/);
+  assert.match(adminActions,/\.in\('id',restoreIds\)/);
+  assert.match(premiumWorkspace,/Approved replacement KLD linked/);
+  assert.match(premiumWorkspace,/Replacement KLD required/);
 });
