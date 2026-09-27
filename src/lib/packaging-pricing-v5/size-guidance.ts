@@ -29,8 +29,9 @@ export function rankPackagingSizeGuidance(sizes:any[],input:SizeGuidanceInput){
     let gramDistance=Number.POSITIVE_INFINITY;
     let matchedGram:number|null=null;
     if(hasGrams&&configuredGrams.length){
-      matchedGram=configuredGrams.reduce((best:number,current:number)=>Math.abs(current-grams)<Math.abs(best-grams)?current:best,configuredGrams[0]);
-      gramDistance=Math.abs(matchedGram-grams)/Math.max(grams,matchedGram,1);
+      const closest=configuredGrams.reduce((best:number,current:number)=>Math.abs(current-grams)<Math.abs(best-grams)?current:best,configuredGrams[0]);
+      matchedGram=closest;
+      gramDistance=Math.abs(closest-grams)/Math.max(grams,closest,1);
     }
     const exampleText=words(examples.join(' '));
     const matchedTokens=hasApplication?appTokens.filter((token)=>exampleText.some((word)=>word.includes(token)||token.includes(word))):[];
