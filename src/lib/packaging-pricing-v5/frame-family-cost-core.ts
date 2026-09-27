@@ -122,7 +122,7 @@ export function calculateFrameFamilyPriceReviewV5(
 
   const configuredBucket = Number(context.template.production_rules_json?.default_commercial_bucket ?? 0);
   const resolvedBucket = input.commercial_bucket
-    ?? ([1,2,3,4,5].includes(configuredBucket) ? configuredBucket as PricingBucketV5 : null);
+    ?? (Number.isInteger(configuredBucket) && configuredBucket >= 1 && configuredBucket <= 99 ? configuredBucket as PricingBucketV5 : null);
   if (resolvedBucket == null) {
     errors.push('Commercial bucket mapping is not configured for this frame-family Pricing v5 template.');
   }

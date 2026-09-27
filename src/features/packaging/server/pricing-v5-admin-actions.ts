@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { loadPricingContextV5 } from '@/lib/packaging-pricing-v5/repository';
 
 const ADMIN_PATH='/admin/packaging-pricing-v5';
+const V5_ENGINES=['sup_formula_v5','frame_formula_v5'];
 function text(formData:FormData,key:string){ return String(formData.get(key)??'').trim(); }
 function numberValue(formData:FormData,key:string,label:string,{min=0,max}:{min?:number;max?:number}={}){
   const raw=text(formData,key); const value=Number(raw);
@@ -26,7 +27,7 @@ async function requireDraftTemplate(supabase:any,organizationId:string,templateI
   const {data,error}=await supabase.from('packaging_pricing_templates')
     .select('id,family_id,status,is_active,calculation_version,calculation_engine_key,supersedes_template_id')
     .eq('organization_id',organizationId).eq('id',templateId)
-    .eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').maybeSingle();
+    .eq('calculation_version',5).in('calculation_engine_key',V5_ENGINES).maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 template was not found.');
   if(data.status!=='draft') throw new Error('Published Pricing v5 is immutable. Create a new draft revision before changing pricing structure or rates.');
   return data;
@@ -180,7 +181,7 @@ export async function savePackagingConstructionLayersV5(formData:FormData){
     created_by:user.id,
   }));
   const {error:upsertError}=await supabase.from('packaging_construction_layers_v5')
-    .upsert(rows,{onConflict:'organization_id,construction_id,layer_position'});
+    .upsert(rows,{onConflict:'organization_id,template_id,construction_id,layer_position'});
   if(upsertError) throw new Error(upsertError.message);
 
   const {error:deleteError}=await supabase.from('packaging_construction_layers_v5')
@@ -303,17 +304,21 @@ export async function clonePackagingTemplateRevisionV5(formData:FormData){
   if(!sourceId) throw new Error('Published Pricing v5 template is required.');
   const {data:source,error:sourceError}=await supabase.from('packaging_pricing_templates')
     .select('id,family_id,slug,name,description,currency,pricing_model,calculation_engine_key,calculation_version,status,production_rules_json,quote_config_json')
-    .eq('organization_id',organization.id).eq('id',sourceId).eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').maybeSingle();
+    .eq('organization_id',organization.id).eq('id',sourceId).eq('calculation_version',5).in('calculation_engine_key',V5_ENGINES).maybeSingle();
   if(sourceError||!source?.id) throw new Error(sourceError?.message??'Source Pricing v5 template was not found.');
   if(source.status!=='published') throw new Error('Only a published Pricing v5 template can be cloned into a new revision.');
-  const {data:existingDraft,error:draftError}=await supabase.from('packaging_pricing_templates').select('id,name').eq('organization_id',organization.id).eq('family_id',source.family_id).eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').eq('status','draft').limit(1).maybeSingle();
+  const {data:drafts,error:draftError}=await supabase.from('packaging_pricing_templates')
+    .select('id,name,production_rules_json').eq('organization_id',organization.id).eq('family_id',source.family_id)
+    .eq('calculation_version',5).eq('calculation_engine_key',source.calculation_engine_key).eq('status','draft');
   if(draftError) throw new Error(draftError.message);
-  if(existingDraft?.id) throw new Error(`A Pricing v5 draft already exists: ${existingDraft.name}. Finish or remove that revision first.`);
+  const supplyForm=String(source.production_rules_json?.supply_form??'');
+  const existingDraft=(drafts??[]).find((item:any)=>String(item.production_rules_json?.supply_form??'')===supplyForm);
+  if(existingDraft?.id) throw new Error(`A Pricing v5 draft already exists for this form: ${existingDraft.name}. Finish or publish that revision first.`);
 
   const stamp=Date.now().toString(36);
   const {data:created,error:createError}=await supabase.from('packaging_pricing_templates').insert({
     organization_id:organization.id,family_id:source.family_id,slug:`${source.slug}-r-${stamp}`,name:`${source.name} · Revision`,description:source.description,currency:source.currency,
-    is_active:false,calculation_version:5,pricing_model:source.pricing_model,calculation_engine_key:'sup_formula_v5',status:'draft',production_rules_json:source.production_rules_json??{},quote_config_json:source.quote_config_json??{},supersedes_template_id:source.id,
+    is_active:false,calculation_version:5,pricing_model:source.pricing_model,calculation_engine_key:source.calculation_engine_key,status:'draft',production_rules_json:source.production_rules_json??{},quote_config_json:source.quote_config_json??{},supersedes_template_id:source.id,
   }).select('id').single();
   if(createError||!created?.id) throw new Error(createError?.message??'Pricing v5 revision could not be created.');
   const newTemplateId=String(created.id);
@@ -357,16 +362,29 @@ export async function clonePackagingTemplateRevisionV5(formData:FormData){
 }
 
 export async function validatePackagingTemplateV5(templateId:string){
-  const {organization}=await adminDb();
+  const {organization,supabase}=await adminDb();
+  const {data:template,error:templateError}=await supabase.from('packaging_pricing_templates')
+    .select('id,calculation_engine_key,production_rules_json').eq('organization_id',organization.id).eq('id',templateId)
+    .eq('calculation_version',5).in('calculation_engine_key',V5_ENGINES).maybeSingle();
+  if(templateError||!template?.id) return {ok:false,errors:[templateError?.message??'Pricing v5 template was not found.']};
   const context=await loadPricingContextV5(organization.id,templateId);
   const errors:string[]=[];
   const activeSizes=context.sizeProfiles.filter((item)=>item.is_active);
   const quoteableSizes=activeSizes.filter((item)=>item.is_quoteable);
   const activeConstructions=context.constructions.filter((item)=>item.is_active);
   const quoteableConstructions=activeConstructions.filter((item)=>item.is_quoteable);
-  if(activeSizes.length<20) errors.push('Pricing v5 must retain the 20 approved workbook sizes; found only '+activeSizes.length+' active sizes.');
-  if(activeConstructions.length<44) errors.push('Pricing v5 must retain at least the 44 approved workbook constructions; found '+activeConstructions.length+'.');
-  if(!quoteableSizes.length) errors.push('At least one Pricing v5 size must be quoteable.');
+  const isFrame=template.calculation_engine_key==='frame_formula_v5';
+  if(!isFrame){
+    if(activeSizes.length<20) errors.push('Pricing v5 must retain the 20 approved workbook sizes; found only '+activeSizes.length+' active sizes.');
+    if(activeConstructions.length<44) errors.push('Pricing v5 must retain at least the 44 approved workbook constructions; found '+activeConstructions.length+'.');
+    if(!quoteableSizes.length) errors.push('At least one Pricing v5 size must be quoteable.');
+  }else{
+    if(activeConstructions.length<48) errors.push('Frame-family Pricing v5 must retain at least 48 approved constructions; found '+activeConstructions.length+'.');
+    const supplyForm=String(template.production_rules_json?.supply_form??'');
+    if(!['center_seal_roll','center_seal_pouch','three_side_seal_roll','three_side_seal_pouch'].includes(supplyForm)) errors.push('Frame-family supply form is missing or invalid.');
+    const defaultBucket=Number(template.production_rules_json?.default_commercial_bucket??0);
+    if(!Number.isInteger(defaultBucket)||defaultBucket<1||defaultBucket>99) errors.push('Frame-family default commercial pricing group must be between PG01 and PG99.');
+  }
   if(!quoteableConstructions.length) errors.push('At least one Pricing v5 construction must be quoteable.');
   const buckets=[...new Set(context.bands.map((band)=>Number(band.pricing_bucket)))].sort((a,b)=>a-b);
   if(!buckets.length) errors.push('At least one pricing group is required.');
@@ -382,10 +400,15 @@ export async function validatePackagingTemplateV5(templateId:string){
     }
   }
   const configuredBuckets=new Set(buckets);
-  for(const size of quoteableSizes) if(!configuredBuckets.has(Number(size.pricing_bucket))) errors.push(size.name+' is assigned to PG'+String(size.pricing_bucket).padStart(2,'0')+', but that pricing group has no bands.');
-  for(const size of quoteableSizes){
-    if(!size.pricing_bucket) errors.push(`${size.name} does not have a pricing bucket.`);
-    if(!size.production_profile_key) errors.push(`${size.name} does not have a production profile.`);
+  if(!isFrame){
+    for(const size of quoteableSizes) if(!configuredBuckets.has(Number(size.pricing_bucket))) errors.push(size.name+' is assigned to PG'+String(size.pricing_bucket).padStart(2,'0')+', but that pricing group has no bands.');
+    for(const size of quoteableSizes){
+      if(!size.pricing_bucket) errors.push(`${size.name} does not have a pricing bucket.`);
+      if(!size.production_profile_key) errors.push(`${size.name} does not have a production profile.`);
+    }
+  }else{
+    const defaultBucket=Number(template.production_rules_json?.default_commercial_bucket??0);
+    if(defaultBucket&&!configuredBuckets.has(defaultBucket)) errors.push('The selected default pricing group has no commercial bands.');
   }
   for(const construction of quoteableConstructions){
     const layers=context.constructionLayers.filter((layer)=>layer.construction_id===construction.id);
@@ -412,11 +435,29 @@ export async function publishPackagingTemplateV5(formData:FormData){
   const validation=await validatePackagingTemplateV5(templateId);
   if(!validation.ok) throw new Error(validation.errors.join(' '));
   const now=new Date().toISOString();
-  const {data,error}=await supabase.from('packaging_pricing_templates').update({status:'published',is_active:true,published_at:now,published_by:user.id,updated_at:now}).eq('organization_id',organization.id).eq('id',templateId).eq('status','draft').eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5').select('id').maybeSingle();
+  const {data,error}=await supabase.from('packaging_pricing_templates').update({status:'published',is_active:true,published_at:now,published_by:user.id,updated_at:now}).eq('organization_id',organization.id).eq('id',templateId).eq('status','draft').eq('calculation_version',5).eq('calculation_engine_key',template.calculation_engine_key).select('id').maybeSingle();
   if(error||!data?.id) throw new Error(error?.message??'Pricing v5 template was not found or is no longer a draft.');
   if(template.supersedes_template_id){
-    const {error:archiveError}=await supabase.from('packaging_pricing_templates').update({status:'archived',is_active:false,updated_at:now}).eq('organization_id',organization.id).eq('id',template.supersedes_template_id).eq('calculation_version',5).eq('calculation_engine_key','sup_formula_v5');
+    const {error:archiveError}=await supabase.from('packaging_pricing_templates').update({status:'archived',is_active:false,updated_at:now}).eq('organization_id',organization.id).eq('id',template.supersedes_template_id).eq('calculation_version',5).eq('calculation_engine_key',template.calculation_engine_key);
     if(archiveError) throw new Error(`New revision published, but prior revision could not be archived: ${archiveError.message}`);
   }
+  revalidatePath(ADMIN_PATH);
+}
+
+
+export async function savePackagingFrameTemplateSettingsV5(formData:FormData){
+  const {organization,supabase}=await adminDb();
+  const templateId=text(formData,'template_id');
+  const template=await requireDraftTemplate(supabase,organization.id,templateId);
+  if(template.calculation_engine_key!=='frame_formula_v5') throw new Error('Frame-family Pricing v5 template is required.');
+  const bucket=Math.trunc(numberValue(formData,'default_commercial_bucket','Default pricing group',{min:1,max:99}));
+  const {data:current,error:currentError}=await supabase.from('packaging_pricing_templates')
+    .select('production_rules_json').eq('organization_id',organization.id).eq('id',templateId).maybeSingle();
+  if(currentError||!current) throw new Error(currentError?.message??'Pricing v5 template was not found.');
+  const rules={...(current.production_rules_json??{}),default_commercial_bucket:bucket,commercial_bucket_mapping:'owner_configured'};
+  const {data,error}=await supabase.from('packaging_pricing_templates')
+    .update({production_rules_json:rules,updated_at:new Date().toISOString()})
+    .eq('organization_id',organization.id).eq('id',templateId).eq('status','draft').select('id').maybeSingle();
+  if(error||!data?.id) throw new Error(error?.message??'Frame-family commercial settings could not be saved.');
   revalidatePath(ADMIN_PATH);
 }

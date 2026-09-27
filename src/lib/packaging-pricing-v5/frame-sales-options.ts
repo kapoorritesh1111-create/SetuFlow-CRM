@@ -69,7 +69,7 @@ export async function listSalesPackagingFramePricingV5Options(organizationId:str
       currency:template.currency,
       supply_form:supplyForm,
       supply_label:SUPPLY_LABELS[supplyForm]??template.name,
-      suggested_bucket:Number.isFinite(suggestedBucket)&&suggestedBucket>=1&&suggestedBucket<=5?suggestedBucket:null,
+      suggested_bucket:Number.isInteger(suggestedBucket)&&suggestedBucket>=1&&suggestedBucket<=99?suggestedBucket:null,
       bucket_status:String(template.production_rules_json?.commercial_bucket_mapping??''),
       constructions,
     });
