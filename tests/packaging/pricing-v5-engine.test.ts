@@ -488,6 +488,8 @@ test('S52-PKG-V5: Sales payload exposes one selected-price result and redacts in
   assert.equal('alternative_quantities' in sales,false);
   assert.ok(Array.isArray(sales.suggested_quantities));
   assert.deepEqual(sales.suggested_quantities.map((item:any)=>item.quantity),[10000,20000,30000]);
+  assert.ok(sales.suggested_quantities.every((item:any)=>item.unit_price<sales.selling_price.unit_price));
+  assert.ok(sales.suggested_quantities.every((item:any)=>item.savings_pct>0));
   assert.equal('pricing_bucket' in sales.production_route,false);
   assert.ok(sales.production_route.components.every((item:any)=>!('units_per_frame' in item)&&!('run_length_m' in item)));
 });

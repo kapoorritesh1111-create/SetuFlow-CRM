@@ -1,5 +1,6 @@
 import { calculateSupFormulaV5 } from './sup-formula-engine';
 import type { PackagingPricingResultV5, PricingContextV5, SupPricingInputV5 } from './types';
+import { customerVolumeSuggestions } from './volume-suggestions';
 
 export type PackagingPricingInputV5 = SupPricingInputV5;
 
@@ -65,14 +66,12 @@ export function toSalesQuotePricingResultV5(result: PackagingPricingResultV5) {
       .filter((charge) => charge.application_stage === 'separate_quote_line')
       .map((charge) => ({ ...charge })),
     selling_price: result.selling_price,
-    suggested_quantities: result.alternative_quantities
-      .filter((item) => Number(item.quantity) > Number(result.customer_requirement.quantity))
-      .slice(0, 3)
-      .map((item) => ({
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        product_total: item.product_total,
-      })),
+    suggested_quantities: customerVolumeSuggestions(
+      result.customer_requirement.quantity,
+      result.selling_price.unit_price,
+      result.alternative_quantities,
+      3,
+    ),
     validation_errors: result.validation_errors,
     warnings: result.warnings,
   };

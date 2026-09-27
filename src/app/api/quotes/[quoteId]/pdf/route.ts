@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { loadOrganizationLogo, type PdfImage } from '@/lib/pdf/organization-logo';
+import { customerVolumeSuggestions } from '@/lib/packaging-pricing-v5/volume-suggestions';
 
 export const runtime = 'nodejs';
 
@@ -305,14 +306,17 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
   const volumeSuggestions = lines
     .filter((line) => line.line_type === 'packaging' && Number(line.calculation_version) === 5)
     .flatMap((line, lineIndex) => {
-      const suggestions = Array.isArray(line.pricing_breakdown_json?.suggested_quantities)
-        ? line.pricing_breakdown_json.suggested_quantities.slice(0, 3)
-        : [];
+      const suggestions = customerVolumeSuggestions(
+        line.quantity,
+        line.unit_price,
+        Array.isArray(line.pricing_breakdown_json?.suggested_quantities) ? line.pricing_breakdown_json.suggested_quantities : [],
+        3,
+      );
       if (!suggestions.length) return [];
       const prefix = lines.filter((item) => item.line_type === 'packaging' && Number(item.calculation_version) === 5).length > 1
         ? `Item ${lineIndex + 1}: `
         : '';
-      const summary = suggestions.map((item: any) => `${Number(item.quantity).toLocaleString()} pcs @ ${money(item.unit_price, currency)}/pc`).join(' | ');
+      const summary = suggestions.map((item: any) => `${Number(item.quantity).toLocaleString()} pcs @ ${money(item.unit_price, currency)}/pc (${Number(item.savings_pct).toFixed(1)}% lower/pc)`).join(' | ');
       return [`${prefix}${summary}`];
     });
 
