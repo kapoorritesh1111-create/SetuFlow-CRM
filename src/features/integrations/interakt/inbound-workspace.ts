@@ -185,7 +185,9 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
     kpis: {
       active: Number(stats.active ?? 0), needsReply: Number(stats.needsReply ?? 0), needsInfo: Number(stats.needsInfo ?? 0),
       ready: Number(stats.ready ?? 0), evaluated: Number(stats.evaluated ?? 0), pending: Number(stats.pending ?? 0),
-      newEvidence: Number(stats.newEvidence ?? 0), inquiries: Number(stats.inquiries ?? 0), browsingHidden: Number(stats.browsingHidden ?? 0),
+      newEvidence: Number(stats.newEvidence ?? 0), inquiries: Number(stats.inquiries ?? 0),
+      followUps: Number(stats.followUps ?? 0), overdue: Number(stats.overdue ?? 0), dueToday: Number(stats.dueToday ?? 0),
+      browsingHidden: Number(stats.browsingHidden ?? 0),
     },
   };
 }

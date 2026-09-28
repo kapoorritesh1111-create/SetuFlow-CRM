@@ -314,6 +314,31 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
     }
   }
 
+  const { data: inboundFollowUps } = await db.from('inbound_follow_ups')
+    .select('id,assigned_user_id,scheduled_at,notes,created_by')
+    .eq('organization_id', organizationId)
+    .eq('inbound_staging_id', row.id)
+    .eq('status', 'scheduled')
+    .order('scheduled_at', { ascending: true });
+  if (inboundFollowUps?.length) {
+    for (const followUp of inboundFollowUps) {
+      const { error: transferError } = await db.from('lead_follow_ups').insert({
+        organization_id: organizationId,
+        lead_id: lead.id,
+        assigned_user_id: followUp.assigned_user_id,
+        scheduled_at: followUp.scheduled_at,
+        status: 'scheduled',
+        notes: followUp.notes,
+        created_by: followUp.created_by ?? userId,
+      });
+      if (!transferError) {
+        await db.from('inbound_follow_ups').update({ status: 'transferred', updated_at: now }).eq('id', followUp.id);
+      }
+    }
+    const nextFollowUpAt = inboundFollowUps[0]?.scheduled_at ?? null;
+    if (nextFollowUpAt) await db.from('leads').update({ next_follow_up_at: nextFollowUpAt, updated_by: userId }).eq('organization_id', organizationId).eq('id', lead.id);
+  }
+
   await db.from('lead_intake_staging').update({ intake_status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: userId, qualification_score: assessment.score, qualification_notes: [row.qualification_notes, overrideReason ? `Lead creation override: ${overrideReason}` : null].filter(Boolean).join('\n'), updated_at: now }).eq('id', row.id);
   await db.from('lead_intake_inquiries').update({ status: 'qualified', qualified_lead_id: lead.id, qualified_at: now, qualified_by: userId, guru_score: assessment.score, guru_band: assessment.bandLabel, guru_missing_fields: assessment.leadBlockers, guru_evaluation: { lead_blockers: assessment.leadBlockers, later_enrichment: assessment.laterEnrichment }, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
   revalidatePath('/leads');

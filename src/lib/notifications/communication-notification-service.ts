@@ -1,6 +1,6 @@
 import { sendWebPushToUsers } from './web-push';
 
-export type CommunicationNotificationType = 'mail_received' | 'calendar_reminder';
+export type CommunicationNotificationType = 'mail_received' | 'calendar_reminder' | 'task_due';
 
 type DeliveryClient = {
   from: (table: string) => any;
@@ -14,7 +14,7 @@ type DispatchInput = {
   title: string;
   body: string;
   icon: string;
-  entityType: 'mail_message' | 'calendar_event';
+  entityType: 'mail_message' | 'calendar_event' | 'task';
   entityId: string;
   entityRef: string;
   actionUrl: string;
@@ -22,6 +22,7 @@ type DispatchInput = {
 };
 
 const SETU_MAIL_PUSH_ICON = '/icons/setu-mail-192.png';
+const SETU_FLOW_PUSH_ICON = '/icons/icon-192.png';
 
 function unique(values: string[]) {
   return [...new Set(values.map(value => String(value || '').trim()).filter(Boolean))];
@@ -92,8 +93,8 @@ export async function dispatchCommunicationNotification(db: DeliveryClient, inpu
         action_url: input.actionUrl,
         priority: input.priority ?? 'normal',
         type: input.type,
-        icon: SETU_MAIL_PUSH_ICON,
-        badge: SETU_MAIL_PUSH_ICON,
+        icon: input.type === 'mail_received' ? SETU_MAIL_PUSH_ICON : SETU_FLOW_PUSH_ICON,
+        badge: input.type === 'mail_received' ? SETU_MAIL_PUSH_ICON : SETU_FLOW_PUSH_ICON,
       }, input.organizationId);
       if (pushResult.sent === 0) console.warn('[setu-communications:push] no device delivery', { organizationId: input.organizationId, type: input.type, userCount: pushUserIds.length, skipped: pushResult.skipped ?? null, pruned: pushResult.pruned });
     } catch {

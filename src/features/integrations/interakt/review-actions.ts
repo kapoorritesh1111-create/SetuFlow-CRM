@@ -11,6 +11,7 @@ const STARK_PACKMATE_SLUG = 'starkpackmate';
 const SUPPORTED_PROVIDERS = ['interakt', 'indiamart'];
 const INBOUND_PATH = '/leads/inbound';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
+const MANAGER_ROLES = new Set(['owner', 'admin', 'manager']);
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
@@ -82,5 +83,116 @@ export async function logStarkInteraktCall(formData: FormData): Promise<void> {
     .eq('organization_id', organization.id)
     .in('source_provider', SUPPORTED_PROVIDERS);
 
+  revalidatePath(INBOUND_PATH);
+}
+
+
+async function requireOwnedInboundRow(db: any, organizationId: string, userId: string, workspace: any, rowId: string) {
+  const { data: intake, error } = await db.from('lead_intake_staging')
+    .select('id,setu_assigned_user_id,person_name,contact_name,company_name,source_provider')
+    .eq('id', rowId)
+    .eq('organization_id', organizationId)
+    .in('source_provider', SUPPORTED_PROVIDERS)
+    .maybeSingle();
+  if (error || !intake?.id) throw new Error('Inbound inquiry not found.');
+  const canManageAll = workspace.currentRoles.some((role: string) => MANAGER_ROLES.has(clean(role).toLowerCase()));
+  if (!canManageAll && clean(intake.setu_assigned_user_id) !== userId) throw new Error('This inbound inquiry is assigned to another Sales user.');
+  return intake;
+}
+
+async function logFollowUpEvent(db: any, organizationId: string, intake: any, user: any, workspace: any, eventType: string, text: string) {
+  const now = new Date().toISOString();
+  const actorName = workspace.profile?.full_name ?? user.email ?? 'Setu Flow user';
+  await db.from('lead_intake_messages').insert({
+    organization_id: organizationId,
+    intake_id: intake.id,
+    provider: clean(intake.source_provider).toLowerCase() || 'interakt',
+    external_message_id: `setu-follow-up:${randomUUID()}`,
+    event_type: eventType,
+    direction: 'system',
+    actor_type: 'agent',
+    actor_name: actorName,
+    message_type: 'Follow-up',
+    message_text: text,
+    message_payload: { actor_user_id: user.id },
+    sent_at: now,
+    status: 'logged',
+    updated_at: now,
+  });
+}
+
+export async function createOrRescheduleInboundFollowUp(formData: FormData): Promise<void> {
+  const { workspace, organization, user } = await requireStarkPackmateSalesAccess();
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+
+  const rowId = clean(formData.get('rowId'));
+  const scheduledAtRaw = clean(formData.get('scheduledAt'));
+  const reason = clean(formData.get('reason'));
+  const notesRaw = clean(formData.get('notes'));
+  if (!rowId || !scheduledAtRaw) throw new Error('Follow-up date and time are required.');
+
+  const scheduledAt = new Date(scheduledAtRaw);
+  if (Number.isNaN(scheduledAt.getTime())) throw new Error('Choose a valid follow-up date and time.');
+  if (scheduledAt.getTime() <= Date.now() + 60 * 1000) throw new Error('Follow-up must be scheduled at least 1 minute in the future.');
+
+  const intake = await requireOwnedInboundRow(db, organization.id, user.id, workspace, rowId);
+  const notes = [reason, notesRaw].filter(Boolean).join(' — ') || 'Follow up with customer';
+
+  await db.from('inbound_follow_ups')
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('organization_id', organization.id)
+    .eq('inbound_staging_id', rowId)
+    .eq('assigned_user_id', user.id)
+    .eq('status', 'scheduled');
+
+  const { error } = await db.from('inbound_follow_ups').insert({
+    organization_id: organization.id,
+    inbound_staging_id: rowId,
+    assigned_user_id: user.id,
+    scheduled_at: scheduledAt.toISOString(),
+    status: 'scheduled',
+    notes,
+    created_by: user.id,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(`Unable to schedule follow-up: ${String(error.message ?? 'unknown database error')}`);
+
+  await logFollowUpEvent(
+    db,
+    organization.id,
+    intake,
+    user,
+    workspace,
+    'follow_up_scheduled',
+    `Follow-up scheduled for ${scheduledAt.toISOString()}: ${notes}`,
+  );
+
+  revalidatePath(INBOUND_PATH);
+}
+
+export async function completeInboundFollowUp(formData: FormData): Promise<void> {
+  const { workspace, organization, user } = await requireStarkPackmateSalesAccess();
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+
+  const rowId = clean(formData.get('rowId'));
+  const followUpId = clean(formData.get('followUpId'));
+  if (!rowId || !followUpId) throw new Error('Follow-up is required.');
+
+  const intake = await requireOwnedInboundRow(db, organization.id, user.id, workspace, rowId);
+  const now = new Date().toISOString();
+  const { data, error } = await db.from('inbound_follow_ups')
+    .update({ status: 'completed', completed_at: now, updated_at: now })
+    .eq('id', followUpId)
+    .eq('organization_id', organization.id)
+    .eq('inbound_staging_id', rowId)
+    .eq('assigned_user_id', user.id)
+    .eq('status', 'scheduled')
+    .select('id')
+    .maybeSingle();
+  if (error || !data?.id) throw new Error('Unable to complete this follow-up.');
+
+  await logFollowUpEvent(db, organization.id, intake, user, workspace, 'follow_up_completed', 'Follow-up marked completed.');
   revalidatePath(INBOUND_PATH);
 }

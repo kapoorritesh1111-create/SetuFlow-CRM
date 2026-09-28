@@ -90,6 +90,54 @@ async function sendInApp(db: any, event: any, occurrenceStart: string) {
   });
 }
 
+async function processInboundFollowUpReminders(db: any, now: Date) {
+  const horizon = new Date(now.getTime() + 15 * 60 * 1000);
+  const { data: followUps, error } = await db.from('inbound_follow_ups')
+    .select('id,organization_id,inbound_staging_id,assigned_user_id,scheduled_at,notes')
+    .eq('status', 'scheduled')
+    .is('reminder_sent_at', null)
+    .gt('scheduled_at', now.toISOString())
+    .lte('scheduled_at', horizon.toISOString())
+    .order('scheduled_at', { ascending: true })
+    .limit(100);
+  if (error) throw new Error('Unable to load inbound follow-up reminders.');
+
+  const intakeIds = [...new Set((followUps ?? []).map((row: any) => row.inbound_staging_id).filter(Boolean))];
+  const { data: intakes } = intakeIds.length
+    ? await db.from('lead_intake_staging').select('id,person_name,contact_name,company_name').in('id', intakeIds)
+    : { data: [] };
+  const intakeById = new Map((intakes ?? []).map((row: any) => [row.id, row]));
+
+  let processed = 0;
+  let failed = 0;
+  for (const followUp of followUps ?? []) {
+    try {
+      const intake: any = intakeById.get(followUp.inbound_staging_id) ?? {};
+      const customer = intake.person_name || intake.contact_name || intake.company_name || 'Inbound customer';
+      const when = new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }).format(new Date(followUp.scheduled_at));
+      await dispatchCommunicationNotification(db, {
+        organizationId: followUp.organization_id,
+        userIds: [followUp.assigned_user_id],
+        type: 'task_due',
+        title: `Follow-up due soon: ${customer}`,
+        body: `${when} · ${followUp.notes || 'Follow up with this customer'}`,
+        icon: 'clock',
+        entityType: 'task',
+        entityId: followUp.id,
+        entityRef: `inbound-follow-up:${followUp.id}`,
+        actionUrl: `/leads/inbound?review=${encodeURIComponent(followUp.inbound_staging_id)}&status=follow_up`,
+        priority: 'high',
+      });
+      await db.from('inbound_follow_ups').update({ reminder_sent_at: now.toISOString(), updated_at: now.toISOString() }).eq('id', followUp.id).is('reminder_sent_at', null);
+      processed += 1;
+    } catch (err) {
+      failed += 1;
+      console.warn('[setu-inbound:follow-up-reminder] delivery failed', { followUpId: followUp.id, error: err instanceof Error ? err.message : 'Unknown error' });
+    }
+  }
+  return { scanned: followUps?.length ?? 0, processed, failed };
+}
+
 async function claimDelivery(db: any, reminder: any, event: any, occurrenceStart: string) {
   const occurrenceIso = new Date(occurrenceStart).toISOString();
   const { error } = await db.from('calendar_reminder_deliveries').insert({
@@ -121,6 +169,7 @@ export async function GET(req: NextRequest) {
   if (!db) return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
 
   const now = new Date();
+  const inboundFollowUps = await processInboundFollowUpReminders(db, now).catch((error) => ({ scanned: 0, processed: 0, failed: 1, error: error instanceof Error ? error.message : 'Unknown error' }));
   const window = occurrenceWindow(now);
   // PostgREST can cap each response below the requested range. Continue paging by
   // the number actually returned so recent reminders cannot fall off the first page.
@@ -232,7 +281,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const summary = { scanned: reminders?.length ?? 0, eventsLoaded: events?.length ?? 0, eligible, processed, failed, deduplicated, missingEvents, timingCandidates };
+  const summary = { scanned: reminders?.length ?? 0, eventsLoaded: events?.length ?? 0, eligible, processed, failed, deduplicated, missingEvents, timingCandidates, inboundFollowUps };
   console.info('[setu-calendar:reminder] run complete', summary);
   return NextResponse.json({ ok: failed === 0, ...summary }, { status: failed > 0 ? 500 : 200 });
 }
