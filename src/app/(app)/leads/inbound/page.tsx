@@ -115,15 +115,11 @@ function ProviderBadge({ row, compact = false }: { row: any; compact?: boolean }
 }
 
 function inboundLeadType(row: any) {
+  // "Existing" must be based on real relationship/conversation evidence, not on
+  // backfill processing state or multiple inbound messages in the same fresh inquiry.
+  // A lead is existing once it is linked to CRM or the team has actually responded.
   if (row?.qualified_lead_id) return 'existing';
   if (row?.last_outbound_at) return 'existing';
-
-  const first = row?.first_inquiry_at ? new Date(row.first_inquiry_at).getTime() : NaN;
-  const last = row?.last_inbound_at ? new Date(row.last_inbound_at).getTime() : NaN;
-  if (Number.isFinite(first) && Number.isFinite(last) && last - first > 60_000) return 'existing';
-
-  const history = String(row?.historical_backfill_status ?? '').toLowerCase();
-  if (history && !['not_requested', 'pending'].includes(history)) return 'existing';
 
   return 'new';
 }
