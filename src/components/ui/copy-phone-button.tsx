@@ -27,7 +27,7 @@ export function CopyPhoneButton({
     }
   }
 
-  const label = copied ? 'Copied' : 'Copy phone';
+  const label = copied ? 'Copied' : 'Copy phone number';
   return (
     <button
       type="button"
@@ -36,7 +36,7 @@ export function CopyPhoneButton({
       aria-label={label}
       className={`inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 ${iconOnly ? 'h-8 w-8' : compact ? 'px-2 py-1 text-[10px]' : 'px-3 py-2 text-xs'}`}
     >
-      {copied ? '✓' : '⧉'}{iconOnly ? '' : <span className="ml-1">{copied ? 'Copied' : 'Copy'}</span>}
+      {copied ? '✓' : '⧉'}{iconOnly ? '' : <span className="ml-1">{copied ? 'Copied' : 'Copy number'}</span>}
     </button>
   );
 }

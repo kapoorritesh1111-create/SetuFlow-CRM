@@ -161,6 +161,47 @@ function assigneeFromTraits(traits: Record<string, unknown>) {
   return [clean(assignee.first_name), clean(assignee.last_name)].filter(Boolean).join(' ').trim() || clean(assignee.email);
 }
 
+async function initialSetuOwnerFromInterakt(db: any, assigneeName: string | null | undefined) {
+  const normalized = clean(assigneeName).toLowerCase().replace(/\s+/g, ' ');
+  if (!normalized) return null;
+
+  const { data: members, error } = await db
+    .from('organization_members')
+    .select('user_id,profiles!inner(id,email,full_name),user_roles!inner(roles!inner(name))')
+    .eq('organization_id', STARK_PACKMATE_ORG_ID)
+    .eq('is_active', true);
+
+  if (error) throw new Error(`Unable to resolve Interakt assignee: ${String(error.message ?? 'unknown database error')}`);
+
+  for (const member of members ?? []) {
+    const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+    const roles = Array.isArray(member.user_roles) ? member.user_roles : [];
+    const eligible = roles.some((link: any) => {
+      const role = Array.isArray(link.roles) ? link.roles[0] : link.roles;
+      return ['sales', 'field_sales'].includes(clean(role?.name).toLowerCase());
+    });
+    if (!eligible) continue;
+
+    const fullName = clean(profile?.full_name).toLowerCase().replace(/\s+/g, ' ');
+    const email = clean(profile?.email).toLowerCase();
+    const matches =
+      normalized === fullName ||
+      normalized.startsWith(`${fullName} `) ||
+      (normalized === 'simran simran' && email === 'cse@starkpackmate.com') ||
+      (normalized === 'anita singh' && email === 'anita.singh@starkpackmate.com');
+
+    if (matches) {
+      return {
+        userId: member.user_id,
+        email,
+        displayName: clean(profile?.full_name) || email,
+      };
+    }
+  }
+
+  return null;
+}
+
 function evidenceEntry(intelligence: InteraktCompanyIntelligence, input: { messageId?: string | null; mediaUrl?: string | null; question?: string | null; at?: string | null }) {
   return { source: intelligence.source, company_name: intelligence.companyName, brand_name: intelligence.brandName, confidence: intelligence.confidence, evidence: intelligence.evidence, model: intelligence.model, message_id: input.messageId ?? null, media_url: input.mediaUrl ?? null, question: input.question ?? null, observed_at: input.at ?? new Date().toISOString() };
 }
@@ -376,7 +417,34 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   if (textIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(textIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   if (imageIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(imageIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   const attribution = mergeAttribution(intake, attributionFromPayload(data));
-  await db.from('lead_intake_staging').update({ contact_name: intake.contact_name ?? name, person_name: intake.person_name ?? name, email: intake.email ?? email, full_phone_number: intake.full_phone_number ?? phone, first_inquiry_at: incoming ? (intake.first_inquiry_at ?? receivedAt) : intake.first_inquiry_at, last_inbound_at: incoming ? receivedAt : intake.last_inbound_at, source_modified_at: now, raw_payload: data, company_evidence: companyEvidence, company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at, interakt_assignee_name: assignee, updated_at: now, ...identityPatch, ...attribution }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
+  const initialOwner = !intake.setu_assigned_user_id && assignee
+    ? await initialSetuOwnerFromInterakt(db, assignee)
+    : null;
+  const ownerPatch = initialOwner ? {
+    setu_assigned_user_id: initialOwner.userId,
+    setu_assigned_invitation_id: null,
+    setu_assigned_email: initialOwner.email,
+    setu_assigned_name: initialOwner.displayName,
+    setu_assigned_at: now,
+  } : {};
+
+  await db.from('lead_intake_staging').update({
+    contact_name: intake.contact_name ?? name,
+    person_name: intake.person_name ?? name,
+    email: intake.email ?? email,
+    full_phone_number: intake.full_phone_number ?? phone,
+    first_inquiry_at: incoming ? (intake.first_inquiry_at ?? receivedAt) : intake.first_inquiry_at,
+    last_inbound_at: incoming ? receivedAt : intake.last_inbound_at,
+    source_modified_at: now,
+    raw_payload: data,
+    company_evidence: companyEvidence,
+    company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at,
+    interakt_assignee_name: assignee,
+    updated_at: now,
+    ...ownerPatch,
+    ...identityPatch,
+    ...attribution,
+  }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
 
   if (incoming) {
     try {
