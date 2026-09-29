@@ -61,6 +61,12 @@ test('live IndiaMART polling caps stale checkpoints to the requested recent wind
   assert.match(cron, /lookbackMinutes:\s*24 \* 60/);
 });
 
+test('IndiaMART request and response timestamps use India Standard Time correctly', () => {
+  assert.match(adapter, /330 \* 60_000/);
+  assert.match(adapter, /\+05:30/);
+  assert.match(adapter, /IndiaMART CRM API expects start_time\/end_time in India Standard Time/);
+});
+
 test('IndiaMART sync preserves concurrent admin configuration such as default sales owner', () => {
   assert.match(adapter, /readLatestConfiguration/);
   assert.match(adapter, /\.\.\.latestConfiguration/);

@@ -58,14 +58,24 @@ function firstValue(record: JsonRecord, ...keys: string[]) {
 function safeTimestamp(value: unknown) {
   const raw = text(value);
   if (!raw) return null;
-  const parsed = new Date(raw);
+
+  // IndiaMART QUERY_TIME is returned as a timezone-less India local timestamp.
+  // Interpret that value as IST instead of server/UTC time.
+  const indiaLocalMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/);
+  const normalized = indiaLocalMatch ? `${raw.replace(' ', 'T')}+05:30` : raw;
+  const parsed = new Date(normalized);
   return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
 }
 
 function formatIndiaMartTime(date: Date) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const pad = (value: number) => String(value).padStart(2, '0');
-  return `${pad(date.getUTCDate())}-${months[date.getUTCMonth()]}-${date.getUTCFullYear()}${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+
+  // IndiaMART CRM API expects start_time/end_time in India Standard Time.
+  // Shift the absolute UTC instant to IST, then use UTC getters to format
+  // the India-local wall clock without depending on the Vercel server TZ.
+  const indiaTime = new Date(date.getTime() + 330 * 60_000);
+  return `${pad(indiaTime.getUTCDate())}-${months[indiaTime.getUTCMonth()]}-${indiaTime.getUTCFullYear()}${pad(indiaTime.getUTCHours())}:${pad(indiaTime.getUTCMinutes())}:${pad(indiaTime.getUTCSeconds())}`;
 }
 
 function normalizePhone(record: JsonRecord) {
