@@ -56,7 +56,7 @@ export async function POST(request:NextRequest){
   const width=numeric(body.width_mm,1,2000);
   const height=numeric(body.height_mm,1,2000);
   const gusset=numeric(body.bottom_gusset_each_mm,0,1000);
-  const bucket=numeric(body.pricing_bucket,1,5);
+  const bucket=numeric(body.pricing_bucket,1,99);
   const trim=numeric(body.trim_allowance_mm,1,100);
   if(width==null||height==null||gusset==null||bucket==null||trim==null)return NextResponse.json({ok:false,error:'invalid_size_values'},{status:400});
 
