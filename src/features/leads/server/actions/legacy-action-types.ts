@@ -10,6 +10,7 @@ export type ExistingLeadSnapshot = {
   notes: string | null;
   source_label?: string | null;
   country_id?: string | null;
+  owner_user_id?: string | null;
 };
 
 export type LeadWorkflowSnapshot = ReturnType<typeof parseLeadWorkflow>;

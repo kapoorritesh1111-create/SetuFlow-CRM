@@ -15,6 +15,7 @@ const SOURCE_PROVIDER = 'interakt';
 const SUPPORTED_INBOUND_PROVIDERS = ['interakt', 'indiamart'];
 const INBOUND_PATH = '/leads/inbound';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
+const ASSIGNMENT_OVERRIDE_ROLES = new Set(['owner', 'admin']);
 const WHATSAPP_REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 type SalesMessageActionResult = { ok: true; message: string } | { ok: false; message: string };
@@ -120,6 +121,32 @@ function resolveWhatsAppRecipient(row: any) {
 
   if (storedPhoneDigits.length === 10) return { countryCode: '+91', phoneNumber: storedPhoneDigits };
   throw new Error('This customer does not have a complete WhatsApp number.');
+}
+
+function canOverrideAssignment(workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>) {
+  return workspace.currentRoles.some((role) => ASSIGNMENT_OVERRIDE_ROLES.has(String(role).toLowerCase()));
+}
+
+function assertInboundOwner(workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>, row: any) {
+  if (canOverrideAssignment(workspace)) return;
+  const assignedUserId = clean(row?.setu_assigned_user_id);
+  if (!assignedUserId || assignedUserId !== workspace.user!.id) {
+    throw new Error('This inquiry is assigned to another salesperson. Only the assigned salesperson, Owner, or Admin can message it.');
+  }
+}
+
+async function assertLeadOwner(db: any, workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>, leadId: string) {
+  if (canOverrideAssignment(workspace)) return;
+  const { data: lead, error } = await db
+    .from('leads')
+    .select('id,owner_user_id')
+    .eq('organization_id', workspace.organization!.id)
+    .eq('id', leadId)
+    .maybeSingle();
+  if (error || !lead?.id) throw new Error('Lead not found.');
+  if (clean(lead.owner_user_id) !== workspace.user!.id) {
+    throw new Error('This lead is assigned to another salesperson. Only the assigned salesperson, Owner, or Admin can message it.');
+  }
 }
 
 async function loadInboundRow(db: any, organizationId: string, rowId: string) {
@@ -239,6 +266,7 @@ async function performStarkInteraktSalesText(formData: FormData) {
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
   const row = await loadInboundRow(db, organizationId, rowId);
+  assertInboundOwner(workspace, row);
   const recipient = resolveWhatsAppRecipient(row);
   await persistResolvedRecipient(db, organizationId, row, recipient);
   if (!replyWindowOpen(row.last_inbound_at)) throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');
@@ -297,6 +325,7 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
     const db = createAdminSupabaseClient() as any;
     if (!db) throw new Error('Database admin client unavailable.');
     const row = await loadLeadInboundRow(db, workspace.organization!.id, leadId);
+    await assertLeadOwner(db, workspace, leadId);
     if (!replyWindowOpen(row.last_inbound_at)) throw new Error('The 24-hour WhatsApp reply window has closed. Use an approved follow-up template instead.');
     const recipient = resolveWhatsAppRecipient(row);
     await persistResolvedRecipient(db, workspace.organization!.id, row, recipient);
@@ -344,6 +373,7 @@ export async function sendStarkLeadWhatsAppTemplate(formData: FormData): Promise
     const db = createAdminSupabaseClient() as any;
     if (!db) throw new Error('Database admin client unavailable.');
     const row = await loadLeadInboundRow(db, workspace.organization!.id, leadId);
+    await assertLeadOwner(db, workspace, leadId);
     const recipient = resolveWhatsAppRecipient(row);
     await persistResolvedRecipient(db, workspace.organization!.id, row, recipient);
     const customerName = clean(row.person_name || row.contact_name) || 'Customer';
@@ -393,6 +423,7 @@ async function performStarkInteraktSalesFollowUp(formData: FormData) {
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database admin client unavailable.');
   const row = await loadInboundRow(db, organizationId, rowId);
+  assertInboundOwner(workspace, row);
   const recipient = resolveWhatsAppRecipient(row);
   await persistResolvedRecipient(db, organizationId, row, recipient);
   const customerName = clean(row.person_name || row.contact_name) || 'Customer';

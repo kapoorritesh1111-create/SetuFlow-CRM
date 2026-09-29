@@ -26,7 +26,7 @@ import { getWorkspaceAccess } from '@/lib/workspace/auth';
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
-const MANAGER_ROLES = new Set(['owner', 'admin', 'manager']);
+const MANAGER_ROLES = new Set(['owner', 'admin']);
 const DEFAULT_LIST_COLUMNS = ['contact', 'phone', 'company', 'requirement', 'source', 'guru', 'score', 'last_activity', 'follow_up'];
 
 type SearchParams = {
@@ -223,7 +223,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
 
   return <div className="space-y-3 pb-8">
     <Header canWorkInbound={canWorkInbound} canManageAssignments={canManageAssignments} />
-    {assignmentChanged ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>Lead not created.</strong> This inquiry is assigned to {assignedName}. Only the assigned Sales owner, Manager, Admin, or Owner can convert it, so it stays visible in the correct queue.</div> : null}
+    {assignmentChanged ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>Lead not created.</strong> This inquiry is assigned to {assignedName}. Only the assigned Sales owner, Admin, or Owner can convert it, so it stays visible in the correct queue.</div> : null}
     {convertedLeadId ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"><strong>Lead created successfully.</strong> It is assigned to {assignedName}. If it is not in your Leads list, it is visible to that owner and Stark managers/admins.</div> : null}
     <Kpis kpis={workspaceData.kpis} searchParams={searchParams} />
     <FilterBar searchParams={searchParams} />

@@ -10,7 +10,7 @@ const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const SUPPORTED_PROVIDERS = ['interakt', 'indiamart'];
 const TERMINAL = ['qualified', 'duplicate', 'existing_customer', 'not_relevant', 'ignored'];
-const MANAGER_ROLES = new Set(['owner', 'manager', 'admin']);
+const MANAGER_ROLES = new Set(['owner', 'admin']);
 
 type SalesAssignee = {
   key: string;
@@ -34,7 +34,7 @@ async function requireStarkAssignmentManager() {
   const canManage = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase()));
 
   if (!isStark || !organization || !user) throw new Error('Inbound assignment management is restricted to Stark Packmate.');
-  if (!canManage) throw new Error('Owner, Manager or Admin permission is required to reassign inbound leads.');
+  if (!canManage) throw new Error('Owner or Admin permission is required to reassign inbound leads.');
 
   return { workspace, organization, user };
 }

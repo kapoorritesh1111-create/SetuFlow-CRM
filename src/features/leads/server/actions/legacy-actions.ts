@@ -47,6 +47,9 @@ async function getLeadQuoteGate(db: any, organizationId: string, leadId: string)
 // leadQuoteGateMessage) so the lead-draft RPC path, the wizard createQuote path, and the launcher
 // actions all surface identical buyer-safe copy and never leak raw SQL errors.
 
+const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
+const ASSIGNMENT_ADMIN_ROLES = new Set(['owner', 'admin']);
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isUuidLike(value: string | null | undefined) {
@@ -1629,7 +1632,7 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     const [{ data: leadRow, error: leadError }, { data: productRows, error: productError }, { data: marketRows, error: marketError }] = await Promise.all([
       db
         .from('leads')
-        .select('id, company_name, lead_type, stage_id, trade_event_id, next_follow_up_at, notes, source_label, country_id')
+        .select('id, company_name, lead_type, stage_id, trade_event_id, next_follow_up_at, notes, source_label, country_id, owner_user_id')
         .eq('id', parsed.data.lead_id)
         .eq('organization_id', organization.id)
         .maybeSingle(),
@@ -1646,6 +1649,24 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
     previousProductIds = (productRows ?? []).map((item: { product_id: string }) => item.product_id).sort();
     previousMarketIds = (marketRows ?? []).map((item: { market_id: string }) => item.market_id).sort();
   }
+
+  const isStarkOwnerLock = organization.id === STARK_PACKMATE_ORG_ID;
+  const canChangeLeadOwner = workspace.currentRoles.some((role) => ASSIGNMENT_ADMIN_ROLES.has(String(role).toLowerCase()));
+  const existingOwnerUserId = String(existingLead?.owner_user_id ?? '').trim();
+  const requestedResolvedOwnerUserId = String(ownerUserId ?? '').trim();
+  if (
+    isStarkOwnerLock &&
+    existingLead?.id &&
+    parsed.data.owner_user_id &&
+    existingOwnerUserId !== requestedResolvedOwnerUserId &&
+    !canChangeLeadOwner
+  ) {
+    return { error: 'Only a Stark Packmate Owner or Admin can change the lead assignee.' };
+  }
+  const effectiveOwnerUserId =
+    isStarkOwnerLock && existingLead?.id && !canChangeLeadOwner
+      ? (existingLead.owner_user_id ?? null)
+      : ownerUserId;
 
   const resolvedSourceLabel =
   existingLead?.source_label ??
@@ -1702,7 +1723,7 @@ const contactSourceContext = {
     stage_id: stageId,
     pipeline_id: pipelineId,
     next_step_id: nextStepId,
-    owner_user_id: ownerUserId,
+    owner_user_id: effectiveOwnerUserId,
     trade_event_id: normalizeLeadOptionalText(parsed.data.trade_event_id),
     notes: serializeLeadWorkflow(parsed.data.notes || null, existingWorkflow.workflow),
     deal_currency: normalizeLeadOptionalText(parsed.data.deal_currency)?.toUpperCase() ?? null,
