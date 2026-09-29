@@ -38,17 +38,27 @@ export async function saveCanonicalCompanyDetails(formData: FormData) {
   const companyName = clean(formData.get('company_name'));
   if (!leadId || !companyName) return;
   const supabase = (await createClient()) as any;
+  const sampleShippingEnabled = formData.get('sample_shipping_enabled') === 'on';
   const { error } = await supabase.from('leads').update({
     company_name: companyName,
     country: nullable(formData.get('country')),
     website: nullable(formData.get('website')),
+    sample_shipping_address_line1: nullable(formData.get('sample_shipping_address_line1')),
+    sample_shipping_address_line2: nullable(formData.get('sample_shipping_address_line2')),
+    sample_shipping_city: nullable(formData.get('sample_shipping_city')),
+    sample_shipping_state: nullable(formData.get('sample_shipping_state')),
+    sample_shipping_postal_code: nullable(formData.get('sample_shipping_postal_code')),
+    sample_shipping_country: nullable(formData.get('sample_shipping_country')),
+    sample_shipping_contact_name: nullable(formData.get('sample_shipping_contact_name')),
+    sample_shipping_phone: nullable(formData.get('sample_shipping_phone')),
+    sample_shipping_enabled: sampleShippingEnabled,
     updated_by: workspace.user.id,
   }).eq('organization_id', workspace.organization.id).eq('id', leadId);
   if (!error) {
     const { data: links } = await supabase.from('contact_crm_links').select('contact_id').eq('organization_id', workspace.organization.id).eq('entity_id', leadId);
     const contactIds = (links ?? []).map((row: any) => row.contact_id).filter(Boolean);
     if (contactIds.length) await supabase.from('contacts').update({ company: companyName }).eq('organization_id', workspace.organization.id).in('id', contactIds);
-    await supabase.from('lead_activities').insert({ organization_id: workspace.organization.id, lead_id: leadId, actor_user_id: workspace.user.id, kind: 'company_updated', message: 'Company details updated from Stark Lead Detail.', occurred_at: new Date().toISOString() });
+    await supabase.from('lead_activities').insert({ organization_id: workspace.organization.id, lead_id: leadId, actor_user_id: workspace.user.id, kind: 'company_updated', message: sampleShippingEnabled ? 'Company and sample shipping details updated from Stark Lead Detail.' : 'Company details updated from Stark Lead Detail.', occurred_at: new Date().toISOString() });
   }
   revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`);
   goLead(leadId, { saved: 'company' });

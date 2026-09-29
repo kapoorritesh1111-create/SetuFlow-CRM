@@ -636,7 +636,17 @@ export type LeadProfileData = QueryIssuePayload & {
     | 'deal_currency'
     | 'phone_country_code'
     | 'phone_secondary_country_code'
-  > | null;
+  > & {
+    sample_shipping_address_line1?: string | null;
+    sample_shipping_address_line2?: string | null;
+    sample_shipping_city?: string | null;
+    sample_shipping_state?: string | null;
+    sample_shipping_postal_code?: string | null;
+    sample_shipping_country?: string | null;
+    sample_shipping_contact_name?: string | null;
+    sample_shipping_phone?: string | null;
+    sample_shipping_enabled?: boolean | null;
+  } | null;
   followUps: Pick<
     FollowUpRow,
     'id' | 'lead_id' | 'scheduled_at' | 'status' | 'created_at' | 'completed_at' | 'notes'
@@ -2619,10 +2629,10 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     contractsResult,
     scheduledTasksResult,
   ] = await Promise.all([
-    supabase
+    (supabase as any)
       .from('leads')
       .select(
-        'id, company_name, contact_name, job_title, email, phone, whatsapp_number, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code'
+        'id, company_name, contact_name, job_title, email, phone, whatsapp_number, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code, sample_shipping_address_line1, sample_shipping_address_line2, sample_shipping_city, sample_shipping_state, sample_shipping_postal_code, sample_shipping_country, sample_shipping_contact_name, sample_shipping_phone, sample_shipping_enabled'
       )
       .eq('organization_id', organizationId)
       .eq('id', leadId)
