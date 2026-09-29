@@ -178,7 +178,7 @@ async function initialSetuOwnerFromInterakt(db: any, assigneeName: string | null
     const roles = Array.isArray(member.user_roles) ? member.user_roles : [];
     const eligible = roles.some((link: any) => {
       const role = Array.isArray(link.roles) ? link.roles[0] : link.roles;
-      return ['sales', 'field_sales'].includes(clean(role?.name).toLowerCase());
+      return ['sales', 'field_sales'].includes(String(clean(role?.name) ?? '').toLowerCase());
     });
     if (!eligible) continue;
 
