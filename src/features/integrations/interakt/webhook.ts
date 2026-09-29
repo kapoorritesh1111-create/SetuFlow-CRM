@@ -162,7 +162,7 @@ function assigneeFromTraits(traits: Record<string, unknown>) {
 }
 
 async function initialSetuOwnerFromInterakt(db: any, assigneeName: string | null | undefined) {
-  const normalized = clean(assigneeName).toLowerCase().replace(/\s+/g, ' ');
+  const normalized = String(clean(assigneeName) ?? '').toLowerCase().replace(/\s+/g, ' ');
   if (!normalized) return null;
 
   const { data: members, error } = await db
@@ -182,8 +182,8 @@ async function initialSetuOwnerFromInterakt(db: any, assigneeName: string | null
     });
     if (!eligible) continue;
 
-    const fullName = clean(profile?.full_name).toLowerCase().replace(/\s+/g, ' ');
-    const email = clean(profile?.email).toLowerCase();
+    const fullName = String(clean(profile?.full_name) ?? '').toLowerCase().replace(/\s+/g, ' ');
+    const email = String(clean(profile?.email) ?? '').toLowerCase();
     const matches =
       normalized === fullName ||
       normalized.startsWith(`${fullName} `) ||
