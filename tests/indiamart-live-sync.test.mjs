@@ -54,6 +54,13 @@ test('connection and sync do not report success unless integration metadata is p
   assert.match(adapter, /integrationUpdateError/);
 });
 
+test('live IndiaMART polling caps stale checkpoints to the requested recent window', () => {
+  assert.match(adapter, /MAX_LIVE_LOOKBACK_MINUTES = 24 \* 60/);
+  assert.match(adapter, /windowFloor/);
+  assert.match(adapter, /start\.getTime\(\) < windowFloor\.getTime\(\)/);
+  assert.match(cron, /lookbackMinutes:\s*24 \* 60/);
+});
+
 test('IndiaMART sync preserves concurrent admin configuration such as default sales owner', () => {
   assert.match(adapter, /readLatestConfiguration/);
   assert.match(adapter, /\.\.\.latestConfiguration/);

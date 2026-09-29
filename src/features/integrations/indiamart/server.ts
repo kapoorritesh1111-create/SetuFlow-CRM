@@ -6,7 +6,7 @@ const INDIA_MART_ENDPOINT = 'https://mapi.indiamart.com/wservce/crm/crmListing/v
 const PROVIDER = 'indiamart';
 const DEFAULT_LOOKBACK_MINUTES = 60;
 const OVERLAP_MINUTES = 5;
-const MAX_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_LIVE_LOOKBACK_MINUTES = 24 * 60;
 
 type JsonRecord = Record<string, unknown>;
 type IndiaMartIntegration = {
@@ -242,12 +242,17 @@ async function readLatestConfiguration(
 }
 
 function resolveWindow(configuration: Record<string, unknown> | null, now = new Date(), lookbackMinutes = DEFAULT_LOOKBACK_MINUTES) {
+  const requestedLookbackMinutes = Math.max(15, Math.min(Number(lookbackMinutes) || DEFAULT_LOOKBACK_MINUTES, MAX_LIVE_LOOKBACK_MINUTES));
+  const windowFloor = new Date(now.getTime() - requestedLookbackMinutes * 60_000);
   const configuredLastSync = text(configuration?.last_successful_sync_at);
-  const fallbackStart = new Date(now.getTime() - Math.max(lookbackMinutes, 15) * 60_000);
-  let start = configuredLastSync ? new Date(configuredLastSync) : fallbackStart;
-  if (!Number.isFinite(start.getTime())) start = fallbackStart;
+  let start = configuredLastSync ? new Date(configuredLastSync) : windowFloor;
+  if (!Number.isFinite(start.getTime())) start = windowFloor;
   start = new Date(start.getTime() - OVERLAP_MINUTES * 60_000);
-  if (now.getTime() - start.getTime() > MAX_WINDOW_MS) start = new Date(now.getTime() - MAX_WINDOW_MS);
+
+  // Never let a stale checkpoint turn a live poll into a multi-day request.
+  // IndiaMART caps large responses, which can hide the newest enquiries.
+  if (start.getTime() < windowFloor.getTime()) start = windowFloor;
+
   return { start, end: now };
 }
 

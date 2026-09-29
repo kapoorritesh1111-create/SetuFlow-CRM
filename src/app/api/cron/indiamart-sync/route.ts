@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
         cron_last_error: null,
       });
 
-      const result = await syncIndiaMartOrganization(integration.organization_id);
+      const result = await syncIndiaMartOrganization(integration.organization_id, { lookbackMinutes: 24 * 60 });
       const successAt = new Date().toISOString();
 
       await updateCronHeartbeat(db, integration.id, {
