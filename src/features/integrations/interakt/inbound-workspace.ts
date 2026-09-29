@@ -161,7 +161,28 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
   }
 
   const payload = (data ?? {}) as { rows?: any[]; stats?: Record<string, number> };
-  const rows = (payload.rows ?? []).map((row: any) => {
+  const payloadRows = payload.rows ?? [];
+  const priorConversationIds = new Set<string>();
+
+  if (payloadRows.length) {
+    const db: any = createAdminSupabaseClient();
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: priorMessages, error: priorError } = await db
+      .from('lead_intake_messages')
+      .select('intake_id,sent_at,received_at,created_at')
+      .eq('organization_id', organizationId)
+      .eq('direction', 'outbound')
+      .in('intake_id', payloadRows.map((row: any) => row.id))
+      .or(`sent_at.lte.${cutoff},received_at.lte.${cutoff},created_at.lte.${cutoff}`)
+      .limit(1000);
+
+    if (priorError) throw new Error(`Unable to classify inbound relationship age: ${String(priorError.message ?? 'unknown database error')}`);
+    for (const message of priorMessages ?? []) {
+      if (message?.intake_id) priorConversationIds.add(String(message.intake_id));
+    }
+  }
+
+  const rows = payloadRows.map((row: any) => {
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
     const setuAssignee = clean(row.setu_assigned_name || row.setu_assigned_email) || 'Unassigned';
     const providerName = providerLabel(row.source_provider);
@@ -171,6 +192,7 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
       computed_band: assessment.bandLabel,
       computed_source: `${providerName} · ${assessment.source.label} · Assigned to ${setuAssignee}`,
       provider_label: providerName,
+      has_prior_conversation_24h: Boolean(row.qualified_lead_id) || priorConversationIds.has(String(row.id)),
       missing_fields: assessment.leadBlockers,
       lead_blockers: assessment.leadBlockers,
       later_enrichment: assessment.laterEnrichment,

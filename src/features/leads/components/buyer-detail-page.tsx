@@ -6,6 +6,7 @@ import { GenerateLeadDraftControls } from '@/features/ai/components/ai-draft-con
 import { getPricingBasisLabel } from '@/lib/pricing-basis-contract';
 import { LeadProfileControls } from '@/features/leads/components/lead-profile-controls';
 import { SupplierCommandCenter } from '@/features/leads/components/supplier-command-center';
+import { CopyPhoneButton } from '@/components/ui/copy-phone-button';
 
 type BuyerDetailTab = 'overview' | 'timeline' | 'communications' | 'product_interest' | 'quotes' | 'documents' | 'compliance' | 'follow_ups';
 
@@ -183,7 +184,7 @@ export function BuyerDetailPage({ data }: { data: any }) {
                   <div><dt className="font-medium text-slate-900">Updated</dt><dd className="mt-1">{formatDateValue(lead?.updated_at)}</dd></div>
                   <div><dt className="font-medium text-slate-900">Contact</dt><dd className="mt-1">{lead?.contact_name || '—'}</dd></div>
                   <div><dt className="font-medium text-slate-900">Email</dt><dd className="mt-1">{lead?.email || '—'}</dd></div>
-                  <div><dt className="font-medium text-slate-900">Phone</dt><dd className="mt-1">{lead?.phone || '—'}</dd></div>
+                  <div><dt className="font-medium text-slate-900">Phone</dt><dd className="mt-1 flex items-center gap-2"><span>{lead?.phone || '—'}</span>{lead?.phone ? <CopyPhoneButton phone={lead.phone} compact /> : null}</dd></div>
                   <div><dt className="font-medium text-slate-900">Website</dt><dd className="mt-1">{lead?.website || '—'}</dd></div>
                 </dl>
               </div>

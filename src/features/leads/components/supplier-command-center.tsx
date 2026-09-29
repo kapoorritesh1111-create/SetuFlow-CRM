@@ -13,6 +13,7 @@ import {
 } from '@/lib/supplier-workflow';
 import { getJourneyTerminology } from '@/lib/journey';
 import { approveSupplier, markSupplierUnderReview, rejectSupplier, setSupplierInactive } from '@/features/leads/canonical/actions';
+import { CopyPhoneButton } from '@/components/ui/copy-phone-button';
 
 const supplierTerms = getJourneyTerminology('supplier');
 
@@ -232,6 +233,7 @@ export function SupplierCommandCenter({ data }: { data: SupplierCommandCenterDat
               <div className="mt-2 grid grid-cols-2 gap-x-8 gap-y-1 text-sm text-slate-600 sm:flex sm:flex-wrap sm:gap-x-6">
                 <span><span className="text-slate-400">Owner</span> &nbsp;<span className="font-semibold text-slate-800">{ownerName}</span></span>
                 <span><span className="text-slate-400">Country</span> &nbsp;<span className="font-semibold text-slate-800">{lead?.country || '—'}</span></span>
+                {lead?.phone ? <span className="inline-flex items-center gap-2"><span><span className="text-slate-400">Phone</span> &nbsp;<span className="font-semibold text-slate-800">{lead.phone}</span></span><CopyPhoneButton phone={lead.phone} compact /></span> : null}
                 <span><span className="text-slate-400">Sourcing Value (YTD)</span> &nbsp;<span className="font-semibold text-slate-800">{money(lead?.deal_value, lead?.deal_currency)}</span></span>
                 <span><span className="text-slate-400">Response SLA</span> &nbsp;<span className="font-semibold text-slate-800">5 business days</span></span>
                 <span>
