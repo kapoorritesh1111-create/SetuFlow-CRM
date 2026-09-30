@@ -127,7 +127,7 @@ const LeadsToolbar: React.FC<LeadsToolbarProps> = ({
                 id="lead-search"
                 value={search}
                 onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Search company, contact, country, or source"
+                placeholder="Search company, contact, phone, country, or source"
                 className="h-10 rounded-card border-slate-200 bg-slate-50/90"
               />
             </div>

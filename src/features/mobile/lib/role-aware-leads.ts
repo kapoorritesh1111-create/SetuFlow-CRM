@@ -1,3 +1,4 @@
+import { matchesPlatformSearch } from '@/lib/search/platform-search';
 export type MobileLeadStatus = string;
 export type MobileUserRole = 'owner' | 'admin' | 'manager' | 'member';
 export type MobileLeadType = 'buyer' | 'supplier' | '';
@@ -64,13 +65,12 @@ export function canViewLead(lead: MobileLead, user: MobileUserContext) {
 }
 
 export function filterLeadsForRole(leads: MobileLead[], user: MobileUserContext, filter: LeadFilter = {}) {
-  const query = (filter.query ?? '').trim().toLowerCase();
+  const query = (filter.query ?? '').trim();
   return leads.filter((lead) => {
     if (!canViewLead(lead, user)) return false;
     if (filter.leadType && lead.leadType !== filter.leadType) return false;
     if (filter.status && filter.status !== 'All' && lead.status !== filter.status) return false;
-    if (!query) return true;
-    return [lead.company, lead.contact, lead.ownerName, lead.teamName, lead.status, lead.nextAction, lead.market, lead.productInterest].some((value) => value.toLowerCase().includes(query));
+    return matchesPlatformSearch(query, [lead.company, lead.contact, lead.ownerName, lead.teamName, lead.status, lead.nextAction, lead.market, lead.productInterest, lead.email], [lead.phone, lead.whatsappNumber]);
   });
 }
 

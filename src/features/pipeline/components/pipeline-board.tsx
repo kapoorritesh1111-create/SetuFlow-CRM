@@ -30,6 +30,7 @@ import { buildTodayLayerState } from '@/features/workspace/today';
 import { workspaceInsetClass, workspacePanelClass, workspacePrimaryButtonClass, workspaceSecondaryButtonClass } from '@/components/ui/workspace-surfaces';
 import { CollapsiblePanel } from '@/components/ui/collapsible-panel';
 import { workspaceModeToLeadJourney } from '@/features/workspace/mode';
+import { matchesPlatformSearch } from '@/lib/search/platform-search';
 import type { TodayFilterKey, TodayLayerState, WorkspaceMode } from '@/features/workspace/types';
 
 
@@ -419,7 +420,6 @@ export function PipelineBoard({
     return Array.from(map.values()).sort((a, b) => a.sort_order - b.sort_order);
   }, [scopedStagesForBoard]);
   const filteredLeads = useMemo(() => {
-    const needle = search.trim().toLowerCase();
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(todayStart);
@@ -429,7 +429,7 @@ export function PipelineBoard({
       const followState = getFollowUpVisualState(lead.next_follow_up_at);
       const followUpAt = lead.next_follow_up_at ? new Date(lead.next_follow_up_at) : null;
       const isThisWeek = Boolean(followUpAt && followUpAt >= todayStart && followUpAt <= weekEnd);
-      const matchesSearch = !needle || [lead.company_name, lead.contact_name ?? '', lead.country ?? ''].some((item) => item.toLowerCase().includes(needle));
+      const matchesSearch = matchesPlatformSearch(search, [lead.company_name, lead.contact_name, lead.email, lead.country], [lead.phone, lead.whatsapp_number]);
       const matchesFollowUp = !followUpTiming
         || followState === followUpTiming
         || (followUpTiming === 'week' && isThisWeek)

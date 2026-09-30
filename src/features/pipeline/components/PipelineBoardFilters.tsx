@@ -59,7 +59,7 @@ export default function PipelineBoardFilters({
 
   return (
     <FilterBar>
-      <FilterSearch value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Search company, contact…" minWidth={210} />
+      <FilterSearch value={search} onChange={e => onSearchChange(e.target.value)} placeholder="Search company, contact, phone…" minWidth={210} />
       <FilterSelect icon="◎" label="Type" value={leadType} onChange={e => onLeadTypeChange(e.target.value)} active={Boolean(leadType)} minWidth={100}>
         <option value="">All types ▾</option>
         <option value="buyer">Buyers</option>

@@ -180,7 +180,7 @@ export function MobilePeopleWorkspace() {
           <div className="px-3 pb-3">
             <label className="flex h-10 items-center gap-2 rounded-xl bg-surface-1 px-3 text-content-secondary shadow-sm">
               <Search size={17} className="text-content-muted" />
-              <input autoFocus value={search} onChange={event => setSearch(event.target.value)} placeholder="Search people" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
+              <input autoFocus value={search} onChange={event => setSearch(event.target.value)} placeholder="Search name, company, phone…" className="min-w-0 flex-1 bg-transparent text-sm outline-none" />
               {search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={16} /></button> : null}
             </label>
           </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { matchesPlatformSearch } from '@/lib/search/platform-search';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,8 @@ export async function GET(request: NextRequest) {
     .eq('organization_id', ws.organization.id)
     .order('created_at', { ascending: false })
     .limit(40);
-  if (q) query = query.ilike('company_name', `%${q}%`);
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ leads: data ?? [] });
+  const filtered = q ? (data ?? []).filter((lead: any) => matchesPlatformSearch(q, [lead.company_name, lead.contact_name, lead.email], [lead.phone, lead.whatsapp_number])) : (data ?? []);
+  return NextResponse.json({ leads: filtered.slice(0, 40) });
 }
