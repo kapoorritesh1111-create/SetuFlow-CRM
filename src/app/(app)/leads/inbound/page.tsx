@@ -299,6 +299,8 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
           rowId={selected.id}
           customerName={customerName}
           canWork={canWorkInbound}
+          customerEmail={selected.email}
+          companyName={selected.company_name || selected.brand_name || customerName}
           followUp={selected.follow_up_id ? {
             id: selected.follow_up_id,
             scheduledAt: selected.follow_up_scheduled_at,
@@ -323,7 +325,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
 }
 
 function Header({ canWorkInbound, canManageAssignments }: { canWorkInbound: boolean; canManageAssignments: boolean }) {
-  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div><div className="flex items-center gap-2"><span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">Inbound</span><h1 className="text-lg font-black text-slate-950">Sales Inbox</h1></div><p className="mt-1 text-xs text-slate-500">Review Interakt and IndiaMART buyer inquiries, qualify them, and move the right opportunities into the permanent Lead pipeline.</p></div><div className="flex items-center gap-2"><Link prefetch={false} href="/leads" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Lead Queue</Link>{canManageAssignments ? <Link prefetch={false} href="/leads/inbound/assignments" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Manage assignments</Link> : null}{canWorkInbound ? <form action={refreshStarkInteraktStaging}><PendingSubmitButton idleLabel="↻ Sync Interakt" pendingLabel="Syncing Interakt…" pendingDetail="Checking Interakt for new or updated contacts" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white" /></form> : null}</div></div>;
+  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div><div className="flex items-center gap-2"><span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white">Inbound</span><h1 className="text-lg font-black text-slate-950">Sales Inbox</h1></div><p className="mt-1 text-xs text-slate-500">Review Interakt and IndiaMART buyer inquiries, qualify them, and move the right opportunities into the permanent Lead pipeline.</p></div><div className="flex items-center gap-2"><Link prefetch={false} href="/leads" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">Lead Queue</Link><Link prefetch={false} href="/leads/meetings" className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700">Customer Meetings</Link>{canManageAssignments ? <Link prefetch={false} href="/leads/inbound/assignments" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">Manage assignments</Link> : null}{canWorkInbound ? <form action={refreshStarkInteraktStaging}><PendingSubmitButton idleLabel="↻ Sync Interakt" pendingLabel="Syncing Interakt…" pendingDetail="Checking Interakt for new or updated contacts" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white" /></form> : null}</div></div>;
 }
 
 function Kpis({ kpis, searchParams }: { kpis: any; searchParams: SearchParams }) {

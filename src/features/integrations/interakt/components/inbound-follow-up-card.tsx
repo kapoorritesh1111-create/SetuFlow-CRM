@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
 import { completeInboundFollowUp, createOrRescheduleInboundFollowUp } from '@/features/integrations/interakt/review-actions';
+import { StarkMeetingPanel } from '@/features/sales-meetings/StarkMeetingPanel';
 
 type FollowUp = { id: string; scheduledAt: string; notes?: string | null } | null;
 
@@ -27,11 +28,15 @@ export function InboundFollowUpCard({
   customerName,
   canWork,
   followUp,
+  customerEmail,
+  companyName,
 }: {
   rowId: string;
   customerName: string;
   canWork: boolean;
   followUp: FollowUp;
+  customerEmail?: string | null;
+  companyName?: string | null;
 }) {
   const [localWhen, setLocalWhen] = useState(() => initialLocal(followUp));
   const scheduledAt = useMemo(() => {
@@ -95,5 +100,6 @@ export function InboundFollowUpCard({
       <p className="text-[9px] leading-4 text-amber-800">Setu Flow will remind you about 15 minutes before the scheduled time and keep overdue follow-ups visible until completed.</p>
       <PendingSubmitButton disabled={!canWork || !scheduledAt} idleLabel={followUp ? 'Reschedule follow-up' : 'Set follow-up'} pendingLabel="Saving follow-up…" className="w-full rounded-xl bg-amber-600 px-3 py-2.5 text-xs font-black text-white" />
     </form>
+    <div className="mt-4 border-t border-amber-200 pt-4"><StarkMeetingPanel entityType="inbound_lead" entityId={rowId} customerName={customerName} customerEmail={customerEmail} companyName={companyName || customerName} canWork={canWork} compact /></div>
   </section>;
 }
