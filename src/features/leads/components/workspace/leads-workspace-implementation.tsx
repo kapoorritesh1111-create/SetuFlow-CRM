@@ -94,6 +94,7 @@ import {
 import { InlineLeadWorkspace, InlineCommandCenter } from '@/features/leads/components/workspace/LeadsCommandCenter';
 import { LeadQueueStat, LeadMobileCard, LeadSpotlightCard } from '@/features/leads/components/workspace/LeadsListView';
 import { StarkSalesWorkQueueTabs } from '@/features/sales-meetings/StarkSalesWorkQueueTabs';
+import { matchesPlatformSearch } from '@/lib/search/platform-search';
 
 
 export function SignalPill({ label, tone, icon: Icon }: { label: string; tone: SignalTone; icon: IconComponent }) {
@@ -625,8 +626,6 @@ export function LeadsWorkspace({
   const todayLeadIdSet = useMemo(() => new Set(todayState.filteredLeadIds), [todayState.filteredLeadIds]);
 
   const preparedLeads = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-
     return workspaceLeads.filter((lead) => {
       const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
       const savedViewMatches = () => {
@@ -641,10 +640,11 @@ export function LeadsWorkspace({
       };
       const matchesSavedView = savedViewMatches();
 
-      const matchesSearch =
-        !needle ||
-        [lead.company_name, lead.contact_name ?? '', lead.email ?? '', lead.country ?? '']
-          .some((value) => value.toLowerCase().includes(needle));
+      const matchesSearch = matchesPlatformSearch(
+        search,
+        [lead.company_name, lead.contact_name, lead.email, lead.country, lead.source_label, lead.source_type],
+        [lead.phone, lead.whatsapp_number],
+      );
 
       const matchesPipeline = !pipelineIdFilter || lead.pipeline_id === pipelineIdFilter;
       const matchesStage = !stageIdFilter || lead.stage_id === stageIdFilter;
@@ -1448,7 +1448,7 @@ export function LeadsWorkspace({
           <input
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder="Search company, contact…"
+            placeholder="Search company, contact, phone…"
             className="border-none bg-transparent outline-none text-xs font-semibold text-slate-900 placeholder:text-slate-400 w-full"
           />
         </div>
