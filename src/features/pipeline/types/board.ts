@@ -11,6 +11,7 @@ export type Lead = {
   job_title: string | null;
   email: string | null;
   phone: string | null;
+  whatsapp_number: string | null;
   phone_secondary: string | null;
   website: string | null;
   social_handle: string | null;
