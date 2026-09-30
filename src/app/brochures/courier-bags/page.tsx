@@ -1,7 +1,3 @@
-const referenceImages = [
-  "/brochures/courier-bags/reference-1",
-];
-
 export const metadata = {
   title: 'Courier Bags | Stark Packmate',
   description: 'Custom-dimension courier bags from Stark Packmate.',
@@ -24,16 +20,21 @@ export default function CourierBagsBrochurePage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-12">
-        <div className="grid gap-5 md:grid-cols-[minmax(0,520px)_1fr]">
-          {referenceImages.map((src, index) => (
-            <div key={src} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex aspect-square items-center justify-center bg-white p-4">
-                <img src={src} alt={`Courier bag reference style ${index + 1}`} className="h-full w-full object-contain" />
+        <div className="grid gap-5 md:grid-cols-3">
+          {[
+            ['Tamper-evident closure', 'Self-seal courier bag format for dispatch and e-commerce.'],
+            ['Custom sizing', 'Width, height and flap are captured manually per customer requirement.'],
+            ['Document / POD options', 'Reference requirements and artwork can be shared directly in the sales conversation.'],
+          ].map(([title, description], index) => (
+            <div key={title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex h-32 items-center justify-center rounded-xl bg-gradient-to-br from-slate-50 to-slate-200">
+                <div className="relative h-20 w-28 rounded border-2 border-slate-400 bg-white shadow-sm">
+                  <div className="absolute inset-x-0 top-0 h-3 bg-slate-700" />
+                  {index === 2 ? <div className="absolute bottom-3 left-3 h-8 w-14 rounded border border-slate-300 bg-slate-50" /> : null}
+                </div>
               </div>
-              <div className="border-t border-slate-100 px-4 py-3">
-                <p className="text-xs font-bold text-slate-800">Reference style {index + 1}</p>
-                <p className="mt-1 text-[11px] text-slate-500">Final dimensions and construction are confirmed per requirement.</p>
-              </div>
+              <h2 className="mt-4 text-base font-black">{title}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
             </div>
           ))}
         </div>
@@ -66,8 +67,6 @@ export default function CourierBagsBrochurePage() {
             </div>
           </aside>
         </div>
-
-        <p className="mt-8 text-center text-xs text-slate-400">Stark Packmate · Courier Bags · Custom specification product</p>
       </section>
     </main>
   );
