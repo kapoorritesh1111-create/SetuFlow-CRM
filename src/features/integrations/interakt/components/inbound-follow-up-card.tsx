@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
 import { completeInboundFollowUp, createOrRescheduleInboundFollowUp } from '@/features/integrations/interakt/review-actions';
@@ -39,6 +39,9 @@ export function InboundFollowUpCard({
   companyName?: string | null;
 }) {
   const [localWhen, setLocalWhen] = useState(() => initialLocal(followUp));
+  const [followUpType, setFollowUpType] = useState<'call'|'whatsapp'|'email'|'meeting'>('call');
+  const [modalOpen, setModalOpen] = useState(false);
+  useEffect(() => { const open=()=>setModalOpen(true); window.addEventListener('stark:open-follow-up',open); return()=>window.removeEventListener('stark:open-follow-up',open); }, []);
   const scheduledAt = useMemo(() => {
     const parsed = new Date(localWhen);
     return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
@@ -62,7 +65,8 @@ export function InboundFollowUpCard({
     setLocalWhen(localInputValue(date));
   };
 
-  return <section id="inbound-follow-up" className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm">
+  if (!modalOpen) return null;
+  return <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onMouseDown={(event)=>{if(event.target===event.currentTarget)setModalOpen(false)}}><section id="inbound-follow-up" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-amber-200 bg-white p-5 shadow-2xl">
     <div className="flex items-start justify-between gap-3">
       <div>
         <h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-amber-800">⏰ Follow-up</h3>
@@ -70,14 +74,15 @@ export function InboundFollowUpCard({
         {existingLabel ? <p className={`mt-1 text-[10px] font-bold ${overdue ? 'text-rose-700' : 'text-amber-800'}`}>{existingLabel}</p> : null}
         {followUp?.notes ? <p className="mt-1 text-[10px] leading-4 text-slate-600">{followUp.notes}</p> : null}
       </div>
-      {followUp ? <form action={completeInboundFollowUp}>
+      <div className="flex items-center gap-2"><button type="button" onClick={()=>setModalOpen(false)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-black text-slate-600">Close</button>{followUp ? <form action={completeInboundFollowUp}>
         <input type="hidden" name="rowId" value={rowId} />
         <input type="hidden" name="followUpId" value={followUp.id} />
         <PendingSubmitButton disabled={!canWork} idleLabel="Complete" pendingLabel="Saving…" className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-[10px] font-black text-emerald-700" />
-      </form> : null}
+      </form> : null}</div>
     </div>
 
-    <form action={createOrRescheduleInboundFollowUp} className="mt-3 space-y-2">
+    <div className="mt-4"><label className="mb-1.5 block text-[10px] font-black uppercase tracking-[.12em] text-slate-500">Follow-up type</label><div className="grid grid-cols-4 gap-1.5">{(['call','whatsapp','email','meeting'] as const).map(type=><button key={type} type="button" onClick={()=>setFollowUpType(type)} className={followUpType===type ? 'rounded-xl border border-amber-400 bg-amber-50 px-2 py-2 text-[10px] font-black capitalize text-amber-900' : 'rounded-xl border border-slate-200 bg-white px-2 py-2 text-[10px] font-black capitalize text-slate-600'}>{type==='meeting'?'📅 Meeting':type==='call'?'☎ Call':type==='whatsapp'?'💬 WhatsApp':'✉ Email'}</button>)}</div></div>
+    {followUpType !== 'meeting' ? <form action={createOrRescheduleInboundFollowUp} className="mt-3 space-y-2">
       <input type="hidden" name="rowId" value={rowId} />
       <input type="hidden" name="scheduledAt" value={scheduledAt} />
       <div className="flex flex-wrap gap-1.5">
@@ -99,7 +104,6 @@ export function InboundFollowUpCard({
       <textarea name="notes" rows={2} placeholder={`Notes for follow-up with ${customerName}`} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs text-slate-800" />
       <p className="text-[9px] leading-4 text-amber-800">Setu Flow will remind you about 15 minutes before the scheduled time and keep overdue follow-ups visible until completed.</p>
       <PendingSubmitButton disabled={!canWork || !scheduledAt} idleLabel={followUp ? 'Reschedule follow-up' : 'Set follow-up'} pendingLabel="Saving follow-up…" className="w-full rounded-xl bg-amber-600 px-3 py-2.5 text-xs font-black text-white" />
-    </form>
-    <div className="mt-4 border-t border-amber-200 pt-4"><StarkMeetingPanel entityType="inbound_lead" entityId={rowId} customerName={customerName} customerEmail={customerEmail} companyName={companyName || customerName} canWork={canWork} compact /></div>
-  </section>;
+    </form> : <div className="mt-4"><StarkMeetingPanel entityType="inbound_lead" entityId={rowId} customerName={customerName} customerEmail={customerEmail} companyName={companyName || customerName} canWork={canWork} compact /></div>}
+  </section></div>;
 }

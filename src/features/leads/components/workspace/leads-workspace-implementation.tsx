@@ -93,6 +93,7 @@ import {
 
 import { InlineLeadWorkspace, InlineCommandCenter } from '@/features/leads/components/workspace/LeadsCommandCenter';
 import { LeadQueueStat, LeadMobileCard, LeadSpotlightCard } from '@/features/leads/components/workspace/LeadsListView';
+import { StarkSalesWorkQueueTabs } from '@/features/sales-meetings/StarkSalesWorkQueueTabs';
 
 
 export function SignalPill({ label, tone, icon: Icon }: { label: string; tone: SignalTone; icon: IconComponent }) {
@@ -1676,6 +1677,8 @@ export function LeadsWorkspace({
           </div>
         </div>
       )}
+
+      <StarkSalesWorkQueueTabs surface="leads" />
 
       {/* ═══ SAVED VIEWS BAR — matches spec .saved-views ═══ */}
       <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center', overflowX: 'auto' }}>
