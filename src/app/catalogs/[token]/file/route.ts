@@ -12,7 +12,7 @@ function safeDownloadName(value: string) {
 
 function safePublicStaticPath(value: string) {
   const path = String(value ?? '').trim();
-  if (!/^\/[a-z0-9/_-]+\.pdf$/i.test(path) || path.includes('..')) return null;
+  if (!/^\/brochures\/[a-z0-9/_-]+(?:\.pdf)?$/i.test(path) || path.includes('..')) return null;
   return path;
 }
 
