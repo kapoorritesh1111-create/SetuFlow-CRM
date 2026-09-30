@@ -10,12 +10,25 @@ function safeDownloadName(value: string) {
   return cleaned || 'catalog.pdf';
 }
 
-export async function GET(_request: Request, { params }: { params: { token: string } }) {
+function safePublicStaticPath(value: string) {
+  const path = String(value ?? '').trim();
+  if (!/^\/brochures\/[a-z0-9/_-]+(?:\.pdf)?$/i.test(path) || path.includes('..')) return null;
+  return path;
+}
+
+export async function GET(request: Request, { params }: { params: { token: string } }) {
   const catalog = await loadPublicCatalog(params.token);
   if (!catalog) return NextResponse.json({ error: 'Catalog unavailable.' }, { status: 404 });
 
   const admin = createAdminSupabaseClient() as any;
   if (!admin) return NextResponse.json({ error: 'Catalog unavailable.' }, { status: 503 });
+
+  if (catalog.brochure.storageBucket === 'public-static') {
+    const path = safePublicStaticPath(catalog.brochure.storagePath);
+    if (!path) return NextResponse.json({ error: 'Catalog file unavailable.' }, { status: 404 });
+    await admin.rpc('increment_catalog_brochure_share_open', { p_share_id: catalog.share.id });
+    return NextResponse.redirect(new URL(path, request.url), 307);
+  }
 
   const { data, error } = await admin.storage
     .from(catalog.brochure.storageBucket)
