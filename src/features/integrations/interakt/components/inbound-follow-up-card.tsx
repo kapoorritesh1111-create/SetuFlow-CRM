@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
 import { completeInboundFollowUp, createOrRescheduleInboundFollowUp } from '@/features/integrations/interakt/review-actions';
@@ -30,6 +31,7 @@ export function InboundFollowUpCard({
   followUp,
   customerEmail,
   companyName,
+  customerPhone,
 }: {
   rowId: string;
   customerName: string;
@@ -37,11 +39,20 @@ export function InboundFollowUpCard({
   followUp: FollowUp;
   customerEmail?: string | null;
   companyName?: string | null;
+  customerPhone?: string | null;
 }) {
   const [localWhen, setLocalWhen] = useState(() => initialLocal(followUp));
   const [followUpType, setFollowUpType] = useState<'call'|'whatsapp'|'email'|'meeting'>('call');
   const [modalOpen, setModalOpen] = useState(false);
   useEffect(() => { const open=()=>setModalOpen(true); window.addEventListener('stark:open-follow-up',open); return()=>window.removeEventListener('stark:open-follow-up',open); }, []);
+  useEffect(() => {
+    if (!modalOpen) return;
+    const previous=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')setModalOpen(false);};
+    window.addEventListener('keydown',onKey);
+    return()=>{document.body.style.overflow=previous;window.removeEventListener('keydown',onKey);};
+  },[modalOpen]);
   const scheduledAt = useMemo(() => {
     const parsed = new Date(localWhen);
     return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
@@ -65,8 +76,8 @@ export function InboundFollowUpCard({
     setLocalWhen(localInputValue(date));
   };
 
-  if (!modalOpen) return null;
-  return <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onMouseDown={(event)=>{if(event.target===event.currentTarget)setModalOpen(false)}}><section id="inbound-follow-up" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-amber-200 bg-white p-5 shadow-2xl">
+  if (!modalOpen || typeof document === 'undefined') return null;
+  return createPortal(<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onMouseDown={(event)=>{if(event.target===event.currentTarget)setModalOpen(false)}}><section id="inbound-follow-up" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-amber-200 bg-white p-5 shadow-2xl">
     <div className="flex items-start justify-between gap-3">
       <div>
         <h3 className="text-[10px] font-black uppercase tracking-[0.12em] text-amber-800">⏰ Follow-up</h3>
@@ -104,6 +115,6 @@ export function InboundFollowUpCard({
       <textarea name="notes" rows={2} placeholder={`Notes for follow-up with ${customerName}`} className="w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs text-slate-800" />
       <p className="text-[9px] leading-4 text-amber-800">Setu Flow will remind you about 15 minutes before the scheduled time and keep overdue follow-ups visible until completed.</p>
       <PendingSubmitButton disabled={!canWork || !scheduledAt} idleLabel={followUp ? 'Reschedule follow-up' : 'Set follow-up'} pendingLabel="Saving follow-up…" className="w-full rounded-xl bg-amber-600 px-3 py-2.5 text-xs font-black text-white" />
-    </form> : <div className="mt-4"><StarkMeetingPanel entityType="inbound_lead" entityId={rowId} customerName={customerName} customerEmail={customerEmail} companyName={companyName || customerName} canWork={canWork} compact /></div>}
-  </section></div>;
+    </form> : <div className="mt-4"><StarkMeetingPanel entityType="inbound_lead" entityId={rowId} customerName={customerName} customerEmail={customerEmail} customerPhone={customerPhone} companyName={companyName || customerName} canWork={canWork} compact /></div>}
+  </section></div>, document.body);
 }

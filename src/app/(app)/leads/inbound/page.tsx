@@ -304,6 +304,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
           canWork={canWorkInbound}
           customerEmail={selected.email}
           companyName={selected.company_name || selected.brand_name || customerName}
+          customerPhone={selected.full_phone_number}
           followUp={selected.follow_up_id ? {
             id: selected.follow_up_id,
             scheduledAt: selected.follow_up_scheduled_at,
