@@ -1,7 +1,5 @@
 const referenceImages = [
   "/brochures/courier-bags/reference-1",
-  "/brochures/courier-bags/reference-2",
-  "/brochures/courier-bags/reference-3",
 ];
 
 export const metadata = {
@@ -26,7 +24,7 @@ export default function CourierBagsBrochurePage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-12">
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-[minmax(0,520px)_1fr]">
           {referenceImages.map((src, index) => (
             <div key={src} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="flex aspect-square items-center justify-center bg-white p-4">
