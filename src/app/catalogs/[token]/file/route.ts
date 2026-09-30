@@ -12,7 +12,8 @@ function safeDownloadName(value: string) {
 
 function safePublicStaticPath(value: string) {
   const path = String(value ?? '').trim();
-  return /^\/[a-z0-9/_-]+$/i.test(path) ? path : null;
+  if (!/^\/[a-z0-9/_-]+\.pdf$/i.test(path) || path.includes('..')) return null;
+  return path;
 }
 
 export async function GET(request: Request, { params }: { params: { token: string } }) {
