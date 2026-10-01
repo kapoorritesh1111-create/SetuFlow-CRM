@@ -15,6 +15,7 @@ import { isPackagingPricingV5EnabledForOrg, listSalesPackagingPricingV5Options }
 import { listSalesPackagingFramePricingV5Options } from '@/lib/packaging-pricing-v5/frame-sales-options';
 import { listPricingV5SavedLineSummaries } from '@/lib/packaging-pricing-v5/saved-line';
 import { listPricingV5FrameSavedLineSummaries } from '@/lib/packaging-pricing-v5/frame-saved-line';
+import ManualPackagingQuoteSection from '@/features/packaging/components/manual-packaging-quote-section';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -126,10 +127,21 @@ export default async function QuotePage({
   const optionalChargeTotal = (packaging?.charges ?? []).reduce((sum:number,item:any)=>sum+Math.max(0,Number(item.amount??0)),0);
   const v5TaxTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.calculation_version)===5?Math.max(0,Number(line.pricing_breakdown_json?.selling_price?.gst??0)):0),0) : 0;
   const liveQuoteTotal = pricingLineTotal + optionalChargeTotal + v5TaxTotal;
+  const manualPricingFamilies = (packaging?.families ?? []).filter((family:any)=>family.is_quoteable===true && !family.pricing_engine_type && family.slug==='spout-pouches');
+  const manualPackagingLines = activeQuote ? (activeQuote.lineItems as any[]).filter((line:any)=>line.line_type==='packaging' && manualPricingFamilies.some((family:any)=>family.id===line.packaging_family_id) && line.input_snapshot_json?.source==='manual_packaging_price') : [];
 
   return (
     <>
       {feedback ? <WorkflowToast kind={feedback.kind} message={feedback.message} /> : null}
+      {activeQuote && manualPricingFamilies.length ? (
+        <ManualPackagingQuoteSection
+          quoteId={activeQuote.id}
+          leadId={params.leadId}
+          currency={quoteCurrency}
+          families={manualPricingFamilies}
+          lines={manualPackagingLines}
+        />
+      ) : null}
       {(pricingV5Options || pricingV5FrameOptions) && activeQuote ? (
         <PremiumPackagingQuoteBuilderV5
           quoteId={activeQuote.id}

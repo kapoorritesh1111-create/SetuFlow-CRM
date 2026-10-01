@@ -26,6 +26,10 @@ export type PackagingServiceFamily = {
   sort_order: number;
   is_active: boolean;
   icon_key?: string | null;
+  product_setup_mode?: string | null;
+  pricing_engine_type?: string | null;
+  default_uom?: string | null;
+  is_quoteable?: boolean | null;
 };
 
 export type DimensionRange = { min: number; max: number };

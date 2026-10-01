@@ -24,7 +24,7 @@ export async function getPackagingFamilies(
   const supabase = ((client ?? (await createClient())) as any);
   const { data, error } = await supabase
     .from('packaging_service_families')
-    .select('id, organization_id, slug, name, description, pricing_mode, quote_time_inputs, default_unit, default_lead_time, sort_order, is_active, icon_key')
+    .select('id, organization_id, slug, name, description, pricing_mode, quote_time_inputs, default_unit, default_lead_time, sort_order, is_active, icon_key, product_setup_mode, pricing_engine_type, default_uom, is_quoteable')
     .eq('organization_id', organizationId)
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
@@ -41,7 +41,7 @@ export async function getPackagingFamiliesForAdmin(
   const supabase = ((client ?? (await createClient())) as any);
   const { data, error } = await supabase
     .from('packaging_service_families')
-    .select('id, organization_id, slug, name, description, pricing_mode, quote_time_inputs, default_unit, default_lead_time, sort_order, is_active, icon_key')
+    .select('id, organization_id, slug, name, description, pricing_mode, quote_time_inputs, default_unit, default_lead_time, sort_order, is_active, icon_key, product_setup_mode, pricing_engine_type, default_uom, is_quoteable')
     .eq('organization_id', organizationId)
     .order('sort_order', { ascending: true });
   if (error) throw new Error(error.message);
