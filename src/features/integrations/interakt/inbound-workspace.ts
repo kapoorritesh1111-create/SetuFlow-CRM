@@ -163,22 +163,40 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
   const payload = (data ?? {}) as { rows?: any[]; stats?: Record<string, number> };
   const payloadRows = payload.rows ?? [];
   const priorConversationIds = new Set<string>();
+  const latestNoteByIntake = new Map<string, any>();
 
   if (payloadRows.length) {
     const db: any = createAdminSupabaseClient();
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: priorMessages, error: priorError } = await db
-      .from('lead_intake_messages')
-      .select('intake_id,sent_at,received_at,created_at')
-      .eq('organization_id', organizationId)
-      .eq('direction', 'outbound')
-      .in('intake_id', payloadRows.map((row: any) => row.id))
-      .or(`sent_at.lte.${cutoff},received_at.lte.${cutoff},created_at.lte.${cutoff}`)
-      .limit(1000);
+    const ids = payloadRows.map((row: any) => row.id);
+    const [priorResult, noteResult] = await Promise.all([
+      db.from('lead_intake_messages')
+        .select('intake_id,sent_at,received_at,created_at')
+        .eq('organization_id', organizationId)
+        .eq('direction', 'outbound')
+        .in('intake_id', ids)
+        .or(`sent_at.lte.${cutoff},received_at.lte.${cutoff},created_at.lte.${cutoff}`)
+        .limit(1000),
+      db.from('lead_intake_messages')
+        .select('intake_id,message_text,actor_name,sent_at,created_at')
+        .eq('organization_id', organizationId)
+        .eq('event_type', 'internal_note')
+        .in('intake_id', ids)
+        .order('sent_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(1000),
+    ]);
+    const { data: priorMessages, error: priorError } = priorResult;
+    const { data: noteMessages, error: noteError } = noteResult;
 
     if (priorError) throw new Error(`Unable to classify inbound relationship age: ${String(priorError.message ?? 'unknown database error')}`);
+    if (noteError) throw new Error(`Unable to load inbound notes: ${String(noteError.message ?? 'unknown database error')}`);
     for (const message of priorMessages ?? []) {
       if (message?.intake_id) priorConversationIds.add(String(message.intake_id));
+    }
+    for (const note of noteMessages ?? []) {
+      const key = String(note?.intake_id ?? '');
+      if (key && !latestNoteByIntake.has(key)) latestNoteByIntake.set(key, note);
     }
   }
 
@@ -186,12 +204,16 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
     const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
     const setuAssignee = clean(row.setu_assigned_name || row.setu_assigned_email) || 'Unassigned';
     const providerName = providerLabel(row.source_provider);
+    const latestNote = latestNoteByIntake.get(String(row.id));
     return {
       ...row,
       computed_score: row.qualification_score ?? assessment.score,
       computed_band: assessment.bandLabel,
       computed_source: `${providerName} · ${assessment.source.label} · Assigned to ${setuAssignee}`,
       provider_label: providerName,
+      last_note: latestNote?.message_text ?? null,
+      last_note_at: latestNote?.sent_at ?? latestNote?.created_at ?? null,
+      last_note_actor: latestNote?.actor_name ?? null,
       has_prior_conversation_24h: Boolean(row.qualified_lead_id) || priorConversationIds.has(String(row.id)),
       missing_fields: assessment.leadBlockers,
       lead_blockers: assessment.leadBlockers,

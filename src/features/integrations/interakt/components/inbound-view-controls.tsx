@@ -8,6 +8,8 @@ export const INBOUND_COLUMN_OPTIONS = [
   ['phone', 'Phone'],
   ['company', 'Company'],
   ['requirement', 'Requirement'],
+  ['status', 'Status'],
+  ['last_note', 'Last note'],
   ['quantity', 'Quantity'],
   ['source', 'Source'],
   ['owner', 'Owner'],
@@ -17,7 +19,7 @@ export const INBOUND_COLUMN_OPTIONS = [
   ['needs_reply', 'Needs reply'],
 ] as const;
 
-const DEFAULT_COLUMNS = ['contact', 'phone', 'company', 'requirement', 'source', 'guru', 'score', 'last_activity'];
+const DEFAULT_COLUMNS = ['contact', 'phone', 'company', 'requirement', 'status', 'last_note'];
 
 const premiumStyles = `
   main:has(.setu-inbound-controls) { background: linear-gradient(180deg, #f8fbff 0%, #f8fafc 260px, #f8fafc 100%); }

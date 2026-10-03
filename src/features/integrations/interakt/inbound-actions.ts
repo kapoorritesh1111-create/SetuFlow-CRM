@@ -30,6 +30,82 @@ function isSupportedProvider(value: unknown): value is (typeof SUPPORTED_PROVIDE
 }
 function providerLabel(value: unknown) { return clean(value).toLowerCase() === 'indiamart' ? 'IndiaMART' : 'Interakt'; }
 
+async function readInboundInternalNotes(db: any, organizationId: string, intakeId: string) {
+  const { data, error } = await db.from('lead_intake_messages')
+    .select('id,message_text,actor_name,message_payload,sent_at,created_at')
+    .eq('organization_id', organizationId)
+    .eq('intake_id', intakeId)
+    .eq('event_type', 'internal_note')
+    .order('sent_at', { ascending: true, nullsFirst: true })
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`Unable to load inbound notes: ${String(error.message ?? 'unknown database error')}`);
+  return (data ?? []).filter((note: any) => clean(note.message_text));
+}
+
+async function transferInboundInternalNotesToLead(db: any, organizationId: string, leadId: string, notes: any[], fallbackUserId: string) {
+  if (!notes.length) return;
+  const activities = notes.map((note: any) => ({
+    organization_id: organizationId,
+    lead_id: leadId,
+    actor_user_id: clean(note.message_payload?.actor_user_id) || fallbackUserId,
+    kind: 'crm_note',
+    message: clean(note.message_text),
+    occurred_at: note.sent_at || note.created_at || nowIso(),
+  }));
+  const { error } = await db.from('lead_activities').insert(activities);
+  if (error) throw new Error(`Lead was created, but inbound notes could not be transferred: ${String(error.message ?? 'unknown database error')}`);
+}
+
+export async function addStarkInboundQuickNote(formData: FormData): Promise<void> {
+  const workspace = await requireStarkWriteAccess();
+  const organizationId = workspace.organization.id;
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+  const rowId = clean(formData.get('rowId'));
+  const note = clean(formData.get('note')).slice(0, 2000);
+  if (!rowId || !note) throw new Error('Add a note before saving.');
+
+  const { data: row, error: rowError } = await db.from('lead_intake_staging')
+    .select('id,source_provider,qualified_lead_id')
+    .eq('organization_id', organizationId)
+    .eq('id', rowId)
+    .maybeSingle();
+  if (rowError || !row?.id || !isSupportedProvider(row.source_provider)) throw new Error('Inbound inquiry not found.');
+
+  const now = nowIso();
+  const actorName = clean(workspace.profile?.full_name) || clean(workspace.user.email) || 'Stark Packmate user';
+  const { error } = await db.from('lead_intake_messages').insert({
+    organization_id: organizationId,
+    intake_id: row.id,
+    provider: clean(row.source_provider).toLowerCase(),
+    external_message_id: `setu-note:${crypto.randomUUID()}`,
+    event_type: 'internal_note',
+    direction: 'system',
+    actor_type: 'agent',
+    actor_name: actorName,
+    message_type: 'Internal note',
+    message_text: note,
+    message_payload: { actor_user_id: workspace.user.id, source: 'inbound_quick_note' },
+    sent_at: now,
+    status: 'logged',
+    updated_at: now,
+  });
+  if (error) throw new Error(`Unable to save note: ${String(error.message ?? 'unknown database error')}`);
+
+  if (row.qualified_lead_id) {
+    await db.from('lead_activities').insert({
+      organization_id: organizationId,
+      lead_id: row.qualified_lead_id,
+      actor_user_id: workspace.user.id,
+      kind: 'crm_note',
+      message: note,
+      occurred_at: now,
+    });
+    revalidatePath(`/leads/${row.qualified_lead_id}`);
+  }
+  revalidatePath(INBOUND_PATH);
+}
+
 async function requireStarkWriteAccess(): Promise<StarkWorkspace> {
   const workspace = await requireWorkspace();
   const organization = workspace.organization;
@@ -200,9 +276,17 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   if (row.qualified_lead_id) redirect(`/leads/${row.qualified_lead_id}`);
   if (row.sales_queue_suppressed) throw new Error('This contact is browsing only. Wait for meaningful requirement details before creating a Lead.');
 
+  const inboundInternalNotes = await readInboundInternalNotes(db, organizationId, row.id);
   const duplicate = await findDuplicateLead(db, organizationId, row.email ?? null, row.full_phone_number ?? null);
   if (duplicate?.id) {
     const now = nowIso();
+    await transferInboundInternalNotesToLead(db, organizationId, duplicate.id, inboundInternalNotes, userId);
+    if (inboundInternalNotes.length) {
+      const { data: duplicateLead } = await db.from('leads').select('notes').eq('organization_id', organizationId).eq('id', duplicate.id).maybeSingle();
+      const carriedNotes = inboundInternalNotes.map((note: any) => `• ${clean(note.message_text)}`).join('\n');
+      const nextNotes = [clean(duplicateLead?.notes), carriedNotes ? `Inbound notes:\n${carriedNotes}` : null].filter(Boolean).join('\n\n');
+      await db.from('leads').update({ notes: nextNotes, updated_by: userId }).eq('organization_id', organizationId).eq('id', duplicate.id);
+    }
     await db.from('lead_intake_staging').update({ intake_status: 'duplicate', qualified_lead_id: duplicate.id, qualified_at: now, qualified_by: userId, qualification_notes: [row.qualification_notes, overrideReason ? `Lead creation override: ${overrideReason}` : null].filter(Boolean).join('\n'), updated_at: now }).eq('id', row.id);
     await db.from('lead_intake_inquiries').update({ status: 'duplicate', qualified_lead_id: duplicate.id, qualified_at: now, qualified_by: userId, updated_at: now }).eq('organization_id', organizationId).eq('intake_id', row.id).is('ended_at', null);
     revalidatePath('/leads');
@@ -223,8 +307,12 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
   const companyName = row.company_name || row.contact_name || row.person_name || `${providerLabel(provider)} inbound inquiry`;
   const productInterestLabel = row.pouch_type || row.packaging_type || indiaMartProduct || null;
   const assessment = assessInteraktContact(contactFromRow(row), new Date(), evidenceFromRow(row));
+  const inboundNoteText = inboundInternalNotes.length
+    ? `Inbound notes:\n${inboundInternalNotes.map((note: any) => `• ${clean(note.message_text)}`).join('\n')}`
+    : null;
   const notes = [
     row.qualification_notes,
+    inboundNoteText,
     row.brand_name ? `Brand: ${row.brand_name}` : null,
     `Inbound source: ${sourceLabel}`,
     indiaMartMessage ? `IndiaMART enquiry: ${indiaMartMessage}` : null,
@@ -270,6 +358,7 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
     },
   }).select('id').single();
   if (leadError || !lead?.id) throw new Error(`Unable to create Lead: ${String(leadError?.message ?? 'unknown database error')}`);
+  await transferInboundInternalNotesToLead(db, organizationId, lead.id, inboundInternalNotes, userId);
 
   const primaryEmail = clean(row.email).toLowerCase();
   if (primaryEmail) {
