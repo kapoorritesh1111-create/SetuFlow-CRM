@@ -1,4 +1,5 @@
 export {
+  addStarkInboundQuickNote,
   createStarkInteraktLeadOverride,
   evaluateStarkInteraktPage,
 } from './inbound-actions';
