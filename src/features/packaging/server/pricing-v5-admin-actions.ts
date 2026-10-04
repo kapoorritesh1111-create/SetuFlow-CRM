@@ -274,11 +274,11 @@ export async function createPackagingCommercialBandV5(formData:FormData){
   const {data:maxSort,error:sortError}=await supabase.from('packaging_pricing_commercial_bands_v5').select('sort_order').eq('organization_id',organization.id).eq('template_id',templateId).eq('pricing_bucket',bucket).order('sort_order',{ascending:false}).limit(1).maybeSingle();
   if(sortError) throw new Error(sortError.message);
   const now=new Date().toISOString();
-  const {error}=await supabase.from('packaging_pricing_commercial_bands_v5').insert({
+  const {error}=await supabase.from('packaging_pricing_commercial_bands_v5').upsert({
     organization_id:organization.id,template_id:templateId,pricing_bucket:bucket,run_length_max_m:runLength,
     wastage_pct:wastage,margin_per_frame:margin,sort_order:Number(maxSort?.sort_order??0)+10,
     metadata:{source:'pricing_v5_admin_custom'},created_by:user.id,updated_by:user.id,created_at:now,updated_at:now,
-  });
+  },{onConflict:'organization_id,template_id,pricing_bucket,run_length_max_m'});
   if(error) throw new Error(error.message);
   revalidatePath(ADMIN_PATH);
   revalidatePath(ADMIN_PATH+'/matrix');
@@ -305,22 +305,46 @@ export async function clonePackagingTemplateRevisionV5(formData:FormData){
   const {organization,user,supabase}=await adminDb();
   const sourceId=text(formData,'template_id');
   if(!sourceId) throw new Error('Published Pricing v5 template is required.');
-  const {data:source,error:sourceError}=await supabase.from('packaging_pricing_templates')
+  const {data:requestedSource,error:sourceError}=await supabase.from('packaging_pricing_templates')
     .select('id,family_id,slug,name,description,currency,pricing_model,calculation_engine_key,calculation_version,status,production_rules_json,quote_config_json')
     .eq('organization_id',organization.id).eq('id',sourceId).eq('calculation_version',5).in('calculation_engine_key',V5_ENGINES).maybeSingle();
-  if(sourceError||!source?.id) throw new Error(sourceError?.message??'Source Pricing v5 template was not found.');
-  if(source.status!=='published') throw new Error('Only a published Pricing v5 template can be cloned into a new revision.');
+  if(sourceError||!requestedSource?.id) throw new Error(sourceError?.message??'Source Pricing v5 template was not found.');
+
+  let source:any=requestedSource;
+  const requestedSupplyForm=String(requestedSource.production_rules_json?.supply_form??'');
+  if(requestedSource.status!=='published'){
+    const {data:published,error:publishedError}=await supabase.from('packaging_pricing_templates')
+      .select('id,family_id,slug,name,description,currency,pricing_model,calculation_engine_key,calculation_version,status,production_rules_json,quote_config_json')
+      .eq('organization_id',organization.id).eq('family_id',requestedSource.family_id)
+      .eq('calculation_version',5).eq('calculation_engine_key',requestedSource.calculation_engine_key)
+      .eq('status','published').eq('is_active',true).order('created_at',{ascending:false});
+    if(publishedError) throw new Error(publishedError.message);
+    const currentPublished=(published??[]).find((item:any)=>String(item.production_rules_json?.supply_form??'')===requestedSupplyForm);
+    if(currentPublished?.id) source=currentPublished;
+    else if(requestedSource.status==='draft'){
+      revalidatePath(ADMIN_PATH);
+      return;
+    }else{
+      throw new Error('The current published Pricing v5 revision could not be resolved. Refresh the pricing page and try again.');
+    }
+  }
+
+  const supplyForm=String(source.production_rules_json?.supply_form??'');
   const {data:drafts,error:draftError}=await supabase.from('packaging_pricing_templates')
     .select('id,name,production_rules_json').eq('organization_id',organization.id).eq('family_id',source.family_id)
     .eq('calculation_version',5).eq('calculation_engine_key',source.calculation_engine_key).eq('status','draft');
   if(draftError) throw new Error(draftError.message);
-  const supplyForm=String(source.production_rules_json?.supply_form??'');
   const existingDraft=(drafts??[]).find((item:any)=>String(item.production_rules_json?.supply_form??'')===supplyForm);
-  if(existingDraft?.id) throw new Error(`A Pricing v5 draft already exists for this form: ${existingDraft.name}. Finish or publish that revision first.`);
+  if(existingDraft?.id){
+    revalidatePath(ADMIN_PATH);
+    return;
+  }
 
   const stamp=Date.now().toString(36);
+  const baseSlug=String(source.slug??'pricing-v5').split('-r-')[0];
+  const baseName=String(source.name??'Pricing v5').replace(/(?: · Revision)+$/,'');
   const {data:created,error:createError}=await supabase.from('packaging_pricing_templates').insert({
-    organization_id:organization.id,family_id:source.family_id,slug:`${source.slug}-r-${stamp}`,name:`${source.name} · Revision`,description:source.description,currency:source.currency,
+    organization_id:organization.id,family_id:source.family_id,slug:`${baseSlug}-r-${stamp}`,name:`${baseName} · Revision`,description:source.description,currency:source.currency,
     is_active:false,calculation_version:5,pricing_model:source.pricing_model,calculation_engine_key:source.calculation_engine_key,status:'draft',production_rules_json:source.production_rules_json??{},quote_config_json:source.quote_config_json??{},supersedes_template_id:source.id,
   }).select('id').single();
   if(createError||!created?.id) throw new Error(createError?.message??'Pricing v5 revision could not be created.');
@@ -356,7 +380,7 @@ export async function clonePackagingTemplateRevisionV5(formData:FormData){
     if(layerRows.length){const {error}=await supabase.from('packaging_construction_layers_v5').insert(layerRows);if(error) throw new Error(error.message);}
     if(costRates.data?.length){const {error}=await supabase.from('packaging_pricing_cost_rates_v5').insert(costRates.data.map((row:any)=>({organization_id:organization.id,template_id:newTemplateId,...row,created_by:user.id,updated_by:user.id,created_at:now,updated_at:now})));if(error) throw new Error(error.message);}
     if(chargeRates.data?.length){const {error}=await supabase.from('packaging_pricing_charge_rates_v5').insert(chargeRates.data.map((row:any)=>({organization_id:organization.id,template_id:newTemplateId,...row,created_by:user.id,updated_by:user.id,created_at:now,updated_at:now})));if(error) throw new Error(error.message);}
-    if(bands.data?.length){const {error}=await supabase.from('packaging_pricing_commercial_bands_v5').insert(bands.data.map((row:any)=>({organization_id:organization.id,template_id:newTemplateId,...row,created_by:user.id,updated_by:user.id,created_at:now,updated_at:now})));if(error) throw new Error(error.message);}
+    if(bands.data?.length){const {error}=await supabase.from('packaging_pricing_commercial_bands_v5').upsert(bands.data.map((row:any)=>({organization_id:organization.id,template_id:newTemplateId,...row,created_by:user.id,updated_by:user.id,created_at:now,updated_at:now})),{onConflict:'organization_id,template_id,pricing_bucket,run_length_max_m'});if(error) throw new Error(error.message);}
   }catch(error){
     await supabase.from('packaging_pricing_templates').delete().eq('organization_id',organization.id).eq('id',newTemplateId);
     throw error;
