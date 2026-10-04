@@ -97,7 +97,9 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/admin/packaging-templates?mode=v4" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">V4 Baseline</Link>
           {isDraft
-            ? <form action={publishPackagingTemplateV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Publish Changes</button></form>
+            ? view==='waste'
+              ? <span className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800">Use Save All & Publish below</span>
+              : <form action={publishPackagingTemplateV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Publish Changes</button></form>
             : <form action={clonePackagingTemplateRevisionV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Edit Pricing</button></form>}
           <span className={'rounded-full px-3 py-1.5 text-xs font-black '+(isDraft?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{isDraft?'Draft - editing':'Published'}</span>
         </div>

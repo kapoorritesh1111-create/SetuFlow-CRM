@@ -91,6 +91,38 @@ export async function savePackagingCommercialBandV5(formData:FormData){
   revalidatePath(ADMIN_PATH);
 }
 
+export async function savePackagingCommercialBandsV5(formData:FormData){
+  const {organization,user,supabase}=await adminDb();
+  const templateId=text(formData,'template_id');
+  await requireDraftTemplate(supabase,organization.id,templateId);
+  const ids=formData.getAll('band_id').map((value)=>String(value).trim()).filter(Boolean);
+  const runs=formData.getAll('run_length_max_m').map((value)=>Number(value));
+  const wastes=formData.getAll('wastage_pct').map((value)=>Number(value));
+  const margins=formData.getAll('margin_per_frame').map((value)=>Number(value));
+  if(!ids.length||ids.length!==runs.length||ids.length!==wastes.length||ids.length!==margins.length) throw new Error('Waste and margin changes are incomplete. Refresh the page and try again.');
+  const rows=ids.map((id,index)=>{
+    const runLength=runs[index],wastage=wastes[index],margin=margins[index];
+    if(!Number.isFinite(runLength)||runLength<1||runLength>100000000) throw new Error('Run length is outside the allowed range.');
+    if(!Number.isFinite(wastage)||wastage<0||wastage>100) throw new Error('Wastage is outside the allowed range.');
+    if(!Number.isFinite(margin)||margin<0||margin>1000000) throw new Error('Margin per frame is outside the allowed range.');
+    return {id,runLength,wastage,margin};
+  });
+  const now=new Date().toISOString();
+  for(const row of rows){
+    const {data,error}=await supabase.from('packaging_pricing_commercial_bands_v5')
+      .update({run_length_max_m:row.runLength,wastage_pct:row.wastage,margin_per_frame:row.margin,updated_by:user.id,updated_at:now})
+      .eq('organization_id',organization.id).eq('template_id',templateId).eq('id',row.id).select('id').maybeSingle();
+    if(error||!data?.id) throw new Error(error?.message??'A Waste & Margin row could not be saved.');
+  }
+  revalidatePath(ADMIN_PATH);
+  revalidatePath(`${ADMIN_PATH}/matrix`);
+}
+
+export async function saveAndPublishPackagingCommercialBandsV5(formData:FormData){
+  await savePackagingCommercialBandsV5(formData);
+  await publishPackagingTemplateV5(formData);
+}
+
 export async function savePackagingMasterRateV5(formData:FormData){
   const {organization,user,supabase}=await adminDb();
   const masterId=text(formData,'id');
@@ -287,7 +319,7 @@ export async function createPackagingCommercialBandV5(formData:FormData){
 export async function deletePackagingCommercialBandV5(formData:FormData){
   const {organization,supabase}=await adminDb();
   const templateId=text(formData,'template_id');
-  const id=text(formData,'id');
+  const id=text(formData,'delete_id')||text(formData,'id');
   await requireDraftTemplate(supabase,organization.id,templateId);
   if(!id) throw new Error('Commercial band is required.');
   const {data:band,error:bandError}=await supabase.from('packaging_pricing_commercial_bands_v5').select('pricing_bucket').eq('organization_id',organization.id).eq('template_id',templateId).eq('id',id).maybeSingle();
