@@ -107,8 +107,11 @@ export async function savePackagingCommercialBandsV5(formData:FormData){
     if(!Number.isFinite(margin)||margin<0||margin>1000000) throw new Error('Margin per frame is outside the allowed range.');
     return {id,runLength,wastage,margin};
   });
+  const saveBandId=text(formData,'save_band_id');
+  const rowsToSave=saveBandId?rows.filter((row)=>row.id===saveBandId):rows;
+  if(saveBandId&&!rowsToSave.length) throw new Error('The selected Waste & Margin row could not be matched. Refresh the page and try again.');
   const now=new Date().toISOString();
-  for(const row of rows){
+  for(const row of rowsToSave){
     const {data,error}=await supabase.from('packaging_pricing_commercial_bands_v5')
       .update({run_length_max_m:row.runLength,wastage_pct:row.wastage,margin_per_frame:row.margin,updated_by:user.id,updated_at:now})
       .eq('organization_id',organization.id).eq('template_id',templateId).eq('id',row.id).select('id').maybeSingle();
