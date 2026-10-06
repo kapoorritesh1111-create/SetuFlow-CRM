@@ -81,7 +81,7 @@ async function loadPackagingPricingIntelligence(client:any, organizationId:strin
   return {
     families:familyRows,
     activeFamilyCount:familyRows.length,
-    setupFamilyCount:familyRows.filter((x)=>x.published_templates===0).length,
+    setupFamilyCount:familyRows.filter((x:any)=>x.published_templates===0).length,
     currentSup,
     quoteCount:(quotesResult.data??[]).length,
     approvedQuoteCount:(quotesResult.data??[]).filter((x:any)=>x.approved_at || String(x.status).toLowerCase()==='approved').length,
