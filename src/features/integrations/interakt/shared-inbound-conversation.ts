@@ -57,7 +57,7 @@ export async function readSharedInboundConversation(intakeId: string) {
   if (selectedPhone) {
     const { data } = await db
       .from('lead_intake_staging')
-      .select('id,source_provider,full_phone_number,phone_number')
+      .select('id,source_provider,full_phone_number,phone_number,person_name,contact_name,first_inquiry_at,source_created_at,traits')
       .eq('organization_id', organization.id)
       .in('source_provider', SUPPORTED_INBOUND_PROVIDERS)
       .limit(2000);
@@ -111,26 +111,28 @@ export async function readSharedInboundConversation(intakeId: string) {
   }
 
   if (String(selected.source_provider).toLowerCase() === 'indiamart') {
-    const traits = selected.traits && typeof selected.traits === 'object' ? selected.traits as Record<string, unknown> : {};
-    const inquiryText = normalizeIndiaMartMessage(traits.query_message);
-    const hasSynthetic = messages.some((message: any) => message.event_type === 'indiamart_enquiry' && message.intake_id === selected.id);
-    if (inquiryText && !hasSynthetic) {
+    for (const row of relatedRows.filter((item: any) => String(item.source_provider).toLowerCase() === 'indiamart')) {
+      const traits = row.traits && typeof row.traits === 'object' ? row.traits as Record<string, unknown> : {};
+      const inquiryText = normalizeIndiaMartMessage(traits.query_message);
+      const queryType = clean(traits.query_type).toUpperCase();
+      const hasSynthetic = messages.some((message: any) => message.event_type === 'indiamart_enquiry' && message.intake_id === row.id);
+      if (!inquiryText || hasSynthetic) continue;
       messages.push({
-        id: `indiamart:${selected.id}:enquiry`,
-        intake_id: selected.id,
+        id: `indiamart:${row.id}:enquiry`,
+        intake_id: row.id,
         provider: 'indiamart',
         event_type: 'indiamart_enquiry',
         direction: 'inbound',
         actor_type: 'customer',
-        actor_name: selected.person_name || selected.contact_name || 'Customer',
-        message_type: 'Inquiry',
+        actor_name: row.person_name || row.contact_name || 'Customer',
+        message_type: queryType === 'P' ? 'Buyer Call' : 'Inquiry',
         message_text: inquiryText,
         media_url: null,
         intelligence: null,
-        received_at: selected.first_inquiry_at || selected.source_created_at,
+        received_at: row.first_inquiry_at || row.source_created_at,
         sent_at: null,
         status: 'received',
-        created_at: selected.first_inquiry_at || selected.source_created_at,
+        created_at: row.first_inquiry_at || row.source_created_at,
       });
     }
   }
