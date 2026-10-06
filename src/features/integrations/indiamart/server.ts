@@ -210,6 +210,18 @@ async function fetchIndiaMart(crmKey: string, windowStart: Date, windowEnd: Date
   }
 }
 
+
+async function groupRecentIndiaMartBuyerEvents(
+  admin: NonNullable<ReturnType<typeof createServiceRoleClient>>,
+  organizationId: string,
+) {
+  const { error } = await admin.rpc('group_recent_indiamart_buyer_events', {
+    p_organization_id: organizationId,
+    p_session_hours: 24,
+  });
+  if (error) throw new Error(`Unable to group IndiaMART buyer events: ${error.message}`);
+}
+
 async function writeEvent(
   admin: NonNullable<ReturnType<typeof createServiceRoleClient>>,
   integrationId: string,
@@ -343,6 +355,7 @@ export async function syncIndiaMartOrganization(
         .from('lead_intake_staging')
         .upsert(normalized, { onConflict: 'organization_id,source_provider,external_contact_id' });
       if (upsertError) throw new Error(`Unable to stage IndiaMART enquiries: ${upsertError.message}`);
+      await groupRecentIndiaMartBuyerEvents(admin, organizationId);
     }
 
     const inserted = uniqueIds.filter((id) => !existingIds.has(id)).length;
