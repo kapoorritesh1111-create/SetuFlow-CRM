@@ -65,14 +65,16 @@ async function loadPackagingPricingIntelligence(client:any, organizationId:strin
     bucketMap=Array.from(grouped.entries()).sort((a,b)=>a[0]-b[0]).map(([bucket,sizes])=>({bucket,sizes}));
   }
 
-  const [quotesResult,ordersResult,benchmarksResult,discountLinesResult] = await Promise.all([
+  const [quotesResult,ordersResult,benchmarksResult] = await Promise.all([
     client.from('quotes').select('id,approved_at,status').eq('organization_id',organizationId),
     client.from('orders').select('id').eq('organization_id',organizationId),
     client.from('packaging_pricing_competitor_benchmarks_v5').select('id,competitor_name').eq('organization_id',organizationId),
-    client.from('quote_line_items').select('id,is_price_overridden,quote_id').eq('is_price_overridden',true),
   ]);
-  const quoteIds=new Set((quotesResult.data??[]).map((x:any)=>String(x.id)));
-  const discountCount=(discountLinesResult.data??[]).filter((x:any)=>quoteIds.has(String(x.quote_id))).length;
+  const quoteIds=(quotesResult.data??[]).map((x:any)=>String(x.id));
+  const discountLinesResult=quoteIds.length
+    ? await client.from('quote_line_items').select('id').in('quote_id',quoteIds).eq('is_price_overridden',true)
+    : {data:[],error:null};
+  const discountCount=(discountLinesResult.data??[]).length;
   const benchmarkNames=(benchmarksResult.data??[]).map((x:any)=>String(x.competitor_name??'').trim()).filter(Boolean);
   const trackedCompetitors=Array.from(new Set(['Swiss Pac','Trigon Digipack','Spectal Pack','Hora Art Centre',...benchmarkNames]));
 
