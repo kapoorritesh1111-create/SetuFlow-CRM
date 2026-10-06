@@ -25,6 +25,18 @@ export type InboundWorkspaceQuery = {
 function clean(value: unknown) { return String(value ?? '').trim(); }
 function safeSearch(value: unknown) { return clean(value).replace(/[,%()]/g, ' ').replace(/\s+/g, ' ').slice(0, 80); }
 
+function normalizedPhoneSearchTerms(value: string) {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length < 7) return [] as string[];
+  const terms = new Set<string>([digits]);
+  if (digits.startsWith('0') && digits.length > 7) terms.add(digits.slice(1));
+  if (digits.startsWith('91') && digits.length === 12) {
+    terms.add(digits.slice(2));
+    terms.add(`0${digits.slice(2)}`);
+  }
+  return Array.from(terms);
+}
+
 function tagsFrom(value: unknown) {
   if (!value) return [] as string[];
   if (Array.isArray(value)) return value.map((item) => typeof item === 'string' ? item.trim() : '').filter(Boolean);
@@ -113,7 +125,19 @@ export async function readInboundWorkspaceScoped(input: InboundWorkspaceQuery = 
     .eq('sales_queue_suppressed', false)
     .not('intake_status', 'in', `(${TERMINAL.join(',')})`), scopedUserId);
 
-  if (q) query = query.or(`contact_name.ilike.%${q}%,person_name.ilike.%${q}%,company_name.ilike.%${q}%,brand_name.ilike.%${q}%,full_phone_number.ilike.%${q}%`);
+  if (q) {
+    const phoneClauses = normalizedPhoneSearchTerms(q).flatMap((term) => [
+      `full_phone_number.ilike.%${term}%`,
+      `phone_number.ilike.%${term}%`,
+    ]);
+    query = query.or([
+      `contact_name.ilike.%${q}%`,
+      `person_name.ilike.%${q}%`,
+      `company_name.ilike.%${q}%`,
+      `brand_name.ilike.%${q}%`,
+      ...phoneClauses,
+    ].join(','));
+  }
   if (status === 'new') query = query.eq('intake_status', 'new');
   else if (status === 'inquiries') query = query.not('last_inbound_at', 'is', null);
   else if (status === 'needs_info') query = query.eq('intake_status', 'needs_info');

@@ -83,14 +83,22 @@ export async function refreshStarkInteraktStaging(): Promise<void> {
 
   const existingStatus = new Map(snapshot.rows.map((row) => [row.external_contact_id, row.intake_status || 'new']));
   const watermark = newestSourceWatermark(snapshot.rows);
-  const contacts = [] as Awaited<ReturnType<typeof fetchInteraktContacts>>['contacts'];
-  let offset = 0;
-  for (let page = 0; page < 10; page += 1) {
-    const result = await fetchInteraktContacts({ offset, limit: 100, modifiedAfter: watermark });
-    contacts.push(...result.contacts);
-    if (!result.hasNextPage || result.contacts.length === 0) break;
-    offset += result.contacts.length;
-  }
+  const recoveryModifiedAfter = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const contactsById = new Map<string, Awaited<ReturnType<typeof fetchInteraktContacts>>['contacts'][number]>();
+
+  const collectModifiedContacts = async (modifiedAfter: string) => {
+    let offset = 0;
+    for (let page = 0; page < 10; page += 1) {
+      const result = await fetchInteraktContacts({ offset, limit: 100, modifiedAfter });
+      for (const contact of result.contacts) contactsById.set(contact.externalContactId, contact);
+      if (!result.hasNextPage || result.contacts.length === 0) break;
+      offset += result.contacts.length;
+    }
+  };
+
+  if (watermark) await collectModifiedContacts(watermark);
+  await collectModifiedContacts(recoveryModifiedAfter);
+  const contacts = Array.from(contactsById.values());
   if (!contacts.length) { revalidatePath(INBOUND_PATH); return; }
 
   const batchId = randomUUID();

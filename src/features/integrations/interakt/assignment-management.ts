@@ -26,6 +26,18 @@ function clean(value: unknown) {
   return String(value ?? '').trim();
 }
 
+function normalizedPhoneSearchTerms(value: string) {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length < 7) return [] as string[];
+  const terms = new Set<string>([digits]);
+  if (digits.startsWith('0') && digits.length > 7) terms.add(digits.slice(1));
+  if (digits.startsWith('91') && digits.length === 12) {
+    terms.add(digits.slice(2));
+    terms.add(`0${digits.slice(2)}`);
+  }
+  return Array.from(terms);
+}
+
 async function requireStarkAssignmentManager() {
   const workspace = await requireWorkspace();
   const organization = workspace.organization;
@@ -145,7 +157,18 @@ export async function readStarkInboundAssignmentManager(input: { q?: string } = 
     .limit(250);
 
   if (q) {
-    query = query.or(`contact_name.ilike.%${q}%,person_name.ilike.%${q}%,company_name.ilike.%${q}%,full_phone_number.ilike.%${q}%,setu_assigned_name.ilike.%${q}%,setu_assigned_email.ilike.%${q}%`);
+    const phoneClauses = normalizedPhoneSearchTerms(q).flatMap((term) => [
+      `full_phone_number.ilike.%${term}%`,
+      `phone_number.ilike.%${term}%`,
+    ]);
+    query = query.or([
+      `contact_name.ilike.%${q}%`,
+      `person_name.ilike.%${q}%`,
+      `company_name.ilike.%${q}%`,
+      `setu_assigned_name.ilike.%${q}%`,
+      `setu_assigned_email.ilike.%${q}%`,
+      ...phoneClauses,
+    ].join(','));
   }
 
   const { data: rows, error } = await query;
