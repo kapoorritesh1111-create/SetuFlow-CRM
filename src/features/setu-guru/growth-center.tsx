@@ -18,6 +18,7 @@ import { GrowthCenter as GrowthCenterRedesign } from '@/features/setu-guru/growt
 import { TradeEventWorkspace, type TradeEventSummary } from '@/features/setu-guru/growth-center-workspaces';
 import { PackagingOperationsWorkspace, type PackagingOperationsCategory } from '@/features/setu-guru/packaging-operations-workspace';
 import { ProductPricingIntelligencePanel } from '@/features/products/components/product-pricing-intelligence-panel';
+import { PackagingPricingIntelligenceWorkspace, type PackagingPricingIntelligenceData } from '@/features/setu-guru/packaging-pricing-intelligence-workspace';
 import { workspacePanelClass } from '@/components/ui/workspace-surfaces';
 import type { OpportunityCard } from '@/lib/setu-guru/opportunity-finder';
 import type { IcpProfile } from '@/lib/setu-guru/icp';
@@ -40,6 +41,7 @@ type Props = {
   icpProfiles?: IcpProfile[];
   crmMatchCampaigns?: CrmMatchCampaign[];
   packagingEnabled?: boolean;
+  packagingPricingIntelligence?: PackagingPricingIntelligenceData | null;
 };
 
 type GrowthWorkspace = 'operations' | 'pricing';
@@ -101,7 +103,7 @@ export function GrowthCenter(props: Props) {
 
       {workspace === 'operations' ? <nav className={cn(workspacePanelClass, 'mb-4 flex overflow-x-auto p-1.5')} aria-label="Growth Work Queue views">{operationViews.map(({ key, label, description, icon: Icon }) => <button key={key} type="button" onClick={() => setOperationsView(key)} aria-pressed={operationsView === key} title={description} className={cn('inline-flex min-h-10 shrink-0 items-center gap-2 rounded-ctl px-4 text-sm font-medium transition', operationsView === key ? 'bg-info-bg text-brand-800' : 'text-content-secondary hover:bg-surface-2')}><Icon className="h-4 w-4" />{label}</button>)}</nav> : null}
 
-      {workspace === 'pricing' ? <ProductPricingIntelligencePanel /> : null}
+      {workspace === 'pricing' ? (props.packagingEnabled && props.packagingPricingIntelligence ? <PackagingPricingIntelligenceWorkspace data={props.packagingPricingIntelligence} /> : <ProductPricingIntelligencePanel />) : null}
       {workspace === 'operations' && operationsView === 'work-queue' ? <GrowthCenterRedesign {...props} externalOpportunities={props.externalOpportunities ?? []} /> : null}
       {workspace === 'operations' && operationsView === 'packaging' && props.packagingEnabled ? <PackagingOperationsWorkspace recommendations={props.recommendations} initialCategory={requestedPackagingCategory} /> : null}
       {workspace === 'operations' && operationsView === 'crm-matches' ? <CrmMatchesWorkspace opportunities={opportunities} icpConfigured={Boolean(props.icpConfigured)} currentUserId={props.currentUserId} profiles={props.icpProfiles ?? []} campaigns={props.crmMatchCampaigns ?? []} /> : null}
