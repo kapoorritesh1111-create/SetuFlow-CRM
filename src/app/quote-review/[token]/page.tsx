@@ -36,6 +36,17 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
     admin.from('organizations').select('name,legal_name,logo_url').eq('id', quote.organization_id).maybeSingle(),
   ]);
 
+  const lineIds = (lines ?? []).map((l:any)=>l.id).filter(Boolean);
+  const { data: proofs } = lineIds.length ? await admin.from('packaging_proofs').select('id,quote_line_item_id,version,file_path,file_name,mime_type,status,uploaded_at').eq('organization_id', quote.organization_id).in('quote_line_item_id', lineIds).order('version',{ascending:false}) : { data: [] };
+  const latestProofByLine = new Map<string,any>();
+  for (const proof of (proofs ?? []) as any[]) if (!latestProofByLine.has(String(proof.quote_line_item_id))) latestProofByLine.set(String(proof.quote_line_item_id),proof);
+  const proofUrlByLine = new Map<string,string>();
+  for (const [lineId,proof] of latestProofByLine.entries()) {
+    if (!proof?.file_path) continue;
+    const { data } = await admin.storage.from('lead-attachments').createSignedUrl(proof.file_path,60*60);
+    if (data?.signedUrl) proofUrlByLine.set(lineId,data.signedUrl);
+  }
+
   const productIds = (lines ?? []).map((l: any) => l.product_id).filter(Boolean);
   const familyIds = (lines ?? []).map((l: any) => l.packaging_family_id).filter(Boolean);
   const variationIds = (lines ?? []).map((l: any) => l.packaging_product_variation_id).filter(Boolean);
@@ -89,6 +100,12 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               const family = line.packaging_family_id ? byFamily.get(String(line.packaging_family_id)) : null;
               const variation = line.packaging_product_variation_id ? byVariation.get(String(line.packaging_product_variation_id)) : null;
               const kld = line.packaging_kld_file_id ? byKld.get(String(line.packaging_kld_file_id)) : null;
+              const proof = latestProofByLine.get(String(line.id)) ?? null;
+              const proofUrl = proofUrlByLine.get(String(line.id)) ?? null;
+              const proofIsImage = Boolean(proofUrl && String(proof?.mime_type||'').startsWith('image/'));
+              const leadArtworkUrl = imageArtwork ? `/api/public/quote-attachment/${token}/${imageArtwork.id}` : null;
+              const artworkUrl = proofUrl || leadArtworkUrl;
+              const artworkIsImage = proofIsImage || Boolean(!proofUrl && imageArtwork);
               const name = product?.name || variation?.name || family?.name || line.notes || `Packaging item ${index + 1}`;
               const lineTotal = Number(line.quantity || 0) * Number(line.unit_price || 0);
               const alternatives = customerVolumeSuggestions(
@@ -101,9 +118,9 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
                 <article key={line.id} className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
                   <div className="grid gap-0 lg:grid-cols-[270px_minmax(0,1fr)]">
                     <div className="relative min-h-[300px] border-b border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50 p-5 lg:border-b-0 lg:border-r">
-                      {imageArtwork?<img src={`/api/public/quote-attachment/${token}/${imageArtwork.id}`} alt="Customer artwork" className="h-full min-h-[260px] w-full rounded-2xl border border-slate-200 bg-white object-contain shadow-sm"/>:<div className="flex h-full min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-300 bg-white p-5 text-center"><img src={String(family?.name||'').toLowerCase().includes('center')?'/packaging/quote-stock/center-seal-pouch.svg':String(family?.name||'').toLowerCase().includes('3 side')?'/packaging/quote-stock/three-side-seal.svg':'/packaging/quote-stock/stand-up-pouch.svg'} alt="" className="h-40 w-auto"/><div className="mt-3 text-sm font-black text-slate-800">{kld?'KLD / Dieline selected':'Packaging reference'}</div><div className="mt-1 text-xs font-semibold text-slate-500">{kld?'Artwork has not been attached yet. Use the approved KLD for artwork placement.':'Artwork will be added during design.'}</div></div>}
+                      {artworkUrl&&artworkIsImage?<img src={artworkUrl} alt="Packaging artwork" className="h-full min-h-[260px] w-full rounded-2xl border border-slate-200 bg-white object-contain shadow-sm"/>:<div className="flex h-full min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-300 bg-white p-5 text-center"><img src={String(family?.name||'').toLowerCase().includes('center')?'/packaging/quote-stock/center-seal-pouch.svg':String(family?.name||'').toLowerCase().includes('3 side')?'/packaging/quote-stock/three-side-seal.svg':'/packaging/quote-stock/stand-up-pouch.svg'} alt="" className="h-40 w-auto"/><div className="mt-3 text-sm font-black text-slate-800">{artworkUrl?'Artwork / proof attached':kld?'KLD / Dieline selected':'Packaging reference'}</div><div className="mt-1 text-xs font-semibold text-slate-500">{artworkUrl?'Open the attached artwork or proof below.':kld?'Artwork has not been attached yet. Use the approved KLD for artwork placement.':'Artwork will be added during design.'}</div></div>}
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {imageArtwork?<a target="_blank" rel="noopener noreferrer" href={`/api/public/quote-attachment/${token}/${imageArtwork.id}`} className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white">View artwork ↗</a>:null}
+                        {artworkUrl?<a target="_blank" rel="noopener noreferrer" href={artworkUrl} className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white">View artwork / proof ↗</a>:null}
                         {kld?.public_token?<a target="_blank" rel="noopener noreferrer" href={`/api/public/packaging-kld/${kld.public_token}`} className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-black text-cyan-800">View KLD ↗</a>:null}
                       </div>
                     </div>
