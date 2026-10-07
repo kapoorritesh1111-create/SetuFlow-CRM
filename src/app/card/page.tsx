@@ -60,8 +60,8 @@ export default async function PublicCardPage({ searchParams }: { searchParams: S
     ? `/api/public/card-vcf?share=${encodeURIComponent(share)}`
     : `/api/public/card-vcf?${compactParams.toString()}`;
   const publicCardPath = share ? `/card?share=${encodeURIComponent(share)}` : `/card?${compactParams.toString()}`;
-  const appleWalletHref = `/api/public/apple-wallet?url=${encodeURIComponent(publicCardPath)}&name=${encodeURIComponent(identity.fullName)}`;
-  const googleWalletHref = `/api/public/google-wallet?url=${encodeURIComponent(publicCardPath)}&name=${encodeURIComponent(identity.fullName)}`;
+  const appleWalletHref = `/api/public/apple-wallet?url=${encodeURIComponent(publicCardPath)}&name=${encodeURIComponent(identity.fullName)}&fallback=${encodeURIComponent(saveContactHref)}`;
+  const googleWalletHref = `/api/public/google-wallet?url=${encodeURIComponent(publicCardPath)}&name=${encodeURIComponent(identity.fullName)}&fallback=${encodeURIComponent(saveContactHref)}`;
   const source = getFirstParam(searchParams, 'src') || getFirstParam(searchParams, 'source') || '';
   const analyticsPath = `/api/public/card-analytics?event=view${share ? `&share=${encodeURIComponent(share)}` : ''}${source ? `&src=${encodeURIComponent(source)}` : ''}`;
   const eventContext = buildTradeShowContext(identity.tradeShowName, identity.boothNumber);
