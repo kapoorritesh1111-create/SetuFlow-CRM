@@ -464,3 +464,20 @@ test('S52-PKG-V5: KLD replacement failures do not leave duplicate or missing act
   assert.match(premiumWorkspace,/Approved replacement KLD linked/);
   assert.match(premiumWorkspace,/Replacement KLD required/);
 });
+
+
+test('four-step premium sales quote flow keeps internal pricing language out of the primary sales shell',()=>{
+  assert.match(premiumQuoteStudio,/Product & Requirement/);
+  assert.match(premiumQuoteStudio,/Pouch Specification/);
+  assert.match(premiumQuoteStudio,/Quantity & Price/);
+  assert.match(premiumQuoteStudio,/Review Quote/);
+  assert.doesNotMatch(premiumQuoteStudio,/xl:grid-cols-8/);
+});
+
+test('customer quote review shows artwork first and keeps KLD available',()=>{
+  assert.match(quoteReview,/imageArtwork/);
+  assert.match(quoteReview,/View artwork/);
+  assert.match(quoteReview,/View KLD/);
+  assert.match(quoteReview,/Artwork has not been attached yet/);
+  assert.match(quoteReview,/packaging\/quote-stock\/stand-up-pouch\.svg/);
+});
