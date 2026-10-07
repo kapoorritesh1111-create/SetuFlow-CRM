@@ -129,6 +129,10 @@ export function calculateFrameFamilyPriceReviewV5(
 
   const framesExact = geometry.units_per_frame > 0 ? quantity / geometry.units_per_frame : 0;
   const runLengthM = framesExact * (geometry.material_run_mm_per_frame / 1000);
+  const minimumRunLengthM = n(context.template.production_rules_json?.minimum_run_length_m ?? 0);
+  if (minimumRunLengthM > 0 && runLengthM > 0 && runLengthM < minimumRunLengthM) {
+    errors.push(`Minimum production run is ${minimumRunLengthM} m for this packaging form. Increase quantity until the calculated run length reaches the MOQ.`);
+  }
   const band = resolvedBucket == null
     ? null
     : resolveCommercialBandV5(context.bands, resolvedBucket, runLengthM);
