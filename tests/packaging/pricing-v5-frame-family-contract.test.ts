@@ -44,3 +44,10 @@ test('Published frame families stop identifying themselves as review-only after 
   assert.match(core,/const reviewOnly=Boolean\(context\.template\.quote_config_json\?\.review_only\)/);
   assert.match(core,/review_only: reviewOnly/);
 });
+
+
+test('Frame-family pricing enforces template-configured minimum production run',()=>{
+  assert.match(core,/minimum_run_length_m/);
+  assert.match(core,/Minimum production run is/);
+  assert.match(core,/runLengthM < minimumRunLengthM/);
+});
