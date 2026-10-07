@@ -51,3 +51,10 @@ test('Frame-family pricing enforces template-configured minimum production run',
   assert.match(core,/Minimum production run is/);
   assert.match(core,/runLengthM < minimumRunLengthM/);
 });
+
+
+test('Frame-family pricing defaults minimum production run to 250m when template omits it',()=>{
+  assert.match(core,/configuredMinimumRunLength == null\s*\? 250/);
+  assert.match(core,/minimum_run_length_m/);
+  assert.match(core,/runLengthM < minimumRunLengthM/);
+});
