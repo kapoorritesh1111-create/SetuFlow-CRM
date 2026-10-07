@@ -6,7 +6,8 @@ import PricingV5ExternalPublishButton from '@/features/packaging/components/pric
 import PricingV5PremiumWorkspace from '@/features/packaging/components/pricing-v5-premium-workspace';
 import PricingV5FrameOwnerWorkspace from '@/features/packaging/components/pricing-v5-frame-owner-workspace';
 import PricingV5PriceMatrix from '@/features/packaging/components/pricing-v5-price-matrix';
-import { clonePackagingTemplateRevisionV5, publishPackagingTemplateV5 } from '@/features/packaging/server/pricing-v5-admin-actions';
+import PricingV5SafePublishButton from '@/features/packaging/components/pricing-v5-safe-publish-button';
+import { clonePackagingTemplateRevisionV5 } from '@/features/packaging/server/pricing-v5-admin-actions';
 import { hasSupabaseEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/server';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
@@ -100,7 +101,7 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
           {isDraft
             ? view==='waste'
               ? <PricingV5ExternalPublishButton/>
-              : <form action={publishPackagingTemplateV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Publish Changes</button></form>
+              : <PricingV5SafePublishButton templateId={templateId}/>
             : <form action={clonePackagingTemplateRevisionV5}><input type="hidden" name="template_id" value={templateId}/><button className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700">Edit Pricing</button></form>}
           <span className={'rounded-full px-3 py-1.5 text-xs font-black '+(isDraft?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700')}>{isDraft?'Draft - editing':'Published'}</span>
         </div>
@@ -118,7 +119,7 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
       </div>
 
       <PricingV5AdminNav active={view} model={config.model} family={familyKey} form={form} constructionCount={(constructions.data??[]).filter((x:any)=>x.is_quoteable).length} sizeCount={(sizes.data??[]).filter((x:any)=>x.is_quoteable).length}/>
-      <div className="p-4 md:p-5">{view==='matrix'||view==='competitor'?<PricingV5PriceMatrix data={data} mode={view==='competitor'?'competitor':'matrix'}/>:config.model==='sup'?<PricingV5PremiumWorkspace data={data} view={view as any}/>:<PricingV5FrameOwnerWorkspace data={data} view={view as any}/>}</div>
+      <div id="pricing-v5-admin-edit-surface" className="p-4 md:p-5">{view==='matrix'||view==='competitor'?<PricingV5PriceMatrix data={data} mode={view==='competitor'?'competitor':'matrix'}/>:config.model==='sup'?<PricingV5PremiumWorkspace data={data} view={view as any}/>:<PricingV5FrameOwnerWorkspace data={data} view={view as any}/>}</div>
     </div>
   </AdminSettingsShell>;
 }
