@@ -660,7 +660,7 @@ async function resolveDefaultNextStepId(db: any, organizationId: string, request
 
   const { data, error } = await db
     .from('next_steps')
-    .select('id, name')
+    .select('id, name, is_lost')
     .eq('organization_id', organizationId)
     .ilike('name', 'Send Introduction')
     .limit(1)
@@ -2675,6 +2675,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
 
   const leadIds = uniqueTrimmed(formData.getAll('lead_ids').map(String));
   const stageId = String(formData.get('stage_id') ?? '').trim();
+  const lostReason = String(formData.get('lost_reason') ?? '').trim();
   if (!leadIds.length || !stageId) return { error: 'Select at least one lead and a stage.' };
 
   const supabase: any = await createClient();
@@ -2689,7 +2690,8 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
   if (stageError || !stageRow) {
     return { error: stageError ? formatLeadActionError(stageError, 'Target stage not found.') : 'Target stage not found.' };
   }
-  const targetStage = stageRow as { id: string; name: string };
+  const targetStage = stageRow as { id: string; name: string; is_lost?: boolean };
+  if (targetStage.is_lost && !lostReason) return { error: 'Add a reason before moving selected leads to Lost.' };
 
   const occurredAt = new Date().toISOString();
   // Live QA and Postgres logs show the batch RPC can raise `column reference "lead_id" is ambiguous`.
@@ -2708,7 +2710,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
 
     const { error: updateError } = await db
       .from('leads')
-      .update({ stage_id: stageId, updated_by: currentUser.id })
+      .update({ stage_id: stageId, updated_by: currentUser.id, ...(targetStage.is_lost ? { next_follow_up_at: null } : {}) })
       .eq('organization_id', organization.id)
       .in('id', leadIds);
 
@@ -2723,6 +2725,7 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
         to_stage_id: stageId,
         changed_by: currentUser.id,
         changed_at: occurredAt,
+        note: targetStage.is_lost ? `Lost reason: ${lostReason}` : null,
       }));
 
     if (historyRows.length) {
@@ -2738,6 +2741,17 @@ export async function batchMoveLeadsToStage(_: ActionState | undefined, formData
       message: `${lead.company_name ?? 'Lead'} moved to ${targetStage.name}.`,
       occurred_at: occurredAt,
     }));
+    if (targetStage.is_lost) {
+      activityRows.push(...currentLeadRows.map((lead: any) => ({
+        organization_id: organization.id,
+        lead_id: lead.id,
+        actor_user_id: currentUser.id,
+        kind: 'crm_note',
+        message: `Lost reason: ${lostReason}`,
+        occurred_at: occurredAt,
+      })));
+      await db.from('lead_follow_ups').update({ status: 'cancelled' }).eq('organization_id', organization.id).in('lead_id', leadIds).eq('status', 'scheduled');
+    }
     if (activityRows.length) {
       const { error: activityError } = await db.from('lead_activities').insert(activityRows);
       if (activityError) return { error: formatLeadActionError(activityError, 'The lead activity log could not be recorded, so the batch move was stopped.') };

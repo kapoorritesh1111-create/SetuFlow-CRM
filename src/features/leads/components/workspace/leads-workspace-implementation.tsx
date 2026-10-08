@@ -274,7 +274,9 @@ export function LeadsWorkspace({
   // SF-18-094: Group banner collapse states
   const [criticalCollapsed, setCriticalCollapsed] = useState(false);
   const [todayCollapsed, setTodayCollapsed] = useState(false);
+  const [needsFollowUpCollapsed, setNeedsFollowUpCollapsed] = useState(false);
   const [activeCollapsed, setActiveCollapsed] = useState(false);
+  const [closedCollapsed, setClosedCollapsed] = useState(false);
 
   const SORT_FIELDS: Array<{ value: SortField; label: string }> = [
     { value: 'follow_up', label: 'Follow-up date' },
@@ -474,10 +476,25 @@ export function LeadsWorkspace({
           sortOrder: stage.sort_order,
           stageCount: stageCounts.get(stage.pipeline_id) ?? 0,
           isClosed: stage.is_closed,
+          isWon: stage.is_won,
+          isLost: stage.is_lost,
         },
       ]),
     );
   }, [stages]);
+
+  const terminalStageIds = useMemo(
+    () => new Set(stages.filter((stage) => stage.is_closed || stage.is_won || stage.is_lost).map((stage) => stage.id)),
+    [stages],
+  );
+  const activeWorkLeads = useMemo(
+    () => workspaceLeads.filter((lead) => !lead.stage_id || !terminalStageIds.has(lead.stage_id)),
+    [terminalStageIds, workspaceLeads],
+  );
+  const complianceBlockedLeadIds = useMemo(() => {
+    const resolved = new Set(['approved', 'complete', 'completed', 'waived', 'clear', 'resolved']);
+    return new Set(complianceItems.filter((item) => !resolved.has(String(item.status ?? '').toLowerCase())).map((item) => item.lead_id));
+  }, [complianceItems]);
 
   const readinessByLeadId = useMemo(() => {
     return new Map(
@@ -619,10 +636,10 @@ export function LeadsWorkspace({
     mode: workspaceMode,
     activeFilter: todayFilter,
     nowIso: stableNowIso,
-    leads: workspaceLeads,
+    leads: activeWorkLeads,
     activities,
     complianceItems,
-  }), [activities, complianceItems, stableNowIso, todayFilter, workspaceLeads, workspaceMode]);
+  }), [activeWorkLeads, activities, complianceItems, stableNowIso, todayFilter, workspaceMode]);
   const todayLeadIdSet = useMemo(() => new Set(todayState.filteredLeadIds), [todayState.filteredLeadIds]);
 
   const preparedLeads = useMemo(() => {
@@ -638,7 +655,10 @@ export function LeadsWorkspace({
         if (savedView === 'suppliers') return lead.lead_type === 'supplier';
         return true;
       };
-      const matchesSavedView = savedViewMatches();
+      const terminalLead = Boolean(lead.stage_id && terminalStageIds.has(lead.stage_id));
+      const explicitTerminalLookup = terminalLead && (Boolean(search.trim()) || stageIdFilter === lead.stage_id);
+      if (terminalLead && !explicitTerminalLookup) return false;
+      const matchesSavedView = terminalLead ? explicitTerminalLookup : savedViewMatches();
 
       const matchesSearch = matchesPlatformSearch(
         search,
@@ -663,7 +683,7 @@ export function LeadsWorkspace({
         matchesProduct &&
         matchesTradeEvent;
 
-      const matchesToday = todayFilter === 'all-open' ? true : todayLeadIdSet.has(lead.id);
+      const matchesToday = terminalLead ? true : todayFilter === 'all-open' ? true : todayLeadIdSet.has(lead.id);
       // SF-18-100: Advanced filters
       const matchesAdvanced = (
         (!advDealMin || (lead.deal_value ?? 0) >= Number(advDealMin)) &&
@@ -679,7 +699,7 @@ export function LeadsWorkspace({
       );
       return matchesSavedView && matchesSearch && matchesFilters && matchesToday && matchesAdvanced;
     });
-  }, [currentUserId, leadTypeFilter, ownerId, savedView, search, pipelineIdFilter, stageIdFilter, countryIdFilter, marketIdFilter, productIdFilter, tradeEventFilter, todayFilter, todayLeadIdSet, workspaceLeads, leadMarketsMap, leadProductsMap, stableNowIso, advDealMin, advDealMax, advFollowUpTiming, advSourceType]);
+  }, [currentUserId, leadTypeFilter, ownerId, savedView, search, pipelineIdFilter, stageIdFilter, countryIdFilter, marketIdFilter, productIdFilter, tradeEventFilter, todayFilter, todayLeadIdSet, workspaceLeads, leadMarketsMap, leadProductsMap, stableNowIso, advDealMin, advDealMax, advFollowUpTiming, advSourceType, terminalStageIds]);
 
   // SF-18-101: Feed live context to Guru widget
   const overdueCountForGuru = preparedLeads.filter(l => getStableFollowUpVisualState(l.next_follow_up_at, stableNowIso) === 'overdue').length;
@@ -687,7 +707,7 @@ export function LeadsWorkspace({
   const revenueAtRiskForGuru = preparedLeads.filter(l => getStableFollowUpVisualState(l.next_follow_up_at, stableNowIso) === 'overdue').reduce((s, l) => s + (l.deal_value ?? 0), 0);
   useEffect(() => {
     setSetuGuruWorkspaceContext({
-      totalLeads: workspaceLeads.length,
+      totalLeads: activeWorkLeads.length,
       overdueLeads: overdueCountForGuru,
       dueTodayLeads: dueTodayCountForGuru,
       revenueAtRisk: revenueAtRiskForGuru,
@@ -696,7 +716,7 @@ export function LeadsWorkspace({
       activeFilters: activeFilterChips.map(f => f.label),
       activeSorts: sortRules.map((r, i) => `${i + 1}: ${r.field.replace('_', ' ')} ${r.dir === 'asc' ? '↑' : '↓'}`),
     });
-  }, [workspaceLeads.length, overdueCountForGuru, dueTodayCountForGuru, revenueAtRiskForGuru, preparedLeads.length]);
+  }, [activeWorkLeads.length, overdueCountForGuru, dueTodayCountForGuru, revenueAtRiskForGuru, preparedLeads.length]);
 
   const sortedLeads = useMemo(() => {
     const items = [...preparedLeads];
@@ -839,7 +859,7 @@ export function LeadsWorkspace({
     () =>
       savedViewsBase.map((view) => ({
         ...view,
-        count: workspaceLeads.filter((lead) => {
+        count: activeWorkLeads.filter((lead) => {
           const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
           return (
             view.id === 'all' ||
@@ -852,7 +872,7 @@ export function LeadsWorkspace({
           );
         }).length,
       })),
-    [currentUserId, workspaceLeads, stableNowIso],
+    [activeWorkLeads, currentUserId, stableNowIso],
   );
 
   const selectedLead = useMemo(() => {
@@ -968,22 +988,36 @@ export function LeadsWorkspace({
   );
 
   const groupedLeadSections = useMemo(() => {
-    const groups: Array<{ id: 'critical' | 'due-today' | 'active'; label: string; leads: LeadRow[] }> = [
+    const groups: Array<{ id: 'critical' | 'due-today' | 'needs-follow-up' | 'active' | 'closed'; label: string; leads: LeadRow[] }> = [
       { id: 'critical', label: 'Critical — needs action now', leads: [] },
       { id: 'due-today', label: 'Due today — keep momentum', leads: [] },
+      { id: 'needs-follow-up', label: 'Needs follow-up — schedule next action', leads: [] },
       { id: 'active', label: 'Active — next best queue', leads: [] },
+      { id: 'closed', label: 'Closed — historical record', leads: [] },
     ];
 
     for (const lead of visibleLeads) {
-      const readiness = readinessByLeadId.get(lead.id);
+      if (lead.stage_id && terminalStageIds.has(lead.stage_id)) {
+        groups[4].leads.push(lead);
+        continue;
+      }
       const followUpState = getStableFollowUpVisualState(lead.next_follow_up_at, stableNowIso);
-      if ((readiness?.blockerCount ?? 0) > 0 || followUpState === 'overdue') groups[0].leads.push(lead);
+      const stageName = lead.stage_id ? stageMap.get(lead.stage_id) ?? '' : '';
+      const lateCommercialStage = /(quote sent|sample sent|artwork reviewed|negotiat)/i.test(stageName);
+      const overdueDays = lead.next_follow_up_at
+        ? Math.max(0, (new Date(stableNowIso).getTime() - new Date(lead.next_follow_up_at).getTime()) / 86400000)
+        : 0;
+      const complianceBlocked = complianceBlockedLeadIds.has(lead.id);
+      const materiallyOverdue = followUpState === 'overdue' && (lateCommercialStage || overdueDays >= 2);
+
+      if (complianceBlocked || materiallyOverdue) groups[0].leads.push(lead);
       else if (followUpState === 'today') groups[1].leads.push(lead);
-      else groups[2].leads.push(lead);
+      else if (followUpState === 'overdue' || !lead.next_follow_up_at) groups[2].leads.push(lead);
+      else groups[3].leads.push(lead);
     }
 
     return groups.filter((group) => group.leads.length > 0);
-  }, [readinessByLeadId, visibleLeads]);
+  }, [complianceBlockedLeadIds, stageMap, stableNowIso, terminalStageIds, visibleLeads]);
 
   const handleBatchFollowUpSubmit = () => {
     const formData = new FormData();
@@ -1005,9 +1039,19 @@ export function LeadsWorkspace({
   };
 
   const handleBatchStageSubmit = () => {
+    const targetStage = availableBatchStages.find((stage) => stage.id === batchStageId);
+    let lostReason = '';
+    if (targetStage?.is_lost) {
+      lostReason = window.prompt('Why was this lead lost? This reason will be saved to the lead notes and history.')?.trim() ?? '';
+      if (!lostReason) {
+        setBatchStageState({ error: 'A lost reason is required before moving a lead to Lost.' });
+        return;
+      }
+    }
     const formData = new FormData();
     selectedLeadIds.forEach((leadId) => formData.append('lead_ids', leadId));
     formData.set('stage_id', batchStageId);
+    if (lostReason) formData.set('lost_reason', lostReason);
     setBatchStageState({});
     startBatchStageTransition(() => {
       void batchMoveLeadsToStage(undefined, formData).then((result) => {
@@ -1832,9 +1876,9 @@ export function LeadsWorkspace({
                 <section key={section.id}>
                   {/* SF-18-094: Group Intelligence Banner */}
                   {(() => {
-                    const isCollapsed = section.id === 'critical' ? criticalCollapsed : section.id === 'due-today' ? todayCollapsed : activeCollapsed;
-                    const setCollapsed = section.id === 'critical' ? setCriticalCollapsed : section.id === 'due-today' ? setTodayCollapsed : setActiveCollapsed;
-                    const tone = section.id === 'critical' ? 'critical' : section.id === 'due-today' ? 'warning' : 'success';
+                    const isCollapsed = section.id === 'critical' ? criticalCollapsed : section.id === 'due-today' ? todayCollapsed : section.id === 'needs-follow-up' ? needsFollowUpCollapsed : section.id === 'closed' ? closedCollapsed : activeCollapsed;
+                    const setCollapsed = section.id === 'critical' ? setCriticalCollapsed : section.id === 'due-today' ? setTodayCollapsed : section.id === 'needs-follow-up' ? setNeedsFollowUpCollapsed : section.id === 'closed' ? setClosedCollapsed : setActiveCollapsed;
+                    const tone = section.id === 'critical' ? 'critical' : section.id === 'due-today' || section.id === 'needs-follow-up' ? 'warning' : section.id === 'closed' ? 'neutral' : 'success';
                     const sectionRevenue = section.leads.reduce((sum, l) => sum + (l.deal_value ?? 0), 0);
                     const sectionAvgDays = section.id === 'critical' && section.leads.length > 0
                       ? Math.round(section.leads.filter(l => l.next_follow_up_at).reduce((sum, l) => {
@@ -1845,16 +1889,19 @@ export function LeadsWorkspace({
                     const aiTip = section.id === 'critical'
                       ? `${sectionRevenue > 0 ? `$${Math.round(sectionRevenue/1000)}K at risk · ` : ''}schedule follow-up calls today`
                       : section.id === 'due-today' ? 'Complete today to maintain momentum'
+                      : section.id === 'needs-follow-up' ? 'Set the next follow-up so no opportunity goes quiet'
+                      : section.id === 'closed' ? 'Historical record — excluded from active work'
                       : 'On track — no immediate action needed';
                     const toneStyles = {
                       critical: 'bg-gradient-to-r from-rose-50 to-red-50 border-rose-200',
                       warning:  'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200',
                       success:  'bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-100',
+                      neutral: 'bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200',
                     } as const;
                     const dotStyles = {
-                      critical: 'bg-rose-500 animate-pulse', warning: 'bg-amber-500 animate-pulse', success: 'bg-emerald-500',
+                      critical: 'bg-rose-500 animate-pulse', warning: 'bg-amber-500 animate-pulse', success: 'bg-emerald-500', neutral: 'bg-slate-400',
                     } as const;
-                    const textStyles = { critical: 'text-rose-800', warning: 'text-amber-800', success: 'text-emerald-800' } as const;
+                    const textStyles = { critical: 'text-rose-800', warning: 'text-amber-800', success: 'text-emerald-800', neutral: 'text-slate-700' } as const;
                     const fmt = (n: number) => n >= 1000 ? `$${(n/1000).toFixed(0)}K` : n > 0 ? `$${n}` : '';
                     return (
                       <button type="button" onClick={() => setCollapsed(v => !v)}
@@ -1864,6 +1911,8 @@ export function LeadsWorkspace({
                         <span className={`text-[10.5px] font-extrabold uppercase tracking-[.1em] ${textStyles[tone]}`}>
                           {section.id === 'critical' ? '⚠ Critical — Needs Action Now'
                             : section.id === 'due-today' ? '⏰ Due Today'
+                            : section.id === 'needs-follow-up' ? '↗ Needs Follow-up'
+                            : section.id === 'closed' ? 'Closed / Historical'
                             : '✓ Active / Upcoming'}
                         </span>
                         <span className="text-[9.5px] font-semibold text-slate-500 bg-white/70 rounded-md px-2 py-0.5 border border-white/80 flex items-center gap-1 whitespace-nowrap">
@@ -1879,7 +1928,7 @@ export function LeadsWorkspace({
                     );
                   })()}
                   {/* SF-18-094: Collapse group body */}
-                  {(section.id === 'critical' ? !criticalCollapsed : section.id === 'due-today' ? !todayCollapsed : !activeCollapsed) && (
+                  {(section.id === 'critical' ? !criticalCollapsed : section.id === 'due-today' ? !todayCollapsed : section.id === 'needs-follow-up' ? !needsFollowUpCollapsed : section.id === 'closed' ? !closedCollapsed : !activeCollapsed) && (
                   <div style={{ padding: '0 8px 4px' }}>
                     {section.leads.map((lead) => (
                       <LeadTableRow

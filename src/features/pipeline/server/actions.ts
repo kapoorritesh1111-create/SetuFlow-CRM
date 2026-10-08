@@ -58,6 +58,7 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
 
   const leadId = String(formData.get('lead_id') ?? '').trim();
   const stageId = String(formData.get('stage_id') ?? '').trim();
+  const lostReason = String(formData.get('lost_reason') ?? '').trim();
   if (!leadId || !stageId) return { error: 'Lead and stage are required.' };
 
   const supabase = await createClient();
@@ -82,6 +83,9 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
 
   if (stageError || !targetStage) {
     return { error: stageError?.message ?? 'Target stage not found.' };
+  }
+  if (targetStage.is_lost && !lostReason) {
+    return { error: 'Add a reason before moving this lead to Lost.' };
   }
 
   if (!currentLead.pipeline_id) {
@@ -140,7 +144,7 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
 
     const { data: fallbackLead, error: updateError } = await db
       .from('leads')
-      .update({ stage_id: stageId, updated_by: workspace.user.id, updated_at: occurredAt })
+      .update({ stage_id: stageId, updated_by: workspace.user.id, updated_at: occurredAt, ...(targetStage.is_lost ? { next_follow_up_at: null } : {}) })
       .eq('id', leadId)
       .eq('organization_id', workspace.organization.id)
       .select('id, company_name, stage_id, updated_at')
@@ -157,7 +161,7 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
       to_stage_id: stageId,
       changed_by: workspace.user.id,
       changed_at: occurredAt,
-      note: 'Stage moved from pipeline board fallback because app_move_lead_stage_tx RPC is unavailable.',
+      note: targetStage.is_lost ? `Lost reason: ${lostReason}` : 'Stage moved from pipeline board fallback because app_move_lead_stage_tx RPC is unavailable.',
     });
     if (historyError) return { error: historyError.message };
 
@@ -179,6 +183,12 @@ export async function moveLeadToStage(_: ActionState | undefined, formData: Form
 
   if (!updatedLeadRow?.id) {
     return { error: 'Lead stage move did not return an updated lead record.' };
+  }
+
+  if (targetStage.is_lost) {
+    await db.from('leads').update({ next_follow_up_at: null, updated_by: workspace.user.id }).eq('id', leadId).eq('organization_id', workspace.organization.id);
+    await db.from('lead_follow_ups').update({ status: 'cancelled' }).eq('organization_id', workspace.organization.id).eq('lead_id', leadId).eq('status', 'scheduled');
+    await db.from('lead_activities').insert({ organization_id: workspace.organization.id, lead_id: leadId, actor_user_id: workspace.user.id, kind: 'crm_note', message: `Lost reason: ${lostReason}`, occurred_at: occurredAt });
   }
 
   await writeLeadStageAuditLog({

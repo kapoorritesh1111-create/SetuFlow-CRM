@@ -117,13 +117,29 @@ export async function moveCanonicalLeadStage(formData: FormData) {
   if (!workspace?.organization || !workspace?.user) return;
   const leadId = clean(formData.get('lead_id'));
   const stageId = clean(formData.get('stage_id'));
+  const lostReason = clean(formData.get('lost_reason'));
   if (!leadId || !stageId) return;
   const supabase = (await createClient()) as any;
-  const { data: stage, error: stageError } = await supabase.from('pipeline_stages').select('id, name, pipeline_id').eq('id', stageId).maybeSingle();
+  const { data: stage, error: stageError } = await supabase.from('pipeline_stages').select('id, name, pipeline_id, is_closed, is_won, is_lost').eq('id', stageId).maybeSingle();
   if (stageError || !stage?.id) goLead(leadId, { stageError: 'stage-not-found' }, 'stage-strip');
-  const { error } = await supabase.from('leads').update({ stage_id: stageId, pipeline_id: stage.pipeline_id, updated_by: workspace.user!.id }).eq('organization_id', workspace.organization!.id).eq('id', leadId);
+  if (stage.is_lost && !lostReason) goLead(leadId, { stageError: 'lost-reason-required' }, 'stage-strip');
+  const { data: currentLead } = await supabase.from('leads').select('stage_id').eq('organization_id', workspace.organization!.id).eq('id', leadId).maybeSingle();
+  const updatePayload: Record<string, unknown> = { stage_id: stageId, pipeline_id: stage.pipeline_id, updated_by: workspace.user!.id };
+  if (stage.is_lost) updatePayload.next_follow_up_at = null;
+  const { error } = await supabase.from('leads').update(updatePayload).eq('organization_id', workspace.organization!.id).eq('id', leadId);
   if (error) goLead(leadId, { stageError: 'db-update-failed' }, 'stage-strip');
-  await supabase.from('lead_activities').insert({ organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'stage_changed', message: `Lead stage moved to ${stage.name} from canonical Lead Detail.`, occurred_at: new Date().toISOString() });
+  const occurredAt = new Date().toISOString();
+  if (currentLead?.stage_id !== stageId) {
+    await supabase.from('lead_stage_history').insert({ organization_id: workspace.organization!.id, lead_id: leadId, from_stage_id: currentLead?.stage_id ?? null, to_stage_id: stageId, changed_by: workspace.user!.id, changed_at: occurredAt, note: stage.is_lost ? `Lost reason: ${lostReason}` : 'Stage moved from canonical Lead Detail.' });
+  }
+  if (stage.is_lost) {
+    await supabase.from('lead_follow_ups').update({ status: 'cancelled' }).eq('organization_id', workspace.organization!.id).eq('lead_id', leadId).eq('status', 'scheduled');
+  }
+  const activityRows = [
+    { organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'stage_changed', message: `Lead stage moved to ${stage.name} from canonical Lead Detail.`, occurred_at: occurredAt },
+    ...(stage.is_lost ? [{ organization_id: workspace.organization!.id, lead_id: leadId, actor_user_id: workspace.user!.id, kind: 'crm_note', message: `Lost reason: ${lostReason}`, occurred_at: occurredAt }] : []),
+  ];
+  await supabase.from('lead_activities').insert(activityRows);
   revalidatePath('/leads'); revalidatePath(`/leads/${leadId}`);
   goLead(leadId, { saved: 'stage' }, 'stage-strip');
 }

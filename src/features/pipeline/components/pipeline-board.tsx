@@ -473,6 +473,15 @@ export function PipelineBoard({
       return;
     }
 
+    let lostReason = '';
+    if (targetStage.is_lost) {
+      lostReason = window.prompt('Why was this lead lost? This reason will be saved to the lead notes and history.')?.trim() ?? '';
+      if (!lostReason) {
+        setMessage('A lost reason is required before moving a lead to Lost.');
+        return;
+      }
+    }
+
     const previousStageId = lead.stage_id ?? null;
     const optimisticUpdatedAt = new Date().toISOString();
     setLocalLeads((current) => current.map((item) => (item.id === leadId ? { ...item, stage_id: stageId, updated_at: optimisticUpdatedAt } : item)));
@@ -481,6 +490,7 @@ export function PipelineBoard({
     const formData = new FormData();
     formData.append('lead_id', leadId);
     formData.append('stage_id', stageId);
+    if (lostReason) formData.append('lost_reason', lostReason);
     startTransition(() => {
       void moveLeadToStage(undefined, formData).then((result) => {
         setMessage(result?.error ?? result?.success ?? '');
