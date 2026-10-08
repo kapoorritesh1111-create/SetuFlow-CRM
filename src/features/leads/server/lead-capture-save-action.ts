@@ -84,6 +84,11 @@ async function findDuplicateLead(db: any, input: {
   whatsapp: string;
 }) {
   const select = 'id, company_name, contact_name, email, phone, whatsapp_number';
+  const digits = (value: string) => value.replace(/\D/g, '');
+  const indianCanonical = (value: string) => {
+    const number = digits(value);
+    return number.length === 12 && number.startsWith('91') ? number.slice(2) : number;
+  };
 
   if (input.email) {
     const { data, error } = await db
@@ -99,28 +104,19 @@ async function findDuplicateLead(db: any, input: {
   }
 
   for (const phoneValue of unique([input.phone, input.whatsapp] as unknown as FormDataEntryValue[])) {
-    const [{ data: phoneMatch, error: phoneError }, { data: whatsappMatch, error: whatsappError }] = await Promise.all([
-      db
-        .from('leads')
-        .select(select)
-        .eq('organization_id', input.organizationId)
-        .eq('lead_type', input.leadType)
-        .eq('phone', phoneValue)
-        .limit(1)
-        .maybeSingle(),
-      db
-        .from('leads')
-        .select(select)
-        .eq('organization_id', input.organizationId)
-        .eq('lead_type', input.leadType)
-        .eq('whatsapp_number', phoneValue)
-        .limit(1)
-        .maybeSingle(),
-    ]);
-    if (phoneError) throw phoneError;
-    if (whatsappError) throw whatsappError;
-    if (phoneMatch?.id) return phoneMatch;
-    if (whatsappMatch?.id) return whatsappMatch;
+    const canonical = indianCanonical(phoneValue);
+    if (!canonical || canonical.length < 10) continue;
+    const formattedVariants = Array.from(new Set([phoneValue, canonical, `+91${canonical}`, `91${canonical}`]));
+    for (const candidate of formattedVariants) {
+      const [{ data: phoneMatch, error: phoneError }, { data: whatsappMatch, error: whatsappError }] = await Promise.all([
+        db.from('leads').select(select).eq('organization_id', input.organizationId).eq('lead_type', input.leadType).eq('phone', candidate).limit(1).maybeSingle(),
+        db.from('leads').select(select).eq('organization_id', input.organizationId).eq('lead_type', input.leadType).eq('whatsapp_number', candidate).limit(1).maybeSingle(),
+      ]);
+      if (phoneError) throw phoneError;
+      if (whatsappError) throw whatsappError;
+      if (phoneMatch?.id) return phoneMatch;
+      if (whatsappMatch?.id) return whatsappMatch;
+    }
   }
 
   return null;
