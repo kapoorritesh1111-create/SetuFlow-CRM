@@ -222,6 +222,8 @@ test('S52-PKG-V5: empty allowed list falls back to the reference MOQ ladder',()=
   assert.deepEqual(result.alternative_quantities.map((item)=>item.quantity),[2000,3000,5000,10000,20000,30000]);
   const blocked=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:1000});
   assert.equal(blocked.ok,false);
+  assert.equal(blocked.quantity_guidance?.recommended_quantity,2000);
+  assert.match(blocked.quantity_guidance?.message??'',/Recommended quantity: 2,000 pcs/);
 });
 
 test('S52-PKG-V5: bucket 4 live-size geometry uses the authoritative PG04 commercial schedule',()=>{
@@ -492,4 +494,21 @@ test('S52-PKG-V5: Sales payload exposes one selected-price result and redacts in
   assert.ok(sales.suggested_quantities.every((item:any)=>item.savings_pct>0));
   assert.equal('pricing_bucket' in sales.production_route,false);
   assert.ok(sales.production_route.components.every((item:any)=>!('units_per_frame' in item)&&!('run_length_m' in item)));
+});
+
+
+test('S52-PKG-V5: blocked SUP quantity recommends the next valid configured quantity',()=>{
+  const context:PricingContextV5={...base,sizeProfiles:[{
+    ...base.sizeProfiles[0],
+    id:'blocked140',
+    name:'140mm x 210mm (40mm + 40mm bg)',
+    width_mm:140,
+    height_mm:210,
+    metadata:{quantity_review_ladder:[1000,2000,3000,5000,10000,20000,30000,50000],blocked_quantities:[1000,2000]},
+  }]};
+  const result=calculateSupFormulaV5(context,{size_profile_id:'blocked140',construction_id:'c3',print:'CMYKW',quantity:2000});
+  assert.equal(result.ok,false);
+  assert.equal(result.quantity_guidance?.rule,'allowed_blocked');
+  assert.equal(result.quantity_guidance?.recommended_quantity,3000);
+  assert.deepEqual(result.quantity_guidance?.valid_quantities,[3000,5000,10000,20000,30000,50000]);
 });
