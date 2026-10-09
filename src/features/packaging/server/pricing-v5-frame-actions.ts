@@ -59,6 +59,7 @@ function smartMoqRecommendation(context:any,result:any,input:FrameFamilyPricingI
 
   return {
     minimum_run_length_m:minimumRunM,
+    quantity_uom:String(input.supply_form).endsWith('_pouch')?'pcs':'units',
     entered_quantity:Number(input.quantity),
     entered_run_length_m:Number(result.run_length_m??0),
     exact_minimum_quantity:exactMinimumQty,
