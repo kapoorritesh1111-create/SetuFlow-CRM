@@ -24,6 +24,15 @@ function firstValidReviewQuantity(size: any) {
   return ladder.find((value) => quantityAllowedForSize(size, value)) ?? 1000;
 }
 
+function nextValidReviewQuantity(size:any,quantity:number) {
+  const metadata=size?.quantity_rules ?? size?.metadata ?? {};
+  const configured=Array.isArray(metadata.allowed_quantities)&&metadata.allowed_quantities.length
+    ? metadata.allowed_quantities.map(Number)
+    : [1000,2000,3000,5000,10000,20000,30000,50000];
+  const valid=[...new Set(configured)].filter((value)=>Number(value)>0&&quantityAllowedForSize(size,Number(value))).map(Number).sort((a,b)=>a-b);
+  return valid.find((value)=>value>quantity) ?? valid.find((value)=>value>=quantity) ?? valid[0] ?? null;
+}
+
 function kldMatchesSize(item: any, size: any) {
   if (!item || !size) return false;
   const specKey=String(item.spec_key??item.size_preset_key??'').trim();
@@ -78,6 +87,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
     [fillGrams,application,sizes],
   );
   const quantityAllowed = quantityAllowedForSize(size, quantity);
+  const suggestedQuantity = quantityAllowed ? null : nextValidReviewQuantity(size,quantity);
   const manualSpotUvValid = !spotUvEnabled || (Number.isFinite(Number(spotUvAmount)) && Number(spotUvAmount) > 0);
   const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && manualSpotUvValid && (!askBottomPrint || bottomPrintMode));
   const currency = preview?.selling_price?.currency ?? template?.currency ?? 'INR';
@@ -244,7 +254,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
           </div>
         </div>
 
-        {!compatibleConstructions.length ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">No approved PE construction is available for this pouch size. Pricing is blocked.</div> : !quantityAllowed ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">{quantity.toLocaleString()} pcs is not producible for this pouch size. Choose a valid quantity.</div> : spotUvEnabled && !manualSpotUvValid ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Enter the manual Spot UV amount before calculating or saving the quote.</div> : !canPrice ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Complete the required selections before calculating the price.</div> : null}
+        {!compatibleConstructions.length ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">No approved PE construction is available for this pouch size. Pricing is blocked.</div> : !quantityAllowed ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800"><div>{quantity.toLocaleString()} pcs is not available for this pouch size.{suggestedQuantity?` Recommended quantity: ${suggestedQuantity.toLocaleString()} pcs.`:''}</div>{suggestedQuantity?<button type="button" onClick={()=>{setQuantity(suggestedQuantity);invalidate();}} className="mt-2 rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">Use {suggestedQuantity.toLocaleString()} pcs</button>:null}</div> : spotUvEnabled && !manualSpotUvValid ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Enter the manual Spot UV amount before calculating or saving the quote.</div> : !canPrice ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Complete the required selections before calculating the price.</div> : null}
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
         {saved ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{saved}</div> : null}
 
