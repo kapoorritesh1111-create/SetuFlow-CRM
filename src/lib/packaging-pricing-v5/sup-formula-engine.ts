@@ -99,6 +99,28 @@ function quantityAllowed(size: PricingContextV5['sizeProfiles'][number], quantit
   return true;
 }
 
+function quantityGuidanceForSize(size: PricingContextV5['sizeProfiles'][number], quantity: number) {
+  const metadata=size.metadata ?? {};
+  const configured=Array.isArray(metadata.allowed_quantities)&&metadata.allowed_quantities.length
+    ? metadata.allowed_quantities
+    : (Array.isArray(metadata.quantity_review_ladder)&&metadata.quantity_review_ladder.length
+      ? metadata.quantity_review_ladder
+      : [1000,2000,3000,5000,10000,20000,30000,50000]);
+  const valid=[...new Set(configured.map((value)=>Math.floor(n(value))).filter((value)=>value>0))]
+    .filter((value)=>quantityAllowed(size,value))
+    .sort((a,b)=>a-b);
+  const recommended=valid.find((value)=>value>quantity) ?? valid.find((value)=>value>=quantity) ?? valid[0] ?? null;
+  return {
+    rule:'allowed_blocked' as const,
+    requested_quantity:quantity,
+    recommended_quantity:recommended,
+    valid_quantities:valid,
+    message:recommended
+      ? `${quantity.toLocaleString()} pcs is not available for ${size.name}. Recommended quantity: ${recommended.toLocaleString()} pcs.`
+      : `${quantity.toLocaleString()} pcs is not available for ${size.name}.`,
+  };
+}
+
 function beforeCommercialChargePerFrame(charge:ChargeMasterRateV5,component:{key:string;apply_zipper:boolean;units_per_frame:number;web_run_mm_per_frame:number},errors:string[]){
   if(charge.application_stage!=='before_wastage_margin') return 0;
   if(charge.code==='EXTRA_ZIPPER'&&!component.apply_zipper) return 0;
@@ -199,7 +221,8 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
 
   if (!quantity) errors.push('Quantity is required.');
   if (!size) errors.push('Selected Pricing v5 size is not available.');
-  if (size && quantity && !quantityAllowed(size,quantity)) errors.push(`Quantity ${quantity.toLocaleString()} is not allowed for ${size.name}.`);
+  const quantityGuidance = size && quantity && !quantityAllowed(size,quantity) ? quantityGuidanceForSize(size,quantity) : null;
+  if (quantityGuidance) errors.push(quantityGuidance.message);
   if (!resolvedConstruction) errors.push('Selected Pricing v5 construction is not available.');
   if (resolvedConstruction) errors.push(...resolvedConstruction.validation_errors);
   if(size?.is_quoteable&&resolvedConstruction?.construction.is_quoteable&&!constructionAllowedForSizeV5(size,resolvedConstruction.construction)){
@@ -430,6 +453,7 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
       gst_pct:gstPct,gst:round(gst,2),grand_total_before_freight:round(subtotalBeforeGst+gst,2),
     },
     alternative_quantities:alternatives,
+    quantity_guidance:quantityGuidance,
     source_hash:pricingSourceHash(hashPayload),
     validation_errors:errors,
     warnings,
