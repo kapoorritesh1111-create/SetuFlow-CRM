@@ -52,8 +52,8 @@ export default function PricingV5FrameSalesConfigurator({
           commercial_bucket:null,
         },
       });
-      if(response.ok) setPreview(response.result);
-      else {setPreview(null);setError(response.error??'Price could not be calculated.');}
+      setPreview(response.result??null);
+      if(!response.ok&&!response.result?.smart_moq) setError(response.error??'Price could not be calculated.');
     });
   }
 
@@ -124,12 +124,24 @@ export default function PricingV5FrameSalesConfigurator({
       <label className="text-xs font-black text-slate-600">Height (mm)<input type="number" min="1" value={height} onChange={(e)=>{setHeight(Number(e.target.value));setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"/></label>
       <label className="text-xs font-black text-slate-600">Quantity<input type="number" min="1" step="1" value={quantity} onChange={(e)=>{setQuantity(Number(e.target.value));setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"/></label>
       <label className="text-xs font-black text-slate-600 xl:col-span-2">Construction<select value={constructionId} onChange={(e)=>{setConstructionId(e.target.value);setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold">{constructions.map((item:any)=><option key={item.id} value={item.id}>{item.name} · {item.structure_label}</option>)}</select></label>
-      <label className="text-xs font-black text-slate-600">Printing<select value={print} onChange={(e)=>{setPrint(e.target.value as any);setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"><option value="CMYK">CMYK</option><option value="CMYKW">CMYKW</option></select></label>
+      <label className="text-xs font-black text-slate-600">Printing<select value={print} onChange={(e)=>{setPrint(e.target.value as any);setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"><option value="CMYK">Digital (CMYK)</option><option value="CMYKW">Digital (CMYKW)</option></select></label>
       <div className="flex items-end"><button type="button" disabled={pending} onClick={runPreview} className="w-full rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{pending?'Calculating…':'Calculate price'}</button></div>
       </div>
     </div>
 
     {error?<div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">{error}</div>:null}
+    {preview?.smart_moq?<div className="mt-4 space-y-3">
+      <div className={preview.smart_moq.below_minimum?"rounded-2xl border border-amber-200 bg-amber-50 p-4":"rounded-2xl border border-emerald-200 bg-emerald-50 p-4"}>
+        <div className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Minimum order for this size</div>
+        <div className="mt-1 text-2xl font-black text-slate-950">{Number(preview.smart_moq.recommended_minimum_quantity).toLocaleString()} {preview.smart_moq.quantity_uom??'pcs'}</div>
+        <div className="mt-1 text-xs font-semibold text-slate-600">Based on {width} × {height} mm and the required {Number(preview.smart_moq.minimum_run_length_m).toLocaleString()} m production run.</div>
+        {preview.smart_moq.below_minimum?<button type="button" onClick={()=>{setQuantity(Number(preview.smart_moq.recommended_minimum_quantity));setPreview(null);setError('');}} className="mt-3 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-black text-white">Use {Number(preview.smart_moq.recommended_minimum_quantity).toLocaleString()} {preview.smart_moq.quantity_uom??'pcs'}</button>:null}
+      </div>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 px-4 py-3"><div className="text-sm font-black text-slate-950">Better quantity options</div><div className="mt-0.5 text-[11px] font-semibold text-slate-500">Choose a higher quantity when the customer wants a better unit price.</div></div>
+        <div className="divide-y divide-slate-100">{(preview.smart_moq.options??[]).map((o:any)=><div key={o.quantity} className="grid items-center gap-2 px-4 py-3 sm:grid-cols-[1fr_1fr_1fr_auto]"><div><div className="text-sm font-black text-slate-900">{Number(o.quantity).toLocaleString()} {preview.smart_moq.quantity_uom??'pcs'}</div><div className="text-[10px] font-bold text-slate-500">{o.label}</div></div><div className="text-xs font-semibold text-slate-500">~{Number(o.run_length_m).toFixed(0)} m run</div><div className="text-sm font-black text-slate-950">{o.unit_price!=null?money(o.unit_price,preview.selling_price?.currency??template?.currency??'INR'):'—'}</div><button type="button" onClick={()=>{setQuantity(Number(o.quantity));setPreview(null);setError('');}} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700">Use</button></div>)}</div>
+      </div>
+    </div>:null}
     {saved?<div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-700">{saved}</div>:null}
 
     {preview?.ok?<div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50/40 p-4">

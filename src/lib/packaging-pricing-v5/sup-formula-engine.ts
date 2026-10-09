@@ -78,6 +78,14 @@ function processAmount(master: CostMasterRateV5, runM: number) {
   return n(master.current_rate);
 }
 
+function pricingBucketForRoute(size: PricingContextV5['sizeProfiles'][number] | null, bottomPrintMode?: SupPricingInputV5['bottom_print_mode']) {
+  if (!size) return null;
+  const routeBuckets = size.metadata?.route_pricing_buckets as Record<string, unknown> | undefined;
+  const configured = bottomPrintMode ? Number(routeBuckets?.[bottomPrintMode]) : NaN;
+  if (Number.isInteger(configured) && configured >= 1 && configured <= 99) return configured;
+  return Number(size.pricing_bucket);
+}
+
 function quantityAllowed(size: PricingContextV5['sizeProfiles'][number], quantity: number) {
   const metadata=size.metadata ?? {};
   const allowed=Array.isArray(metadata.allowed_quantities)
@@ -210,8 +218,9 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
 
   const mainComponent = route?.components.find((component)=>component.key==='main_body') ?? null;
   const primaryRunLengthM = mainComponent?.run_length_m ?? 0;
-  const band = size ? resolveCommercialBandV5(context.bands, size.pricing_bucket, primaryRunLengthM) : null;
-  if (size && !band) errors.push(`No Pricing v5 commercial band is configured for bucket ${size.pricing_bucket}.`);
+  const resolvedPricingBucket = pricingBucketForRoute(size,input.bottom_print_mode);
+  const band = size && resolvedPricingBucket != null ? resolveCommercialBandV5(context.bands, resolvedPricingBucket, primaryRunLengthM) : null;
+  if (size && resolvedPricingBucket != null && !band) errors.push(`No Pricing v5 commercial band is configured for bucket ${resolvedPricingBucket}.`);
 
   const innerLadder = Array.isArray(rules.inner_web_ladder) ? rules.inner_web_ladder : [];
   const peLadder = Array.isArray(rules.pe_web_ladder) ? rules.pe_web_ladder : [];
@@ -406,11 +415,11 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
     }:null,
     production_route:{
       route_type:size?.gusset_production_mode??null,
-      pricing_bucket:size?.pricing_bucket??null,
+      pricing_bucket:resolvedPricingBucket,
       components:(route?.components??[]).map(({web_needed_mm:_internal,...component})=>component),
     },
     commercial_rules:{
-      bucket_no:size?.pricing_bucket??null,run_length_m:round(primaryRunLengthM,8),band_max_m:band?.run_length_max_m??null,
+      bucket_no:resolvedPricingBucket,run_length_m:round(primaryRunLengthM,8),band_max_m:band?.run_length_max_m??null,
       wastage_pct:band?.wastage_pct??0,margin_per_frame:band?.margin_per_frame??0,
     },
     applied_charges:appliedCharges,

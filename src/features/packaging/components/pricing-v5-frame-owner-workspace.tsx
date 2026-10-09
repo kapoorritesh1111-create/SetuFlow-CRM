@@ -66,7 +66,7 @@ function FramePreview({data,showMatrix=false}:{data:any;showMatrix?:boolean}){
     startTransition(async()=>{
       const response:any=await previewPackagingFramePricingV5({templateId:template.id,input:buildInput(quantity)});
       setPreview(response.result??null);
-      if(!response.ok)setError(response.error??'Price could not be calculated.');
+      if(!response.ok&&!response.result?.smart_moq)setError(response.error??'Price could not be calculated.');
     });
   }
   function buildMatrix(){
@@ -90,9 +90,21 @@ function FramePreview({data,showMatrix=false}:{data:any;showMatrix?:boolean}){
         <label><Label>Height mm</Label><input className={input} type="number" min="1" value={height} onChange={(e)=>{setHeight(Number(e.target.value));setPreview(null);setMatrix([]);}}/></label>
         <label><Label>Quantity pcs</Label><input className={input} type="number" min="1" value={quantity} onChange={(e)=>{setQuantity(Number(e.target.value));setPreview(null);}}/></label>
         <label className="md:col-span-2"><Label>Construction</Label><select className={input} value={construction?.id??''} onChange={(e)=>{setConstructionId(e.target.value);setPreview(null);setMatrix([]);}}>{constructions.map((x:any)=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-        <label><Label>Printing</Label><select className={input} value={print} onChange={(e)=>{setPrint(e.target.value as any);setPreview(null);setMatrix([]);}}><option value="CMYK">CMYK</option><option value="CMYKW">CMYKW</option></select></label>
+        <label><Label>Printing</Label><select className={input} value={print} onChange={(e)=>{setPrint(e.target.value as any);setPreview(null);setMatrix([]);}}><option value="CMYK">Digital (CMYK)</option><option value="CMYKW">Digital (CMYKW)</option></select></label>
       </div>
       {error?<div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div>:null}
+      {preview?.smart_moq?<div className="mt-4 space-y-3">
+        <div className={preview.smart_moq.below_minimum?"rounded-xl border border-amber-200 bg-amber-50 p-4":"rounded-xl border border-emerald-200 bg-emerald-50 p-4"}>
+          <div className="text-xs font-black uppercase tracking-wide text-slate-500">Minimum order for this size</div>
+          <div className="mt-1 text-2xl font-black text-slate-950">{Number(preview.smart_moq.recommended_minimum_quantity).toLocaleString()} {preview.smart_moq.quantity_uom??'pcs'}</div>
+          <p className="mt-1 text-xs font-semibold text-slate-600">250 m production minimum requires approximately {Number(preview.smart_moq.exact_minimum_quantity).toLocaleString()} pcs for {width} × {height} mm.</p>
+          {preview.smart_moq.below_minimum?<button type="button" onClick={()=>{setQuantity(Number(preview.smart_moq.recommended_minimum_quantity));setPreview(null);setError('');}} className="mt-3 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white">Use {Number(preview.smart_moq.recommended_minimum_quantity).toLocaleString()} {preview.smart_moq.quantity_uom??'pcs'}</button>:null}
+        </div>
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="border-b border-slate-200 px-4 py-3"><b className="text-sm text-slate-950">Recommended quantity options</b><span className="ml-2 text-xs text-slate-500">Higher quantities can unlock lower unit pricing.</span></div>
+          <div className="divide-y divide-slate-100">{(preview.smart_moq.options??[]).map((o:any)=><div key={o.quantity} className="grid items-center gap-2 px-4 py-3 sm:grid-cols-[1fr_1fr_1fr_auto]"><div><b className="text-sm text-slate-900">{Number(o.quantity).toLocaleString()} {preview.smart_moq.quantity_uom??'pcs'}</b><div className="text-[11px] text-slate-500">{o.label}</div></div><div className="text-xs text-slate-600">~{Number(o.run_length_m).toFixed(0)} m run</div><div className="text-sm font-black text-slate-900">{o.unit_price!=null?money(o.unit_price,currency):'Calculate after MOQ'}</div><button type="button" onClick={()=>{setQuantity(Number(o.quantity));setPreview(null);setError('');}} className={secondary}>Use</button></div>)}</div>
+        </div>
+      </div>:null}
       <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={calculate} disabled={pending} className={primary}>{pending?'Calculating…':'Calculate Price'}</button><button type="button" onClick={buildMatrix} disabled={pending} className={secondary}>Build 1K–50K Matrix</button></div>
       {matrix.length?<div className="mt-5 overflow-x-auto rounded-xl border border-slate-200"><table className="min-w-full text-xs"><thead className="bg-slate-950 text-white"><tr><th className="px-3 py-3 text-left">Qty</th><th className="px-3 py-3 text-left">Unit price</th><th className="px-3 py-3 text-left">Order total</th><th className="px-3 py-3 text-left">Run length</th><th className="px-3 py-3 text-left">Waste</th><th className="px-3 py-3 text-left">Margin/frame</th></tr></thead><tbody>{matrix.map((row:any)=><tr key={row.quantity} className="border-t border-slate-100"><td className="px-3 py-3 font-black">{row.quantity.toLocaleString()}</td><td className="px-3 py-3">{row.ok?money(row.result?.selling_price?.unit_price,row.result?.selling_price?.currency??currency):'Blocked'}</td><td className="px-3 py-3">{row.ok?money(row.result?.selling_price?.product_total,row.result?.selling_price?.currency??currency):row.error}</td><td className="px-3 py-3">{row.ok?Number(row.result?.run_length_m??row.result?.geometry?.run_length_m??0).toFixed(1)+' m':'—'}</td><td className="px-3 py-3">{row.ok?String(row.result?.wastage_pct??'—')+'%':'—'}</td><td className="px-3 py-3">{row.ok?money(row.result?.margin_per_frame??0,row.result?.selling_price?.currency??currency):'—'}</td></tr>)}</tbody></table></div>:null}
     </Card>
