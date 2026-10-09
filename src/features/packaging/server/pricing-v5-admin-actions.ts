@@ -64,6 +64,17 @@ export async function savePackagingSizeProfileV5(formData:FormData){
     application_examples:applicationExamples||null,
     owner_review_source:'2026-09-25 transcript + approved PE options sheet',
   };
+  if(gussetMode==='conditional'&&registrationMode==='optional'){
+    const solidRouteBucket=Math.trunc(numberValue(formData,'solid_route_pricing_bucket','Solid bottom pricing group',{min:1,max:99}));
+    const artworkRouteBucket=Math.trunc(numberValue(formData,'registered_route_pricing_bucket','Artwork bottom pricing group',{min:1,max:99}));
+    metadata.route_pricing_buckets={
+      ...(metadata.route_pricing_buckets??{}),
+      solid_unregistered:solidRouteBucket,
+      registered_artwork:artworkRouteBucket,
+    };
+  }else if(metadata.route_pricing_buckets){
+    delete metadata.route_pricing_buckets;
+  }
   const name=text(formData,'name')||undefined;
   const width=numberValue(formData,'width_mm','Width',{min:1,max:5000});
   const height=numberValue(formData,'height_mm','Height',{min:1,max:5000});
