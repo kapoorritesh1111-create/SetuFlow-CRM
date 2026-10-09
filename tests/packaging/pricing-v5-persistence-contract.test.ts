@@ -481,3 +481,32 @@ test('customer quote review shows artwork first and keeps KLD available',()=>{
   assert.match(quoteReview,/Artwork has not been attached yet/);
   assert.match(quoteReview,/packaging\/quote-stock\/stand-up-pouch\.svg/);
 });
+
+
+test('Pricing v5 translates the 250m frame MOQ into practical quantity recommendations',()=>{
+  assert.match(frameActions,/smartMoqRecommendation/);
+  assert.match(frameActions,/exact_minimum_quantity/);
+  assert.match(frameActions,/recommended_minimum_quantity/);
+  assert.match(frameActions,/minimum_run_length_m/);
+  assert.match(frameOwnerWorkspace,/Minimum order for this size/);
+  assert.match(frameSalesConfigurator,/Better quantity options/);
+});
+
+test('110x170 conditional bottom routes can resolve independent pricing groups',()=>{
+  assert.match(adminActions,/route_pricing_buckets/);
+  assert.match(adminActions,/solid_route_pricing_bucket/);
+  assert.match(adminActions,/registered_route_pricing_bucket/);
+  assert.match(engine,/pricingBucketForRoute/);
+  assert.match(engine,/route_pricing_buckets/);
+  assert.match(premiumWorkspace,/Solid color bottom pricing group/);
+  assert.match(premiumWorkspace,/Logo \/ artwork bottom pricing group/);
+});
+
+test('Packaging Pricing v5 uses Digital labels while preserving CMYK and CMYKW engine codes',()=>{
+  assert.match(premiumWorkspace,/Digital \(CMYK\)/);
+  assert.match(premiumWorkspace,/Digital \(CMYKW\)/);
+  assert.match(frameOwnerWorkspace,/Digital \(CMYK\)/);
+  assert.match(frameSalesConfigurator,/Digital \(CMYKW\)/);
+  assert.match(engine,/PROC_PRINT_CMYK/);
+  assert.match(engine,/PROC_PRINT_CMYKW/);
+});
