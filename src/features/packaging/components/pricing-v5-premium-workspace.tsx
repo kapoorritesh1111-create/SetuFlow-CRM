@@ -102,7 +102,7 @@ function Dashboard({data}:{data:any}){
         kld_file_id:null,
       }});
       setPreview(response.result??null);
-      if(!response.ok) setError(response.error??'Price could not be calculated.');
+      if(!response.ok&&!response.result?.quantity_guidance) setError(response.error??'Price could not be calculated.');
     });
   }
 
@@ -137,6 +137,12 @@ function Dashboard({data}:{data:any}){
           <label><Label>Quantity (pcs)</Label><input className={input} type="number" min={1} value={quantity} onChange={(e)=>{setQuantity(Math.max(1,Number(e.target.value)));setPreview(null);}}/></label>
         </div>
         {error?<div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div>:null}
+        {preview?.quantity_guidance?<div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="text-xs font-black uppercase tracking-wide text-amber-700">Recommended quantity</div>
+          <div className="mt-1 text-2xl font-black text-slate-950">{Number(preview.quantity_guidance.recommended_quantity??0).toLocaleString()} pcs</div>
+          <p className="mt-1 text-sm font-semibold text-slate-700">{preview.quantity_guidance.message}</p>
+          {preview.quantity_guidance.recommended_quantity?<button type="button" onClick={()=>{setQuantity(Number(preview.quantity_guidance.recommended_quantity));setPreview(null);setError('');}} className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white">Use {Number(preview.quantity_guidance.recommended_quantity).toLocaleString()} pcs</button>:null}
+        </div>:null}
         <div className="mt-5 flex justify-end"><button type="button" onClick={calculate} disabled={pending||(askBottom&&!bottomMode)} className={primary}>{pending?'Calculating…':'Calculate Price'}</button></div>
       </Card>
 

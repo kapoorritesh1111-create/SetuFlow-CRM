@@ -38,6 +38,7 @@ export function toSalesPricingResultV5(result: PackagingPricingResultV5) {
     cost_breakdown: result.cost_breakdown,
     selling_price: result.selling_price,
     alternative_quantities: result.alternative_quantities,
+    quantity_guidance: result.quantity_guidance ?? null,
     source_hash: result.source_hash,
     validation_errors: result.validation_errors,
     warnings: result.warnings,
@@ -72,6 +73,7 @@ export function toSalesQuotePricingResultV5(result: PackagingPricingResultV5) {
       result.alternative_quantities,
       3,
     ),
+    quantity_guidance: result.quantity_guidance ?? null,
     validation_errors: result.validation_errors,
     warnings: result.warnings,
   };

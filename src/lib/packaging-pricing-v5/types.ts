@@ -220,6 +220,13 @@ export type PackagingPricingResultV5 = {
     grand_total_before_freight: number;
   };
   alternative_quantities: AlternativePriceV5[];
+  quantity_guidance?: {
+    rule: 'allowed_blocked' | 'minimum_quantity';
+    requested_quantity: number;
+    recommended_quantity: number | null;
+    valid_quantities: number[];
+    message: string;
+  } | null;
   source_hash: string;
   validation_errors: string[];
   warnings: string[];
