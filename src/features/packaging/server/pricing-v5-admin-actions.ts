@@ -478,6 +478,14 @@ export async function validatePackagingTemplateV5(templateId:string){
     for(const size of quoteableSizes){
       if(!size.pricing_bucket) errors.push(`${size.name} does not have a pricing bucket.`);
       if(!size.production_profile_key) errors.push(`${size.name} does not have a production profile.`);
+      const routeBuckets=(size.metadata?.route_pricing_buckets??{}) as Record<string,unknown>;
+      if(size.gusset_production_mode==='conditional'&&size.bottom_registration_mode==='optional'){
+        for(const [routeKey,label] of [['solid_unregistered','solid-color bottom'],['registered_artwork','logo/artwork bottom']] as const){
+          const routeBucket=Number(routeBuckets[routeKey]??size.pricing_bucket);
+          if(!Number.isInteger(routeBucket)||routeBucket<1||routeBucket>99) errors.push(`${size.name} ${label} pricing group is invalid.`);
+          else if(!configuredBuckets.has(routeBucket)) errors.push(`${size.name} ${label} is assigned to PG${String(routeBucket).padStart(2,'0')}, but that pricing group has no bands.`);
+        }
+      }
     }
   }else{
     const defaultBucket=Number(template.production_rules_json?.default_commercial_bucket??0);
