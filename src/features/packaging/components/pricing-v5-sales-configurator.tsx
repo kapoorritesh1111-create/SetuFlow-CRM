@@ -212,7 +212,21 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
     if (!requirementSeed || focusLineId || duplicateLineId) return;
     const source=requirementSeed.sourceContext??{};
     const requestedSizeId=String(source.size_profile_id??requirementSeed.dimensionOptionId??'');
-    const requestedSize=sizes.find((item:any)=>String(item.id)===requestedSizeId);
+    const dimensionText=String(requirementSeed.dimensions??source.dimensions_text??source.dimensions_print??'');
+    const dimensionMatch=dimensionText.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:mm)?\s*[x×]\s*([0-9]+(?:\.[0-9]+)?)/i);
+    const gussetMatch=dimensionText.match(/(?:bg|gusset)[^0-9]*([0-9]+(?:\.[0-9]+)?)/i);
+    const width=Number(dimensionMatch?.[1]??0);
+    const height=Number(dimensionMatch?.[2]??0);
+    const gusset=Number(gussetMatch?.[1]??0);
+    const requestedSizeById=sizes.find((item:any)=>String(item.id)===requestedSizeId);
+    const requestedSizeByDimensions=sizes.find((item:any)=>{
+      const sameWidth=Math.abs(Number(item.width_mm??0)-width)<0.01;
+      const sameHeight=Math.abs(Number(item.height_mm??0)-height)<0.01;
+      if(!sameWidth||!sameHeight) return false;
+      if(!(gusset>0)) return true;
+      return Math.abs(Number(item.bottom_gusset_each_mm??0)-gusset)<0.01;
+    });
+    const requestedSize=requestedSizeById??requestedSizeByDimensions;
     if(requestedSize) {
       setSizeId(String(requestedSize.id));
       setKldFileId('');
