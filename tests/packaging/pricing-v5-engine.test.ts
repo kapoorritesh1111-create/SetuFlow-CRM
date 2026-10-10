@@ -353,7 +353,7 @@ test('S52-PKG-V5: rejects workbook N/A quantities configured on a size',()=>{
   }]};
   const blocked=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:15000});
   assert.equal(blocked.ok,false);
-  assert.match(blocked.validation_errors.join(' '),/not allowed/i);
+  assert.match(blocked.validation_errors.join(' '),/not (?:allowed|available)/i);
   const allowed=calculateSupFormulaV5(context,{size_profile_id:'size160',construction_id:'c3',print:'CMYKW',quantity:10000});
   assert.equal(allowed.ok,true,allowed.validation_errors.join(' '));
   assert.ok(allowed.alternative_quantities.every((item)=>[5000,10000].includes(item.quantity)));

@@ -173,10 +173,10 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
 }
 
 export function MobileHomeHero({ data }: { data?: DashboardData }) {
-  const openLeads = data ? getKpiValue(data, 'open-leads') : 12;
-  const overdueFollowUps = data ? getKpiValue(data, 'overdue-followups') : 34;
+  const openLeads = data ? getKpiValue(data, 'open-leads') : '—';
+  const overdueFollowUps = data ? getKpiValue(data, 'overdue-followups') : '—';
   const pipelineValue = data ? getKpiValue(data, 'pipeline-value') : 0;
-  const activeQuotes = data ? getKpiValue(data, 'active-quotes') : 5;
+  const activeQuotes = data ? getKpiValue(data, 'active-quotes') : '—';
   const metrics: MobileMetric[] = [
     { label: 'Open leads', value: openLeads, sub: 'Open leads', href: '/leads', icon: 'lead', tone: 'bg-white/10', valueTone: 'text-white' },
     { label: 'Due now', value: overdueFollowUps, sub: 'Overdue', href: '/leads?handoff=dashboard-overdue', icon: 'calendar', tone: 'bg-rose-400/20', valueTone: 'text-white' },
@@ -230,6 +230,19 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
         value={scope}
         onChange={changeScope}
       />
+      <section aria-label="Mobile quick actions" className="grid grid-cols-4 gap-2">
+        {[
+          { href: '/mobile/capture', label: 'Scan card', icon: 'lead' as SetuIconName },
+          { href: '/trade-events', label: 'Trade show', icon: 'calendar' as SetuIconName },
+          { href: '/quotes', label: 'Quotes', icon: 'quote' as SetuIconName },
+          { href: '/orders', label: 'Orders', icon: 'orders' as SetuIconName },
+        ].map((action) => (
+          <Link key={action.href} href={action.href} className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-1 px-1 py-3 text-center text-content-primary shadow-soft">
+            <SetuIcon name={action.icon} className="h-5 w-5 text-brand-700" />
+            <span className="text-[11px] font-semibold">{action.label}</span>
+          </Link>
+        ))}
+      </section>
       <MetricGrid>
         <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Open leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} in pipeline`} href={scopedHref('/leads', scope)} />
         <MetricTile tone="danger" icon={<SetuIcon name="calendar" className="h-4 w-4" />} value={overdueFollowUps} label="Follow-ups" sub="Overdue" href={scopedHref('/leads?handoff=dashboard-overdue', scope)} />
