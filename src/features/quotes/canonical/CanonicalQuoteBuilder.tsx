@@ -89,7 +89,7 @@ function ReviewStep({ data, quote, embedded = false }: { data: LeadProfileData; 
             <div><div className="font-bold text-slate-900">{item.notes||item.product_name||'Product'}</div>{isV5?<div className="mt-1 text-[10px] font-black uppercase tracking-wide text-emerald-600">Approved Pricing V5</div>:source==='lead_requirement'?<div className="mt-1 text-[10px] font-black uppercase tracking-wide text-amber-600">Captured Requirement</div>:null}</div>
             <span className="font-semibold text-slate-600">Qty {defaultMoq(item).toLocaleString()}</span>
             <span className="font-black text-slate-950">{money(finalPrice(item)*defaultMoq(item),item.currency||quoteCurrency(data,quote))}</span>
-            {embedded&&item.id?<QuoteReviewLineActions quoteId={quote.id} leadId={data.lead!.id} lineId={String(item.id)} editHref={editHref} editLabel={editLabel}/>:null}
+            {embedded&&item.id?<QuoteReviewLineActions quoteId={quote.id} leadId={data.lead!.id} lineId={String(item.id)} editHref={editHref} editLabel={editLabel} quantity={defaultMoq(item)} isPricingV5={isV5}/>:null}
           </div>;
         })}
         {optionalCharges.map((charge:any,index:number)=><div key={charge.id||`charge-${index}`} className="grid grid-cols-[1fr_80px_120px] gap-3 p-3 text-sm"><span className="font-bold">{charge.label||'Additional charge'}</span><span>Qty 1</span><span className="text-right font-black">{money(Number(charge.amount??0),charge.currency||quoteCurrency(data,quote))}</span></div>)}
