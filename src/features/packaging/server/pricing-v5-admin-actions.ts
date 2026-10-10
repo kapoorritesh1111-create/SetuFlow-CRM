@@ -318,6 +318,49 @@ export async function createPackagingSizeProfileV5(formData:FormData){
   revalidatePath(ADMIN_PATH+'/matrix');
 }
 
+export async function copyPackagingCommercialGroupV5(formData:FormData){
+  const {organization,user,supabase}=await adminDb();
+  const templateId=text(formData,'template_id');
+  await requireDraftTemplate(supabase,organization.id,templateId);
+  const sourceBucket=Math.trunc(numberValue(formData,'source_pricing_bucket','Source pricing group',{min:1,max:99}));
+  const targetBucket=Math.trunc(numberValue(formData,'target_pricing_bucket','New pricing group',{min:1,max:99}));
+  if(sourceBucket===targetBucket) throw new Error('New pricing group must be different from the source group.');
+
+  const [{data:sourceRows,error:sourceError},{count:targetCount,error:targetError}]=await Promise.all([
+    supabase.from('packaging_pricing_commercial_bands_v5')
+      .select('run_length_max_m,wastage_pct,margin_per_frame,sort_order,metadata')
+      .eq('organization_id',organization.id).eq('template_id',templateId).eq('pricing_bucket',sourceBucket)
+      .order('run_length_max_m'),
+    supabase.from('packaging_pricing_commercial_bands_v5')
+      .select('id',{count:'exact',head:true})
+      .eq('organization_id',organization.id).eq('template_id',templateId).eq('pricing_bucket',targetBucket),
+  ]);
+  if(sourceError) throw new Error(sourceError.message);
+  if(targetError) throw new Error(targetError.message);
+  if(!sourceRows?.length) throw new Error('The source pricing group has no commercial bands to copy.');
+  if((targetCount??0)>0) throw new Error('PG'+String(targetBucket).padStart(2,'0')+' already exists.');
+
+  const now=new Date().toISOString();
+  const rows=sourceRows.map((row:any)=>({
+    organization_id:organization.id,
+    template_id:templateId,
+    pricing_bucket:targetBucket,
+    run_length_max_m:row.run_length_max_m,
+    wastage_pct:row.wastage_pct,
+    margin_per_frame:row.margin_per_frame,
+    sort_order:row.sort_order,
+    metadata:{...(row.metadata??{}),source:'pricing_v5_group_copy',copied_from_pricing_bucket:sourceBucket},
+    created_by:user.id,
+    updated_by:user.id,
+    created_at:now,
+    updated_at:now,
+  }));
+  const {error}=await supabase.from('packaging_pricing_commercial_bands_v5').insert(rows);
+  if(error) throw new Error(error.message);
+  revalidatePath(ADMIN_PATH);
+  revalidatePath(ADMIN_PATH+'/matrix');
+}
+
 export async function createPackagingCommercialBandV5(formData:FormData){
   const {organization,user,supabase}=await adminDb();
   const templateId=text(formData,'template_id');
