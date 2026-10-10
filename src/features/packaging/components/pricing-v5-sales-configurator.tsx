@@ -187,7 +187,8 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
       setSizeId(String(requestedSize.id));
       setKldFileId('');
     }
-    const rawQuantity=String(requirementSeed.quantity??source.quantity_text??'').replace(/[^0-9.]/g,'');
+    const quantityText=String(requirementSeed.quantity??source.quantity_text??'');
+    const rawQuantity=(quantityText.match(/[0-9][0-9,]*/)?.[0]??'').replaceAll(',','');
     const requestedQuantity=Math.floor(Number(rawQuantity||0));
     const targetSize=requestedSize??size;
     if(requestedQuantity>0){
