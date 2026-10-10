@@ -179,6 +179,7 @@ function Sizes({data,isDraft}:{data:any;isDraft:boolean}){
     try{
       await savePackagingSizeProfileV5(formData);
       setSizeSaveState({id,status:'saved',message:'Saved successfully.'});
+      window.dispatchEvent(new Event('pricing-v5-save-success'));
     }catch(error){
       setSizeSaveState({id,status:'error',message:error instanceof Error?error.message:'Save failed. Please try again.'});
     }
