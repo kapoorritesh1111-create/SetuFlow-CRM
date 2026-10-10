@@ -65,6 +65,11 @@ function statusToneFor(lead: MobileLead, now: number | null): PillTone {
   return 'stage-new';
 }
 
+function isClosedLead(lead: MobileLead) {
+  const normalized = lead.status.trim().toLowerCase();
+  return /(^|\\b)(won|lost|closed|rejected)(\\b|$)/.test(normalized);
+}
+
 function telHref(phone?: string | null) {
   return phone ? `tel:${phone.replace(/[^+0-9]/g, '')}` : null;
 }
@@ -91,6 +96,7 @@ export function RoleAwareLeadList({
   const [role, setRole] = useState<MobileUserRole>(providedUser?.role ?? 'owner');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('All');
+  const [lifecycleFilter, setLifecycleFilter] = useState<'Active' | 'Closed' | 'All'>('Active');
   // Deliberately null until mounted — see the comment on followUpState above.
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => { setNow(Date.now()); }, []);
@@ -101,7 +107,8 @@ export function RoleAwareLeadList({
   }, [allowRolePreview, demoMode, providedUser, role]);
 
   const sourceLeads = providedLeads ?? mobileLeadDemoData;
-  const leads = useMemo(() => filterLeadsForRole(sourceLeads, activeUser, { query, status, leadType: initialLeadType }), [activeUser, initialLeadType, query, sourceLeads, status]);
+  const authorizedLeads = useMemo(() => filterLeadsForRole(sourceLeads, activeUser, { query, status, leadType: initialLeadType }), [activeUser, initialLeadType, query, sourceLeads, status]);
+  const leads = useMemo(() => authorizedLeads.filter((lead) => lifecycleFilter === 'All' || (lifecycleFilter === 'Closed' ? isClosedLead(lead) : !isClosedLead(lead))), [authorizedLeads, lifecycleFilter]);
   const router = useRouter();
   function changeLeadTypeMode(next: 'all' | 'buyer' | 'supplier') {
     const params = new URLSearchParams();
@@ -135,11 +142,20 @@ export function RoleAwareLeadList({
       ) : null}
       <SearchBar placeholder="Search leads" value={query} onChange={setQuery} onSort={() => setStatus(status === 'All' ? statusOptions(sourceLeads)[1] ?? 'All' : 'All')} />
 
-      {/* SF-18-118: urgency-based grouping */}
+      <div className="grid grid-cols-3 gap-2" aria-label="Lead lifecycle filter">
+        {(['Active', 'Closed', 'All'] as const).map((filter) => (
+          <button key={filter} type="button" aria-pressed={lifecycleFilter === filter} onClick={() => setLifecycleFilter(filter)} className={`min-h-11 rounded-xl border px-3 text-xs font-semibold ${lifecycleFilter === filter ? 'border-brand-500 bg-brand-700 text-white' : 'border-line bg-surface-1 text-content-secondary'}`}>
+            {filter}
+          </button>
+        ))}
+      </div>
+
+      {/* SF-18-118: urgency-based grouping; closed records have their own bucket. */}
       {[
-        { id: 'critical', label: '⚠ Critical', dot: 'bg-danger-solid animate-pulse', style: 'bg-danger-bg border-danger-border', filter: (l: MobileLead) => followUpState(l, now) === 'overdue' },
-        { id: 'today', label: '⏰ Due today', dot: 'bg-warning-solid animate-pulse', style: 'bg-warning-bg border-warning-border', filter: (l: MobileLead) => followUpState(l, now) === 'today' },
-        { id: 'active', label: '✓ Active', dot: 'bg-success-solid', style: 'bg-success-bg border-success-border', filter: (l: MobileLead) => followUpState(l, now) !== 'overdue' && followUpState(l, now) !== 'today' },
+        { id: 'critical', label: '⚠ Critical', dot: 'bg-danger-solid animate-pulse', style: 'bg-danger-bg border-danger-border', filter: (l: MobileLead) => !isClosedLead(l) && followUpState(l, now) === 'overdue' },
+        { id: 'today', label: '⏰ Due today', dot: 'bg-warning-solid animate-pulse', style: 'bg-warning-bg border-warning-border', filter: (l: MobileLead) => !isClosedLead(l) && followUpState(l, now) === 'today' },
+        { id: 'active', label: '✓ Active', dot: 'bg-success-solid', style: 'bg-success-bg border-success-border', filter: (l: MobileLead) => !isClosedLead(l) && followUpState(l, now) !== 'overdue' && followUpState(l, now) !== 'today' },
+        { id: 'closed', label: '✓ Closed', dot: 'bg-slate-400', style: 'bg-surface-2 border-line', filter: isClosedLead },
       ].map(group => {
         const groupLeads = leads.filter(group.filter);
         if (!groupLeads.length) return null;
