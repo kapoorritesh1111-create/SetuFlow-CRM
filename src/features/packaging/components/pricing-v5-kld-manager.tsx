@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import KldDraftGenerator from '@/features/packaging/components/kld-draft-generator';
 import { activatePackagingKldV5, uploadPackagingKldV5 } from '@/features/packaging/server/pricing-v5-admin-actions';
 
 export default function PricingV5KldManager({templateId,size,klds=[]}:{templateId:string;size:any;klds?:any[]}){
@@ -51,6 +52,8 @@ export default function PricingV5KldManager({templateId,size,klds=[]}:{templateI
       <input type="file" accept="application/pdf,.pdf" onChange={(e)=>setFile(e.target.files?.[0]??null)} className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"/>
       <button type="button" onClick={upload} disabled={!file||pending} className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white disabled:bg-slate-300">{pending?'Uploading…':active?'Replace KLD':'Upload Approved KLD'}</button>
     </div>
+
+    <KldDraftGenerator size={size}/>
 
     {versions.length>1?<details className="mt-3">
       <summary className="cursor-pointer text-xs font-black text-slate-700">KLD version history ({versions.length})</summary>
