@@ -35,7 +35,7 @@ export default function QuoteDecisionForm({ token, initialDecision, initialSigne
     return (
       <div className="mt-4 space-y-3">
         <div className={`rounded-2xl px-4 py-4 text-sm font-bold ${decision === 'approved' ? 'bg-emerald-50 text-emerald-800' : decision === 'rejected' ? 'bg-rose-50 text-rose-800' : 'bg-amber-50 text-amber-800'}`}>
-          {decision === 'approved' ? `Quote approved and signed${signerName ? ` by ${signerName}` : ''}.` : 'Quote revision requested.'}
+          {decision === 'approved' ? `Quote approved and signed${signerName ? ` by ${signerName}` : ''}.` : decision === 'rejected' ? 'Quote rejected.' : 'Quote revision requested.'}
           {reviewedAt ? <span className="mt-1 block text-xs font-semibold opacity-70">Recorded {new Date(reviewedAt).toLocaleString()}</span> : null}
         </div>
         {comment ? <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">{comment}</div> : null}
