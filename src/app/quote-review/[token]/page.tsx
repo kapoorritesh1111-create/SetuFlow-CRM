@@ -72,6 +72,9 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   // Fail closed: never show stale or unapproved brochures when either lookup fails.
   const approvedBrochureIds=new Set((brochureMappingError||brochureError?[]:activeBrochures??[]).map((b:any)=>String(b.id)));
   const mappedBrochureFamilies=new Set((brochureMappings??[]).filter((m:any)=>approvedBrochureIds.has(String(m.brochure_id))).map((m:any)=>String(m.packaging_family_id)));
+  const {data:allActiveBrochures,error:allBrochuresError}=await admin.from('catalog_brochures')
+    .select('id,name,file_name').eq('organization_id',quote.organization_id).eq('is_active',true).order('name');
+  const customerBrochures=allBrochuresError?[]:(allActiveBrochures??[]);
   const byProduct = new Map<string, any>((products ?? []).map((r: any) => [String(r.id), r]));
   const byFamily = new Map<string, any>((families ?? []).map((r: any) => [String(r.id), r]));
   const byVariation = new Map<string, any>((variations ?? []).map((r: any) => [String(r.id), r]));
@@ -145,7 +148,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
                 <article key={line.id} className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
                   <div className="grid gap-0 lg:grid-cols-[270px_minmax(0,1fr)]">
                     <div className="relative min-h-[300px] border-b border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50 p-5 lg:border-b-0 lg:border-r">
-                      {artworkUrl&&artworkIsImage?<img src={artworkUrl} alt="Packaging artwork" className="h-full min-h-[260px] w-full rounded-2xl border border-slate-200 bg-white object-contain shadow-sm"/>:<div className="flex h-full min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-300 bg-white p-5 text-center"><img src={String(family?.name||'').toLowerCase().includes('center')?'/packaging/quote-stock/center-seal-pouch.svg':String(family?.name||'').toLowerCase().includes('3 side')?'/packaging/quote-stock/three-side-seal.svg':'/packaging/quote-stock/stand-up-pouch.svg'} alt="" className="h-40 w-auto"/><div className="mt-3 text-sm font-black text-slate-800">{artworkUrl?'Artwork / proof attached':kld?'KLD / Dieline selected':'Packaging reference'}</div><div className="mt-1 text-xs font-semibold text-slate-500">{artworkUrl?'Open the attached artwork or proof below.':kld?'Artwork has not been attached yet. Use the approved KLD for artwork placement.':'Artwork will be added during design.'}</div></div>}
+                      {artworkUrl&&artworkIsImage?<img src={artworkUrl} alt="Packaging artwork" className="h-full min-h-[260px] w-full rounded-2xl border border-slate-200 bg-white object-contain shadow-sm"/>:<div className="flex h-full min-h-[260px] flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-300 bg-white p-5 text-center"><img src={String(family?.name||'').toLowerCase().includes('center')?'/packaging/quote-stock/center-seal-pouch.svg':String(family?.name||'').toLowerCase().includes('3 side')?'/packaging/quote-stock/three-side-seal.svg':'/packaging/quote-stock/stand-up-pouch.svg'} alt="" className="h-40 w-auto"/><div className="mt-3 text-sm font-black text-slate-800">{artworkUrl?'Artwork / proof attached':kld?'Artwork guide available':'Pouch example'}</div><div className="mt-1 text-xs font-semibold text-slate-500">{artworkUrl?'Open the attached artwork or proof below.':kld?'A technical artwork guide is available for this pouch.':'Your artwork can be developed after quotation approval.'}</div></div>}
                       <div className="mt-3 flex flex-wrap gap-2">
                         {artworkUrl?<a target="_blank" rel="noopener noreferrer" href={artworkUrl} className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white">View artwork / proof ↗</a>:null}
                         {kld?.public_token?<a target="_blank" rel="noopener noreferrer" href={`/api/public/packaging-kld/${kld.public_token}`} className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-black text-cyan-800">View KLD ↗</a>:null}
@@ -191,9 +194,20 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
           {quote.notes_customer ? <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">{quote.notes_customer}</div> : null}
         </section>
 
+        {customerBrochures.length?<section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Discover our packaging range</p>
+          <h2 className="mt-1 text-xl font-black">Stark Packmate product brochures</h2>
+          <p className="mt-2 text-sm text-slate-600">Explore our packaging capabilities and available pouch styles. Our team will be happy to help you choose the right solution.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {customerBrochures.map((brochure:any)=><a key={brochure.id} target="_blank" rel="noopener noreferrer" href={`/public/quote-review/${token}/catalog/${brochure.id}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50">
+              <div className="text-sm font-black text-slate-900">{String(brochure.name||'Product brochure').replace(/brocher|brochuer/gi,'Brochure')}</div>
+              <div className="mt-2 text-xs font-semibold text-emerald-800">View brochure PDF ↗</div>
+            </a>)}
+          </div>
+        </section>:null}
         <section className="rounded-3xl border border-violet-200 bg-white p-5 shadow-sm sm:p-6">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">Artwork & Files</p>
-          <h2 className="mt-1 text-xl font-black">Artwork shared with this quotation</h2>
+          <h2 className="mt-1 text-xl font-black">Your artwork and design files</h2>
           <p className="mt-2 text-sm font-semibold text-slate-600">Open any artwork or proof associated with this quotation. If artwork has not been supplied yet, use the KLD shown with the product above.</p>
           {artworkAttachments.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{artworkAttachments.map((attachment: any) => <a key={attachment.id} target="_blank" rel="noopener noreferrer" href={`/api/public/quote-attachment/${token}/${attachment.id}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-violet-300 hover:bg-violet-50"><div className="text-[10px] font-black uppercase tracking-wide text-violet-600">{label(attachment.attachment_type || 'Artwork')}</div><div className="mt-1 text-sm font-black text-slate-900">{attachment.file_name}</div><div className="mt-2 text-xs font-bold text-slate-500">Open attachment ↗</div></a>)}</div> : <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-500">No customer artwork or in-progress design file has been attached to this lead yet.</div>}
         </section>
