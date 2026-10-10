@@ -34,7 +34,7 @@ function familyImage(key:FamilyKey|null){
   return '/packaging/quote-stock/stand-up-pouch.svg';
 }
 
-export default function QuoteRequirementPanel({leadId,available,onUse}:{leadId:string;available:FamilyKey[];onUse:(family:FamilyKey,requirement:Requirement)=>void}){
+export default function QuoteRequirementPanel({leadId,available,onUse,onStartFresh}:{leadId:string;available:FamilyKey[];onUse:(family:FamilyKey,requirement:Requirement)=>void;onStartFresh:()=>void}){
   const [requirements,setRequirements]=useState<Requirement[]>([]);
   const [families,setFamilies]=useState<Family[]>([]);
   const [dimensionOptions,setDimensionOptions]=useState<DimensionOption[]>([]);
@@ -89,7 +89,7 @@ export default function QuoteRequirementPanel({leadId,available,onUse}:{leadId:s
   return <div className="mt-5">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-700">From Lead Requirements</div><h3 className="mt-1 text-lg font-black text-slate-950">Start from what Sales already captured</h3><p className="mt-1 text-xs font-semibold text-slate-500">Use the requirement as the starting point, edit it if the customer changed something, or add another product below.</p></div>
-      <span className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-[10px] font-black text-teal-700">{requirements.length} requirement{requirements.length===1?'':'s'}</span>
+      <div className="flex flex-wrap items-center gap-2"><button type="button" onClick={onStartFresh} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700">Don't use lead requirement</button><span className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-[10px] font-black text-teal-700">{requirements.length} requirement{requirements.length===1?'':'s'}</span></div>
     </div>
     {error?<div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700">{error}</div>:null}
     <div className="mt-3 grid gap-3">
@@ -99,7 +99,7 @@ export default function QuoteRequirementPanel({leadId,available,onUse}:{leadId:s
         return <div key={item.id} className="grid gap-3 rounded-2xl border border-cyan-200 bg-gradient-to-r from-white to-cyan-50/50 p-4 md:grid-cols-[84px_minmax(0,1fr)_auto] md:items-center">
           <div className="flex h-20 items-center justify-center overflow-hidden rounded-xl bg-white"><img src={familyImage(key)} alt="" className="h-16 w-auto object-contain"/></div>
           <div><div className="text-sm font-black text-slate-950">{item.label||'Packaging requirement'}</div><div className="mt-1 text-xs font-semibold text-slate-500">{item.dimensions||'Dimensions to confirm'}{item.quantity?' · '+item.quantity+' requested':''}</div>{item.notes?<div className="mt-2 text-xs font-semibold text-slate-600">{item.notes}</div>:null}<div className="mt-2 flex flex-wrap gap-2"><span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">Captured requirement</span>{usable?<span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">Ready to configure</span>:<span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-black text-amber-700">Manual quote route</span>}</div></div>
-          <div className="flex flex-wrap gap-2 md:justify-end"><button type="button" onClick={()=>beginEdit(item)} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700">Edit Requirement</button>{usable&&key?<button type="button" onClick={()=>onUse(key,item)} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Use Requirement →</button>:null}</div>
+          <div className="flex flex-wrap gap-2 md:justify-end"><button type="button" onClick={()=>beginEdit(item)} className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700">Change Requirement</button><button type="button" onClick={onStartFresh} className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-black text-slate-600">Use Different Product</button>{usable&&key?<button type="button" onClick={()=>onUse(key,item)} className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Use Requirement →</button>:null}</div>
         </div>;
       })}
     </div>
