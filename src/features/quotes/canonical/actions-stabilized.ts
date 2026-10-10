@@ -116,9 +116,9 @@ export async function saveCanonicalQuoteTerms(formData: FormData) {
   const quoteId = text(formData.get('quote_id'));
   try {
     const { workspace, supabase, quote } = await getQuoteContext(formData);
-    // S27-STARK: domestic packaging orgs no longer default to export/FOB terms.
+    const packagingDirect = text(formData.get('commercial_mode')) === 'packaging_direct';
     const deliveryType = text(formData.get('delivery_type'));
-    const isDomestic = deliveryType === 'domestic';
+    const isDomestic = packagingDirect || deliveryType === 'domestic';
     const quoteCurrency = safeCurrency(text(formData.get('currency')), isDomestic ? 'INR' : (quote.display_currency || quote.currency || 'USD'));
     const validityDays = num(formData.get('validity_days')) ?? 30;
     const validUntil = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -142,14 +142,14 @@ export async function saveCanonicalQuoteTerms(formData: FormData) {
           text(formData.get('shipment_notes')),
           text(formData.get('special_notes')),
         ].filter(Boolean).join('\n');
-    const rawBasis = isDomestic ? 'ex_factory' : (text(formData.get('incoterm')) || 'FOB').toLowerCase();
-    const pricingBasis = ['ex_factory', 'fob', 'cif', 'bulk_chips'].includes(rawBasis) ? rawBasis : 'ex_factory';
+    const rawBasis = packagingDirect ? 'unit' : isDomestic ? 'ex_factory' : (text(formData.get('incoterm')) || 'FOB').toLowerCase();
+    const pricingBasis = ['unit','ex_factory','fob','cif','bulk_chips'].includes(rawBasis) ? rawBasis : 'unit';
     if (quote.current_version_id) {
       const { error } = await supabase.from('quote_versions').update({ display_currency: quoteCurrency, pricing_basis: pricingBasis, valid_until: validUntil, customer_message: customerMessage, internal_notes: nullable(formData.get('internal_notes')), updated_at: new Date().toISOString() }).eq('quote_id', quoteId).eq('id', quote.current_version_id);
       if (error) throw new Error(error.message);
     }
     await activity(supabase, workspace.organization!.id, leadId, workspace.user!.id, 'Quote terms saved from the stabilized canonical builder.');
-    finish(leadId, quoteId, 3, 'terms');
+    finish(leadId, quoteId, packagingDirect ? 4 : 3, 'terms');
   } catch (error) {
     if (isNextRedirect(error)) throw error;
     fail(leadId, quoteId, 2, error);
