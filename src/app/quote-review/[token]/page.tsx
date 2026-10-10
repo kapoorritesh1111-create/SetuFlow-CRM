@@ -60,6 +60,18 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
     kldIds.length ? admin.from('packaging_kld_files').select('id,file_name,public_token,spec_key').in('id', kldIds) : Promise.resolve({ data: [] }),
   ]);
 
+  // Customer brochures are served by the existing token-validated brochure route, never by raw storage paths.
+  const uniqueFamilyIds=[...new Set(familyIds.map(String))];
+  const {data:brochureMappings,error:brochureMappingError}=uniqueFamilyIds.length
+    ? await admin.from('catalog_brochure_families').select('packaging_family_id,brochure_id').in('packaging_family_id',uniqueFamilyIds)
+    : {data:[],error:null};
+  const brochureIds=[...new Set((brochureMappings??[]).map((m:any)=>String(m.brochure_id)))];
+  const {data:activeBrochures,error:brochureError}=brochureIds.length
+    ? await admin.from('catalog_brochures').select('id,name').eq('organization_id',quote.organization_id).eq('is_active',true).in('id',brochureIds)
+    : {data:[],error:null};
+  // Fail closed: never show stale or unapproved brochures when either lookup fails.
+  const approvedBrochureIds=new Set((brochureMappingError||brochureError?[]:activeBrochures??[]).map((b:any)=>String(b.id)));
+  const mappedBrochureFamilies=new Set((brochureMappings??[]).filter((m:any)=>approvedBrochureIds.has(String(m.brochure_id))).map((m:any)=>String(m.packaging_family_id)));
   const byProduct = new Map<string, any>((products ?? []).map((r: any) => [String(r.id), r]));
   const byFamily = new Map<string, any>((families ?? []).map((r: any) => [String(r.id), r]));
   const byVariation = new Map<string, any>((variations ?? []).map((r: any) => [String(r.id), r]));
@@ -166,6 +178,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
                   <div className="mt-4 flex flex-wrap gap-2">
                     {kld?.public_token?<a target="_blank" rel="noopener noreferrer" className="inline-flex rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-black text-cyan-800" href={`/api/public/packaging-kld/${kld.public_token}`}>View KLD / dieline ↗</a>:null}
                     <a target="_blank" rel="noopener noreferrer" className="inline-flex rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800" href={`/quote-review/${token}/brochure/${line.id}`}>View product details ↗</a>
+                    {mappedBrochureFamilies.has(String(line.packaging_family_id))?<a target="_blank" rel="noopener noreferrer" className="inline-flex rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-800" href={`/public/quote-review/${token}/brochure/${line.id}`}>View approved product brochure ↗</a>:null}
                   </div>
                     </div>
                   </div>
