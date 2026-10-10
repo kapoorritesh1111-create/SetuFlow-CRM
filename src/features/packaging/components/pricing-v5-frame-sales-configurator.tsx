@@ -128,6 +128,11 @@ export default function PricingV5FrameSalesConfigurator({
   },[focusLineId]);
 
   useEffect(()=>{
+    if(focusLineId||duplicateLineId||requirementSeed||editingLineId||savedLines.length!==1) return;
+    editSaved(savedLines[0]);
+  },[savedLines.length,focusLineId,duplicateLineId,requirementSeed?.id]);
+
+  useEffect(()=>{
     if(!duplicateLineId) return;
     const line=savedLines.find((item:any)=>String(item.lineId)===String(duplicateLineId));
     if(!line) return;
@@ -164,7 +169,7 @@ export default function PricingV5FrameSalesConfigurator({
       <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700">Approved pricing</span>
     </div> : <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-700">Frame Family</div><h2 className="mt-1 text-lg font-black text-slate-950">{template?.supply_label??'Packaging form'}</h2></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700">Approved pricing</span></div>}
 
-    {!embedded&&savedLines.length?<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Saved quote lines</div><div className="mt-2 flex flex-wrap gap-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSaved(line)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">Edit {line.label} · {Number(line.quantity).toLocaleString()} pcs</button>)}</div></div>:null}
+    {savedLines.length?<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Saved quote lines</div><div className="mt-2 flex flex-wrap gap-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSaved(line)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">Edit {line.label} · {Number(line.quantity).toLocaleString()} pcs</button>)}</div></div>:null}
 
     <div className="mt-4 grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50 p-3"><img src={String(template?.supply_form||'').includes('three_side')?'/packaging/quote-stock/three-side-seal.svg':'/packaging/quote-stock/center-seal-pouch.svg'} alt={template?.supply_label??'Packaging'} className="mx-auto h-52 w-auto object-contain"/></div>
