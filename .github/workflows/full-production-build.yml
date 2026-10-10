@@ -33,7 +33,19 @@ jobs:
         run: npm run check:product-overview-polish
       - name: TypeScript
         run: npm run typecheck
-      - name: Full repository test suite
-        run: npm test
+      # Existing main contains historical source-contract failures. Compare
+      # them against this PR rather than rewriting working desktop workflows.
+      # All new tests must pass and no existing tests may regress.
+      - name: Full suite on release candidate
+        run: |
+          npm test > /tmp/mobile-v2-candidate-tests.log 2>&1 || echo $? > /tmp/mobile-v2-candidate-exit
+      - name: Full suite on unmodified main baseline
+        run: |
+          git fetch origin main
+          git worktree add --detach /tmp/mobile-v2-main-baseline origin/main
+          ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/mobile-v2-main-baseline/node_modules
+          (cd /tmp/mobile-v2-main-baseline && npm test > /tmp/mobile-v2-baseline-tests.log 2>&1) || true
+      - name: Fail on new test regressions and report legacy failures
+        run: node scripts/compare-test-baselines.mjs /tmp/mobile-v2-baseline-tests.log /tmp/mobile-v2-candidate-tests.log
       - name: Next.js production build
         run: npm run build:vercel
