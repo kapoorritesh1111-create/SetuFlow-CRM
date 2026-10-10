@@ -30,6 +30,7 @@ export default function QuoteVolumeOptionAction({
       const data=await response.json();
       if(!response.ok){setError(data?.error??'Could not send the quantity request.');return;}
       setDone(true);
+      window.setTimeout(()=>window.location.reload(),700);
     }catch{
       setError('Could not reach the server. Try again.');
     }finally{setSubmitting(false);}
