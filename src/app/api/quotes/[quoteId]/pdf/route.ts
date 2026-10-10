@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { loadOrganizationLogo, type PdfImage } from '@/lib/pdf/organization-logo';
@@ -241,14 +242,35 @@ function buildPdf(data: PdfData) {
   return Buffer.from(pdf, 'binary');
 }
 
-export async function GET(_request: Request, { params }: { params: { quoteId: string } }) {
+export async function GET(request: Request, { params }: { params: { quoteId: string } }) {
   if (!hasSupabaseEnv) return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 500 });
-  const workspace = await requireWorkspace();
-  const organizationId = workspace.organization?.id;
-  if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
-
-  const db = (await createClient()) as any;
   const { quoteId } = params;
+  const url=new URL(request.url);
+  const token=String(url.searchParams.get('token')||'').trim();
+  const download=url.searchParams.get('download')==='1';
+
+  let workspace:any=null;
+  let organizationId:string|null=null;
+  let db:any=null;
+
+  if(token){
+    const admin=createAdminSupabaseClient() as any;
+    if(!admin) return NextResponse.json({error:'Quote service is not configured.'},{status:500});
+    const {data:publicQuote,error:publicError}=await admin.from('quotes')
+      .select('id,organization_id,industry_metadata')
+      .eq('id',quoteId)
+      .contains('industry_metadata',{customer_review_token:token})
+      .maybeSingle();
+    if(publicError||!publicQuote?.id) return NextResponse.json({error:'Quote link not found.'},{status:404});
+    organizationId=publicQuote.organization_id;
+    db=admin;
+  }else{
+    workspace=await requireWorkspace();
+    organizationId=workspace.organization?.id??null;
+    if(!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
+    db=(await createClient()) as any;
+  }
+
   const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer').eq('organization_id', organizationId).eq('id', quoteId).maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
@@ -269,7 +291,19 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
 
   const marketId = quote.market_id ?? country?.market_id ?? null;
   const { data: market } = marketId ? await db.from('markets').select('id, name').eq('organization_id', organizationId).eq('id', marketId).maybeSingle() : { data: null };
-  const lines = (items ?? []) as any[];
+  const allLines=(items??[]) as any[];
+  const pricedV5=allLines.filter((line:any)=>Number(line.calculation_version)===5&&num(line.unit_price)>0);
+  const lines=allLines.filter((line:any)=>{
+    const isPlaceholder=line?.input_snapshot_json?.source==='lead_requirement'&&num(line.unit_price)<=0;
+    if(!isPlaceholder) return true;
+    const family=String(line.packaging_family_id??line.input_snapshot_json?.family_id??'');
+    const size=String(line.packaging_size_profile_v5_id??line.input_snapshot_json?.size_profile_id??'');
+    return !pricedV5.some((priced:any)=>{
+      const pricedFamily=String(priced.packaging_family_id??priced.input_snapshot_json?.family_id??'');
+      const pricedSize=String(priced.packaging_size_profile_v5_id??priced.input_snapshot_json?.input?.size_profile_id??'');
+      return pricedFamily===family&&(!size||!pricedSize||size===pricedSize);
+    });
+  });
   const productIds = Array.from(new Set(lines.map((line) => line.product_id).filter(Boolean)));
   const [{ data: products }, { data: variants }] = await Promise.all([
     productIds.length ? db.from('products').select('id, name, sku, sku_code').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({ data: [] }),
@@ -322,7 +356,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
 
   const bytes = buildPdf({
     quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
-    org: org ?? { name: workspace.organization?.name },
+    org: org ?? { name: workspace?.organization?.name ?? 'Seller' },
     buyer: leadRow ?? {},
     market: text(market?.name),
     destination: text(country?.name ?? leadRow?.country),
@@ -339,19 +373,22 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
     logoImage,
   });
 
-  await db.from('documents').upsert({
-    organization_id: organizationId,
-    related_entity: 'quote',
-    related_id: quote.id,
-    file_name: `quote-${quote.quote_number ?? quote.id.slice(0, 8)}.pdf`,
-    file_url: `/api/quotes/${quote.id}/pdf`,
-    doc_type: 'quote_pdf',
-    uploaded_by: workspace.user?.id ?? null,
-    uploaded_at: quote.updated_at ?? quote.created_at ?? new Date().toISOString(),
-    version: 1,
-    status: docStatus(quote),
-    linked_quote_id: quote.id,
-  }, { onConflict: 'organization_id,related_entity,related_id,file_name' }).then(() => null);
+  if(!token){
+    await db.from('documents').upsert({
+      organization_id: organizationId,
+      related_entity: 'quote',
+      related_id: quote.id,
+      file_name: `quote-${quote.quote_number ?? quote.id.slice(0, 8)}.pdf`,
+      file_url: `/api/quotes/${quote.id}/pdf`,
+      doc_type: 'quote_pdf',
+      uploaded_by: workspace.user?.id ?? null,
+      uploaded_at: quote.updated_at ?? quote.created_at ?? new Date().toISOString(),
+      version: 1,
+      status: docStatus(quote),
+      linked_quote_id: quote.id,
+    }, { onConflict: 'organization_id,related_entity,related_id,file_name' }).then(() => null);
+  }
+
 
   return new Response(new Uint8Array(bytes), {
     status: 200,
