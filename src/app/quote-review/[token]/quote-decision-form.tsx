@@ -11,7 +11,7 @@ export default function QuoteDecisionForm({ token, initialDecision, initialSigne
   const [error, setError] = useState<string | null>(null);
   const [reviewedAt, setReviewedAt] = useState(initialReviewedAt ?? null);
 
-  const submit = async (nextDecision: 'approved' | 'revision_requested') => {
+  const submit = async (nextDecision: 'approved' | 'revision_requested' | 'rejected') => {
     setSubmitting(nextDecision);
     setError(null);
     try {
@@ -34,7 +34,7 @@ export default function QuoteDecisionForm({ token, initialDecision, initialSigne
   if (decision) {
     return (
       <div className="mt-4 space-y-3">
-        <div className={`rounded-2xl px-4 py-4 text-sm font-bold ${decision === 'approved' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'}`}>
+        <div className={`rounded-2xl px-4 py-4 text-sm font-bold ${decision === 'approved' ? 'bg-emerald-50 text-emerald-800' : decision === 'rejected' ? 'bg-rose-50 text-rose-800' : 'bg-amber-50 text-amber-800'}`}>
           {decision === 'approved' ? `Quote approved and signed${signerName ? ` by ${signerName}` : ''}.` : 'Quote revision requested.'}
           {reviewedAt ? <span className="mt-1 block text-xs font-semibold opacity-70">Recorded {new Date(reviewedAt).toLocaleString()}</span> : null}
         </div>
@@ -51,7 +51,7 @@ export default function QuoteDecisionForm({ token, initialDecision, initialSigne
           <input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Full name" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold" />
         </label>
         <label className="text-sm font-bold text-slate-700">Comments or requested revision
-          <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Optional for approval; required if requesting revision" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold" />
+          <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3} placeholder="Optional for approval; required for revision or rejection" className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold" />
         </label>
       </div>
       <label className="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs font-semibold text-slate-600">
@@ -59,9 +59,10 @@ export default function QuoteDecisionForm({ token, initialDecision, initialSigne
         <span>By approving, I confirm I am authorized to accept this quote and that typing my name above serves as my electronic acknowledgement of the quoted commercial terms.</span>
       </label>
       {error ? <div className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">{error}</div> : null}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <button type="button" disabled={submitting !== null} onClick={() => submit('approved')} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white disabled:opacity-50">{submitting === 'approved' ? 'Recording…' : 'Approve & Sign Quote'}</button>
         <button type="button" disabled={submitting !== null} onClick={() => submit('revision_requested')} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black text-amber-800 disabled:opacity-50">{submitting === 'revision_requested' ? 'Sending…' : 'Request Quote Revision'}</button>
+        <button type="button" disabled={submitting !== null} onClick={() => submit('rejected')} className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 disabled:opacity-50">{submitting === 'rejected' ? 'Sending…' : 'Reject Quote'}</button>
       </div>
     </div>
   );
