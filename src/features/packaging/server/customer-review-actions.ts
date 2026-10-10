@@ -149,13 +149,17 @@ export async function sendPackagingQuoteCustomerPackage(input: { leadId: string;
     if(brochureError) throw new Error('Unable to check approved brochures: '+brochureError.message);
     const activeIds=new Set((brochures??[]).map((b:any)=>String(b.id)));
     const matchingFamilies=new Set((brochureMappings??[]).filter((m:any)=>activeIds.has(String(m.brochure_id))).map((m:any)=>String(m.packaging_family_id)));
-    const brochureLinks=(quoteLines??[]).filter((l:any)=>matchingFamilies.has(String(l.packaging_family_id)))
-      .map((l:any)=>`<li><a href="${appOrigin()}/public/quote-review/${token}/brochure/${encodeURIComponent(String(l.id))}">View approved product brochure</a></li>`).join('');
+    const {data:availableBrochures,error:availableBrochuresError}=await supabase.from('catalog_brochures')
+      .select('id,name').eq('organization_id',organizationId).eq('is_active',true).order('name');
+    if(availableBrochuresError) throw new Error('Unable to load customer brochures: '+availableBrochuresError.message);
+    const brochureLinks=(availableBrochures??[]).map((b:any)=>
+      `<li style="padding:4px 0"><a href="${appOrigin()}/public/quote-review/${token}/catalog/${encodeURIComponent(String(b.id))}" style="color:#0f766e;text-decoration:underline">${escapeHtml(String(b.name||'Product brochure').replace(/brocher|brochuer/gi,'Brochure'))}</a></li>`
+    ).join('');
     const brochureSection=brochureLinks
-      ? `<p style="color:#475569">Approved product brochures included with this quotation:</p><ul>${brochureLinks}</ul>`
+      ? `<div style="margin-top:22px;padding:18px;background:#f0fdfa;border-radius:12px"><h3 style="margin:0 0 8px;color:#134e4a">Explore our packaging range</h3><p style="margin:0 0 8px;color:#475569">Discover Stark Packmate's product brochures:</p><ul style="margin:0;padding-left:22px">${brochureLinks}</ul></div>`
       : '';
     const subject = `Stark Packmate quote ${quote.quote_number ?? ''} — review package`;
-    const html = `<div style="font-family:Arial,sans-serif;max-width:660px;margin:auto;color:#0f172a"><div style="padding:22px;border:1px solid #e2e8f0;border-radius:18px"><p style="font-size:12px;font-weight:800;letter-spacing:.12em;color:#0f766e;text-transform:uppercase;margin:0 0 8px">Stark Packmate</p><h2 style="margin:0 0 10px">Your packaging quote is ready</h2><p style="color:#475569">Hello ${escapeHtml(lead?.contact_name || lead?.company_name || 'there')},</p><p style="color:#475569">We prepared your commercial quote package in one place. Review your quotation and any available approved product brochures and artwork before making your quote decision.</p>${brochureSection}<p style="margin:24px 0"><a href="${reviewUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#0f766e;color:white;text-decoration:none;font-weight:800">Review Quote Package</a></p><p style="font-size:12px;color:#94a3b8">This secure link is for commercial quote review. Design collaboration uses a separate persistent link.</p></div></div>`;
+    const html = `<div style="font-family:Arial,sans-serif;max-width:660px;margin:auto;color:#0f172a"><div style="padding:22px;border:1px solid #e2e8f0;border-radius:18px"><p style="font-size:12px;font-weight:800;letter-spacing:.12em;color:#0f766e;text-transform:uppercase;margin:0 0 8px">Stark Packmate</p><h2 style="margin:0 0 10px">Your packaging quote is ready</h2><p style="color:#475569">Hello ${escapeHtml(lead?.contact_name || lead?.company_name || 'there')},</p><p style="color:#475569">Thank you for considering Stark Packmate. Your tailored quotation is ready for review. Explore our product brochures below and contact our team with any questions.</p>${brochureSection}<p style="margin:24px 0"><a href="${reviewUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#0f766e;color:white;text-decoration:none;font-weight:800">Review Quote Package</a></p><p style="font-size:12px;color:#94a3b8">This secure link is for commercial quote review. Design collaboration uses a separate persistent link.</p></div></div>`;
     const sent = await sendEmail(email, subject, html);
     if (!sent.ok) return sent;
 
