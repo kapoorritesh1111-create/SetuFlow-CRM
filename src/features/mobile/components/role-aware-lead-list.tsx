@@ -67,7 +67,7 @@ function statusToneFor(lead: MobileLead, now: number | null): PillTone {
 
 function isClosedLead(lead: MobileLead) {
   const normalized = lead.status.trim().toLowerCase();
-  return /(^|\\b)(won|lost|closed|rejected)(\\b|$)/.test(normalized);
+  return /(^|[^a-z])(won|lost|closed|rejected)([^a-z]|$)/.test(normalized);
 }
 
 function telHref(phone?: string | null) {

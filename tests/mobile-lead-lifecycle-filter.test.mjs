@@ -8,6 +8,7 @@ test('mobile leads offers Active, Closed and All lifecycle filters', () => {
   assert.match(source, /lifecycleFilter/);
   assert.match(source, /\['Active', 'Closed', 'All'\]/);
   assert.match(source, /isClosedLead/);
+  assert.match(source, /won\|lost\|closed\|rejected/);
 });
 
 test('closed leads never display in urgent or active work groups', () => {
