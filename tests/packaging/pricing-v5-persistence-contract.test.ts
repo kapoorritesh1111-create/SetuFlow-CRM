@@ -481,8 +481,8 @@ test('customer quote review shows artwork first and keeps KLD available',()=>{
   assert.match(quoteReview,/imageArtwork/);
   assert.match(quoteReview,/View artwork/);
   assert.match(quoteReview,/View KLD/);
-  assert.match(quoteReview,/Artwork has not been attached yet/);
-  assert.match(quoteReview,/packaging\/quote-stock\/stand-up-pouch\.svg/);
+  assert.match(quoteReview,/No customer artwork or in-progress design file has been attached/);
+  assert.match(quoteReview,/packaging\/quote-stock\/stark-stand-up\.png/);
 });
 
 
