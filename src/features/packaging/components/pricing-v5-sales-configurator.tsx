@@ -146,6 +146,27 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
     });
   }
 
+  useEffect(() => {
+    if (!canPrice || !template?.id) {
+      setPreview(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setError('');
+      startTransition(async () => {
+        const response: any = await previewPackagingPricingV5({ templateId: template.id, input: buildInput() });
+        if (cancelled) return;
+        setPreview(response.result ?? null);
+        if (!response.ok) setError(response.error ?? 'Pricing needs attention.');
+      });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [template?.id, size?.id, construction?.id, print, quantity, bottomPrintMode, selectedChargeCodes.join('|'), spotUvEnabled, spotUvAmount, kldFileId, canPrice]);
+
   function editSavedLine(line: any) {
     if (!line) return;
     setEditingLineId(String(line.lineId ?? ''));
@@ -285,7 +306,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
         {saved ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{saved}</div> : null}
 
-        <div className="flex flex-wrap gap-2"><button type="button" disabled={!canPrice || pending} onClick={runPreview} className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40">{pending ? 'Calculating…' : 'Calculate price'}</button>{preview?.ok ? <button type="button" disabled={pending} onClick={saveLine} className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-black text-white disabled:opacity-40">{editingLineId ? 'Update quote line' : 'Add to quote'}</button> : null}</div>
+        <div className="flex flex-wrap items-center justify-between gap-2"><div className="text-xs font-bold text-slate-500">{pending ? 'Updating approved price…' : canPrice ? 'Price updates automatically when selections change.' : 'Complete the required selections to see price.'}</div>{preview?.ok ? <button type="button" disabled={pending} onClick={saveLine} className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-black text-white disabled:opacity-40">{editingLineId ? 'Update quote line' : 'Add to quote'}</button> : null}</div>
 
         {preview?.ok && Array.isArray(preview.suggested_quantities) && preview.suggested_quantities.length ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
           <div className="flex flex-wrap items-start justify-between gap-2"><div><div className="text-sm font-black text-slate-950">Better quantity options</div><div className="mt-1 text-[11px] font-semibold text-slate-500">Show the customer the approved higher-volume prices without changing the quoted quantity.</div></div><span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black text-emerald-700">Approved suggestions</span></div>
