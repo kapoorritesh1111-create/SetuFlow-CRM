@@ -166,27 +166,6 @@ export default async function QuotePage({
         />
       ) : null}
 
-      {activeQuote && manualPricingFamilies.length ? (
-        <div className="mb-4">
-          <div className="mb-2 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Additional Quote Tools</div>
-          <ManualPackagingQuoteSection
-            quoteId={activeQuote.id}
-            leadId={params.leadId}
-            currency={quoteCurrency}
-            families={manualPricingFamilies}
-            lines={manualPackagingLines}
-          />
-        </div>
-      ) : null}
-
-      {showStarkDesignHandoff ? (
-        <div className="mb-4">
-          <Suspense fallback={null}>
-            <QuoteDesignRequestLauncher leadId={params.leadId} />
-          </Suspense>
-        </div>
-      ) : null}
-
       {!pricingV5Options && !pricingV5FrameOptions && pricingV4Options && activeQuote ? (
         <div className="mb-4">
           <PricingV4SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV4Options} />
@@ -202,8 +181,34 @@ export default async function QuotePage({
         saved={readParam(searchParams?.saved).trim() || null}
         packaging={canonicalPackaging}
         quoteOptionalCharges={packaging?.charges ?? []}
+        packagingStudioMode={Boolean((pricingV5Options || pricingV5FrameOptions) && activeQuote)}
       />
       </div>
+
+      {(activeQuote && manualPricingFamilies.length) || showStarkDesignHandoff ? (
+        <details className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-black text-slate-700">
+            More quote tools
+            <span className="ml-2 text-xs font-semibold text-slate-400">Spout Pouches · Design Collaboration</span>
+          </summary>
+          <div className="space-y-4 border-t border-slate-100 p-4">
+            {activeQuote && manualPricingFamilies.length ? (
+              <ManualPackagingQuoteSection
+                quoteId={activeQuote.id}
+                leadId={params.leadId}
+                currency={quoteCurrency}
+                families={manualPricingFamilies}
+                lines={manualPackagingLines}
+              />
+            ) : null}
+            {showStarkDesignHandoff ? (
+              <Suspense fallback={null}>
+                <QuoteDesignRequestLauncher leadId={params.leadId} />
+              </Suspense>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
     </>
   );
 }
