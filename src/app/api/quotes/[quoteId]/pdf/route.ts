@@ -283,7 +283,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       : Promise.resolve({ data: null });
 
   const [{ data: items }, { data: org }, { data: country }, { data: freight }] = await Promise.all([
-    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes, line_type, input_snapshot_json, pricing_breakdown_json, calculation_version').eq('quote_id', quote.id).order('created_at', { ascending: true }),
+    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes, line_type, input_snapshot_json, pricing_breakdown_json, calculation_version, packaging_family_id, packaging_size_profile_v5_id').eq('quote_id', quote.id).order('created_at', { ascending: true }),
     db.from('organizations').select('id, name, legal_name, logo_storage_path, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     countryPromise,
     quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', organizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
