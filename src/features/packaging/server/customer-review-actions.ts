@@ -48,6 +48,73 @@ async function context() {
   return { workspace, supabase, organizationId, userId: workspace.user.id };
 }
 
+export async function preparePackagingQuoteCustomerShare(input:{leadId:string;quoteId:string}){
+  try{
+    const {supabase,organizationId,userId}=await context();
+    const {data:quote,error:quoteError}=await supabase.from('quotes')
+      .select('id,quote_number,status,current_version_id,approval_required,industry_metadata')
+      .eq('organization_id',organizationId).eq('lead_id',input.leadId).eq('id',input.quoteId).maybeSingle();
+    if(quoteError) throw new Error(quoteError.message);
+    if(!quote?.id||!quote.current_version_id) return {ok:false,error:'Quote is not ready to share.'};
+    const status=String(quote.status??'').toLowerCase();
+    if(['accepted','rejected','expired','cancelled','declined'].includes(status)) return {ok:false,error:'This quote is closed and cannot be shared as a new customer decision.'};
+    if(Boolean(quote.approval_required)) return {ok:false,error:'Pricing approval is required before this quote can be shared.'};
+
+    const {data:versionLines,error:lineError}=await supabase.from('quote_version_line_items')
+      .select('id,final_unit_price,moq,is_overridden,calculation_meta')
+      .eq('quote_version_id',quote.current_version_id);
+    if(lineError) throw new Error(lineError.message);
+    const priced=(versionLines??[]).filter((line:any)=>Number(line.final_unit_price??0)>0&&Number(line.moq??0)>0);
+    if(!priced.length) return {ok:false,error:'Add at least one priced quote item before sharing.'};
+    if((versionLines??[]).some((line:any)=>line?.calculation_meta?.approval_required===true)) return {ok:false,error:'Pricing approval is required before this quote can be shared.'};
+
+    if(!['sent','accepted'].includes(status)){
+      const {error:sendError}=await supabase.rpc('app_send_quote_version_with_fanout_tx',{
+        p_quote_version_id:quote.current_version_id,
+        p_actor_user_id:userId,
+        p_actor_name:'Setu Flow user',
+        p_plain_notes:'Quote shared through customer link.',
+        p_approval_required:false,
+        p_approval_state:'none',
+        p_action_source:'packaging_quote_share',
+      });
+      if(sendError) throw new Error(sendError.message);
+    }
+
+    const existingMeta=quote.industry_metadata??{};
+    const token=String(existingMeta.customer_review_token||'').trim()||`${crypto.randomUUID().replace(/-/g,'')}${crypto.randomUUID().replace(/-/g,'')}`;
+    const now=new Date().toISOString();
+    const reviewUrl=`${appOrigin()}/public/quote-review/${token}`;
+    const nextMeta={...existingMeta,customer_review_token:token,customer_review_shared_at:now,customer_review_shared_by:userId};
+    const {error:updateError}=await supabase.from('quotes').update({industry_metadata:nextMeta}).eq('id',quote.id).eq('organization_id',organizationId);
+    if(updateError) throw new Error(updateError.message);
+
+    await supabase.from('communications').insert({
+      organization_id:organizationId,
+      lead_id:input.leadId,
+      related_entity:'quote',
+      related_id:quote.id,
+      communication_type:'quote_message',
+      direction:'outbound',
+      channel:'system',
+      subject:`Quote ${quote.quote_number??''} customer link prepared`,
+      body:`Customer quote link prepared: ${reviewUrl}`,
+      summary:'Customer quote link prepared for manual sharing.',
+      draft_source:'system',
+      status:'sent',
+      sent_at:now,
+      created_by:userId,
+      provider_payload:{},
+      metadata:{customer_review_url:reviewUrl,package_type:'packaging_quote_review',delivery_mode:'manual_share'},
+    });
+
+    revalidatePath(`/leads/${input.leadId}/quote`);
+    return {ok:true,reviewUrl,sentAt:now};
+  }catch(error){
+    return {ok:false,error:error instanceof Error?error.message:'Could not prepare customer quote link.'};
+  }
+}
+
 export async function sendPackagingQuoteCustomerPackage(input: { leadId: string; quoteId: string }) {
   try {
     const { supabase, organizationId, userId } = await context();
