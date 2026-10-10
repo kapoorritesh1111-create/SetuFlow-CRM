@@ -185,7 +185,7 @@ export default async function QuotePage({
         quoteDraftError={readParam(searchParams?.quoteDraftError).trim() ? decodeURIComponent(readParam(searchParams?.quoteDraftError).trim()) : null}
         quoteActionError={readParam(searchParams?.quoteActionError).trim() ? decodeURIComponent(readParam(searchParams?.quoteActionError).trim()) : null}
         saved={readParam(searchParams?.saved).trim() || null}
-        packaging={canonicalPackaging}
+        packaging={(pricingV5Options || pricingV5FrameOptions) && activeQuote ? packaging : canonicalPackaging}
         quoteOptionalCharges={packaging?.charges ?? []}
         packagingStudioMode={Boolean((pricingV5Options || pricingV5FrameOptions) && activeQuote)}
       />
