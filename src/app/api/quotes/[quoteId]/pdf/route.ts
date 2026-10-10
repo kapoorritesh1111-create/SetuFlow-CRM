@@ -271,26 +271,28 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     db=(await createClient()) as any;
   }
 
-  const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer').eq('organization_id', organizationId).eq('id', quoteId).maybeSingle();
+  if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
+  const resolvedOrganizationId=organizationId;
+  const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer').eq('organization_id', resolvedOrganizationId).eq('id', quoteId).maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
 
-  const { data: leadRow } = await db.from('leads').select('id, company_name, contact_name, email, phone, country').eq('organization_id', organizationId).eq('id', quote.lead_id).maybeSingle();
+  const { data: leadRow } = await db.from('leads').select('id, company_name, contact_name, email, phone, country').eq('organization_id', resolvedOrganizationId).eq('id', quote.lead_id).maybeSingle();
   const countryPromise = quote.country_id
-    ? db.from('countries').select('id, name, market_id, default_port_of_loading').eq('organization_id', organizationId).eq('id', quote.country_id).maybeSingle()
+    ? db.from('countries').select('id, name, market_id, default_port_of_loading').eq('organization_id', resolvedOrganizationId).eq('id', quote.country_id).maybeSingle()
     : leadRow?.country
-      ? db.from('countries').select('id, name, market_id, default_port_of_loading').eq('organization_id', organizationId).ilike('name', leadRow.country).maybeSingle()
+      ? db.from('countries').select('id, name, market_id, default_port_of_loading').eq('organization_id', resolvedOrganizationId).ilike('name', leadRow.country).maybeSingle()
       : Promise.resolve({ data: null });
 
   const [{ data: items }, { data: org }, { data: country }, { data: freight }] = await Promise.all([
     db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes, line_type, input_snapshot_json, pricing_breakdown_json, calculation_version, packaging_family_id, packaging_size_profile_v5_id').eq('quote_id', quote.id).order('created_at', { ascending: true }),
     db.from('organizations').select('id, name, legal_name, logo_storage_path, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     countryPromise,
-    quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', organizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
+    quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', resolvedOrganizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
   ]);
 
   const marketId = quote.market_id ?? country?.market_id ?? null;
-  const { data: market } = marketId ? await db.from('markets').select('id, name').eq('organization_id', organizationId).eq('id', marketId).maybeSingle() : { data: null };
+  const { data: market } = marketId ? await db.from('markets').select('id, name').eq('organization_id', resolvedOrganizationId).eq('id', marketId).maybeSingle() : { data: null };
   const allLines=(items??[]) as any[];
   const pricedV5=allLines.filter((line:any)=>Number(line.calculation_version)===5&&num(line.unit_price)>0);
   const lines=allLines.filter((line:any)=>{
@@ -306,7 +308,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   });
   const productIds = Array.from(new Set(lines.map((line) => line.product_id).filter(Boolean)));
   const [{ data: products }, { data: variants }] = await Promise.all([
-    productIds.length ? db.from('products').select('id, name, sku, sku_code').eq('organization_id', organizationId).in('id', productIds) : Promise.resolve({ data: [] }),
+    productIds.length ? db.from('products').select('id, name, sku, sku_code').eq('organization_id', resolvedOrganizationId).in('id', productIds) : Promise.resolve({ data: [] }),
     productIds.length ? db.from('product_variants').select('id, product_id, name, sku_code').in('product_id', productIds) : Promise.resolve({ data: [] }),
   ]);
 
@@ -314,8 +316,8 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   const variantMap = new Map((variants ?? []).map((variant: any) => [variant.id, variant]));
   const quoteBase = quoteBasis(quote.pricing_basis);
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
-  const logoImage = await loadOrganizationLogo(db, organizationId, org);
-  const { data: optionalCharges } = await db.from('quote_optional_charges').select('label, amount, currency').eq('organization_id', organizationId).eq('quote_id', quote.id);
+  const logoImage = await loadOrganizationLogo(db, resolvedOrganizationId, org);
+  const { data: optionalCharges } = await db.from('quote_optional_charges').select('label, amount, currency').eq('organization_id', resolvedOrganizationId).eq('quote_id', quote.id);
 
   const v5TaxTotal = lines.reduce((sum, line) => line.line_type === 'packaging' && Number(line.calculation_version) === 5
     ? sum + Math.max(0, num(line.pricing_breakdown_json?.selling_price?.gst))
@@ -375,7 +377,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
 
   if(!token){
     await db.from('documents').upsert({
-      organization_id: organizationId,
+      organization_id: resolvedOrganizationId,
       related_entity: 'quote',
       related_id: quote.id,
       file_name: `quote-${quote.quote_number ?? quote.id.slice(0, 8)}.pdf`,
