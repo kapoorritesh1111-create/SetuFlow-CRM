@@ -130,6 +130,9 @@ export default async function QuotePage({
   const optionalChargeTotal = (packaging?.charges ?? []).reduce((sum:number,item:any)=>sum+Math.max(0,Number(item.amount??0)),0);
   const v5TaxTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.calculation_version)===5?Math.max(0,Number(line.pricing_breakdown_json?.selling_price?.gst??0)):0),0) : 0;
   const liveQuoteTotal = pricingLineTotal + optionalChargeTotal + v5TaxTotal;
+  const activeQuoteLineCount = activeQuote ? (activeQuote.lineItems as any[]).length : 0;
+  const activeRequestedQuantity = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+Math.max(0,Number(line.quantity??0)),0) : 0;
+  const workflowStep = Math.min(4,Math.max(1,Number(readParam(searchParams?.step).trim() || '1') || 1));
   const manualPricingFamilies = (packaging?.families ?? []).filter((family:any)=>family.is_quoteable===true && !family.pricing_engine_type && family.slug==='spout-pouches');
   const manualPackagingLines = activeQuote ? (activeQuote.lineItems as any[]).filter((line:any)=>line.line_type==='packaging' && manualPricingFamilies.some((family:any)=>family.id===line.packaging_family_id) && line.input_snapshot_json?.source==='manual_packaging_price') : [];
   const showStarkDesignHandoff = String((workspace.organization as any)?.slug ?? '').toLowerCase() === 'starkpackmate';
@@ -163,6 +166,9 @@ export default async function QuotePage({
           supSavedLines={savedPricingV5Lines}
           frameSavedLines={savedPricingV5FrameLines}
           quoteTotal={liveQuoteTotal}
+          quoteLineCount={activeQuoteLineCount}
+          requestedQuantity={activeRequestedQuantity}
+          initialStep={workflowStep}
         />
       ) : null}
 
