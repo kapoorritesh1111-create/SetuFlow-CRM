@@ -49,6 +49,8 @@ function smartMoqRecommendation(context:any,result:any,input:FrameFamilyPricingI
       run_length_m:Number(candidate.run_length_m??0),
       unit_price:candidate.ok?candidate.selling_price.unit_price:null,
       product_total:candidate.ok?candidate.selling_price.product_total:null,
+      finished_weight_kg:candidate.ok?candidate.roll_weight?.finished_weight_kg??null:null,
+      price_per_kg:candidate.ok?candidate.roll_weight?.price_per_kg??null:null,
       savings_per_unit:null as number|null,
     };
   });
@@ -90,6 +92,7 @@ function safeProjection(result:any,suggestions:any[],smartMoq:any=null){
     },
     construction:result.construction,
     selling_price:result.selling_price,
+    roll_weight:result.roll_weight,
     suggested_quantities:customerSuggestions,
     smart_moq:smartMoq,
     validation_errors:result.validation_errors,
@@ -114,6 +117,8 @@ async function calculate(params:{templateId:string;input:FrameFamilyPricingInput
       quantity:qty,
       unit_price:candidate.selling_price.unit_price,
       product_total:candidate.selling_price.product_total,
+      finished_weight_kg:candidate.roll_weight?.finished_weight_kg??null,
+      price_per_kg:candidate.roll_weight?.price_per_kg??null,
     }:null;
   }).filter(Boolean);
   return {workspace,context,result,suggestions,smartMoq};
