@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid request.' }, { status: 400 }); }
 
   const token = String(body.token ?? '').trim();
-  const decision = body.decision === 'approved' || body.decision === 'revision_requested' ? body.decision : null;
+  const decision = body.decision === 'approved' || body.decision === 'revision_requested' || body.decision === 'rejected' ? body.decision : null;
   const signerName = String(body.signerName ?? '').trim().slice(0, 160);
   const comment = String(body.comment ?? '').trim().slice(0, 2500);
   if (!token || !decision) return NextResponse.json({ error: 'Missing quote link or decision.' }, { status: 400 });
@@ -24,6 +24,9 @@ export async function POST(request: NextRequest) {
   }
   if (decision === 'revision_requested' && comment.length < 3) {
     return NextResponse.json({ error: 'Please describe the revision you need.' }, { status: 400 });
+  }
+  if (decision === 'rejected' && comment.length < 3) {
+    return NextResponse.json({ error: 'Please tell us why you are rejecting the quote.' }, { status: 400 });
   }
 
   const { data: quotes, error: lookupError } = await admin
@@ -44,6 +47,8 @@ export async function POST(request: NextRequest) {
     customer_quote_signed_at: decision === 'approved' ? now : null,
     customer_quote_revision_comment: decision === 'revision_requested' ? comment : null,
     customer_quote_revision_at: decision === 'revision_requested' ? now : null,
+    customer_quote_rejection_comment: decision === 'rejected' ? comment : null,
+    customer_quote_rejected_at: decision === 'rejected' ? now : null,
   };
 
   const { error: updateError } = await admin
@@ -68,10 +73,12 @@ export async function POST(request: NextRequest) {
     ? await admin.from('leads').select('company_name,contact_name').eq('id', quote.lead_id).eq('organization_id', quote.organization_id).maybeSingle()
     : { data: null };
   const customerName = lead?.company_name || lead?.contact_name || 'Customer';
-  const title = decision === 'approved' ? 'Customer signed quote' : 'Customer requested quote revision';
+  const title = decision === 'approved' ? 'Customer signed quote' : decision === 'rejected' ? 'Customer rejected quote' : 'Customer requested quote revision';
   const bodyText = decision === 'approved'
     ? `${customerName} approved and signed ${quote.quote_number || 'the quote'} as ${signerName}.`
-    : `${customerName} requested a revision to ${quote.quote_number || 'the quote'}: ${comment}`;
+    : decision === 'rejected'
+      ? `${customerName} rejected ${quote.quote_number || 'the quote'}: ${comment}`
+      : `${customerName} requested a revision to ${quote.quote_number || 'the quote'}: ${comment}`;
   const actionUrl = quote.lead_id ? `/leads/${quote.lead_id}/quote?quoteId=${quote.id}` : '/quotes';
 
   if (quote.created_by) {
@@ -81,7 +88,7 @@ export async function POST(request: NextRequest) {
       type: 'approval_request',
       title,
       body: bodyText,
-      icon: decision === 'approved' ? 'file-check' : 'file-pen-line',
+      icon: decision === 'approved' ? 'file-check' : decision === 'rejected' ? 'file-x' : 'file-pen-line',
       priority: 'high',
       entity_type: 'quote',
       entity_id: quote.id,
