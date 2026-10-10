@@ -3,7 +3,7 @@ import type { LeadProfileData } from '@/lib/queries/leads';
 import CanonicalQuoteBuilder from './CanonicalQuoteBuilder';
 
 type PackagingProp = { enabled: boolean; families: any[]; templates: any[]; charges: any[] } | null;
-type Props = { data: LeadProfileData; quoteId?: string | null; step?: string | null; quoteDraftError?: string | null; quoteActionError?: string | null; saved?: string | null; packaging?: PackagingProp; quoteOptionalCharges?: any[] };
+type Props = { data: LeadProfileData; quoteId?: string | null; step?: string | null; quoteDraftError?: string | null; quoteActionError?: string | null; saved?: string | null; packaging?: PackagingProp; quoteOptionalCharges?: any[]; packagingStudioMode?: boolean };
 const TERMINAL = new Set(['accepted', 'rejected', 'expired', 'cancelled', 'declined']);
 function title(value?: string | null) { return String(value || 'draft').replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()); }
 function money(value?: number | null, currency = 'USD') { return typeof value === 'number' && Number.isFinite(value) ? `${currency} ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'; }
