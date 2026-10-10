@@ -347,9 +347,9 @@ test('S52-PKG-V5: Center Seal and 3SS are real quote-builder families with provi
   assert.match(premiumQuoteStudio,/PricingV5FrameSalesConfigurator/);
   assert.match(quotePage,/listSalesPackagingFramePricingV5Options/);
   assert.match(frameSalesOptions,/frame_formula_v5/);
-  assert.match(frameSalesConfigurator,/sellers do not choose a bucket/i);
+  assert.match(frameSalesConfigurator,/commercial_bucket:null/);
   assert.doesNotMatch(frameSalesConfigurator,/Suggested bucket/i);
-  assert.match(frameSalesConfigurator,/Commercial pricing is applied automatically/);
+  assert.match(frameSalesConfigurator,/Price upd/);
   assert.doesNotMatch(frameSalesConfigurator,/commercial_bucket.*select/i);
   assert.match(frameSalesConfigurator,/commercial_bucket:null/);
   assert.match(frameMigration,/stark-center-seal-roll-v5-review/);
@@ -378,9 +378,11 @@ test('S52-PKG-V5: premium packaging Quote Studio implements the four-step requir
   assert.match(premiumQuoteStudio,/Commercials/);
   assert.match(premiumQuoteStudio,/Review & Send/);
   assert.match(premiumQuoteStudio,/QuoteRequirementPanel/);
-  assert.match(premiumQuoteStudio,/Flat Bottom Pouch/);
-  assert.match(premiumQuoteStudio,/Shrink Sleeves/);
-  assert.match(premiumQuoteStudio,/Coming soon/);
+  assert.match(premiumQuoteStudio,/Stand Up Pouch/);
+  assert.match(premiumQuoteStudio,/Center Seal Pouch/);
+  assert.match(premiumQuoteStudio,/3 Side Seal Pouch/);
+  assert.match(premiumQuoteStudio,/step===3/);
+  assert.match(premiumQuoteStudio,/step===4/);
   assert.match(premiumQuoteStudio,/Duplicate/);
   assert.match(premiumQuoteStudio,/Preview PDF/);
   assert.doesNotMatch(premiumQuoteStudio,/wastage_pct|margin_per_frame|pricing_bucket|cost_breakdown/);
