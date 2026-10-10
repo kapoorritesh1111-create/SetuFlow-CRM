@@ -3,6 +3,8 @@ export type CustomerVolumeSuggestion = {
   unit_price:number;
   product_total:number;
   savings_pct:number;
+  price_per_kg:number|null;
+  finished_weight_kg:number|null;
 };
 
 export function customerVolumeSuggestions(
@@ -20,6 +22,8 @@ export function customerVolumeSuggestions(
       quantity:Math.floor(Number(item?.quantity??0)),
       unit_price:Number(item?.unit_price??0),
       product_total:Number(item?.product_total??0),
+      price_per_kg:Number.isFinite(Number(item?.price_per_kg))?Number(item.price_per_kg):null,
+      finished_weight_kg:Number.isFinite(Number(item?.finished_weight_kg))?Number(item.finished_weight_kg):null,
     }))
     .filter((item)=>Number.isFinite(item.quantity)&&item.quantity>qty&&!seen.has(item.quantity)&&Number.isFinite(item.unit_price)&&item.unit_price>0&&item.unit_price<unit&&Number.isFinite(item.product_total)&&item.product_total>0)
     .sort((a,b)=>a.quantity-b.quantity)
