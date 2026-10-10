@@ -243,15 +243,16 @@ test('S52-PKG-V5: changing quantity keeps a selected KLD while changing size cle
   assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId, askBottomPrint, size, quantity\]\);/);
 });
 
-test('S52-PKG-V5: real Sales quote builder never exposes a pricing matrix or alternate-quantity price ladder',()=>{
-  assert.doesNotMatch(salesConfigurator,/Suggested higher quantities/);
+test('S52-PKG-V5: real Sales quote builder shows safe approved quantity suggestions without exposing an internal matrix',()=>{
+  assert.match(salesConfigurator,/Better quantity options/);
+  assert.match(salesConfigurator,/suggested_quantities/);
+  assert.match(salesConfigurator,/Use this quantity/);
   assert.doesNotMatch(salesConfigurator,/alternativeRows/);
-  assert.doesNotMatch(salesConfigurator,/saving_per_unit/);
   assert.doesNotMatch(salesConfigurator,/Build 1K–50K matrix/);
   assert.doesNotMatch(salesConfigurator,/pricing matrix/i);
 });
 
-test('S52-PKG-V5: customer quote receives up to three valid higher-volume savings while Sales stays single-price',()=>{
+test('S52-PKG-V5: Sales and customer quote receive safe higher-volume savings without internal pricing detail',()=>{
   assert.match(salesProjection,/customerVolumeSuggestions/);
   assert.match(salesProjection,/result\.alternative_quantities/);
   assert.match(quoteReview,/customerVolumeSuggestions/);
@@ -261,7 +262,9 @@ test('S52-PKG-V5: customer quote receives up to three valid higher-volume saving
   assert.match(quotePdf,/VOLUME SAVINGS & TERMS/);
   assert.match(quotePdf,/customerVolumeSuggestions/);
   assert.match(quotePdf,/lower\/pc/);
-  assert.doesNotMatch(salesConfigurator,/suggested_quantities/);
+  assert.match(salesConfigurator,/suggested_quantities/);
+  assert.match(quoteReview,/QuoteVolumeOptionAction/);
+  assert.match(quoteReview,/price_per_kg/);
 });
 
 test('S52-PKG-V5: Sales Quote uses its own safe projection while Owner Review retains engine reconciliation detail',()=>{
@@ -368,20 +371,18 @@ test('S52-PKG-V5: frame-family quote persistence is separate from SUP size persi
 });
 
 
-test('S52-PKG-V5: premium packaging Quote Studio implements the eight-step packaging workflow',()=>{
+test('S52-PKG-V5: premium packaging Quote Studio implements the four-step requirement-to-send workflow',()=>{
   assert.match(premiumQuoteStudio,/Packaging Quote Studio/);
-  assert.match(premiumQuoteStudio,/Customer Requirement & Size Guidance/);
-  assert.match(premiumQuoteStudio,/Specification & Construction/);
-  assert.match(premiumQuoteStudio,/Quantity & Pricing/);
-  assert.match(premiumQuoteStudio,/Add to Quote/);
-  assert.match(premiumQuoteStudio,/Quote Lines Management/);
-  assert.match(premiumQuoteStudio,/Commercials & Terms/);
-  assert.match(premiumQuoteStudio,/Review & Generate Quote/);
+  assert.match(premiumQuoteStudio,/Product & Requirement/);
+  assert.match(premiumQuoteStudio,/Configure & Price/);
+  assert.match(premiumQuoteStudio,/Commercials/);
+  assert.match(premiumQuoteStudio,/Review & Send/);
+  assert.match(premiumQuoteStudio,/QuoteRequirementPanel/);
   assert.match(premiumQuoteStudio,/Flat Bottom Pouch/);
   assert.match(premiumQuoteStudio,/Shrink Sleeves/);
   assert.match(premiumQuoteStudio,/Coming soon/);
   assert.match(premiumQuoteStudio,/Duplicate/);
-  assert.match(premiumQuoteStudio,/Generate \/ Preview PDF/);
+  assert.match(premiumQuoteStudio,/Preview PDF/);
   assert.doesNotMatch(premiumQuoteStudio,/wastage_pct|margin_per_frame|pricing_bucket|cost_breakdown/);
 });
 
@@ -402,7 +403,7 @@ test('S52-PKG-V5: customer discounts support percent or amount per piece and pre
   assert.match(premiumQuoteStudio,/Adjust Price/);
   assert.match(premiumQuoteStudio,/% discount/);
   assert.match(premiumQuoteStudio,/\/ pc discount/);
-  assert.match(premiumQuoteStudio,/Above 15% automatically enters the existing quote approval workflow/);
+  assert.match(premiumQuoteStudio,/15% below approved pricing requires approval/);
   assert.match(lineCommercialActions,/APPROVAL_THRESHOLD_PERCENT=15/);
   assert.match(lineCommercialActions,/app_adjust_packaging_v5_quote_line_tx/);
   assert.match(lineCommercialMigration,/p_discount_type text/);
@@ -468,9 +469,9 @@ test('S52-PKG-V5: KLD replacement failures do not leave duplicate or missing act
 
 test('four-step premium sales quote flow keeps internal pricing language out of the primary sales shell',()=>{
   assert.match(premiumQuoteStudio,/Product & Requirement/);
-  assert.match(premiumQuoteStudio,/Pouch Specification/);
-  assert.match(premiumQuoteStudio,/Quantity & Price/);
-  assert.match(premiumQuoteStudio,/Review Quote/);
+  assert.match(premiumQuoteStudio,/Configure & Price/);
+  assert.match(premiumQuoteStudio,/Commercials/);
+  assert.match(premiumQuoteStudio,/Review & Send/);
   assert.doesNotMatch(premiumQuoteStudio,/xl:grid-cols-8/);
 });
 
