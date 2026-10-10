@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import PricingV5SalesConfigurator from '@/features/packaging/components/pricing-v5-sales-configurator';
 import PricingV5FrameSalesConfigurator from '@/features/packaging/components/pricing-v5-frame-sales-configurator';
+import QuoteRequirementPanel from '@/features/packaging/components/quote-requirement-panel';
 import { adjustPackagingPricingV5QuoteLine, removePackagingPricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-line-commercial-actions';
 
 type FamilyKey='sup'|'center-seal'|'3ss';
@@ -39,6 +40,7 @@ export default function PremiumPackagingQuoteBuilderV5({
   const [active,setActive]=useState<FamilyKey>(available[0]??'sup');
   const [step,setStep]=useState(1);
   const [intent,setIntent]=useState<Intent>(null);
+  const [requirementSeed,setRequirementSeed]=useState<any|null>(null);
   const router=useRouter();
   const [pending,startTransition]=useTransition();
   const [adjustingLineId,setAdjustingLineId]=useState('');
@@ -62,13 +64,14 @@ export default function PremiumPackagingQuoteBuilderV5({
   },[filteredFrame,frameSavedLines]);
   const lineCount=supSavedLines.length+frameSavedLines.length;
   const steps=[
-    ['1','Product & Requirement','What are we making?'],
-    ['2','Pouch Specification','Choose key options'],
-    ['3','Quantity & Price','Instant pricing'],
-    ['4','Review Quote','Complete and send'],
+    ['1','Product & Requirement','Use captured requirement or add product'],
+    ['2','Configure & Price','Specification, KLD, artwork and pricing'],
+    ['3','Commercials','Terms and final customer price'],
+    ['4','Review & Send','Preview, approve and send'],
   ];
 
-  function chooseFamily(key:FamilyKey){setActive(key);setIntent(null);setStep(2);}
+  function chooseFamily(key:FamilyKey){setActive(key);setIntent(null);setRequirementSeed(null);setStep(2);}
+  function useRequirement(key:FamilyKey,requirement:any){setActive(key);setIntent(null);setRequirementSeed(requirement);setStep(2);}
   function configure(){setIntent(null);setStep(step<2?2:step);}
   function manageLine(lineId:string,family:FamilyKey,mode:'edit'|'duplicate'){
     setActive(family);setIntent({lineId,mode});setStep(2);
@@ -125,19 +128,27 @@ export default function PremiumPackagingQuoteBuilderV5({
     </div>
 
     {step===1?<div className="bg-white p-5 sm:p-6">
-      <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Product</div><h2 className="mt-1 text-2xl font-black text-slate-950">What would you like to quote?</h2><p className="mt-1 text-sm font-semibold text-slate-500">Choose a packaging family to start the customer requirement.</p></div>
+      <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Product & Requirement</div><h2 className="mt-1 text-2xl font-black text-slate-950">Start from the customer requirement</h2><p className="mt-1 text-sm font-semibold text-slate-500">Use what Sales already captured, edit it if needed, or add another packaging family.</p></div>
+      <QuoteRequirementPanel leadId={leadId} available={available} onUse={useRequirement}/>
+      <div className="mt-6 flex items-end justify-between gap-3"><div><div className="text-xs font-black text-slate-900">Add another product</div><div className="mt-1 text-[11px] font-semibold text-slate-500">Choose a service family only when the requirement is not already captured above.</div></div></div>
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {available.map((key)=>{const m=familyMeta(key);return <button type="button" key={key} onClick={()=>chooseFamily(key)} className="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-lg"><Shape kind={key}/><div className="mt-3 flex items-end justify-between gap-2"><div><div className="text-sm font-black text-slate-950">{m.label}</div><div className="mt-1 text-[11px] font-semibold text-slate-500">{m.sub}</div></div><span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-black text-white">→</span></div></button>})}
         {[['flat','Flat Bottom Pouch'],['labels','Labels'],['sleeves','Shrink Sleeves']].map(([kind,label])=><div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 opacity-70"><Shape kind={kind as any}/><div className="mt-3 text-sm font-black text-slate-700">{label}</div><div className="mt-1 text-[11px] font-bold text-slate-400">Coming soon</div></div>)}
       </div>
     </div>:null}
 
-    {step>=2&&step<=3?<div className="p-4 sm:p-5">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step {step} · {step===2?'Pouch Specification':'Quantity & Price'}</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">{step===2?'Capture the customer requirement and choose the pouch specification.':'Calculate the customer price and review better quantity options.'}</p></div><button type="button" onClick={()=>setStep(Math.min(4,step+1))} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700">Next step →</button></div>
+    {step===2?<div className="p-4 sm:p-5">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 2 · Configure & Price</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Confirm the specification, size or dimensions, KLD and quantity. Pricing and higher-volume options stay in the same workspace.</p>{requirementSeed?<div className="mt-2 inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black text-cyan-800">Prefilled from lead requirement · {requirementSeed.dimensions||requirementSeed.quantity||'captured requirement'}</div>:null}</div><button type="button" onClick={()=>setStep(3)} className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-black text-slate-700">Continue to Commercials →</button></div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="min-w-0">{active==='sup'&&supOptions?<PricingV5SalesConfigurator quoteId={quoteId} leadId={leadId} options={supOptions} savedLines={supSavedLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''}/>:null}{(active==='center-seal'||active==='3ss')&&filteredFrame?.templates?.length?<PricingV5FrameSalesConfigurator quoteId={quoteId} leadId={leadId} options={filteredFrame} savedLines={filteredFrameLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''}/>:null}</div>
+        <div className="min-w-0">{active==='sup'&&supOptions?<PricingV5SalesConfigurator quoteId={quoteId} leadId={leadId} options={supOptions} savedLines={supSavedLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}{(active==='center-seal'||active==='3ss')&&filteredFrame?.templates?.length?<PricingV5FrameSalesConfigurator quoteId={quoteId} leadId={leadId} options={filteredFrame} savedLines={filteredFrameLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}</div>
         <aside className="space-y-3"><div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Selected Family</div><div className="mt-3 flex items-center gap-3"><div className={'flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br text-[11px] font-black text-white '+familyMeta(active).tone}>{familyMeta(active).badge}</div><div><div className="text-sm font-black text-slate-950">{familyMeta(active).label}</div><button type="button" onClick={()=>setStep(1)} className="mt-1 text-[10px] font-black text-blue-600">Change family</button></div></div></div><div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Quote confidence</div><div className="mt-3 space-y-2">{[['Approved price','Current published selling price'],['Construction','Approved structures only'],['Production rules','Applied automatically'],['Customer savings','Higher valid quantities only']].map(([a,b])=><div key={a} className="flex gap-3 rounded-xl bg-slate-50 p-3"><span className="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"/><div><div className="text-xs font-black text-slate-900">{a}</div><div className="text-[10px] font-semibold text-slate-500">{b}</div></div></div>)}</div></div><div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50 p-4"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-700">Ready to quote</div><p className="mt-2 text-xs font-semibold leading-5 text-slate-600">Choose the customer specification and quantity. Production and pricing rules are applied automatically.</p></div></aside>
       </div>
+    </div>:null}
+
+    {step===3?<div className="bg-white p-5 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 3 · Commercials</div><h2 className="mt-1 text-2xl font-black text-slate-950">Commercial terms & final price</h2><p className="mt-1 max-w-3xl text-sm font-semibold text-slate-500">Keep the configured quote lines intact. Use the existing commercial editor for payment terms, validity, freight and customer notes, or return to pricing for an existing-customer price or discount.</p></div><button type="button" onClick={()=>setStep(4)} className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white">Continue to Review →</button></div>
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{([['Payment terms','Edit in commercial review'],['Validity','Edit in commercial review'],['Delivery','Edit in commercial review'],['Freight','Edit in commercial review']] as const).map(([a,b])=><div key={a} className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">{a}</div><div className="mt-2 text-sm font-black text-slate-900">{b}</div></div>)}</div>
+      <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={()=>setStep(2)} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black text-amber-800">← Adjust Product / Pricing</button><a href="#quote-commercial-review" className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700">Edit Commercial Terms</a><button type="button" onClick={()=>setStep(1)} className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-700">+ Add Another Product</button></div>
     </div>:null}
 
     {false?<div className="bg-white p-5 sm:p-6"><div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><div className="text-sm font-black text-emerald-800">✓ Quote line workflow ready</div><p className="mt-1 text-xs font-semibold text-emerald-700">Calculate and add the packaging line from the configurator. Saved lines refresh into this studio automatically.</p></div><div className="mt-4 grid gap-3 md:grid-cols-2"><button type="button" onClick={()=>{setIntent(null);setStep(1);}} className="rounded-2xl border border-blue-200 bg-white p-5 text-left"><div className="text-sm font-black text-blue-700">+ Add Another Line</div><div className="mt-1 text-xs font-semibold text-slate-500">Choose another packaging family or requirement.</div></button><button type="button" onClick={()=>setStep(6)} className="rounded-2xl bg-blue-600 p-5 text-left text-white"><div className="text-sm font-black">Continue to Quote Lines →</div><div className="mt-1 text-xs font-semibold text-blue-100">Review and manage all packaging options.</div></button></div></div>:null}
