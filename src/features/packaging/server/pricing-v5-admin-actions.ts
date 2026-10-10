@@ -65,8 +65,17 @@ export async function savePackagingSizeProfileV5(formData:FormData){
     owner_review_source:'2026-09-25 transcript + approved PE options sheet',
   };
   if(gussetMode==='conditional'&&registrationMode==='optional'){
-    const solidRouteBucket=Math.trunc(numberValue(formData,'solid_route_pricing_bucket','Solid bottom pricing group',{min:1,max:99}));
-    const artworkRouteBucket=Math.trunc(numberValue(formData,'registered_route_pricing_bucket','Artwork bottom pricing group',{min:1,max:99}));
+    // A size can become conditional in this submission even though the initial UI
+    // did not render route selectors. Preserve saved assignments and do not crash.
+    const storedRoutes=(existing.metadata?.route_pricing_buckets??{}) as Record<string,unknown>;
+    const routeBucket=(field:string,stored:unknown,label:string)=>{
+      const raw=text(formData,field);
+      const value=raw?Number(raw):Number(stored??existing.pricing_bucket);
+      if(!Number.isInteger(value)||value<1||value>99) throw new Error(label+' must be between PG01 and PG99.');
+      return value;
+    };
+    const solidRouteBucket=routeBucket('solid_route_pricing_bucket',storedRoutes.solid_unregistered,'Solid bottom pricing group');
+    const artworkRouteBucket=routeBucket('registered_route_pricing_bucket',storedRoutes.registered_artwork,'Artwork bottom pricing group');
     metadata.route_pricing_buckets={
       ...(metadata.route_pricing_buckets??{}),
       solid_unregistered:solidRouteBucket,
