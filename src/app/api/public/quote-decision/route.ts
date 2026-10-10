@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
     .limit(1);
   if (lookupError || !quotes?.[0]) return NextResponse.json({ error: 'Quote review link not found.' }, { status: 404 });
   const quote = quotes[0];
+  const quoteStatus=String(quote.status??'').toLowerCase();
+  if ((decision === 'revision_requested' || decision === 'rejected') && !['sent','revised','approved'].includes(quoteStatus)) {
+    return NextResponse.json({ error: quoteStatus === 'accepted' ? 'This quote has already been accepted.' : 'This quote is not open for a customer revision or rejection.' }, { status: 409 });
+  }
   const now = new Date().toISOString();
   const currentMeta = quote.industry_metadata ?? {};
 
