@@ -33,5 +33,7 @@ jobs:
         run: npm run check:product-overview-polish
       - name: TypeScript
         run: npm run typecheck
+      - name: Full repository test suite
+        run: npm test
       - name: Next.js production build
         run: npm run build:vercel
