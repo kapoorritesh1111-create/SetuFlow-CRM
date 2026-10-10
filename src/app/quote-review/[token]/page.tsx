@@ -72,9 +72,6 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   // Fail closed: never show stale or unapproved brochures when either lookup fails.
   const approvedBrochureIds=new Set((brochureMappingError||brochureError?[]:activeBrochures??[]).map((b:any)=>String(b.id)));
   const mappedBrochureFamilies=new Set((brochureMappings??[]).filter((m:any)=>approvedBrochureIds.has(String(m.brochure_id))).map((m:any)=>String(m.packaging_family_id)));
-  const {data:allActiveBrochures,error:allBrochuresError}=await admin.from('catalog_brochures')
-    .select('id,name,file_name').eq('organization_id',quote.organization_id).eq('is_active',true).order('name');
-  const customerBrochures=allBrochuresError?[]:(allActiveBrochures??[]);
   const byProduct = new Map<string, any>((products ?? []).map((r: any) => [String(r.id), r]));
   const byFamily = new Map<string, any>((families ?? []).map((r: any) => [String(r.id), r]));
   const byVariation = new Map<string, any>((variations ?? []).map((r: any) => [String(r.id), r]));
@@ -194,17 +191,6 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
           {quote.notes_customer ? <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">{quote.notes_customer}</div> : null}
         </section>
 
-        {customerBrochures.length?<section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Discover our packaging range</p>
-          <h2 className="mt-1 text-xl font-black">Stark Packmate product brochures</h2>
-          <p className="mt-2 text-sm text-slate-600">Explore our packaging capabilities and available pouch styles. Our team will be happy to help you choose the right solution.</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {customerBrochures.map((brochure:any)=><a key={brochure.id} target="_blank" rel="noopener noreferrer" href={`/public/quote-review/${token}/catalog/${brochure.id}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50">
-              <div className="text-sm font-black text-slate-900">{String(brochure.name||'Product brochure').replace(/brocher|brochuer/gi,'Brochure')}</div>
-              <div className="mt-2 text-xs font-semibold text-emerald-800">View brochure PDF ↗</div>
-            </a>)}
-          </div>
-        </section>:null}
         <section className="rounded-3xl border border-violet-200 bg-white p-5 shadow-sm sm:p-6">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">Artwork & Files</p>
           <h2 className="mt-1 text-xl font-black">Your artwork and design files</h2>
