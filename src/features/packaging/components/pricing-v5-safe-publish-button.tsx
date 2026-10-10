@@ -21,11 +21,14 @@ export default function PricingV5SafePublishButton({templateId}:{templateId:stri
     const surface=document.getElementById(EDIT_SURFACE_ID);
     if(!surface) return;
     const markDirty=(event:Event)=>{ if(isPersistedPricingField(event.target)) setDirty(true); };
+    const markSaved=()=>setDirty(false);
     surface.addEventListener('input',markDirty,true);
     surface.addEventListener('change',markDirty,true);
+    window.addEventListener('pricing-v5-save-success',markSaved);
     return ()=>{
       surface.removeEventListener('input',markDirty,true);
       surface.removeEventListener('change',markDirty,true);
+      window.removeEventListener('pricing-v5-save-success',markSaved);
     };
   },[]);
 
