@@ -164,11 +164,23 @@ function Sizes({data,isDraft}:{data:any;isDraft:boolean}){
   const sizes=data.sizes??[];
   const [selectedId,setSelectedId]=useState(sizes[0]?.id??'');
   const [query,setQuery]=useState('');
+  const [sizeSaveState,setSizeSaveState]=useState<{id:string;status:'saving'|'saved'|'error';message:string}|null>(null);
   const selected=sizes.find((x:any)=>x.id===selectedId)??sizes[0];
   const pe=selected?allowedPeMicronsForSupSizeV5(selected):[];
   const pricingGroups:number[]=Array.from(new Set<number>(((data.bands??[]) as any[]).map((b:any)=>Number(b.pricing_bucket)))).sort((a,b)=>a-b);
   const shown=sizes.filter((x:any)=>!query||String(x.name).toLowerCase().includes(query.toLowerCase()));
   const activeKldKeys=new Set((data.klds??[]).filter((x:any)=>x.is_active).map((x:any)=>String(x.spec_key??x.size_preset_key??'')));
+
+  async function saveSize(formData:FormData){
+    const id=String(formData.get('id')??'');
+    setSizeSaveState({id,status:'saving',message:'Saving changes…'});
+    try{
+      await savePackagingSizeProfileV5(formData);
+      setSizeSaveState({id,status:'saved',message:'Saved successfully.'});
+    }catch(error){
+      setSizeSaveState({id,status:'error',message:error instanceof Error?error.message:'Save failed. Please try again.'});
+    }
+  }
 
   return <div className="space-y-4">
     <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-xl font-black text-slate-950">Sizes & KLDs</h2><p className="mt-1 text-sm text-slate-500">Manage approved pouch sizes, KLD samples, pricing groups and production route.</p></div><Status tone="blue">{sizes.length} approved sizes</Status></div>
@@ -183,7 +195,7 @@ function Sizes({data,isDraft}:{data:any;isDraft:boolean}){
           <div>
             <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-2xl font-black text-slate-950">{selected.name}</h3><p className="mt-1 text-sm text-slate-500">Stand Up Pouch size configuration</p></div><Status>{selected.is_active?'Active':'Inactive'}</Status></div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Info label="Width" value={selected.width_mm+' mm'}/><Info label="Height" value={selected.height_mm+' mm'}/><Info label="Bottom Gusset" value={selected.bottom_gusset_each_mm+'+'+selected.bottom_gusset_each_mm+' mm'}/><Info label="Pricing Group" value={'PG'+String(selected.pricing_bucket).padStart(2,'0')}/></div>
-            <form action={savePackagingSizeProfileV5} key={selected.id} className="mt-6 space-y-4">
+            <form action={saveSize} key={selected.id} className="mt-6 space-y-4">
               <input type="hidden" name="id" value={selected.id}/><input type="hidden" name="template_id" value={data.template?.id??''}/>
               <div className="grid gap-4 md:grid-cols-2">
                 <label><Label>Size Name</Label><input name="name" disabled={!isDraft} defaultValue={selected.name} className={input}/></label>
@@ -202,7 +214,7 @@ function Sizes({data,isDraft}:{data:any;isDraft:boolean}){
                 </>:null}
               </div>
               <div><Label>Approved PE thickness</Label><div className="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3">{[60,75,95,120].map(m=><label key={m} className="text-sm font-bold text-slate-700"><input disabled={!isDraft} name={'pe_'+m} type="checkbox" defaultChecked={pe.includes(m)} className="mr-2"/>PE {m}µ</label>)}</div></div>
-              <div className="flex flex-wrap items-center gap-5"><label className="text-sm font-bold text-slate-700"><input disabled={!isDraft} type="checkbox" name="is_active" defaultChecked={selected.is_active} className="mr-2"/>Active</label><label className="text-sm font-bold text-slate-700"><input disabled={!isDraft} type="checkbox" name="is_quoteable" defaultChecked={selected.is_quoteable} className="mr-2"/>Available for quoting</label><button disabled={!isDraft} className={primary}>Save Size</button></div>
+              <div className="flex flex-wrap items-center gap-5"><label className="text-sm font-bold text-slate-700"><input disabled={!isDraft} type="checkbox" name="is_active" defaultChecked={selected.is_active} className="mr-2"/>Active</label><label className="text-sm font-bold text-slate-700"><input disabled={!isDraft} type="checkbox" name="is_quoteable" defaultChecked={selected.is_quoteable} className="mr-2"/>Available for quoting</label><button disabled={!isDraft||sizeSaveState?.id===selected.id&&sizeSaveState.status==='saving'} className={primary}>{sizeSaveState?.id===selected.id&&sizeSaveState.status==='saving'?'Saving…':'Save Size'}</button>{sizeSaveState?.id===selected.id?<span className={'text-xs font-bold '+(sizeSaveState.status==='error'?'text-rose-700':sizeSaveState.status==='saved'?'text-emerald-700':'text-slate-500')}>{sizeSaveState.message}</span>:null}</div>
             </form>
             <div className="mt-4"><PricingV5KldManager templateId={data.template?.id??''} size={selected} klds={data.klds??[]}/></div>
           </div>
