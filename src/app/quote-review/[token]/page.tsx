@@ -165,7 +165,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     {kld?.public_token?<a target="_blank" rel="noopener noreferrer" className="inline-flex rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-black text-cyan-800" href={`/api/public/packaging-kld/${kld.public_token}`}>View KLD / dieline ↗</a>:null}
-                    <a target="_blank" rel="noopener noreferrer" className="inline-flex rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800" href={`/public/quote-review/${token}/brochure/${line.id}`}>View product details ↗</a>
+                    <a target="_blank" rel="noopener noreferrer" className="inline-flex rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800" href={`/quote-review/${token}/brochure/${line.id}`}>View product details ↗</a>
                   </div>
                     </div>
                   </div>
