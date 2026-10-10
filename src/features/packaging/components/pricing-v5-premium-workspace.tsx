@@ -298,20 +298,175 @@ function RateTable({title,subtitle,rows,isDraft,templateId}:{title:string;subtit
 
 function Waste({data,isDraft}:{data:any;isDraft:boolean}){
   const bands=data.bands??[];
+  const sizes=data.sizes??[];
   const groups:number[]=Array.from(new Set<number>((bands as any[]).map((x:any)=>Number(x.pricing_bucket)))).sort((a,b)=>a-b);
+  const [selectedGroup,setSelectedGroup]=useState(groups[0]??1);
   const nextGroup=(groups[groups.length-1]??0)+1;
+  const selectedBands=bands
+    .filter((b:any)=>Number(b.pricing_bucket)===selectedGroup)
+    .sort((a:any,b:any)=>Number(a.run_length_max_m)-Number(b.run_length_max_m));
+  const assignedSizes=sizes.filter((size:any)=>{
+    if(Number(size.pricing_bucket)===selectedGroup) return true;
+    const routes=size.metadata?.route_pricing_buckets??{};
+    return Number(routes.solid_unregistered)===selectedGroup||Number(routes.registered_artwork)===selectedGroup;
+  });
+
   return <div className="space-y-4">
-    <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-xl font-black text-slate-950">Waste & Margins</h2><p className="mt-1 text-sm text-slate-500">Adjust run-length bands, waste and margin; add new bands or pricing groups when needed.</p></div><Status tone="blue">{groups.length} pricing groups</Status></div>
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 className="text-xl font-black text-slate-950">Pricing Groups</h2>
+        <p className="mt-1 text-sm text-slate-500">Browse every pricing group in read-only mode. Enter Edit Pricing only when you actually want to change the selected group.</p>
+      </div>
+      <Status tone="blue">{groups.length} pricing groups</Status>
+    </div>
+
     <EditBanner isDraft={isDraft}/>
-    <Card className="p-4"><div className="flex items-center justify-between gap-3"><div><div className="text-xs font-black text-slate-900">Pricing Group overview</div><div className="mt-0.5 text-[11px] text-slate-500">Each group contains the run-length waste and margin bands used by assigned sizes.</div></div><span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">{groups.length} groups</span></div><div className="mt-3 flex max-h-36 flex-wrap gap-2 overflow-y-auto">{groups.map((g:number)=><div key={g} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><div className="text-sm font-black text-slate-900">PG{String(g).padStart(2,'0')}</div><div className="text-[10px] text-slate-500">{bands.filter((b:any)=>Number(b.pricing_bucket)===g).length} bands · {(data.sizes??[]).filter((s:any)=>Number(s.pricing_bucket)===g).length} sizes</div></div>)}</div></Card>
-    {isDraft?<div className="grid gap-3 lg:grid-cols-2"><details className="rounded-xl border border-blue-200 bg-blue-50/60 p-4"><summary className="cursor-pointer text-sm font-black text-blue-900">+ Add Band</summary><form action={createPackagingCommercialBandV5} className="mt-4 grid gap-3 sm:grid-cols-4"><input type="hidden" name="template_id" value={data.template?.id??''}/><label><Label>Pricing Group</Label><select name="pricing_bucket" className={input}>{groups.map((g:number)=><option key={g} value={g}>PG{String(g).padStart(2,'0')}</option>)}</select></label><label><Label>Run ≤ m</Label><input required type="number" name="run_length_max_m" className={input}/></label><label><Label>Waste %</Label><input required type="number" step="0.01" name="wastage_pct" className={input}/></label><label><Label>Margin/frame</Label><input required type="number" step="0.01" name="margin_per_frame" className={input}/></label><div className="sm:col-span-4 flex justify-end"><button className={primary}>Add Band</button></div></form></details><details className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4" open><summary className="cursor-pointer text-sm font-black text-emerald-900">+ Create Pricing Group</summary><div className="mt-2 text-xs text-emerald-800">Copy an existing pricing group when the new group is mostly the same. You can edit the copied bands immediately below.</div><form action={copyPackagingCommercialGroupV5} className="mt-4 grid gap-3 sm:grid-cols-2"><input type="hidden" name="template_id" value={data.template?.id??''}/><label><Label>Copy from</Label><select name="source_pricing_bucket" className={input}>{groups.map((g:number)=><option key={g} value={g}>PG{String(g).padStart(2,'0')} · {bands.filter((b:any)=>Number(b.pricing_bucket)===g).length} bands</option>)}</select></label><label><Label>New Group</Label><input required type="number" min="1" max="99" name="target_pricing_bucket" defaultValue={nextGroup} className={input}/></label><div className="sm:col-span-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[11px] text-slate-600">Copies run-length bands, waste %, and margin/frame only. Existing size assignments stay exactly as they are.</div><div className="sm:col-span-2 flex justify-end"><button className={primary}>Copy & Create PG{String(nextGroup).padStart(2,'0')}</button></div></form><div className="my-4 flex items-center gap-3 text-[10px] font-black uppercase text-slate-400"><span className="h-px flex-1 bg-slate-200"/><span>or start blank</span><span className="h-px flex-1 bg-slate-200"/></div><form action={createPackagingCommercialBandV5} className="grid gap-3 sm:grid-cols-4"><input type="hidden" name="template_id" value={data.template?.id??''}/><label><Label>New Group</Label><input required type="number" min="1" max="99" name="pricing_bucket" defaultValue={nextGroup} className={input}/></label><label><Label>First Run ≤ m</Label><input required type="number" name="run_length_max_m" defaultValue="10000" className={input}/></label><label><Label>Waste %</Label><input required type="number" step="0.01" name="wastage_pct" defaultValue="5" className={input}/></label><label><Label>Margin/frame</Label><input required type="number" step="0.01" name="margin_per_frame" defaultValue="0" className={input}/></label><div className="sm:col-span-4 flex justify-end"><button className={secondary}>Create Blank Group</button></div></form></details></div>:null}
-    <Card className="p-4"><div className="grid gap-3 md:grid-cols-3"><div className="rounded-lg border border-slate-200 bg-slate-50 p-3"><b className="text-xs text-slate-900">Run length</b><span className="mt-1 block text-[11px] text-slate-500">Sets the upper production limit for each commercial band.</span></div><div className="rounded-lg border border-slate-200 bg-slate-50 p-3"><b className="text-xs text-slate-900">Waste %</b><span className="mt-1 block text-[11px] text-slate-500">Adds production loss into calculated cost.</span></div><div className="rounded-lg border border-slate-200 bg-slate-50 p-3"><b className="text-xs text-slate-900">Margin / frame</b><span className="mt-1 block text-[11px] text-slate-500">Adds commercial margin to the production frame.</span></div></div></Card>
-    <form id="pricing-v5-waste-form" action={savePackagingCommercialBandsV5} className="space-y-4">
-      <input type="hidden" name="template_id" value={data.template?.id??''}/>
-      {isDraft?<div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><b className="text-sm text-amber-950">Save protection is active.</b><p className="mt-1 text-xs text-amber-800">Use Save All Waste & Margins while reviewing, or Save All & Publish when finished. Publishing from this screen always writes every visible band to the database first.</p></div>:null}
-      <div className="grid gap-4 xl:grid-cols-2">{groups.map((bucket:number)=><Card key={bucket} className="overflow-hidden"><div className="flex items-center justify-between bg-slate-950 px-4 py-3 text-white"><div><h3 className="text-sm font-black">Pricing Group PG{String(bucket).padStart(2,'0')}</h3><p className="mt-0.5 text-[11px] text-white/60">Run length, waste and margin</p></div><span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-black">{bands.filter((b:any)=>Number(b.pricing_bucket)===bucket).length} bands</span></div><div className="grid grid-cols-[.9fr_.8fr_.9fr_auto_auto] gap-2 border-b border-slate-100 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase text-slate-500"><span>Run ≤ m</span><span>Waste %</span><span>Margin/frame</span><span/><span/></div>{bands.filter((b:any)=>Number(b.pricing_bucket)===bucket).sort((a:any,b:any)=>Number(a.run_length_max_m)-Number(b.run_length_max_m)).map((b:any)=><div key={b.id} className="grid grid-cols-[.9fr_.8fr_.9fr_auto_auto] items-center gap-2 border-b border-slate-100 px-4 py-2 last:border-0"><input type="hidden" name="band_id" value={b.id}/><input disabled={!isDraft} type="number" name="run_length_max_m" defaultValue={b.run_length_max_m} className={input}/><input disabled={!isDraft} type="number" step="0.01" name="wastage_pct" defaultValue={b.wastage_pct} className={input}/><input disabled={!isDraft} type="number" step="0.01" name="margin_per_frame" defaultValue={b.margin_per_frame} className={input}/><button type="submit" name="save_band_id" value={b.id} formAction={savePackagingCommercialBandsV5} disabled={!isDraft} className={primary}>Save</button><button type="submit" name="delete_id" value={b.id} formAction={deletePackagingCommercialBandV5} disabled={!isDraft} className="rounded-lg border border-rose-200 px-2 py-2 text-xs font-black text-rose-600 disabled:opacity-30">Delete</button></div>)}</Card>)}</div>
-      {isDraft?<div className="sticky bottom-3 z-20 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur"><span className="mr-auto text-xs font-bold text-slate-500">All {bands.length} visible bands are saved together.</span><button className={secondary}>Save All Waste & Margins</button><button id="pricing-v5-waste-publish" formAction={saveAndPublishPackagingCommercialBandsV5} className={primary}>Save All & Publish</button></div>:null}
-    </form>
-    <Card className="p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-sm font-black text-slate-900">Review the impact before publishing</h3><p className="mt-1 text-xs text-slate-500">Every quoteable size must point to a pricing group with valid bands. The publish check now validates your actual draft configuration instead of forcing only PG01-PG05.</p></div><Link href="/admin/packaging-pricing-v5?view=matrix" className={secondary}>Open Price Matrix</Link></div></Card>
+
+    <Card className="overflow-hidden">
+      <div className="border-b border-slate-200 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-black text-slate-950">Group library</h3>
+            <p className="mt-1 text-xs text-slate-500">Select any group to inspect its commercial bands and size usage.</p>
+          </div>
+          <div className="text-[11px] font-bold text-slate-500">Nothing changes until a draft is saved and published.</div>
+        </div>
+      </div>
+      <div className="grid gap-2 p-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7">
+        {groups.map((g:number)=>{
+          const groupBands=bands.filter((b:any)=>Number(b.pricing_bucket)===g);
+          const groupSizes=sizes.filter((size:any)=>{
+            if(Number(size.pricing_bucket)===g) return true;
+            const routes=size.metadata?.route_pricing_buckets??{};
+            return Number(routes.solid_unregistered)===g||Number(routes.registered_artwork)===g;
+          });
+          const active=selectedGroup===g;
+          return <button
+            key={g}
+            type="button"
+            onClick={()=>setSelectedGroup(g)}
+            className={'rounded-xl border p-3 text-left transition '+(active?'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-100':'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50')}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className={'text-sm font-black '+(active?'text-blue-900':'text-slate-900')}>PG{String(g).padStart(2,'0')}</span>
+              {active?<span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[9px] font-black text-white">OPEN</span>:null}
+            </div>
+            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
+              <span>{groupBands.length} bands</span>
+              <span>{groupSizes.length} sizes</span>
+            </div>
+          </button>;
+        })}
+      </div>
+    </Card>
+
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-950 px-5 py-4 text-white">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.15em] text-white/50">Selected pricing group</div>
+            <h3 className="mt-1 text-xl font-black">PG{String(selectedGroup).padStart(2,'0')}</h3>
+            <p className="mt-1 text-xs text-white/60">{selectedBands.length} commercial bands</p>
+          </div>
+          <div className="rounded-xl bg-white/10 px-3 py-2 text-right">
+            <div className="text-[10px] font-black uppercase text-white/50">Assigned sizes</div>
+            <div className="mt-1 text-xl font-black">{assignedSizes.length}</div>
+          </div>
+        </div>
+
+        <form id="pricing-v5-waste-form" action={savePackagingCommercialBandsV5}>
+          <input type="hidden" name="template_id" value={data.template?.id??''}/>
+          <div className="grid grid-cols-[1fr_.8fr_.9fr_auto] gap-3 border-b border-slate-100 bg-slate-50 px-5 py-2 text-[10px] font-black uppercase tracking-wide text-slate-500">
+            <span>Run length ≤ m</span><span>Waste %</span><span>Margin / frame</span><span/>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {selectedBands.map((b:any)=><div key={b.id} className="grid grid-cols-[1fr_.8fr_.9fr_auto] items-center gap-3 px-5 py-3">
+              <input type="hidden" name="band_id" value={b.id}/>
+              {isDraft
+                ? <input type="number" name="run_length_max_m" defaultValue={b.run_length_max_m} className={input}/>
+                : <div className="text-sm font-black text-slate-900">{Number(b.run_length_max_m).toLocaleString()} m</div>}
+              {isDraft
+                ? <input type="number" step="0.01" name="wastage_pct" defaultValue={b.wastage_pct} className={input}/>
+                : <div className="text-sm font-semibold text-slate-700">{Number(b.wastage_pct)}%</div>}
+              {isDraft
+                ? <input type="number" step="0.01" name="margin_per_frame" defaultValue={b.margin_per_frame} className={input}/>
+                : <div className="text-sm font-semibold text-slate-700">{Number(b.margin_per_frame).toLocaleString()}</div>}
+              {isDraft?<button type="submit" name="save_band_id" value={b.id} formAction={savePackagingCommercialBandsV5} className={secondary}>Save row</button>:<span className="text-[10px] font-bold uppercase text-slate-400">View</span>}
+            </div>)}
+          </div>
+
+          {isDraft?<div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4">
+            <div>
+              <div className="text-xs font-black text-slate-900">Editing PG{String(selectedGroup).padStart(2,'0')} only</div>
+              <div className="mt-0.5 text-[11px] text-slate-500">Other pricing groups are untouched.</div>
+            </div>
+            <div className="flex gap-2">
+              <button className={secondary}>Save PG{String(selectedGroup).padStart(2,'0')}</button>
+              <button id="pricing-v5-waste-publish" formAction={saveAndPublishPackagingCommercialBandsV5} className={primary}>Save & Publish</button>
+            </div>
+          </div>:null}
+        </form>
+      </Card>
+
+      <div className="space-y-4">
+        <Card className="p-4">
+          <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Used by</div>
+          <div className="mt-2 text-2xl font-black text-slate-950">{assignedSizes.length} sizes</div>
+          <div className="mt-3 max-h-44 space-y-2 overflow-y-auto">
+            {assignedSizes.length?assignedSizes.slice(0,12).map((size:any)=><div key={size.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              <div className="text-xs font-black text-slate-900">{size.name}</div>
+              <div className="mt-0.5 text-[10px] text-slate-500">{Number(size.pricing_bucket)===selectedGroup?'Primary pricing group':'Route-specific pricing group'}</div>
+            </div>):<div className="rounded-lg bg-slate-50 px-3 py-3 text-xs text-slate-500">No sizes currently use this group.</div>}
+          </div>
+          {assignedSizes.length>12?<div className="mt-2 text-[10px] font-bold text-slate-400">+{assignedSizes.length-12} more</div>:null}
+        </Card>
+
+        <Card className="p-4">
+          <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Band meaning</div>
+          <div className="mt-3 space-y-3 text-xs text-slate-600">
+            <div><b className="text-slate-900">Run length</b><div className="mt-0.5">Upper production limit for the band.</div></div>
+            <div><b className="text-slate-900">Waste %</b><div className="mt-0.5">Production loss added into calculated cost.</div></div>
+            <div><b className="text-slate-900">Margin / frame</b><div className="mt-0.5">Commercial margin added per production frame.</div></div>
+          </div>
+        </Card>
+      </div>
+    </div>
+
+    {isDraft?<div className="grid gap-3 lg:grid-cols-2">
+      <details className="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
+        <summary className="cursor-pointer text-sm font-black text-blue-900">+ Add band to PG{String(selectedGroup).padStart(2,'0')}</summary>
+        <form action={createPackagingCommercialBandV5} className="mt-4 grid gap-3 sm:grid-cols-3">
+          <input type="hidden" name="template_id" value={data.template?.id??''}/>
+          <input type="hidden" name="pricing_bucket" value={selectedGroup}/>
+          <label><Label>Run ≤ m</Label><input required type="number" name="run_length_max_m" className={input}/></label>
+          <label><Label>Waste %</Label><input required type="number" step="0.01" name="wastage_pct" className={input}/></label>
+          <label><Label>Margin/frame</Label><input required type="number" step="0.01" name="margin_per_frame" className={input}/></label>
+          <div className="sm:col-span-3 flex justify-end"><button className={primary}>Add Band</button></div>
+        </form>
+      </details>
+
+      <details className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+        <summary className="cursor-pointer text-sm font-black text-emerald-900">+ Create pricing group</summary>
+        <div className="mt-2 text-xs text-emerald-800">Copy an existing group to preserve its full band structure, then change only what differs.</div>
+        <form action={copyPackagingCommercialGroupV5} className="mt-4 grid gap-3 sm:grid-cols-2">
+          <input type="hidden" name="template_id" value={data.template?.id??''}/>
+          <label><Label>Copy from</Label><select name="source_pricing_bucket" defaultValue={selectedGroup} className={input}>{groups.map((g:number)=><option key={g} value={g}>PG{String(g).padStart(2,'0')}</option>)}</select></label>
+          <label><Label>New Group</Label><input required type="number" min="1" max="99" name="target_pricing_bucket" defaultValue={nextGroup} className={input}/></label>
+          <div className="sm:col-span-2 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[11px] text-slate-600">Copies all bands, waste and margin values. It does not reassign sizes or publish the draft.</div>
+          <div className="sm:col-span-2 flex justify-end"><button className={primary}>Copy & Create</button></div>
+        </form>
+        <div className="my-4 flex items-center gap-3 text-[10px] font-black uppercase text-slate-400"><span className="h-px flex-1 bg-slate-200"/><span>or start blank</span><span className="h-px flex-1 bg-slate-200"/></div>
+        <form action={createPackagingCommercialBandV5} className="grid gap-3 sm:grid-cols-4">
+          <input type="hidden" name="template_id" value={data.template?.id??''}/>
+          <label><Label>New Group</Label><input required type="number" min="1" max="99" name="pricing_bucket" defaultValue={nextGroup} className={input}/></label>
+          <label><Label>First Run ≤ m</Label><input required type="number" name="run_length_max_m" defaultValue="10000" className={input}/></label>
+          <label><Label>Waste %</Label><input required type="number" step="0.01" name="wastage_pct" defaultValue="5" className={input}/></label>
+          <label><Label>Margin/frame</Label><input required type="number" step="0.01" name="margin_per_frame" defaultValue="0" className={input}/></label>
+          <div className="sm:col-span-4 flex justify-end"><button className={secondary}>Create Blank Group</button></div>
+        </form>
+      </details>
+    </div>:null}
+
+    <Card className="p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-sm font-black text-slate-900">Review pricing impact</h3><p className="mt-1 text-xs text-slate-500">Open the matrix to verify the selected group against real quantities before publishing.</p></div><Link href="/admin/packaging-pricing-v5?view=matrix" className={secondary}>Open Price Matrix</Link></div></Card>
   </div>;
 }
