@@ -316,7 +316,7 @@ export async function GET(_request: Request, { params }: { params: { quoteId: st
       const prefix = lines.filter((item) => item.line_type === 'packaging' && Number(item.calculation_version) === 5).length > 1
         ? `Item ${lineIndex + 1}: `
         : '';
-      const summary = suggestions.map((item: any) => `${Number(item.quantity).toLocaleString()} pcs @ ${money(item.unit_price, currency)}/pc (${Number(item.savings_pct).toFixed(1)}% lower/pc)`).join(' | ');
+      const summary = suggestions.map((item: any) => `${Number(item.quantity).toLocaleString()} pcs @ ${money(item.unit_price, currency)}/pc · ${money(item.product_total, currency)} order${item.price_per_kg!=null?` · ${money(item.price_per_kg, currency)}/kg`:''} (${Number(item.savings_pct).toFixed(1)}% lower/pc)`).join(' | ');
       return [`${prefix}${summary}`];
     });
 
