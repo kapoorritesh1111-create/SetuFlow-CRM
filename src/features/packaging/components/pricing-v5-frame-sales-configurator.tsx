@@ -114,7 +114,8 @@ export default function PricingV5FrameSalesConfigurator({
     const heightValue=Number(structured.height_mm??requirementSeed.customHeightMm??0);
     if(Number.isFinite(widthValue)&&widthValue>0) setWidth(widthValue);
     if(Number.isFinite(heightValue)&&heightValue>0) setHeight(heightValue);
-    const rawQuantity=String(requirementSeed.quantity??source.quantity_text??'').replace(/[^0-9.]/g,'');
+    const quantityText=String(requirementSeed.quantity??source.quantity_text??'');
+    const rawQuantity=(quantityText.match(/[0-9][0-9,]*/)?.[0]??'').replaceAll(',','');
     const requestedQuantity=Math.floor(Number(rawQuantity||0));
     if(requestedQuantity>0) setQuantity(requestedQuantity);
     setEditingLineId(null);
