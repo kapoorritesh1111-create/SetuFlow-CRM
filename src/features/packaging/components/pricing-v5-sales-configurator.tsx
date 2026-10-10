@@ -43,7 +43,7 @@ function kldMatchesSize(item: any, size: any) {
   return file.includes(`${width}mmxh${height}mm`) || file.includes(`${width}x${height}`) || file.includes(`w${width}mmxh${height}mm`);
 }
 
-export default function PricingV5SalesConfigurator({ quoteId, leadId, options, savedLines = [], embedded = false, focusLineId = '', duplicateLineId = '' }: { quoteId: string; leadId: string; options: any; savedLines?: any[]; embedded?: boolean; focusLineId?: string; duplicateLineId?: string }) {
+export default function PricingV5SalesConfigurator({ quoteId, leadId, options, savedLines = [], embedded = false, focusLineId = '', duplicateLineId = '', requirementSeed = null }: { quoteId: string; leadId: string; options: any; savedLines?: any[]; embedded?: boolean; focusLineId?: string; duplicateLineId?: string; requirementSeed?: any | null }) {
   const router = useRouter();
   const families = options?.families ?? [];
   const templates = options?.templates ?? [];
@@ -177,6 +177,32 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
     setEditingLineId('');
     setSaved('Duplicated specification loaded. Calculate and add as a new quote line.');
   }, [duplicateLineId]);
+
+  useEffect(() => {
+    if (!requirementSeed || focusLineId || duplicateLineId) return;
+    const source=requirementSeed.sourceContext??{};
+    const requestedSizeId=String(source.size_profile_id??requirementSeed.dimensionOptionId??'');
+    const requestedSize=sizes.find((item:any)=>String(item.id)===requestedSizeId);
+    if(requestedSize) {
+      setSizeId(String(requestedSize.id));
+      setKldFileId('');
+    }
+    const rawQuantity=String(requirementSeed.quantity??source.quantity_text??'').replace(/[^0-9.]/g,'');
+    const requestedQuantity=Math.floor(Number(rawQuantity||0));
+    const targetSize=requestedSize??size;
+    if(requestedQuantity>0){
+      const nextQuantity=quantityAllowedForSize(targetSize,requestedQuantity)?requestedQuantity:(nextValidReviewQuantity(targetSize,requestedQuantity)??firstValidReviewQuantity(targetSize));
+      setQuantity(nextQuantity);
+    }
+    const fill=source.fill_grams??source.fill_weight_grams??source.fill_weight??'';
+    if(fill!==''&&fill!=null) setFillGrams(String(fill));
+    const app=source.application??source.product_application??'';
+    if(app) setApplication(String(app));
+    setEditingLineId('');
+    setPreview(null);
+    setSaved('Lead requirement loaded. Confirm the specification, calculate price, then add the quote line.');
+    setError('');
+  }, [requirementSeed?.id, focusLineId, duplicateLineId]);
 
   function startNewLine() {
     setEditingLineId('');
