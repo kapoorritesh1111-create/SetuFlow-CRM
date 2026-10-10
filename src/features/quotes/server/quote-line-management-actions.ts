@@ -5,6 +5,49 @@ import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { savePackagingPricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-actions';
 import { savePackagingFramePricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-frame-actions';
+import { SupabaseQuotePricingRepository } from '@/features/quotes/pricing/repositories/quote-pricing.repository';
+
+async function ensureEditableQuoteVersion(service:any,quote:any,actorUserId:string){
+  const status=String(quote.status??'').toLowerCase();
+  if(!['sent'].includes(status)) return quote;
+  if(!quote.current_version_id) throw new Error('Current quote version is required.');
+
+  const repo=new SupabaseQuotePricingRepository(service as any);
+  const cloned=await repo.createRevisionFromVersion({quoteVersionId:quote.current_version_id,actorUserId});
+  const {error:updateError}=await service.from('quotes').update({
+    current_version_id:cloned.id,
+    version_no:cloned.versionNo,
+    status:'revised',
+    updated_at:new Date().toISOString(),
+  }).eq('id',quote.id).eq('organization_id',quote.organization_id);
+  if(updateError) throw new Error(updateError.message);
+  return {...quote,current_version_id:cloned.id,status:'revised',version_no:cloned.versionNo};
+}
+
+export async function prepareMutableQuoteRevision(input:{quoteId:string;leadId:string}){
+  try{
+    const workspace=await requireWorkspace();
+    if(!workspace?.organization||!workspace?.user) return {ok:false,error:'Not authenticated.'};
+    const service:any=createServiceRoleClient();
+    if(!service) return {ok:false,error:'Quote service is unavailable.'};
+    const {data:quote,error}=await service.from('quotes')
+      .select('id,organization_id,lead_id,status,current_version_id,version_no')
+      .eq('id',input.quoteId)
+      .eq('organization_id',workspace.organization.id)
+      .eq('lead_id',input.leadId)
+      .maybeSingle();
+    if(error) throw new Error(error.message);
+    if(!quote?.id) return {ok:false,error:'Quote was not found.'};
+    if(['accepted','rejected','expired','cancelled','declined'].includes(String(quote.status??'').toLowerCase())){
+      return {ok:false,error:'This quote is closed and cannot be edited.'};
+    }
+    const editable=await ensureEditableQuoteVersion(service,quote,workspace.user.id);
+    revalidatePath(`/leads/${input.leadId}/quote`);
+    return {ok:true,quoteVersionId:editable.current_version_id,revised:String(quote.status??'').toLowerCase()==='sent'};
+  }catch(error){
+    return {ok:false,error:error instanceof Error?error.message:'Quote revision could not be prepared.'};
+  }
+}
 
 export async function removeMutableQuoteLine(input:{quoteId:string;leadId:string;lineId:string}){
   try{
@@ -21,9 +64,10 @@ export async function removeMutableQuoteLine(input:{quoteId:string;leadId:string
       .maybeSingle();
     if(quoteError) throw new Error(quoteError.message);
     if(!quote?.id) return {ok:false,error:'Quote was not found.'};
-    if(['sent','accepted','rejected','expired','cancelled','declined'].includes(String(quote.status??'').toLowerCase())){
-      return {ok:false,error:'This quote is locked and cannot be changed.'};
+    if(['accepted','rejected','expired','cancelled','declined'].includes(String(quote.status??'').toLowerCase())){
+      return {ok:false,error:'This quote is closed and cannot be changed.'};
     }
+    const editableQuote=await ensureEditableQuoteVersion(service,quote,workspace.user.id);
 
     const {data:line,error:lineError}=await service.from('quote_line_items')
       .select('id,line_type,calculation_version,packaging_family_id,quantity,input_snapshot_json')
@@ -40,16 +84,16 @@ export async function removeMutableQuoteLine(input:{quoteId:string;leadId:string
       });
       if(error) throw new Error(error.message);
     }else{
-      if(quote.current_version_id){
+      if(editableQuote.current_version_id){
         await service.from('quote_version_line_items')
           .delete()
-          .eq('quote_version_id',quote.current_version_id)
+          .eq('quote_version_id',editableQuote.current_version_id)
           .contains('calculation_meta',{source_quote_line_id:line.id});
 
         if(line.input_snapshot_json?.source==='lead_requirement'){
           let versionDelete=service.from('quote_version_line_items')
             .delete()
-            .eq('quote_version_id',quote.current_version_id)
+            .eq('quote_version_id',editableQuote.current_version_id)
             .contains('calculation_meta',{source:'lead_requirement'});
           const familyId=String(line.packaging_family_id??'');
           const sizeId=String(line.input_snapshot_json?.size_profile_id??'');
@@ -60,10 +104,10 @@ export async function removeMutableQuoteLine(input:{quoteId:string;leadId:string
       }
       const {error}=await service.from('quote_line_items').delete().eq('id',line.id).eq('quote_id',quote.id);
       if(error) throw new Error(error.message);
-      if(quote.current_version_id){
-        const {count}=await service.from('quote_version_line_items').select('id',{count:'exact',head:true}).eq('quote_version_id',quote.current_version_id);
+      if(editableQuote.current_version_id){
+        const {count}=await service.from('quote_version_line_items').select('id',{count:'exact',head:true}).eq('quote_version_id',editableQuote.current_version_id);
         await service.from('quote_versions').update({total_line_count:Number(count??0),updated_at:new Date().toISOString()})
-          .eq('id',quote.current_version_id).eq('quote_id',quote.id);
+          .eq('id',editableQuote.current_version_id).eq('quote_id',quote.id);
       }
     }
 
@@ -93,9 +137,10 @@ export async function updateMutablePackagingQuoteLineQuantity(input:{quoteId:str
       .maybeSingle();
     if(quoteError) throw new Error(quoteError.message);
     if(!quote?.id) return {ok:false,error:'Quote was not found.'};
-    if(['sent','accepted','rejected','expired','cancelled','declined'].includes(String(quote.status??'').toLowerCase())){
-      return {ok:false,error:'This customer-facing version is locked. Create a revision before changing quantity.'};
+    if(['accepted','rejected','expired','cancelled','declined'].includes(String(quote.status??'').toLowerCase())){
+      return {ok:false,error:'This quote is closed and cannot be changed.'};
     }
+    await ensureEditableQuoteVersion(service,quote,workspace.user.id);
 
     const {data:line,error:lineError}=await service.from('quote_line_items')
       .select('id,line_type,calculation_version,packaging_family_id,packaging_template_id,input_snapshot_json')
