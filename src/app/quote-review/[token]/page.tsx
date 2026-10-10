@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import QuoteDecisionForm from './quote-decision-form';
+import QuoteVolumeOptionAction from './quote-volume-option-action';
 import { customerVolumeSuggestions } from '@/lib/packaging-pricing-v5/volume-suggestions';
 
 export const dynamic = 'force-dynamic';
@@ -140,7 +141,9 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
                           <div className="text-xs font-black text-slate-900">{Number(row.quantity).toLocaleString()} pcs</div>
                           <div className="mt-1 text-sm font-black text-emerald-700">{money(row.unit_price, line.currency || currency)} / pc</div>
                           <div className="mt-1 text-[11px] font-semibold text-slate-500">{money(row.product_total, line.currency || currency)} order</div>
+                          {row.price_per_kg!=null?<div className="mt-1 text-[11px] font-semibold text-slate-600">{money(row.price_per_kg,line.currency||currency)} / kg{row.finished_weight_kg!=null?` · ${Number(row.finished_weight_kg).toFixed(2)} kg finished weight`:''}</div>:null}
                           {saving > 0 ? <div className="mt-1 text-[11px] font-black text-emerald-700">{saving.toFixed(1)}% lower / pc</div> : null}
+                          <QuoteVolumeOptionAction token={token} lineLabel={name} quantity={Number(row.quantity)} unitPrice={Number(row.unit_price)} productTotal={Number(row.product_total)} pricePerKg={row.price_per_kg} currency={line.currency||currency}/>
                         </div>;
                       })}
                     </div>
@@ -170,7 +173,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
           <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Your Decision</p>
           <h2 className="mt-1 text-xl font-black">Approve & sign, request a revision, or reject</h2>
           <p className="mt-2 text-sm font-semibold text-slate-600">Approve the commercial quote by typing the authorized signer name. If anything needs to change before approval, send Sales a revision request instead. You can also reject the quote and provide the reason. Your response is recorded against this quote and Sales is notified.</p>
-          <QuoteDecisionForm token={token} initialDecision={meta.customer_quote_decision ?? null} initialSigner={meta.customer_quote_signer_name ?? null} initialComment={meta.customer_quote_revision_comment ?? null} initialReviewedAt={meta.customer_quote_decision_at ?? null} />
+          <QuoteDecisionForm token={token} initialDecision={meta.customer_quote_decision ?? null} initialSigner={meta.customer_quote_signer_name ?? null} initialComment={meta.customer_quote_revision_comment ?? meta.customer_quote_rejection_comment ?? null} initialReviewedAt={meta.customer_quote_decision_at ?? null} />
         </section>
 
         <section className="rounded-3xl border border-cyan-200 bg-cyan-50 p-5 sm:p-6"><p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">Next Step</p><h2 className="mt-1 text-xl font-black">Artwork approval follows quotation approval</h2><p className="mt-2 text-sm font-semibold text-slate-600">Once the quotation is approved, the final artwork is prepared on the selected KLD and shared for your approval before production.</p></section>
