@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 
 type Family = 'SUP' | '3SS' | 'CSS';
-type Props = { size: { width_mm?: number | string | null; height_mm?: number | string | null; bottom_gusset_each_mm?: number | string | null; name?: string | null } };
+type Props = { size: { width_mm?: number | string | null; height_mm?: number | string | null; bottom_gusset_each_mm?: number | string | null; name?: string | null }; readonly?: boolean; initialFamily?: Family };
 
 const esc = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const mm = (n: number) => Number(n.toFixed(2));
@@ -53,8 +53,8 @@ function draftSvg(family:Family,w:number,h:number,g:number,side:number,top:numbe
     ${txt(10,totalH-8,'Draft revision '+version+' | Editable values are NOT manufacturing-certified.',4)}
   </svg>`;
 }
-export default function KldDraftGenerator({size}:Props) {
-  const [family,setFamily]=useState<Family>('SUP');
+export default function KldDraftGenerator({size,readonly=false,initialFamily='SUP'}:Props) {
+  const [family,setFamily]=useState<Family>(initialFamily);
   const [width,setWidth]=useState(Number(size.width_mm)||140);
   const [height,setHeight]=useState(Number(size.height_mm)||230);
   const [gusset,setGusset]=useState(Number(size.bottom_gusset_each_mm)||55);
@@ -73,9 +73,9 @@ export default function KldDraftGenerator({size}:Props) {
   }
   const field=(name:string,value:number,set:(n:number)=>void)=><label className="text-xs font-semibold text-slate-600">{name}<input type="number" min="0" step="0.5" value={value} onChange={e=>set(Number(e.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-slate-900"/></label>;
   return <details className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-    <summary className="cursor-pointer text-xs font-black text-slate-800">Generate or adjust a draft KLD (engineering review)</summary>
+    <summary className="cursor-pointer text-xs font-black text-slate-800">{readonly?"Preview available draft KLD — not for production":"Generate or adjust a draft KLD (engineering review)"}</summary>
     <p className="mt-2 text-xs text-amber-900">These provisional templates are never activated as approved KLDs. Download the draft for design review, then upload a manufacturer-approved PDF above when ready.</p>
-    <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+    {!readonly?<div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
       <label className="text-xs font-semibold text-slate-600">Pouch family<select value={family} onChange={e=>setFamily(e.target.value as Family)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2"><option value="SUP">Stand Up Pouch</option><option value="3SS">3 Side Seal</option><option value="CSS">Center Seal</option></select></label>
       {field('Width (mm)',width,setWidth)}
       {field('Height (mm)',height,setHeight)}
@@ -84,11 +84,11 @@ export default function KldDraftGenerator({size}:Props) {
       {field('Top allowance (mm)',top,setTop)}
       {field('Bottom allowance (mm)',bottom,setBottom)}
       {family==='CSS'?<>{field('Center back seal (mm)',center,setCenter)}{field('Web repeat (mm)',repeat,setRepeat)}</>:null}
-    </div>
+    </div>:null}
     {!valid?<p className="mt-2 text-xs font-bold text-red-700">Enter valid dimensions and allowances before exporting.</p>:null}
     <div className="mt-3 overflow-auto rounded-lg border border-slate-200 bg-white p-3">
       {valid?<div className="mx-auto max-w-xl" dangerouslySetInnerHTML={{__html:svg}}/>:null}
     </div>
-    <button type="button" disabled={!valid} onClick={download} className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-xs font-black text-white disabled:opacity-40">Download editable draft SVG</button>
+    <button type="button" disabled={!valid} onClick={download} className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-xs font-black text-white disabled:opacity-40">{readonly?"Download draft for engineering review":"Download editable draft SVG"}</button>
   </details>;
 }
