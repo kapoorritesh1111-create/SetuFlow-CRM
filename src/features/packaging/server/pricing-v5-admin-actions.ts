@@ -70,7 +70,7 @@ export async function savePackagingSizeProfileV5(formData:FormData){
     const storedRoutes=(existing.metadata?.route_pricing_buckets??{}) as Record<string,unknown>;
     const routeBucket=(field:string,stored:unknown,label:string)=>{
       const raw=text(formData,field);
-      const value=raw?Number(raw):Number(stored??existing.pricing_bucket);
+      const value=raw?Number(raw):Number(stored??bucket);
       if(!Number.isInteger(value)||value<1||value>99) throw new Error(label+' must be between PG01 and PG99.');
       return value;
     };
