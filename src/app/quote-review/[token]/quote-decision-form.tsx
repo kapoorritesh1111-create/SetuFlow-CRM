@@ -39,7 +39,7 @@ export default function QuoteDecisionForm({ token, initialDecision, initialSigne
           {reviewedAt ? <span className="mt-1 block text-xs font-semibold opacity-70">Recorded {new Date(reviewedAt).toLocaleString()}</span> : null}
         </div>
         {comment ? <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">{comment}</div> : null}
-        <button type="button" onClick={() => setDecision(null)} className="text-xs font-bold text-slate-500 underline">Change my response</button>
+        {decision === 'revision_requested' ? <button type="button" onClick={() => setDecision(null)} className="text-xs font-bold text-slate-500 underline">Change my response</button> : null}
       </div>
     );
   }
