@@ -196,7 +196,7 @@ function Sizes({data,isDraft}:{data:any;isDraft:boolean}){
                 <label><Label>Production Profile</Label><input name="production_profile_key" disabled={!isDraft} defaultValue={selected.production_profile_key??''} className={input}/></label>
                 <label><Label>Recommended grams / application</Label><input name="recommended_fill_grams" disabled={!isDraft} defaultValue={(selected.metadata?.recommended_fill_grams??[]).join(', ')} placeholder="100, 250, 500" className={input}/></label>
                 <label><Label>Application examples</Label><input name="application_examples" disabled={!isDraft} defaultValue={selected.metadata?.application_examples??''} placeholder="Dry fruit, snacks, spices" className={input}/></label>
-                {selected.gusset_production_mode==='conditional'&&selected.bottom_registration_mode==='optional'?<>
+                {selected.bottom_registration_mode==='optional'?<>
                   <label><Label>Solid color bottom pricing group</Label><select name="solid_route_pricing_bucket" disabled={!isDraft} defaultValue={Number(selected.metadata?.route_pricing_buckets?.solid_unregistered??selected.pricing_bucket)} className={input}>{pricingGroups.map((x:number)=><option key={x} value={x}>PG{String(x).padStart(2,'0')}</option>)}</select></label>
                   <label><Label>Logo / artwork bottom pricing group</Label><select name="registered_route_pricing_bucket" disabled={!isDraft} defaultValue={Number(selected.metadata?.route_pricing_buckets?.registered_artwork??selected.pricing_bucket)} className={input}>{pricingGroups.map((x:number)=><option key={x} value={x}>PG{String(x).padStart(2,'0')}</option>)}</select></label>
                 </>:null}
