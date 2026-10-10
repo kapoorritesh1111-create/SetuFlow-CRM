@@ -110,8 +110,10 @@ export default function PricingV5FrameSalesConfigurator({
     if(!requirementSeed||focusLineId||duplicateLineId) return;
     const source=requirementSeed.sourceContext??{};
     const structured=source.dimensions_structured??{};
-    const widthValue=Number(structured.width_mm??requirementSeed.customWidthMm??0);
-    const heightValue=Number(structured.height_mm??requirementSeed.customHeightMm??0);
+    const dimensionText=String(requirementSeed.dimensions??source.dimensions_text??'');
+    const dimensionMatch=dimensionText.match(/([0-9]+(?:\\.[0-9]+)?)\\s*(?:mm)?\\s*[x×]\\s*([0-9]+(?:\\.[0-9]+)?)/i);
+    const widthValue=Number(structured.width_mm??requirementSeed.customWidthMm??dimensionMatch?.[1]??0);
+    const heightValue=Number(structured.height_mm??requirementSeed.customHeightMm??dimensionMatch?.[2]??0);
     if(Number.isFinite(widthValue)&&widthValue>0) setWidth(widthValue);
     if(Number.isFinite(heightValue)&&heightValue>0) setHeight(heightValue);
     const quantityText=String(requirementSeed.quantity??source.quantity_text??'');
