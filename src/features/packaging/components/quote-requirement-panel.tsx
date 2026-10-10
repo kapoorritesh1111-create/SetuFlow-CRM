@@ -29,9 +29,9 @@ function familyKeyFor(requirement:Requirement,families:Family[]):FamilyKey|null{
   return null;
 }
 function familyImage(key:FamilyKey|null){
-  if(key==='center-seal') return '/packaging/quote-stock/center-seal-pouch.svg';
-  if(key==='3ss') return '/packaging/quote-stock/three-side-seal.svg';
-  return '/packaging/quote-stock/stand-up-pouch.svg';
+  if(key==='center-seal') return '/packaging/quote-stock/stark-center-seal.png';
+  if(key==='3ss') return '/packaging/quote-stock/stark-three-side-seal.png';
+  return '/packaging/quote-stock/stark-stand-up.png';
 }
 
 export default function QuoteRequirementPanel({leadId,available,onUse,onStartFresh}:{leadId:string;available:FamilyKey[];onUse:(family:FamilyKey,requirement:Requirement)=>void;onStartFresh:()=>void}){

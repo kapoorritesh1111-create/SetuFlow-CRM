@@ -15,12 +15,12 @@ function money(value:number,currency:string){
   catch{return currency+' '+value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
 }
 function familyMeta(key:FamilyKey){
-  if(key==='center-seal') return {label:'Center Seal Pouch',sub:'Pouch or roll form',badge:'CS',tone:'from-indigo-500 to-blue-600',image:'/packaging/quote-stock/center-seal-pouch.svg'};
-  if(key==='3ss') return {label:'3 Side Seal Pouch',sub:'Pouch or roll form',badge:'3SS',tone:'from-violet-500 to-fuchsia-600',image:'/packaging/quote-stock/three-side-seal.svg'};
-  return {label:'Stand Up Pouch',sub:'Gusset, zipper, premium finish',badge:'SUP',tone:'from-teal-500 to-cyan-600',image:'/packaging/quote-stock/stand-up-pouch.svg'};
+  if(key==='center-seal') return {label:'Center Seal Pouch',sub:'Pouch or roll form',badge:'CS',tone:'from-indigo-500 to-blue-600',image:'/packaging/quote-stock/stark-center-seal.png'};
+  if(key==='3ss') return {label:'3 Side Seal Pouch',sub:'Pouch or roll form',badge:'3SS',tone:'from-violet-500 to-fuchsia-600',image:'/packaging/quote-stock/stark-three-side-seal.png'};
+  return {label:'Stand Up Pouch',sub:'Gusset, zipper, premium finish',badge:'SUP',tone:'from-teal-500 to-cyan-600',image:'/packaging/quote-stock/stark-stand-up.png'};
 }
 function Shape({kind,compact=false}:{kind:FamilyKey|'flat'|'labels'|'sleeves';compact?:boolean}){
-  const src=kind==='sup'?'/packaging/quote-stock/stand-up-pouch.svg':kind==='center-seal'?'/packaging/quote-stock/center-seal-pouch.svg':kind==='3ss'?'/packaging/quote-stock/three-side-seal.svg':'/packaging/quote-stock/roll-stock.svg';
+  const src=kind==='sup'?'/packaging/quote-stock/stark-stand-up.png':kind==='center-seal'?'/packaging/quote-stock/stark-center-seal.png':kind==='3ss'?'/packaging/quote-stock/stark-three-side-seal.png':'/packaging/quote-stock/stark-roll-stock.png';
   return <div className={compact?"flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-50 to-blue-50":"flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50"}><img src={src} alt="" className={compact?"h-14 w-auto object-contain":"h-32 w-auto object-contain"}/></div>;
 }
 
