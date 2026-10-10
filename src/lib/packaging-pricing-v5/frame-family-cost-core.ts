@@ -219,9 +219,8 @@ export function calculateFrameFamilyPriceReviewV5(
   const unitPrice = quantity ? productTotal / quantity : 0;
   const gstPct = n(context.template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
-  const isRollForm = input.supply_form.endsWith('_roll');
   const totalGsm = materialGsm + adhesiveGsm;
-  const finishedWeightKg = isRollForm && totalGsm > 0
+  const finishedWeightKg = totalGsm > 0
     ? (totalGsm * geometry.frame_web_area_m2 * framesExact) / 1000
     : 0;
   const pricePerKg = finishedWeightKg > 0 ? productTotal / finishedWeightKg : 0;
@@ -268,11 +267,11 @@ export function calculateFrameFamilyPriceReviewV5(
       gst: round(gst, 2),
       grand_total_before_freight: round(productTotal + gst, 2),
     },
-    roll_weight: isRollForm ? {
+    roll_weight: {
       total_gsm: round(totalGsm, 2),
       finished_weight_kg: round(finishedWeightKg, 2),
       price_per_kg: round(pricePerKg, 2),
-    } : null,
+    },
     validation_errors: errors,
     warnings,
   };
