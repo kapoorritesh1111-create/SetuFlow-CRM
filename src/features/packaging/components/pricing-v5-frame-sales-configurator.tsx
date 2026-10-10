@@ -11,7 +11,7 @@ function money(value:any,currency='INR'){
 
 export default function PricingV5FrameSalesConfigurator({
   quoteId,leadId,options,savedLines=[],embedded=false,focusLineId='',duplicateLineId=''
-}:{quoteId:string;leadId:string;options:any;savedLines?:any[];embedded?:boolean;focusLineId?:string;duplicateLineId?:string}){
+,requirementSeed=null}:{quoteId:string;leadId:string;options:any;savedLines?:any[];embedded?:boolean;focusLineId?:string;duplicateLineId?:string;requirementSeed?:any|null}){
   const router=useRouter();
   const templates=options?.templates??[];
   const [templateId,setTemplateId]=useState(templates[0]?.id??'');
@@ -105,6 +105,23 @@ export default function PricingV5FrameSalesConfigurator({
     setEditingLineId(null);
     setSaved('Duplicated specification loaded. Calculate and add as a new quote line.');
   },[duplicateLineId]);
+
+  useEffect(()=>{
+    if(!requirementSeed||focusLineId||duplicateLineId) return;
+    const source=requirementSeed.sourceContext??{};
+    const structured=source.dimensions_structured??{};
+    const widthValue=Number(structured.width_mm??requirementSeed.customWidthMm??0);
+    const heightValue=Number(structured.height_mm??requirementSeed.customHeightMm??0);
+    if(Number.isFinite(widthValue)&&widthValue>0) setWidth(widthValue);
+    if(Number.isFinite(heightValue)&&heightValue>0) setHeight(heightValue);
+    const rawQuantity=String(requirementSeed.quantity??source.quantity_text??'').replace(/[^0-9.]/g,'');
+    const requestedQuantity=Math.floor(Number(rawQuantity||0));
+    if(requestedQuantity>0) setQuantity(requestedQuantity);
+    setEditingLineId(null);
+    setPreview(null);
+    setSaved('Lead requirement loaded. Confirm dimensions, calculate price, then add the quote line.');
+    setError('');
+  },[requirementSeed?.id,focusLineId,duplicateLineId]);
 
   if(!templates.length) return null;
 
