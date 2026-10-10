@@ -57,6 +57,36 @@ export default function PricingV5FrameSalesConfigurator({
     });
   }
 
+  const canAutoPrice=Boolean(template?.id&&constructionId&&Number(width)>0&&Number(height)>0&&Number(quantity)>0);
+  useEffect(()=>{
+    if(!canAutoPrice){
+      setPreview(null);
+      return;
+    }
+    let cancelled=false;
+    const timer=window.setTimeout(()=>{
+      setError('');
+      startTransition(async()=>{
+        const response:any=await previewPackagingFramePricingV5({
+          templateId:template.id,
+          input:{
+            supply_form:template.supply_form,
+            width_mm:Number(width),
+            height_mm:Number(height),
+            construction_id:constructionId,
+            print,
+            quantity:Number(quantity),
+            commercial_bucket:null,
+          },
+        });
+        if(cancelled) return;
+        setPreview(response.result??null);
+        if(!response.ok&&!response.result?.smart_moq) setError(response.error??'Price could not be calculated.');
+      });
+    },250);
+    return()=>{cancelled=true;window.clearTimeout(timer);};
+  },[template?.id,template?.supply_form,constructionId,width,height,quantity,print,canAutoPrice]);
+
   function saveLine(){
     if(!preview?.ok||!template?.id) return;
     setError('');setSaved('');
@@ -145,7 +175,7 @@ export default function PricingV5FrameSalesConfigurator({
       <label className="text-xs font-black text-slate-600">Quantity<input type="number" min="1" step="1" value={quantity} onChange={(e)=>{setQuantity(Number(e.target.value));setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"/></label>
       <label className="text-xs font-black text-slate-600 xl:col-span-2">Construction<select value={constructionId} onChange={(e)=>{setConstructionId(e.target.value);setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold">{constructions.map((item:any)=><option key={item.id} value={item.id}>{item.name} · {item.structure_label}</option>)}</select></label>
       <label className="text-xs font-black text-slate-600">Printing<select value={print} onChange={(e)=>{setPrint(e.target.value as any);setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"><option value="CMYK">Digital (CMYK)</option><option value="CMYKW">Digital (CMYKW)</option></select></label>
-      <div className="flex items-end"><button type="button" disabled={pending} onClick={runPreview} className="w-full rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{pending?'Calculating…':'Calculate price'}</button></div>
+      <div className="flex items-end"><div className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-500">{pending?'Updating approved price…':'Price updates automatically'}</div></div>
       </div>
     </div>
 
