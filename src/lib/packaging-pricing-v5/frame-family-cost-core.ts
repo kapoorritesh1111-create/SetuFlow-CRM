@@ -75,6 +75,11 @@ export type FrameFamilyPricingReviewResultV5 = {
     gst: number;
     grand_total_before_freight: number;
   };
+  roll_weight: {
+    total_gsm: number;
+    finished_weight_kg: number;
+    price_per_kg: number;
+  } | null;
   validation_errors: string[];
   warnings: string[];
 };
@@ -147,7 +152,9 @@ export function calculateFrameFamilyPriceReviewV5(
   }
 
   let materialPerFrame = 0;
+  let materialGsm = 0;
   let adhesivePerFrame = 0;
+  let adhesiveGsm = 0;
   let printingPerFrame = 0;
   let laminationPerFrame = 0;
   let slittingPerFrame = 0;
@@ -166,13 +173,15 @@ export function calculateFrameFamilyPriceReviewV5(
         ? n(layer.master.gsm)
         : n(layer.master.micron) * n(layer.master.density);
       const gramsPerFrame = gsm * frameAreaM2;
+      materialGsm += gsm;
       materialPerFrame += gramsPerFrame * n(layer.master.current_rate) / 1000;
     }
 
     if (adhesive?.current_rate != null) {
       const bonds = Math.max(0, construction.construction.layer_count - 1);
       const gsmPerBond = n(adhesive.metadata?.gsm_per_bond ?? adhesive.gsm);
-      const grams = bonds * gsmPerBond * frameAreaM2;
+      adhesiveGsm = bonds * gsmPerBond;
+      const grams = adhesiveGsm * frameAreaM2;
       adhesivePerFrame = grams * n(adhesive.current_rate) / 1000;
     }
 
@@ -210,6 +219,12 @@ export function calculateFrameFamilyPriceReviewV5(
   const unitPrice = quantity ? productTotal / quantity : 0;
   const gstPct = n(context.template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
+  const isRollForm = input.supply_form.endsWith('_roll');
+  const totalGsm = materialGsm + adhesiveGsm;
+  const finishedWeightKg = isRollForm && totalGsm > 0
+    ? (totalGsm * geometry.frame_web_area_m2 * framesExact) / 1000
+    : 0;
+  const pricePerKg = finishedWeightKg > 0 ? productTotal / finishedWeightKg : 0;
 
   if (geometry.apply_pouching) {
     warnings.push('Pouch Form includes pouching in the v5 review cost build; Roll Form does not.');
@@ -253,6 +268,11 @@ export function calculateFrameFamilyPriceReviewV5(
       gst: round(gst, 2),
       grand_total_before_freight: round(productTotal + gst, 2),
     },
+    roll_weight: isRollForm ? {
+      total_gsm: round(totalGsm, 2),
+      finished_weight_kg: round(finishedWeightKg, 2),
+      price_per_kg: round(pricePerKg, 2),
+    } : null,
     validation_errors: errors,
     warnings,
   };
