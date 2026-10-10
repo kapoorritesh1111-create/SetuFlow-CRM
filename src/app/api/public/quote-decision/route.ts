@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   const { data: quotes, error: lookupError } = await admin
     .from('quotes')
-    .select('id,organization_id,lead_id,quote_number,status,created_by,current_version_id,sent_version_id,accepted_version_id,industry_metadata')
+    .select('id,organization_id,lead_id,quote_number,status,created_by,current_version_id,sent_version_id,accepted_version_id,industry_metadata,lifecycle_outcome,archived_at')
     .contains('industry_metadata', { customer_review_token: token })
     .limit(1);
   if (lookupError || !quotes?.[0]) return NextResponse.json({ error: 'Quote review link not found.' }, { status: 404 });
@@ -51,12 +51,37 @@ export async function POST(request: NextRequest) {
     customer_quote_rejected_at: decision === 'rejected' ? now : null,
   };
 
+  const quoteUpdate:any = {
+    industry_metadata: nextMeta,
+    last_customer_response_at: now,
+    updated_at: now,
+  };
+  if (decision === 'revision_requested') {
+    quoteUpdate.lifecycle_outcome = 'revision_requested';
+    quoteUpdate.follow_up_at = null;
+  }
+  if (decision === 'rejected') {
+    quoteUpdate.lifecycle_outcome = 'rejected_archived';
+    quoteUpdate.archived_at = now;
+    quoteUpdate.archive_reason = comment;
+  }
+
   const { error: updateError } = await admin
     .from('quotes')
-    .update({ industry_metadata: nextMeta, last_customer_response_at: now, updated_at: now })
+    .update(quoteUpdate)
     .eq('id', quote.id)
     .eq('organization_id', quote.organization_id);
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+
+  const outcomeVersionId = quote.accepted_version_id || quote.sent_version_id || quote.current_version_id || null;
+  if (decision === 'rejected' && outcomeVersionId) {
+    const { error: versionError } = await admin
+      .from('quote_versions')
+      .update({ status: 'rejected', updated_at: now })
+      .eq('id', outcomeVersionId)
+      .eq('quote_id', quote.id);
+    if (versionError) return NextResponse.json({ error: versionError.message }, { status: 500 });
+  }
 
   let handoffCreated = false;
   if (decision === 'approved' && ['sent', 'accepted'].includes(String(quote.status ?? '').toLowerCase()) && quote.created_by && (quote.sent_version_id || quote.current_version_id || quote.accepted_version_id)) {
@@ -100,6 +125,25 @@ export async function POST(request: NextRequest) {
       try { await sendWebPushToUsers(admin, [quote.created_by], { title, body: bodyText, action_url: actionUrl, priority: 'high', type: 'approval_request' }, quote.organization_id); } catch {}
     }
   }
+
+  try {
+    await admin.from('quote_lifecycle_events').insert({
+      organization_id: quote.organization_id,
+      quote_id: quote.id,
+      lead_id: quote.lead_id ?? null,
+      event_type: 'quote_outcome',
+      outcome: decision === 'rejected' ? 'rejected_archived' : decision,
+      actor_name: customerName,
+      actor_type: 'customer',
+      message: bodyText,
+      metadata: {
+        source: 'public_quote_review',
+        decision,
+        quote_version_id: outcomeVersionId,
+        previous_status: quote.status ?? null,
+      },
+    });
+  } catch {}
 
   if (quote.lead_id) {
     await admin.from('communications').insert({
