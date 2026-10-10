@@ -25,10 +25,10 @@ function Shape({kind,compact=false}:{kind:FamilyKey|'flat'|'labels'|'sleeves';co
 }
 
 export default function PremiumPackagingQuoteBuilderV5({
-  quoteId,leadId,buyerName,quoteNumber,status,currency,supOptions,frameOptions,supSavedLines=[],frameSavedLines=[],quoteTotal=0,quoteLineCount=0,requestedQuantity=0,initialStep=1,
+  quoteId,leadId,buyerName,quoteNumber,status,currency,supOptions,frameOptions,supSavedLines=[],frameSavedLines=[],quoteTotal=0,quoteLineCount=0,requestedQuantity=0,initialStep=1,initialEditLine=null,
 }:{
   quoteId:string;leadId:string;buyerName:string;quoteNumber:string;status:string;currency:string;
-  supOptions?:any|null;frameOptions?:any|null;supSavedLines?:any[];frameSavedLines?:any[];quoteTotal?:number;quoteLineCount?:number;requestedQuantity?:number;initialStep?:number;
+  supOptions?:any|null;frameOptions?:any|null;supSavedLines?:any[];frameSavedLines?:any[];quoteTotal?:number;quoteLineCount?:number;requestedQuantity?:number;initialStep?:number;initialEditLine?:string|null;
 }){
   const available=useMemo<FamilyKey[]>(()=>{
     const out:FamilyKey[]=[];
@@ -68,6 +68,18 @@ export default function PremiumPackagingQuoteBuilderV5({
   const pricedLineCount=supSavedLines.length+frameSavedLines.length;
   const lineCount=Math.max(quoteLineCount,pricedLineCount);
   useEffect(()=>{setStep(Math.min(4,Math.max(1,initialStep||1)));},[initialStep]);
+  useEffect(()=>{
+    const id=String(initialEditLine??'').trim();
+    if(!id) return;
+    const supLine=supSavedLines.find((line:any)=>String(line.lineId)===id);
+    if(supLine){setActive('sup');setIntent({lineId:id,mode:'edit'});setRequirementSeed(null);setStep(2);return;}
+    const frameLine=frameSavedLines.find((line:any)=>String(line.lineId)===id);
+    if(frameLine){
+      const familySlug=String(frameLine.familySlug??frameLine.family_slug??'').toLowerCase();
+      setActive(familySlug.includes('3')?'3ss':'center-seal');
+      setIntent({lineId:id,mode:'edit'});setRequirementSeed(null);setStep(2);
+    }
+  },[initialEditLine,supSavedLines.length,frameSavedLines.length]);
   function goStep(next:number){
     const safe=Math.min(4,Math.max(1,next));
     setStep(safe);
