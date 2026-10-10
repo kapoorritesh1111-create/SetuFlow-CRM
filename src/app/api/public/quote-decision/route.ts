@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   if (lookupError || !quotes?.[0]) return NextResponse.json({ error: 'Quote review link not found.' }, { status: 404 });
   const quote = quotes[0];
   const quoteStatus=String(quote.status??'').toLowerCase();
-  if ((decision === 'revision_requested' || decision === 'rejected') && !['sent','revised','approved'].includes(quoteStatus)) {
+  if ((decision === 'revision_requested' || decision === 'rejected') && !['draft','compiled','in_review','sent','revised','approved'].includes(quoteStatus)) {
     return NextResponse.json({ error: quoteStatus === 'accepted' ? 'This quote has already been accepted.' : 'This quote is not open for a customer revision or rejection.' }, { status: 409 });
   }
   const now = new Date().toISOString();
@@ -88,7 +88,23 @@ export async function POST(request: NextRequest) {
   }
 
   let handoffCreated = false;
-  if (decision === 'approved' && ['sent', 'accepted'].includes(String(quote.status ?? '').toLowerCase()) && quote.created_by && (quote.sent_version_id || quote.current_version_id || quote.accepted_version_id)) {
+  if (decision === 'approved' && quote.created_by && (quote.current_version_id || quote.sent_version_id || quote.accepted_version_id)) {
+    let sentVersionId=quote.sent_version_id || null;
+    if (!['sent','accepted'].includes(String(quote.status ?? '').toLowerCase())) {
+      const versionId=quote.current_version_id;
+      if (!versionId) return NextResponse.json({ error: 'Current quote version is missing.' }, { status: 409 });
+      const { error: sendError } = await admin.rpc('app_send_quote_version_with_fanout_tx', {
+        p_quote_version_id: versionId,
+        p_actor_user_id: quote.created_by,
+        p_actor_name: signerName || 'Customer',
+        p_plain_notes: `Customer approved shared quote as ${signerName} at ${now}.`,
+        p_approval_required: false,
+        p_approval_state: 'none',
+        p_action_source: 'public_quote_approval',
+      });
+      if (sendError) return NextResponse.json({ error: sendError.message }, { status: 500 });
+      sentVersionId=versionId;
+    }
     const { error: acceptError } = await admin.rpc('app_safe_accept_sent_quote_tx', {
       p_organization_id: quote.organization_id,
       p_quote_id: quote.id,
