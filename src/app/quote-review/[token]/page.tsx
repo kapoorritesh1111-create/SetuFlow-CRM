@@ -32,7 +32,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
 
   const [{ data: lead }, { data: lines }, { data: attachments }, { data: org }] = await Promise.all([
     admin.from('leads').select('company_name,contact_name').eq('id', quote.lead_id).eq('organization_id', quote.organization_id).maybeSingle(),
-    admin.from('quote_line_items').select('id,line_type,product_id,quantity,unit_price,currency,notes,input_snapshot_json,pricing_breakdown_json,packaging_family_id,packaging_product_variation_id,packaging_kld_file_id').eq('quote_id', quote.id).order('created_at'),
+    admin.from('quote_line_items').select('id,line_type,product_id,quantity,unit_price,currency,notes,input_snapshot_json,pricing_breakdown_json,calculation_version,packaging_family_id,packaging_product_variation_id,packaging_kld_file_id,packaging_size_profile_v5_id').eq('quote_id', quote.id).order('created_at'),
     admin.from('lead_attachments').select('id,file_name,mime_type,attachment_type,created_at').eq('lead_id', quote.lead_id).eq('organization_id', quote.organization_id).order('created_at', { ascending: true }),
     admin.from('organizations').select('name,legal_name,logo_url').eq('id', quote.organization_id).maybeSingle(),
   ]);
