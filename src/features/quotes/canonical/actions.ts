@@ -292,19 +292,37 @@ export async function saveCanonicalQuoteTerms(formData: FormData) {
   try {
     const { workspace, supabase, quote } = await getMutableQuote(formData);
     const quoteCurrency = currency(text(formData.get('currency')), quote.display_currency || quote.currency || 'USD');
-    const pricingBasis = text(formData.get('incoterm')) || 'FOB';
+    const packagingDirect = text(formData.get('commercial_mode')) === 'packaging_direct';
+    const deliveryType = text(formData.get('delivery_type')) || 'domestic';
+    const pricingBasis = packagingDirect ? 'unit' : (text(formData.get('incoterm')) || 'FOB');
     const validityDays = num(formData.get('validity_days')) ?? 30;
     const validUntil = new Date(Date.now() + validityDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const customerMessage = [
-      `Incoterm: ${pricingBasis}`,
-      `Port of loading: ${text(formData.get('port_loading')) || 'Not specified'}`,
-      `Port of discharge: ${text(formData.get('port_discharge')) || 'Not specified'}`,
-      `Payment terms: ${text(formData.get('payment_terms')) || 'Not specified'}`,
-      `Lead time: ${text(formData.get('lead_time')) || 'Not specified'}`,
-      `Packaging: ${text(formData.get('packaging')) || 'Not specified'}`,
-      text(formData.get('shipment_notes')),
-      text(formData.get('special_notes')),
-    ].filter(Boolean).join('\n');
+    const customerMessage = packagingDirect
+      ? [
+          `Delivery type: ${deliveryType === 'international' ? 'International / Export' : 'Domestic (India)'}`,
+          deliveryType === 'international'
+            ? `Incoterm: ${text(formData.get('incoterm')) || 'Not specified'}`
+            : `Delivery location: ${text(formData.get('delivery_city')) || 'Not specified'}`,
+          deliveryType === 'international'
+            ? `Port of loading: ${text(formData.get('port_loading')) || 'Not specified'}`
+            : `Dispatch mode: ${text(formData.get('dispatch_mode')) || 'Not specified'}`,
+          deliveryType === 'international' ? `Port of discharge: ${text(formData.get('port_discharge')) || 'Not specified'}` : '',
+          `Payment terms: ${text(formData.get('payment_terms')) || 'Not specified'}`,
+          `Lead time: ${text(formData.get('lead_time')) || 'Not specified'}`,
+          `Tax: ${text(formData.get('gst_note')) || 'GST extra as applicable'}`,
+          text(formData.get('shipment_notes')),
+          text(formData.get('special_notes')),
+        ].filter(Boolean).join('\n')
+      : [
+          `Incoterm: ${pricingBasis}`,
+          `Port of loading: ${text(formData.get('port_loading')) || 'Not specified'}`,
+          `Port of discharge: ${text(formData.get('port_discharge')) || 'Not specified'}`,
+          `Payment terms: ${text(formData.get('payment_terms')) || 'Not specified'}`,
+          `Lead time: ${text(formData.get('lead_time')) || 'Not specified'}`,
+          `Packaging: ${text(formData.get('packaging')) || 'Not specified'}`,
+          text(formData.get('shipment_notes')),
+          text(formData.get('special_notes')),
+        ].filter(Boolean).join('\n');
     if (quote.current_version_id) {
       const { error } = await supabase.from('quote_versions').update({ display_currency: quoteCurrency, pricing_basis: pricingBasis.toLowerCase(), valid_until: validUntil, customer_message: customerMessage, internal_notes: nullable(formData.get('internal_notes')), updated_at: new Date().toISOString() }).eq('quote_id', quoteId).eq('id', quote.current_version_id);
       if (error) throw new Error(error.message);
