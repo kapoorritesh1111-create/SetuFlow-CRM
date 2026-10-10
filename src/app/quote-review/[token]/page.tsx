@@ -168,8 +168,8 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
 
         <section className="rounded-3xl border border-emerald-200 bg-white p-5 shadow-sm sm:p-6">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Your Decision</p>
-          <h2 className="mt-1 text-xl font-black">Approve & sign, or request a revision</h2>
-          <p className="mt-2 text-sm font-semibold text-slate-600">Approve the commercial quote by typing the authorized signer name, or send Sales the exact revision you need. Your response is recorded against this quote and Sales is notified.</p>
+          <h2 className="mt-1 text-xl font-black">Approve & sign, request a revision, or reject</h2>
+          <p className="mt-2 text-sm font-semibold text-slate-600">Approve the commercial quote by typing the authorized signer name. If anything needs to change before approval, send Sales a revision request instead. You can also reject the quote and provide the reason. Your response is recorded against this quote and Sales is notified.</p>
           <QuoteDecisionForm token={token} initialDecision={meta.customer_quote_decision ?? null} initialSigner={meta.customer_quote_signer_name ?? null} initialComment={meta.customer_quote_revision_comment ?? null} initialReviewedAt={meta.customer_quote_decision_at ?? null} />
         </section>
 
