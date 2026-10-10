@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/ui/empty-state';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -16,6 +18,7 @@ import { listSalesPackagingFramePricingV5Options } from '@/lib/packaging-pricing
 import { listPricingV5SavedLineSummaries } from '@/lib/packaging-pricing-v5/saved-line';
 import { listPricingV5FrameSavedLineSummaries } from '@/lib/packaging-pricing-v5/frame-saved-line';
 import ManualPackagingQuoteSection from '@/features/packaging/components/manual-packaging-quote-section';
+import QuoteDesignRequestLauncher from '@/features/packaging/components/quote-design-request-launcher';
 
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -129,19 +132,24 @@ export default async function QuotePage({
   const liveQuoteTotal = pricingLineTotal + optionalChargeTotal + v5TaxTotal;
   const manualPricingFamilies = (packaging?.families ?? []).filter((family:any)=>family.is_quoteable===true && !family.pricing_engine_type && family.slug==='spout-pouches');
   const manualPackagingLines = activeQuote ? (activeQuote.lineItems as any[]).filter((line:any)=>line.line_type==='packaging' && manualPricingFamilies.some((family:any)=>family.id===line.packaging_family_id) && line.input_snapshot_json?.source==='manual_packaging_price') : [];
+  const showStarkDesignHandoff = String((workspace.organization as any)?.slug ?? '').toLowerCase() === 'starkpackmate';
 
   return (
     <>
       {feedback ? <WorkflowToast kind={feedback.kind} message={feedback.message} /> : null}
-      {activeQuote && manualPricingFamilies.length ? (
-        <ManualPackagingQuoteSection
-          quoteId={activeQuote.id}
-          leadId={params.leadId}
-          currency={quoteCurrency}
-          families={manualPricingFamilies}
-          lines={manualPackagingLines}
-        />
-      ) : null}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          <Link href={`/leads/${params.leadId}`} className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
+            ← Back to Lead Details
+          </Link>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-black text-slate-950">{String(data.lead.company_name || data.lead.contact_name || 'Lead')}</div>
+            <div className="mt-0.5 text-[11px] font-semibold text-slate-500">{activeQuote ? `${String(activeQuote.quote_number || ('Q-'+activeQuote.id.slice(0,8).toUpperCase()))} · ${String(activeQuote.status || 'draft').replaceAll('_',' ')}` : 'Quote workspace'}</div>
+          </div>
+        </div>
+        <Link href="/leads" className="text-xs font-black text-blue-700 hover:underline">All Leads</Link>
+      </div>
+
       {(pricingV5Options || pricingV5FrameOptions) && activeQuote ? (
         <PremiumPackagingQuoteBuilderV5
           quoteId={activeQuote.id}
@@ -157,6 +165,28 @@ export default async function QuotePage({
           quoteTotal={liveQuoteTotal}
         />
       ) : null}
+
+      {activeQuote && manualPricingFamilies.length ? (
+        <div className="mb-4">
+          <div className="mb-2 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Additional Quote Tools</div>
+          <ManualPackagingQuoteSection
+            quoteId={activeQuote.id}
+            leadId={params.leadId}
+            currency={quoteCurrency}
+            families={manualPricingFamilies}
+            lines={manualPackagingLines}
+          />
+        </div>
+      ) : null}
+
+      {showStarkDesignHandoff ? (
+        <div className="mb-4">
+          <Suspense fallback={null}>
+            <QuoteDesignRequestLauncher leadId={params.leadId} />
+          </Suspense>
+        </div>
+      ) : null}
+
       {!pricingV5Options && !pricingV5FrameOptions && pricingV4Options && activeQuote ? (
         <div className="mb-4">
           <PricingV4SalesConfigurator quoteId={activeQuote.id} leadId={params.leadId} options={pricingV4Options} />
