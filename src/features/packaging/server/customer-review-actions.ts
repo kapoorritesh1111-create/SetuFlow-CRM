@@ -68,18 +68,10 @@ export async function preparePackagingQuoteCustomerShare(input:{leadId:string;qu
     if(!priced.length) return {ok:false,error:'Add at least one priced quote item before sharing.'};
     if((versionLines??[]).some((line:any)=>line?.calculation_meta?.approval_required===true)) return {ok:false,error:'Pricing approval is required before this quote can be shared.'};
 
-    if(!['sent','accepted'].includes(status)){
-      const {error:sendError}=await supabase.rpc('app_send_quote_version_with_fanout_tx',{
-        p_quote_version_id:quote.current_version_id,
-        p_actor_user_id:userId,
-        p_actor_name:'Setu Flow user',
-        p_plain_notes:'Quote shared through customer link.',
-        p_approval_required:false,
-        p_approval_state:'none',
-        p_action_source:'packaging_quote_share',
-      });
-      if(sendError) throw new Error(sendError.message);
-    }
+    // Preparing or manually sharing the customer review link does not lock the quote.
+    // The active version remains editable while Sales and the customer are reviewing it.
+    // The version is finalized as sent only when the customer approves it.
+
 
     const existingMeta=quote.industry_metadata??{};
     const token=String(existingMeta.customer_review_token||'').trim()||`${crypto.randomUUID().replace(/-/g,'')}${crypto.randomUUID().replace(/-/g,'')}`;
