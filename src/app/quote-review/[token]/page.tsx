@@ -65,7 +65,21 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   const byVariation = new Map<string, any>((variations ?? []).map((r: any) => [String(r.id), r]));
   const byKld = new Map<string, any>((klds ?? []).map((r: any) => [String(r.id), r]));
   const currency = quote.display_currency || quote.currency || 'INR';
-  const total = (lines ?? []).reduce((sum: number, line: any) => sum + Number(line.quantity || 0) * Number(line.unit_price || 0), 0);
+  const pricedV5=(lines ?? []).filter((line:any)=>Number(line.calculation_version)===5&&Number(line.unit_price??0)>0);
+  const displayLines=(lines ?? []).filter((line:any)=>{
+    const isPlaceholder=line?.input_snapshot_json?.source==='lead_requirement'&&Number(line.unit_price??0)<=0;
+    if(!isPlaceholder) return true;
+    const family=String(line.packaging_family_id??line.input_snapshot_json?.family_id??'');
+    const size=String(line.packaging_size_profile_v5_id??line.input_snapshot_json?.size_profile_id??'');
+    return !pricedV5.some((priced:any)=>{
+      const pricedFamily=String(priced.packaging_family_id??priced.input_snapshot_json?.family_id??'');
+      const pricedSize=String(priced.packaging_size_profile_v5_id??priced.input_snapshot_json?.input?.size_profile_id??'');
+      return pricedFamily===family&&(!size||!pricedSize||size===pricedSize);
+    });
+  });
+  const subtotal = displayLines.reduce((sum:number,line:any)=>sum+Number(line.quantity||0)*Number(line.unit_price||0),0);
+  const taxTotal = displayLines.reduce((sum:number,line:any)=>Number(line.calculation_version)===5?sum+Math.max(0,Number(line.pricing_breakdown_json?.selling_price?.gst??0)):sum,0);
+  const total = subtotal + taxTotal;
   const meta = quote.industry_metadata ?? {};
   const artworkAttachments = (attachments ?? []).filter((a: any) => ['artwork', 'customer_artwork', 'design_in_progress', 'design', 'proof'].includes(String(a.attachment_type || '').toLowerCase()));
   const imageArtwork = artworkAttachments.find((a:any)=>String(a.mime_type||'').startsWith('image/')) ?? null;
@@ -81,7 +95,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               <h1 className="mt-4 text-3xl font-black">Quotation</h1>
               <p className="mt-2 max-w-2xl text-sm font-semibold text-slate-300">Review your packaging specification, pricing options and artwork. Everything needed to approve this quotation is kept together here.</p>
             </div>
-            <div className="rounded-2xl bg-white/10 px-4 py-3 text-right"><div className="text-xs font-bold uppercase tracking-wide text-slate-300">Quote</div><div className="text-lg font-black">{quote.quote_number || 'Current quote'}</div></div>
+            <div className="flex flex-col items-end gap-2"><div className="rounded-2xl bg-white/10 px-4 py-3 text-right"><div className="text-xs font-bold uppercase tracking-wide text-slate-300">Quote</div><div className="text-lg font-black">{quote.quote_number || 'Current quote'}</div></div><a href={`/api/quotes/${quote.id}/pdf?token=${token}&download=1`} className="rounded-xl bg-white px-4 py-2 text-xs font-black text-slate-900 shadow-sm">Download PDF</a></div>
           </div>
         </header>
 
@@ -94,7 +108,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="mb-4"><p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">Packaging & Pricing</p><h2 className="mt-1 text-2xl font-black">Your quotation</h2></div>
           <div className="space-y-4">
-            {(lines ?? []).map((line: any, index: number) => {
+            {displayLines.map((line: any, index: number) => {
               const snapshot = line.input_snapshot_json ?? {};
               const input = snapshot.input ?? {};
               const product = line.product_id ? byProduct.get(String(line.product_id)) : null;
@@ -159,6 +173,8 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               );
             })}
           </div>
+          {taxTotal>0?<div className="mt-4 flex items-center justify-between rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-700"><span>GST</span><span>{money(taxTotal,currency)}</span></div>:null}
+          <div className="mt-3 flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4"><span className="font-black text-slate-900">Total incl. GST</span><span className="text-xl font-black text-emerald-700">{money(total,currency)}</span></div>
           {quote.notes_customer ? <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-600">{quote.notes_customer}</div> : null}
         </section>
 
