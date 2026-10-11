@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { normalizeModuleKey, type ModuleKey } from '@/lib/modules/module-grants';
+import { MODULE_KEYS, normalizeModuleKey, type ModuleKey } from '@/lib/modules/module-grants';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { isVerifiedPlatformSupport } from '@/lib/workspace/platform-support';
@@ -41,7 +41,8 @@ export async function GET() {
     })
     .filter((row): row is { module_key: ModuleKey; enabled: boolean } => row !== null);
 
-  const enabledModules = grants.filter((grant) => grant.enabled || platformSupport).map((grant) => grant.module_key);
+  const effectiveGrants = platformSupport ? MODULE_KEYS.map((module_key) => ({ module_key, enabled: true })) : grants;
+  const enabledModules = effectiveGrants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
 
-  return NextResponse.json({ enabledModules, grants: platformSupport ? grants.map((grant) => ({ ...grant, enabled: true })) : grants, canAccessAdmin: workspace.canAccessAdmin || platformSupport, isPlatformSupport: platformSupport });
+  return NextResponse.json({ enabledModules, grants: effectiveGrants, canAccessAdmin: workspace.canAccessAdmin || platformSupport, isPlatformSupport: platformSupport });
 }
