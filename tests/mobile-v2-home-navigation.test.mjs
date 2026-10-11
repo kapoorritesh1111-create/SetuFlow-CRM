@@ -4,7 +4,9 @@ import { readFileSync } from 'node:fs';
 const source = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
 const nav = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx','utf8');
 test('mobile dashboard quick actions use existing real destinations', () => {
-  for (const route of ['/mobile/capture','/trade-events','/quotes','/orders']) assert.ok(source.includes(`href: '${route}'`));
+  for (const route of ['/mobile/capture','/trade-events','/leads?quickLead=1']) assert.ok(source.includes(`href: '${route}'`));
+  const actions = source.split('aria-label="Mobile quick actions"')[1]?.split('<MetricGrid>')[0] ?? '';
+  for (const duplicate of ["href: '/quotes'", "href: '/orders'"]) assert.ok(!actions.includes(duplicate), `Duplicate quick action: ${duplicate}`);
   assert.match(source, /aria-label="Mobile quick actions"/);
 });
 test('mobile hero does not invent live data on missing dashboard props', () => {
