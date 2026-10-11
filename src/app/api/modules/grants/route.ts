@@ -19,7 +19,7 @@ type ModuleGrantReadClient = {
 export async function GET() {
   const workspace = await requireWorkspace();
   if (workspace.missingEnv || !workspace.organization) {
-    return NextResponse.json({ enabledModules: MODULE_KEYS, grants: [] }, { status: 200 });
+    return NextResponse.json({ enabledModules: [], grants: [], error: 'workspace_unavailable' }, { status: 403 });
   }
 
   const supabase = (await createClient()) as unknown as ModuleGrantReadClient;
@@ -29,7 +29,7 @@ export async function GET() {
     .eq('organization_id', workspace.organization.id);
 
   if (error) {
-    return NextResponse.json({ enabledModules: MODULE_KEYS, grants: [], error: 'module_grants_unavailable' }, { status: 200 });
+    return NextResponse.json({ enabledModules: [], grants: [], error: 'module_grants_unavailable' }, { status: 503 });
   }
 
   const grants = (data ?? [])
