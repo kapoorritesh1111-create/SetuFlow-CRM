@@ -83,6 +83,19 @@ function scopedHref(baseHref: string, scope: MobileScope) {
 }
 
 export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
+  const [visibleModules, setVisibleModules] = useState<OrgModuleGrant[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/modules/grants', { cache: 'no-store' })
+      .then(async response => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
+      .then(data => { if (active) setVisibleModules(Array.isArray(data.grants) ? data.grants : []); })
+      .catch(() => { if (active) setVisibleModules([]); });
+    return () => { active = false; };
+  }, []);
+  const topModules = getEnabledModuleSet(visibleModules);
+  const canShareVCard = topModules.has('vcard');
+  const canUseGuru = topModules.has('setu_guru');
+  const canCapture = topModules.has('full_crm') || topModules.has('trade_show');
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -106,21 +119,21 @@ export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIde
             <p className="truncate text-lg font-black tracking-tight">{greeting}, {firstName}</p>
             <p className="mt-0.5 truncate text-xs font-semibold text-white/60">{dateLabel || "Today"}</p>
           </div>
-          <button type="button" onClick={() => setCaptureOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-teal-500 text-lg font-bold text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Quick capture" title="Quick capture">+</button>
-          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></button>
-          <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button>
+          {canCapture ? <button type="button" onClick={() => setCaptureOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-teal-500 text-lg font-bold text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Quick capture" title="Quick capture">+</button> : null}
+          {canUseGuru ? <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></button> : null}
+          {canShareVCard ? <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button> : null}
           <Link href="/mobile/notifications" className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15" aria-label="Open notifications" title="Notifications"><SetuIcon name="bell" className="h-5 w-5" /></Link>
           <button type="button" onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-full" title={`Signed in as ${displayName}`} aria-label="Open profile settings"><UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" /></button>
         </div>
       </header>
-      <MobileActionDrawer open={open} onClose={() => setOpen(false)} signedIn={signedIn} onShareVCard={() => setShareOpen(true)} />
+      <MobileActionDrawer open={open} onClose={() => setOpen(false)} signedIn={signedIn} canShareVCard={canShareVCard} canUseDocuments={topModules.has('orders_compliance')} onShareVCard={() => setShareOpen(true)} />
       <MobileVCardShareSheet open={shareOpen} onClose={() => setShareOpen(false)} signedIn={signedIn} />
       <QuickCaptureSheet open={captureOpen} onClose={() => setCaptureOpen(false)} />
     </>
   );
 }
 
-export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard }: { open: boolean; onClose: () => void; canonical?: boolean; signedIn?: MobileSignedInIdentity; onShareVCard?: () => void }) {
+export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard, canShareVCard = false, canUseDocuments = false }: { open: boolean; onClose: () => void; canonical?: boolean; signedIn?: MobileSignedInIdentity; onShareVCard?: () => void; canShareVCard?: boolean; canUseDocuments?: boolean }) {
   if (!open) return null;
   const displayName = signedIn?.name ?? "SETU Flow user";
   const initials = signedIn?.initials ?? initialsFrom(displayName);
@@ -137,10 +150,10 @@ export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard }: { 
           </div>
         </div>
         <div className="mt-4 grid gap-2">
-          <button type="button" onClick={() => { onClose(); onShareVCard?.(); }} className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 text-left font-black text-blue-800 shadow-sm dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"><span>📇</span>Share vCard</button>
-          <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>👤</span>Profile card</Link>
-          <Link href="/documents" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>📄</span>Documents</Link>
-          <Link href="/compliance" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>🛡</span>Compliance</Link>
+          {canShareVCard ? <button type="button" onClick={() => { onClose(); onShareVCard?.(); }} className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 text-left font-black text-blue-800 shadow-sm dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"><span>📇</span>Share vCard</button> : null}
+          {canShareVCard ? <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>👤</span>Profile card</Link> : null}
+          {canUseDocuments ? <Link href="/documents" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>📄</span>Documents</Link> : null}
+          {canUseDocuments ? <Link href="/compliance" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>🛡</span>Compliance</Link> : null}
           <Link href="/mobile/settings" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
           <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Appearance</p>
