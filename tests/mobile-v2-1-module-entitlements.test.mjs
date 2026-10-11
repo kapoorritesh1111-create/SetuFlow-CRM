@@ -34,3 +34,5 @@ test('mobile Home keeps no duplicate quote/order shortcuts and guards order/comp
   assert.match(home, /hasOrders \? <MetricTile tone="warning"/);
   assert.doesNotMatch(home.slice(home.indexOf('aria-label="Mobile quick actions"'), home.indexOf('<MetricGrid>')), /href: '\/orders'|href: '\/quotes'/);
 });
+
+test('admin is shown only when authenticated access is granted', () => { const nav = read('src/features/mobile/components/mobile-bottom-tabs.tsx'); const api = read('src/app/api/modules/grants/route.ts'); assert.match(api, /canAccessAdmin: workspace.canAccessAdmin/); assert.match(nav, /canAccessAdmin \? <Link href="\/admin\/overview"/); });
