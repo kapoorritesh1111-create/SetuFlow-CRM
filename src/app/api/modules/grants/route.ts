@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { MODULE_KEYS, normalizeModuleKey, type ModuleKey } from '@/lib/modules/module-grants';
+import { normalizeModuleKey, type ModuleKey } from '@/lib/modules/module-grants';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
 
@@ -39,7 +39,7 @@ export async function GET() {
     })
     .filter((row): row is { module_key: ModuleKey; enabled: boolean } => row !== null);
 
-  const enabledModules = grants.length === 0 ? MODULE_KEYS : grants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
+  const enabledModules = grants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
 
   return NextResponse.json({ enabledModules, grants });
 }
