@@ -1,3 +1,4 @@
+import { requireOrganizationModule } from '@/lib/modules/require-organization-module';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { SetuMailWorkspace } from '@/features/mail/components/setu-mail-workspace';
 import { MobileSetuMailWorkspace } from '@/features/mail/components/mobile-setu-mail-workspace';
@@ -21,6 +22,7 @@ export default async function MailPage() {
     );
   }
 
+  await requireOrganizationModule(workspace.organization.id, 'setu_mail');
   const userName = workspace.profile?.full_name ?? workspace.profile?.username ?? workspace.user.email ?? 'Setu Flow user';
   const userEmail = workspace.profile?.email ?? workspace.user.email ?? '';
   const organizationName = workspace.organization.name ?? 'Setu Flow';
