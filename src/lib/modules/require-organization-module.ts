@@ -8,12 +8,14 @@ import type { ModuleKey } from '@/lib/modules/module-grants';
  */
 export async function requireOrganizationModule(organizationId: string, moduleKey: ModuleKey) {
   const supabase = await createClient();
+  // The generated Supabase Database type currently omits this table's row shape.
+  // Narrow only the query result until the generated types are refreshed.
   const { data, error } = await supabase
     .from('org_module_grants')
     .select('enabled')
     .eq('organization_id', organizationId)
     .eq('module_key', moduleKey)
-    .maybeSingle();
+    .maybeSingle() as unknown as { data: { enabled: boolean } | null; error: unknown };
 
   if (error || data?.enabled !== true) notFound();
 }
