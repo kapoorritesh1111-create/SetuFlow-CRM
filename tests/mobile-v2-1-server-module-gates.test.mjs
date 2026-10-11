@@ -30,3 +30,10 @@ test('offline trade show capture validates entitlement and event tenant', () => 
   assert.match(source, /requireOrganizationModule\(workspace.organization.id, 'trade_show'\)/);
   assert.match(source, /eq\('organization_id', workspace.organization.id\)/);
 });
+
+for (const documentKind of ['invoice', 'order-confirmation']) {
+  test(`orders ${documentKind} PDF enforces licensed server access`, () => {
+    const source = read(`src/app/api/orders/[contractId]/${documentKind}/pdf/route.ts`);
+    assert.match(source, /await requireOrganizationModule\(organizationId, 'orders_compliance'\)/);
+  });
+}
