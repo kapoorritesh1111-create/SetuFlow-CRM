@@ -16,12 +16,13 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const [grants, setGrants] = useState<OrgModuleGrant[]>([]);
+  const [canAccessAdmin, setCanAccessAdmin] = useState(false);
   useEffect(() => {
     let active = true;
     fetch('/api/modules/grants', { cache: 'no-store' })
-      .then(async (response) => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[]; enabledModules?: ModuleKey[] }>; })
-      .then((payload) => { if (active) setGrants(Array.isArray(payload.grants) ? payload.grants : []); })
-      .catch(() => { if (active) setGrants([]); });
+      .then(async (response) => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[]; enabledModules?: ModuleKey[]; canAccessAdmin?: boolean }>; })
+      .then((payload) => { if (active) { setGrants(Array.isArray(payload.grants) ? payload.grants : []); setCanAccessAdmin(payload.canAccessAdmin === true); } })
+      .catch(() => { if (active) { setGrants([]); setCanAccessAdmin(false); } });
     return () => { active = false; };
   }, []);
   const enabledModules = getEnabledModuleSet(grants);
@@ -29,7 +30,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
   const configuredTabs = (canonical ? canonicalMobileNavItems : standaloneMobileNavItems).filter((tab) => allowed(tab.href));
   const primaryTabs = configuredTabs.filter((tab) => tab.href !== '/tasks').slice(0, 4);
   const permittedMoreItems = mobileMoreNavItems.filter((tab) => allowed(tab.href));
-  const moreActive = permittedMoreItems.some((tab) => matchesPath(pathname, tab.match));
+  const moreActive = permittedMoreItems.some((tab) => matchesPath(pathname, tab.match)) || (canAccessAdmin && pathname.startsWith('/admin'));
 
   useEffect(() => {
     setMoreOpen(false);
@@ -65,6 +66,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
               </button>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">
+              {canAccessAdmin ? <Link href="/admin/overview" onClick={() => setMoreOpen(false)} className="col-span-2 flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-white"><SetuIcon name="settings" className="h-5 w-5" /> Admin Command Center</Link> : null}
               {permittedMoreItems.map((item) => {
                 const active = matchesPath(pathname, item.match);
                 return (
