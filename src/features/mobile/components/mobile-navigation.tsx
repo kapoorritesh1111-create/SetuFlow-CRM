@@ -189,12 +189,10 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
 export function MobileHomeHero({ data }: { data?: DashboardData }) {
   const openLeads = data ? getKpiValue(data, 'open-leads') : '—';
   const overdueFollowUps = data ? getKpiValue(data, 'overdue-followups') : '—';
-  const pipelineValue = data ? getKpiValue(data, 'pipeline-value') : 0;
   const activeQuotes = data ? getKpiValue(data, 'active-quotes') : '—';
   const metrics: MobileMetric[] = [
     { label: 'Open leads', value: openLeads, sub: 'Open leads', href: '/leads', icon: 'lead', tone: 'bg-white/10', valueTone: 'text-white' },
     { label: 'Due now', value: overdueFollowUps, sub: 'Overdue', href: '/leads?handoff=dashboard-overdue', icon: 'calendar', tone: 'bg-rose-400/20', valueTone: 'text-white' },
-    { label: 'Pipeline', value: formatCompactCurrency(pipelineValue), sub: 'Live value', href: '/pipeline', icon: 'workflow', tone: 'bg-sky-400/20', valueTone: 'text-white' },
     { label: 'Quotes', value: activeQuotes, sub: 'Active now', href: '/quotes', icon: 'quote', tone: 'bg-emerald-400/20', valueTone: 'text-white' },
   ];
 
@@ -240,9 +238,7 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
 
   const openLeads = getKpiValue(data, 'open-leads');
   const overdueFollowUps = getKpiValue(data, 'overdue-followups');
-  const pipelineValue = getKpiValue(data, 'pipeline-value');
   const activeQuotes = getKpiValue(data, 'active-quotes');
-  const complianceBlockers = getKpiValue(data, 'compliance-blockers');
   const trackedOrders = data.executionReadiness.trackedOrders;
   const recentActivity = data.recentActivity.slice(0, 5);
 
@@ -268,13 +264,12 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
           </Link>
         ))}
       </section>
+      <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-wider text-content-muted">Your workspace</p><h2 className="text-base font-bold text-content-primary">Priorities at a glance</h2></div><Link href="/tasks" className="min-h-11 inline-flex items-center text-xs font-semibold text-brand-700">My tasks →</Link></div>
       <MetricGrid>
         {hasCrm ? <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Open leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} in pipeline`} href={scopedHref('/leads', scope)} /> : null}
         {hasCrm ? <MetricTile tone="danger" icon={<SetuIcon name="calendar" className="h-4 w-4" />} value={overdueFollowUps} label="Follow-ups" sub="Overdue" href={scopedHref('/leads?handoff=dashboard-overdue', scope)} /> : null}
-        {hasCrm ? <MetricTile tone="brand" icon={<span className="text-sm font-bold">$</span>} value={formatCompactCurrency(pipelineValue)} label="Pipeline" sub="Live value" href={scopedHref('/pipeline', scope)} /> : null}
         {hasCrm ? <MetricTile tone="stage-contacted" icon={<SetuIcon name="quote" className="h-4 w-4" />} value={activeQuotes} label="Quotes" sub="Active now" href={scopedHref('/quotes', scope)} /> : null}
         {hasOrders ? <MetricTile tone="accent" icon={<SetuIcon name="orders" className="h-4 w-4" />} value={trackedOrders} label="Orders" sub="Execution" href={scopedHref('/orders', scope)} /> : null}
-        {hasOrders ? <MetricTile tone="warning" icon={<SetuIcon name="security" className="h-4 w-4" />} value={complianceBlockers} label="Compliance" sub="Needs review" href={scopedHref('/compliance', scope)} /> : null}
       </MetricGrid>
       <section className="overflow-hidden rounded-panel border border-line bg-surface-1 p-4 shadow-panel">
         <div className="flex items-center justify-between gap-3">

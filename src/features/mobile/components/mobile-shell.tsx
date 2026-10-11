@@ -53,11 +53,11 @@ export function MobileShell({
       data-mobile-shell={canonical ? 'canonical' : 'standalone'}
     >
       <BrandedMobileTopBar signedIn={signedIn} canonical={canonical} />
-      <main className="mx-auto w-full max-w-[430px] space-y-4 px-4 py-4 pb-[calc(150px+env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full max-w-[460px] space-y-4 px-4 py-4 pb-[calc(150px+env(safe-area-inset-bottom))]">
         {children}
       </main>
       {createBar ? (
-        <div className="fixed bottom-[86px] left-1/2 z-[450] w-full max-w-[430px] -translate-x-1/2 px-4 pb-3 pt-2">
+        <div className="fixed bottom-[86px] left-1/2 z-[450] w-full max-w-[460px] -translate-x-1/2 px-4 pb-3 pt-2">
           <a
             href={createBar.href}
             className="block rounded-card bg-brand-800 py-3.5 text-center text-[13.5px] font-semibold text-white shadow-[0_12px_30px_rgba(20,44,84,.35)]"

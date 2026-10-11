@@ -49,12 +49,12 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
             id="mobile-more-menu"
             className="absolute bottom-[86px] left-1/2 w-[calc(100%_-_24px)] max-w-[406px] -translate-x-1/2 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_24px_70px_rgba(15,23,42,.28)] dark:border-slate-800 dark:bg-slate-950"
             onClick={(event) => event.stopPropagation()}
-            aria-label="More mobile navigation"
+            aria-label="More mobile navigation" role="dialog" aria-modal="true"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">More</p>
-                <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Tasks & Events</h2>
+                <h2 className="mt-1 text-base font-black text-slate-950 dark:text-white">Your workspace</h2>
               </div>
               <button
                 type="button"
@@ -85,7 +85,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
                     <span>
                       <span className="block text-sm font-black">{item.label}</span>
                       <span className="mt-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                        {item.href === '/trade-events' ? 'Trade Event Command Center' : 'Follow-ups and assigned work'}
+                        {item.href === '/trade-events' ? 'Event capture and sync' : item.href === '/mail' ? 'Open communication workspace' : item.href === '/tasks' ? 'Follow-ups and assigned work' : item.href === '/calendar' ? 'Schedule and meetings' : 'Open workspace'}
                       </span>
                     </span>
                   </Link>
