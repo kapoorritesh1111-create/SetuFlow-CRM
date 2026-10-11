@@ -80,11 +80,11 @@ export default async function OrdersLayout({ children: _children }: { children: 
   if (!workspace.membership || !workspace.organization) {
     return <EmptyState title="Workspace required" description="Sign in with an active organization membership to view orders." />;
   }
-  await requireOrganizationModule(workspace.organization.id, 'orders_compliance');
   if (!hasSupabaseEnv) {
     return <EmptyState title="Configuration required" description="Supabase environment variables are not set." />;
   }
 
+  await requireOrganizationModule(workspace.organization.id, 'orders_compliance');
   const db = (await createClient()) as any;
   const adminDb = createAdminSupabaseClient() as any;
   const orgId = workspace.organization.id;
