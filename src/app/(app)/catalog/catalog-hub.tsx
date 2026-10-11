@@ -42,7 +42,7 @@ export function CatalogHub({ canManage, kpis }: { canManage: boolean; kpis: Kpis
   ];
 
   return (
-    <div style={{ padding: '20px 32px', maxWidth: 1520, margin: '0 auto' }}>
+    <div className="min-w-0 px-1 py-4 sm:px-5 lg:px-8" style={{ maxWidth: 1520, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#279491', letterSpacing: 0.5, textTransform: 'uppercase' }}>Catalog</div>
@@ -53,11 +53,11 @@ export function CatalogHub({ canManage, kpis }: { canManage: boolean; kpis: Kpis
         {canManage && <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}><Link href="/products" style={btnG}>Open products</Link><Link href="/price-lists" style={btnG}>Create Price List</Link><button style={btnP} onClick={() => setWizardOpen(true)}>Share Catalog</button></div>}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 14, marginBottom: 22 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,210px),1fr))', gap: 14, marginBottom: 22 }}>
         {KPI.map((k) => <div key={k.label} style={{ position: 'relative', background: '#fff', border: '1px solid #e8eef5', borderRadius: 16, padding: '16px 18px', boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px -16px rgba(15,23,42,.18)', overflow: 'hidden' }}><div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: k.accent }} /><div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.04em' }}>{k.label}</div><div style={{ fontSize: 30, fontWeight: 800, color: k.accent, fontFamily: "'DM Mono',monospace", marginTop: 8, lineHeight: 1 }}>{k.value}</div><div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginTop: 5 }}>{k.sub}</div></div>)}
       </div>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+      <div className="max-w-full overflow-x-auto" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         {tabs.map((t) => <button key={t.id} onClick={() => setTab(t.id)} style={{ border: tab === t.id ? '1px solid #cde0db' : '1px solid transparent', background: tab === t.id ? 'linear-gradient(135deg,rgba(31,72,124,.06),rgba(39,148,145,.08))' : 'transparent', padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: tab === t.id ? '#1f487c' : '#94a3b8', borderRadius: 999 }}>{t.label}</button>)}
       </div>
 
@@ -86,7 +86,7 @@ function PriceListsTab({ onShare }: { onShare: () => void }) {
     </div>
     {lists.length === 0
       ? <div style={{ border: '1px dashed #cbd9e6', borderRadius: 14, padding: '44px 28px', textAlign: 'center', background: 'linear-gradient(180deg,#fbfdff,#f5f9fd)' }}><div style={{ fontSize: 32 }}>🏷</div><div style={{ fontSize: 15, fontWeight: 800, color: '#1e293b', marginTop: 8 }}>No price lists yet</div><div style={{ fontSize: 12.5, color: '#64748b', marginTop: 6, maxWidth: 360, marginInline: 'auto' }}>Build a sharable price list over your products — MOQ and tier pricing auto-fill from the catalog.</div><Link href="/price-lists" style={{ ...btnP, marginTop: 16, display: 'inline-flex' }}>Create your first price list</Link></div>
-      : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 12 }}>{lists.map((l) => { const tone = statusTone[l.status] ?? statusTone.draft; return (
+      : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(100%,300px),1fr))', gap: 12 }}>{lists.map((l) => { const tone = statusTone[l.status] ?? statusTone.draft; return (
         <div key={l.id} style={{ background: '#fff', border: '1px solid #e8eef5', borderRadius: 14, padding: 16, boxShadow: '0 1px 2px rgba(15,23,42,.04)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
             <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.name}</div></div>

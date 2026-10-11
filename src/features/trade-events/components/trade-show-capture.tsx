@@ -115,7 +115,7 @@ export function TradeShowCapture({ events }: { events: TradeEventOption[] }) {
         {message ? <p className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{message}</p> : null}
       </section>
 
-      <div className="fixed inset-x-4 bottom-4 z-30 rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-soft backdrop-blur md:hidden">
+      <div className="fixed inset-x-4 bottom-[calc(96px+env(safe-area-inset-bottom))] z-[90] rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-soft backdrop-blur md:hidden">
         <div className="grid grid-cols-2 gap-2">
           <button type="button" onClick={() => { setLeadType('buyer'); setOpen(true); }} className="min-h-11 rounded-2xl bg-slate-900 px-3 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white">Capture buyer</button>
           <button type="button" onClick={() => { setLeadType('supplier'); setOpen(true); }} className="min-h-11 rounded-2xl border border-slate-200 px-3 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700">Capture supplier</button>
