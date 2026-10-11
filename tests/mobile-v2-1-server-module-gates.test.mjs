@@ -20,3 +20,13 @@ test('Mail server page enforces licensed access before mounting mail app', () =>
   const source = read('src/app/(app)/mail/page.tsx');
   assert.match(source, /await requireOrganizationModule\(workspace\.organization\.id, 'setu_mail'\)/);
 });
+
+test('orders catalog API enforces entitlement before reading catalog rows', () => {
+  const source = read('src/app/api/orders/catalog-options/route.ts');
+  assert.match(source, /await requireOrganizationModule\(orgId, 'orders_compliance'\)/);
+});
+test('offline trade show capture validates entitlement and event tenant', () => {
+  const source = read('src/app/api/trade-events/offline-capture/route.ts');
+  assert.match(source, /requireOrganizationModule\(workspace.organization.id, 'trade_show'\)/);
+  assert.match(source, /eq\('organization_id', workspace.organization.id\)/);
+});
