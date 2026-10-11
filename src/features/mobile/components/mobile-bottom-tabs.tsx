@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { SetuIcon } from '@/components/ui/setu-icon';
 import { TradeEventOfflineSync } from '@/features/trade-events/components/trade-event-offline-sync';
 import { canonicalMobileNavItems, mobileMoreNavItems, standaloneMobileNavItems } from '@/lib/navigation/nav-items';
+import { getEnabledModuleSet, getModuleForNavHref, type OrgModuleGrant, type ModuleKey } from '@/lib/modules/module-grants';
 
 function matchesPath(pathname: string, match: readonly string[]) {
   return match.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -14,9 +15,21 @@ function matchesPath(pathname: string, match: readonly string[]) {
 export function MobileBottomTabs({ canonical = false }: { canonical?: boolean }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
-  const configuredTabs = canonical ? canonicalMobileNavItems : standaloneMobileNavItems;
+  const [grants, setGrants] = useState<OrgModuleGrant[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/modules/grants', { cache: 'no-store' })
+      .then(async (response) => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[]; enabledModules?: ModuleKey[] }>; })
+      .then((payload) => { if (active) setGrants(Array.isArray(payload.grants) ? payload.grants : []); })
+      .catch(() => { if (active) setGrants([]); });
+    return () => { active = false; };
+  }, []);
+  const enabledModules = getEnabledModuleSet(grants);
+  const allowed = (href: string) => { const moduleDef = getModuleForNavHref(href); return !moduleDef || enabledModules.has(moduleDef.key); };
+  const configuredTabs = (canonical ? canonicalMobileNavItems : standaloneMobileNavItems).filter((tab) => allowed(tab.href));
   const primaryTabs = configuredTabs.filter((tab) => tab.href !== '/tasks').slice(0, 4);
-  const moreActive = mobileMoreNavItems.some((tab) => matchesPath(pathname, tab.match));
+  const permittedMoreItems = mobileMoreNavItems.filter((tab) => allowed(tab.href));
+  const moreActive = permittedMoreItems.some((tab) => matchesPath(pathname, tab.match));
 
   useEffect(() => {
     setMoreOpen(false);
@@ -52,7 +65,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
               </button>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">
-              {mobileMoreNavItems.map((item) => {
+              {permittedMoreItems.map((item) => {
                 const active = matchesPath(pathname, item.match);
                 return (
                   <Link
