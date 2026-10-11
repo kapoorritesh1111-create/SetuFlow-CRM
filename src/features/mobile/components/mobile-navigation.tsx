@@ -14,6 +14,7 @@ import { QuickCaptureSheet } from "./quick-capture-sheet";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 import { MetricGrid, MetricTile, SegmentedControl } from './primitives';
+import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
 
 type MobileScope = 'all' | 'buyer' | 'supplier';
 
@@ -198,6 +199,19 @@ export function MobileHomeHero({ data }: { data?: DashboardData }) {
 }
 
 export function MobileDashboardHome({ data }: { data: DashboardData }) {
+  const [moduleGrants, setModuleGrants] = useState<OrgModuleGrant[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/modules/grants', { cache: 'no-store' })
+      .then(async (response) => { if (!response.ok) throw new Error('Module grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
+      .then((payload) => { if (active) setModuleGrants(Array.isArray(payload.grants) ? payload.grants : []); })
+      .catch(() => { if (active) setModuleGrants([]); });
+    return () => { active = false; };
+  }, []);
+  const enabledModules = getEnabledModuleSet(moduleGrants);
+  const hasCrm = enabledModules.has('full_crm');
+  const hasOrders = enabledModules.has('orders_compliance');
+  const hasTradeShow = enabledModules.has('trade_show');
   const router = useRouter();
   const searchParams = useSearchParams();
   const [scope, setScope] = useState<MobileScope>(() => scopeFromMode(searchParams.get('mode')));
@@ -230,12 +244,10 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
         value={scope}
         onChange={changeScope}
       />
-      <section aria-label="Mobile quick actions" className="grid grid-cols-4 gap-2">
+      <section aria-label="Mobile quick actions" className="grid grid-cols-2 gap-2">
         {[
-          { href: '/mobile/capture', label: 'Scan card', icon: 'lead' as SetuIconName },
-          { href: '/trade-events', label: 'Trade show', icon: 'calendar' as SetuIconName },
-          { href: '/quotes', label: 'Quotes', icon: 'quote' as SetuIconName },
-          { href: '/orders', label: 'Orders', icon: 'orders' as SetuIconName },
+          ...(hasCrm ? [{ href: '/mobile/capture', label: 'Scan card', icon: 'lead' as SetuIconName }, { href: '/leads?quickLead=1', label: 'New lead', icon: 'lead' as SetuIconName }] : []),
+          ...(hasTradeShow ? [{ href: '/trade-events', label: 'Trade show', icon: 'calendar' as SetuIconName }] : []),
         ].map((action) => (
           <Link key={action.href} href={action.href} className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-1 px-1 py-3 text-center text-content-primary shadow-soft">
             <SetuIcon name={action.icon} className="h-5 w-5 text-brand-700" />
@@ -244,12 +256,12 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
         ))}
       </section>
       <MetricGrid>
-        <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Open leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} in pipeline`} href={scopedHref('/leads', scope)} />
-        <MetricTile tone="danger" icon={<SetuIcon name="calendar" className="h-4 w-4" />} value={overdueFollowUps} label="Follow-ups" sub="Overdue" href={scopedHref('/leads?handoff=dashboard-overdue', scope)} />
-        <MetricTile tone="brand" icon={<span className="text-sm font-bold">$</span>} value={formatCompactCurrency(pipelineValue)} label="Pipeline" sub="Live value" href={scopedHref('/pipeline', scope)} />
-        <MetricTile tone="stage-contacted" icon={<SetuIcon name="quote" className="h-4 w-4" />} value={activeQuotes} label="Quotes" sub="Active now" href={scopedHref('/quotes', scope)} />
-        <MetricTile tone="accent" icon={<SetuIcon name="orders" className="h-4 w-4" />} value={trackedOrders} label="Orders" sub="Execution" href={scopedHref('/orders', scope)} />
-        <MetricTile tone="warning" icon={<SetuIcon name="security" className="h-4 w-4" />} value={complianceBlockers} label="Compliance" sub="Needs review" href={scopedHref('/compliance', scope)} />
+        {hasCrm ? <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Open leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} in pipeline`} href={scopedHref('/leads', scope)} /> : null}
+        {hasCrm ? <MetricTile tone="danger" icon={<SetuIcon name="calendar" className="h-4 w-4" />} value={overdueFollowUps} label="Follow-ups" sub="Overdue" href={scopedHref('/leads?handoff=dashboard-overdue', scope)} /> : null}
+        {hasCrm ? <MetricTile tone="brand" icon={<span className="text-sm font-bold">$</span>} value={formatCompactCurrency(pipelineValue)} label="Pipeline" sub="Live value" href={scopedHref('/pipeline', scope)} /> : null}
+        {hasCrm ? <MetricTile tone="stage-contacted" icon={<SetuIcon name="quote" className="h-4 w-4" />} value={activeQuotes} label="Quotes" sub="Active now" href={scopedHref('/quotes', scope)} /> : null}
+        {hasOrders ? <MetricTile tone="accent" icon={<SetuIcon name="orders" className="h-4 w-4" />} value={trackedOrders} label="Orders" sub="Execution" href={scopedHref('/orders', scope)} /> : null}
+        {hasOrders ? <MetricTile tone="warning" icon={<SetuIcon name="security" className="h-4 w-4" />} value={complianceBlockers} label="Compliance" sub="Needs review" href={scopedHref('/compliance', scope)} /> : null}
       </MetricGrid>
       <section className="overflow-hidden rounded-panel border border-line bg-surface-1 p-4 shadow-panel">
         <div className="flex items-center justify-between gap-3">
