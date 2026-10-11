@@ -27,8 +27,8 @@ export type MobileSignedInIdentity = {
 // on the Tasks screen. The bar reserves its own space above the tab bar and
 // each route gets its own correct label + destination.
 function createBarConfig(pathname: string): { label: string; href: string } | null {
-  if (pathname.startsWith('/leads')) return { label: '+ Create lead', href: '/leads?quickLead=1' };
-  if (pathname.startsWith('/tasks')) return { label: '+ Add task', href: '/tasks?quickTask=1' };
+  if (pathname === '/leads' || pathname === '/mobile/leads') return { label: '+ Create lead', href: '/leads?quickLead=1' };
+  if (pathname === '/tasks') return { label: '+ Add task', href: '/tasks?quickTask=1' };
   // Quotes and Orders don't have a verified quick-create entry point yet —
   // omit the bar rather than guess at a destination.
   return null;
@@ -53,7 +53,7 @@ export function MobileShell({
       data-mobile-shell={canonical ? 'canonical' : 'standalone'}
     >
       <BrandedMobileTopBar signedIn={signedIn} canonical={canonical} />
-      <main className="mx-auto w-full max-w-[460px] space-y-4 px-4 py-4 pb-[calc(150px+env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full max-w-[460px] space-y-4 px-4 py-4 pb-[calc(170px+env(safe-area-inset-bottom))]">
         {children}
       </main>
       {createBar ? (

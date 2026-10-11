@@ -258,7 +258,7 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
           ...(hasCrm ? [{ href: '/mobile/capture', label: 'Scan card', icon: 'lead' as SetuIconName }, { href: '/leads?quickLead=1', label: 'New lead', icon: 'lead' as SetuIconName }] : []),
           ...(hasTradeShow ? [{ href: '/trade-events', label: 'Trade show', icon: 'calendar' as SetuIconName }] : []),
         ].map((action) => (
-          <Link key={action.href} href={action.href} className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-1 px-1 py-3 text-center text-content-primary shadow-soft">
+          <Link key={action.href} href={action.href} className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-1 px-2 py-3 text-center text-content-primary shadow-soft transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-700">
             <SetuIcon name={action.icon} className="h-5 w-5 text-brand-700" />
             <span className="text-[11px] font-semibold">{action.label}</span>
           </Link>
@@ -271,6 +271,7 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
         {hasCrm ? <MetricTile tone="stage-contacted" icon={<SetuIcon name="quote" className="h-4 w-4" />} value={activeQuotes} label="Quotes" sub="Active now" href={scopedHref('/quotes', scope)} /> : null}
         {hasOrders ? <MetricTile tone="accent" icon={<SetuIcon name="orders" className="h-4 w-4" />} value={trackedOrders} label="Orders" sub="Execution" href={scopedHref('/orders', scope)} /> : null}
       </MetricGrid>
+      {hasCrm ? <section aria-label="CRM and quote workspace" className="rounded-panel border border-line bg-surface-1 p-4 shadow-panel"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Customer journey</p><h2 className="mt-1 text-base font-semibold text-content-primary">Keep deals moving</h2><p className="mt-1 text-xs text-content-muted">Open the existing CRM workflows without losing customer history.</p></div><SetuIcon name="workflow" className="h-5 w-5 shrink-0 text-brand-700" /></div><div className="mt-3 grid grid-cols-2 gap-2"><Link href="/leads/inbound" className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-center text-xs font-semibold text-content-primary">Inbound leads</Link><Link href="/quotes" className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-center text-xs font-semibold text-content-primary">Review quotes</Link></div></section> : null}
       <section className="overflow-hidden rounded-panel border border-line bg-surface-1 p-4 shadow-panel">
         <div className="flex items-center justify-between gap-3">
           <div>
