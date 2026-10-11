@@ -152,19 +152,20 @@ export default async function QuotePage({
   return (
     <>
       {feedback ? <WorkflowToast kind={feedback.kind} message={feedback.message} /> : null}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link href={`/leads/${params.leadId}`} className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:px-4">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          <Link href={`/leads/${params.leadId}`} className="inline-flex min-h-11 shrink-0 items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
             ← Back to Lead Details
           </Link>
           <div className="min-w-0">
-            <div className="truncate text-sm font-black text-slate-950">{String(data.lead.company_name || data.lead.contact_name || 'Lead')}</div>
-            <div className="mt-0.5 text-[11px] font-semibold text-slate-500">{activeQuote ? `${String(activeQuote.quote_number || ('Q-'+activeQuote.id.slice(0,8).toUpperCase()))} · ${String(activeQuote.status || 'draft').replaceAll('_',' ')}` : 'Quote workspace'}</div>
+            <div className="truncate text-sm font-black text-slate-950 dark:text-white">{String(data.lead.company_name || data.lead.contact_name || 'Lead')}</div>
+            <div className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-slate-300">{activeQuote ? `${String(activeQuote.quote_number || ('Q-'+activeQuote.id.slice(0,8).toUpperCase()))} · ${String(activeQuote.status || 'draft').replaceAll('_',' ')}` : 'Quote workspace'}</div>
           </div>
         </div>
-        <Link href="/leads" className="text-xs font-black text-blue-700 hover:underline">All Leads</Link>
+        <Link href="/leads" className="inline-flex min-h-11 items-center text-xs font-black text-blue-700 hover:underline dark:text-sky-300">All Leads</Link>
       </div>
 
+      {activeQuote ? <nav aria-label="Quote steps" className="mb-4 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:hidden">{[1,2,3,4].map((step) => <Link key={step} href={`/leads/${params.leadId}/quote?quoteId=${activeQuote.id}&step=${step}`} aria-current={workflowStep === step ? "step" : undefined} className={`flex min-h-11 min-w-[94px] shrink-0 items-center justify-center rounded-xl px-3 text-xs font-bold ${workflowStep === step ? "bg-blue-800 text-white" : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100"}`}>{["Requirements","Pricing","Commercials","Review"][step-1]}</Link>)}</nav> : null}
       {(pricingV5Options || pricingV5FrameOptions) && activeQuote ? (
         <PremiumPackagingQuoteBuilderV5
           quoteId={activeQuote.id}
