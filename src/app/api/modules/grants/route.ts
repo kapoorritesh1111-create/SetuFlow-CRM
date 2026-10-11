@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { normalizeModuleKey, type ModuleKey } from '@/lib/modules/module-grants';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { isVerifiedPlatformSupport } from '@/lib/workspace/platform-support';
 
 type ModuleGrantRow = {
   module_key: string;
@@ -22,6 +23,7 @@ export async function GET() {
     return NextResponse.json({ enabledModules: [], grants: [], error: 'workspace_unavailable' }, { status: 403 });
   }
 
+  const platformSupport = await isVerifiedPlatformSupport(workspace.user?.id);
   const supabase = (await createClient()) as unknown as ModuleGrantReadClient;
   const { data, error } = await supabase
     .from('org_module_grants')
@@ -39,7 +41,7 @@ export async function GET() {
     })
     .filter((row): row is { module_key: ModuleKey; enabled: boolean } => row !== null);
 
-  const enabledModules = grants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
+  const enabledModules = grants.filter((grant) => grant.enabled || platformSupport).map((grant) => grant.module_key);
 
-  return NextResponse.json({ enabledModules, grants, canAccessAdmin: workspace.canAccessAdmin });
+  return NextResponse.json({ enabledModules, grants: platformSupport ? grants.map((grant) => ({ ...grant, enabled: true })) : grants, canAccessAdmin: workspace.canAccessAdmin || platformSupport, isPlatformSupport: platformSupport });
 }
