@@ -202,10 +202,10 @@ export async function AdminSettingsShell({ active, organizationName, missingCoun
   const orgLabel = showInternalOnlyTools ? 'Owner · Full access' : 'Owner · Managed workspace';
 
   return (
-    <section className="min-h-screen bg-slate-50 text-slate-800">
+    <section className="min-h-screen min-w-0 max-w-full overflow-x-clip bg-slate-50 text-slate-800">
       <div className="sticky top-0 z-30 bg-slate-950 text-white shadow-[0_1px_0_rgba(255,255,255,0.07)]">
-        <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-2">
-          <Link href="/admin/overview" className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white"><span aria-hidden="true">🏢</span><span>{showInternalOnlyTools ? 'SETU Flow (Main org)' : organizationName}</span></Link>
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 border-b border-white/10 px-3 py-2 sm:px-4">
+          <Link href="/admin/overview" className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white"><span aria-hidden="true">🏢</span><span className="truncate">{showInternalOnlyTools ? 'SETU Flow (Main org)' : organizationName}</span></Link>
           <span className="ml-auto text-[10px] font-semibold text-white/35">{orgLabel}</span>
         </div>
         <div className="flex gap-0.5 overflow-x-auto px-3 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -217,7 +217,7 @@ export async function AdminSettingsShell({ active, organizationName, missingCoun
       </div>
 
       <div className="grid min-h-[calc(100vh-72px)] lg:grid-cols-[204px_minmax(0,1fr)]">
-        <aside className="border-r border-slate-200 bg-white py-2 lg:sticky lg:top-[5.2rem] lg:max-h-[calc(100vh-5.2rem)] lg:self-start lg:overflow-y-auto">
+        <aside className="hidden border-r border-slate-200 bg-white py-2 lg:block lg:sticky lg:top-[5.2rem] lg:max-h-[calc(100vh-5.2rem)] lg:self-start lg:overflow-y-auto">
           <nav className="space-y-1">
             {sections.map((section, index) => {
               const isInternalSection = section.internalSection;
@@ -246,7 +246,7 @@ export async function AdminSettingsShell({ active, organizationName, missingCoun
         </aside>
 
         <main className="min-w-0 bg-slate-50">
-          <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-5 py-2.5 shadow-[0_1px_4px_rgba(15,23,42,0.05)]">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-2.5 shadow-[0_1px_4px_rgba(15,23,42,0.05)] sm:px-5">
             <div><p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-slate-400">{activeItem?.sublabel ?? 'Admin Command Center'}</p><h1 className="text-base font-extrabold tracking-[-0.02em] text-slate-950">{activeItem?.label ?? 'Admin'}</h1></div>
             <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
               {tbarChips.map((chip) => {
@@ -257,7 +257,7 @@ export async function AdminSettingsShell({ active, organizationName, missingCoun
               <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700">{organizationName}</span>{tbarAction}
             </div>
           </div>
-          <div className="space-y-3 px-[22px] pb-12 pt-3.5"><GovernanceBanner missingCount={missingCount} gapItems={gapItems} />{children}</div>
+          <div className="min-w-0 space-y-3 px-3 pb-24 pt-3.5 sm:px-[22px] lg:pb-12"><GovernanceBanner missingCount={missingCount} gapItems={gapItems} />{children}</div>
         </main>
       </div>
     </section>
