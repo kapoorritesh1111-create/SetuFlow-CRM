@@ -1,3 +1,4 @@
+import { requireOrganizationModule } from '@/lib/modules/require-organization-module';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MobileOrdersWorkspace } from '@/features/orders/components/mobile-orders-workspace';
 import { hasSupabaseEnv } from '@/lib/env';
@@ -79,6 +80,7 @@ export default async function OrdersLayout({ children: _children }: { children: 
   if (!workspace.membership || !workspace.organization) {
     return <EmptyState title="Workspace required" description="Sign in with an active organization membership to view orders." />;
   }
+  await requireOrganizationModule(workspace.organization.id, 'orders_compliance');
   if (!hasSupabaseEnv) {
     return <EmptyState title="Configuration required" description="Supabase environment variables are not set." />;
   }
