@@ -48,12 +48,12 @@ export function MobileShell({
 
   return (
     <div
-      className="sfm-app min-h-screen overflow-x-hidden bg-surface-2 text-slate-950 dark:bg-slate-950 dark:text-white"
+      className="sfm-app min-h-screen min-w-0 overflow-x-clip bg-surface-2 text-slate-950 dark:bg-slate-950 dark:text-white"
       data-feature-flag="feature/mobile_app_v1"
       data-mobile-shell={canonical ? 'canonical' : 'standalone'}
     >
       <BrandedMobileTopBar signedIn={signedIn} canonical={canonical} />
-      <main className="mx-auto w-full max-w-[460px] space-y-4 px-4 py-4 pb-[calc(170px+env(safe-area-inset-bottom))]">
+      <main className="mx-auto w-full min-w-0 max-w-[460px] space-y-4 px-3 py-4 pb-[calc(170px+env(safe-area-inset-bottom))] sm:px-4">
         {children}
       </main>
       {createBar ? (
