@@ -85,14 +85,14 @@ function ReviewStep({ data, quote, embedded = false }: { data: LeadProfileData; 
             ? `/leads/${data.lead!.id}/quote?quoteId=${quote.id}&step=2&editLine=${item.id}`
             : `/leads/${data.lead!.id}/quote?quoteId=${quote.id}&step=1`;
           const editLabel=source==='lead_requirement'?'Edit Requirement':isPackaging?'Edit Item':'Edit';
-          return <div key={item.id||index} className="grid gap-3 p-3 text-sm md:grid-cols-[minmax(0,1fr)_100px_120px_180px] md:items-center">
+          return <div key={item.id||index} className="grid min-w-0 gap-3 p-3 text-sm md:grid-cols-[minmax(0,1fr)_100px_120px_minmax(180px,1fr)] md:items-center">
             <div><div className="font-bold text-slate-900">{item.notes||item.product_name||'Product'}</div>{isV5?<div className="mt-1 text-[10px] font-black uppercase tracking-wide text-emerald-600">Approved Pricing V5</div>:source==='lead_requirement'?<div className="mt-1 text-[10px] font-black uppercase tracking-wide text-amber-600">Captured Requirement</div>:null}</div>
             <span className="font-semibold text-slate-600">Qty {defaultMoq(item).toLocaleString()}</span>
             <span className="font-black text-slate-950">{money(finalPrice(item)*defaultMoq(item),item.currency||quoteCurrency(data,quote))}</span>
             {embedded&&item.id?<QuoteReviewLineActions quoteId={quote.id} leadId={data.lead!.id} lineId={String(item.id)} editHref={editHref} editLabel={editLabel} quantity={defaultMoq(item)} isPricingV5={isV5}/>:null}
           </div>;
         })}
-        {optionalCharges.map((charge:any,index:number)=><div key={charge.id||`charge-${index}`} className="grid grid-cols-[1fr_80px_120px] gap-3 p-3 text-sm"><span className="font-bold">{charge.label||'Additional charge'}</span><span>Qty 1</span><span className="text-right font-black">{money(Number(charge.amount??0),charge.currency||quoteCurrency(data,quote))}</span></div>)}
+        {optionalCharges.map((charge:any,index:number)=><div key={charge.id||`charge-${index}`} className="grid grid-cols-[minmax(0,1fr)_65px_95px] gap-2 p-3 text-xs sm:grid-cols-[minmax(0,1fr)_80px_120px] sm:gap-3 sm:text-sm"><span className="font-bold">{charge.label||'Additional charge'}</span><span>Qty 1</span><span className="text-right font-black">{money(Number(charge.amount??0),charge.currency||quoteCurrency(data,quote))}</span></div>)}
         {v5Tax>0?<div className="grid grid-cols-[1fr_80px_120px] gap-3 bg-slate-50 p-3 text-sm"><span className="font-bold">GST</span><span></span><span className="text-right font-black">{money(v5Tax,quoteCurrency(data,quote))}</span></div>:null}
       </div>
       <div className="mt-5 text-right text-xl font-black">Total incl. GST {money(quoteTotal(quote,data),quoteCurrency(data,quote))}</div>
@@ -128,7 +128,7 @@ function SendGateStep({ data, quote, embedded = false }: { data: LeadProfileData
       {approvalRequired?<form action={submitCanonicalQuoteApproval} className="mt-4 flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-bold text-amber-800"><HiddenQuoteFields data={data} quote={quote} approvalRequired={approvalRequired}/><input type="hidden" name="reason" value="Pricing discount threshold requires approval before sending."/><span>Approval required before sharing.</span><button className="rounded-xl border border-blue-200 bg-white px-4 py-2 text-blue-700">Submit for Approval</button></form>:null}
       {embedded&&canShare?<div className="mt-4"><PackagingQuoteShareControls leadId={data.lead!.id} quoteId={quote.id} quoteNumber={quote.quote_number||'Quote'} email={data.lead?.email} whatsapp={data.lead?.whatsapp_number||data.lead?.phone} existingUrl={existingUrl}/></div>:null}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
-        <Link href={`/api/quotes/${quote.id}/pdf`} target="_blank" className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700">Preview Quote PDF</Link>
+        <div className="flex flex-wrap gap-2"><Link href={`/api/quotes/${quote.id}/pdf`} target="_blank" rel="noopener noreferrer" className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700">Preview PDF</Link><Link href={`/api/quotes/${quote.id}/pdf?download=1`} className="min-h-11 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-bold text-teal-900">Download PDF</Link></div>
         {!embedded?<form action={sendCanonicalQuote}><HiddenQuoteFields data={data} quote={quote} approvalRequired={approvalRequired}/><input type="hidden" name="plain_notes" value="Quote sent from the canonical send gate."/><button disabled={!genericCanSend} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">Send Quote</button></form>:null}
       </div>
     </div>
