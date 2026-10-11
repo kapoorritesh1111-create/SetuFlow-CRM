@@ -37,3 +37,5 @@ for (const documentKind of ['invoice', 'order-confirmation']) {
     assert.match(source, /await requireOrganizationModule\(organizationId, 'orders_compliance'\)/);
   });
 }
+
+test('platform module override requires explicit active registry and tenant membership', () => { const server = read('src/lib/modules/require-organization-module.ts'); const api = read('src/app/api/modules/grants/route.ts'); const identity = read('src/lib/workspace/platform-support.ts'); assert.match(server, /isVerifiedPlatformSupport\(workspace.user.id\)/); assert.match(server, /workspace.organization.id !== organizationId/); assert.match(api, /MODULE_KEYS.map/); assert.match(identity, /platform_support_users/); assert.match(identity, /is_active/); });
