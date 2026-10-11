@@ -41,5 +41,5 @@ export async function GET() {
 
   const enabledModules = grants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
 
-  return NextResponse.json({ enabledModules, grants });
+  return NextResponse.json({ enabledModules, grants, canAccessAdmin: workspace.canAccessAdmin });
 }
