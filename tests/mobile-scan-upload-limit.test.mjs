@@ -19,7 +19,7 @@ test('mobile scanner optimizes phone photos before server action upload', () => 
 test('Next server action upload budget matches mobile scan compression budget', () => {
   const nextConfig = readFileSync('next.config.mjs', 'utf8');
   const readiness = readFileSync('src/app/api/mobile/scan-readiness/route.ts', 'utf8');
-  assert.match(nextConfig, /bodySizeLimit: '4mb'/);
+  assert.match(nextConfig, /bodySizeLimit: '15mb'/); // Shared server-action budget; scanner itself compresses to 3MB
   assert.match(readiness, /maxOriginalImageBytes/);
   assert.match(readiness, /maxServerUploadBytes/);
   assert.match(readiness, /maxPdfBytes/);

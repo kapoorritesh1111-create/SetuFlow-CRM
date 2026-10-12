@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
+const drawer = readFileSync('src/features/leads/components/drawer/lead-drawer-implementation.tsx', 'utf8');
 const footer = readFileSync('src/features/leads/components/LeadDrawerFooter.tsx', 'utf8');
 
 test('mobile scan UX baseline scan UX keeps scan progress visible after camera/file picker closes', () => {

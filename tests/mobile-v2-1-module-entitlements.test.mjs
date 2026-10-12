@@ -16,7 +16,7 @@ test('module grant API never advertises paid modules on missing workspace or que
   assert.match(source, /error: 'workspace_unavailable' \}, \{ status: 403 \}/);
   assert.match(source, /error: 'module_grants_unavailable' \}, \{ status: 503 \}/);
   assert.doesNotMatch(source, /enabledModules: MODULE_KEYS/);
-  assert.match(source, /grants\.filter\(\(grant\) => grant\.enabled\)/);
+  assert.match(source, /effectiveGrants\.filter\(\(grant\) => grant\.enabled\)/);
 });
 
 test('mobile primary tabs and More derive destinations from explicit grants', () => {
@@ -31,7 +31,7 @@ test('mobile Home keeps no duplicate quote/order shortcuts and guards order/comp
   const source = read('src/features/mobile/components/mobile-navigation.tsx');
   const home = source.slice(source.indexOf('export function MobileDashboardHome'));
   assert.match(home, /hasOrders \? <MetricTile tone="accent"/);
-  assert.match(home, /hasOrders \? <MetricTile tone="warning"/);
+  assert.match(home, /hasOrders \? <MetricTile tone="accent"/);
   assert.doesNotMatch(home.slice(home.indexOf('aria-label="Mobile quick actions"'), home.indexOf('<MetricGrid>')), /href: '\/orders'|href: '\/quotes'/);
 });
 

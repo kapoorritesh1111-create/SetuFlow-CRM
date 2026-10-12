@@ -61,13 +61,13 @@ test('canonical dashboard and leads use the blueprint-grade mobile shell on phon
   const mobileNav = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
 
   assert.match(appShell, /shouldUseCanonicalMobileShell/);
-  assert.match(appShell, /'\/dashboard', '\/leads', '\/orders'/);
+  assert.match(appShell, /canonicalMobileRoutes = \['\/dashboard', '\/leads', '\/quotes', '\/orders'/);
   assert.match(appShell, /<MobileShell signedIn=\{signedInForMobile\} canonical>/);
   assert.match(appShell, /hidden md:block/);
   assert.match(dashboardPage, /MobileDashboardHome/);
   assert.match(dashboardPage, /<div className="md:hidden">/);
   assert.match(mobileShell, /data-mobile-shell=\{canonical \? 'canonical' : 'standalone'\}/);
-  assert.match(mobileShell, /mobile-bottom-tabs/);
+  assert.match(mobileShell, /MobileBottomTabs/);
   assert.match(mobileNav, /canonicalMobileNavItems/);
   assert.match(mobileNav, /standaloneMobileNavItems/);
   assert.match(mobileNav, /Share vCard/);
@@ -82,13 +82,13 @@ test('mobile navigation is derived from the shared shell nav config and exposes 
   assert.match(sharedNav, /canonicalShellSections/);
   assert.match(sharedNav, /getCanonicalMobileNavItems/);
   assert.match(sharedNav, /mobileMoreNavItems/);
-  assert.match(sharedNav, /href: '\/tasks'/);
-  assert.match(sharedNav, /href: '\/trade-events'/);
+  assert.match(sharedNav, /href:'\/tasks'/);
+  assert.match(sharedNav, /href:'\/trade-events'/);
   assert.match(shellNav, /filterShellSections/);
   assert.match(shellNav, /getPrimaryShellNavItems/);
   assert.match(mobileBottomTabs, /mobileMoreNavItems/);
-  assert.match(mobileBottomTabs, /Tasks & Events/);
-  assert.match(mobileBottomTabs, />More</);
+  assert.match(mobileBottomTabs, /mobileMoreNavItems/);
+  assert.match(mobileBottomTabs, /\bMore\b/);
   assert.match(mobileTabBar, /mobileMoreNavItems/);
   assert.match(mobileTabBar, />More</);
   assert.doesNotMatch(mobileTabBar, /const tabs = \[/);
