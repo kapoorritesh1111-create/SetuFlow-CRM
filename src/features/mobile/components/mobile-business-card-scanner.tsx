@@ -27,7 +27,7 @@ function draftFromExtraction(extraction: ContactServerExtractionResult | null): 
     phone: extraction?.draft.phone || '',
     phoneSecondary: extraction?.draft.phoneSecondary || '',
     website: extraction?.draft.website || '',
-    notes: extraction?.draft.notes || '',
+    notes: '',
     sourceLabel: extraction?.sourceLabel || 'Mobile business card scan',
   };
 }
@@ -71,7 +71,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
 
   const previewKind = useMemo(() => selectedFile?.type?.startsWith('image/') ? 'image' : selectedFile?.type === 'application/pdf' ? 'pdf' : 'none', [selectedFile]);
   const canScan = Boolean(scanFile || assistText.trim());
-  const canSave = hasDraftSignal(draft) && !isSaving;
+  const canSave = Boolean(draft.companyName.trim() || draft.contactName.trim()) && !isSaving && !isScanning && !createdLeadId;
 
   function updateField(field: keyof Draft, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -104,25 +104,28 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
       return;
     }
     setScanFile(file);
-    setStatus(`Card ready: ${file.name} (${Math.round(file.size / 1024)} KB). Tap Scan business card to extract details.`);
+    // iOS/Android file pickers close after photo capture: process that same photo
+    // immediately instead of requiring a second 'scan card' action.
+    void runScan(file);
   }
 
-  async function runScan() {
+  async function runScan(fileOverride?: File) {
     setIsScanning(true);
     setError('');
     setCreatedLeadId('');
     setStatus('Scanning card and reading contact details…');
     try {
       const formData = new FormData();
-      let uploadFile = scanFile;
-      if (selectedFile) {
+      const sourceFile = fileOverride ?? selectedFile;
+      let uploadFile = fileOverride ?? scanFile;
+      if (sourceFile) {
         setStatus('Preparing photo for secure mobile scan…');
-        const prepared = await prepareMobileScanFile(selectedFile);
+        const prepared = await prepareMobileScanFile(sourceFile);
         uploadFile = prepared.file;
         setScanFile(prepared.file);
         if (prepared.compressed) setStatus(prepared.note);
       }
-      const browserText = selectedFile ? await tryBrowserTextDetection(selectedFile) : '';
+      const browserText = sourceFile ? await tryBrowserTextDetection(sourceFile) : '';
       const combinedAssistText = [assistText.trim(), browserText].filter(Boolean).join('\n');
       if (uploadFile) formData.set('source', uploadFile);
       if (combinedAssistText.trim()) formData.set('assist_text', combinedAssistText.trim());
@@ -174,8 +177,9 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
       if (eventId) formData.set('trade_event_id', eventId);
       const result = await createLeadFromContactScanReview(formData);
       if (result.error) throw new Error(result.error);
-      setCreatedLeadId(result.lead?.id ?? 'created');
-      setStatus('Lead created from business card scan.');
+      if (!result.success || !result.lead?.id) throw new Error('Lead save could not be verified. Please retry without taking another picture.');
+      setCreatedLeadId(result.lead.id);
+      setStatus(result.success);
     } catch (saveError) {
       const message = saveError instanceof Error ? saveError.message : 'Unable to create lead from business card scan.';
       setError(message);
@@ -207,7 +211,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
 
         <label className="mt-4 flex min-h-[156px] cursor-pointer flex-col items-center justify-center rounded-hero border border-dashed border-blue-200 bg-blue-50/70 px-4 py-5 text-center dark:border-blue-900 dark:bg-blue-950/30">
           <span className="text-3xl">📇</span>
-          <span className="mt-2 text-sm font-black text-slate-950 dark:text-white">Take or upload business card photo</span>
+          <span className="mt-2 text-sm font-black text-slate-950 dark:text-white">{selectedFile ? 'Retake or replace card photo' : 'Take or upload business card photo'}</span>
           <span className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-300">Camera capture is enabled on mobile. Large phone photos are optimized before scan.</span>
           <input type="file" accept="image/*,application/pdf" capture="environment" className="sr-only" onChange={onFileChange} data-mobile-card-scan-input />
         </label>
@@ -223,9 +227,9 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
           <textarea value={assistText} onChange={(event) => setAssistText(event.target.value)} placeholder="Add visible text only if the photo is blurry or incomplete." className="mt-2 min-h-24 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm outline-none ring-blue-500/20 focus:ring-4 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
         </label>
 
-        <button type="button" onClick={runScan} disabled={!canScan || isScanning} className="mt-4 min-h-14 w-full rounded-2xl bg-[linear-gradient(135deg,#2563ff,#62a6ff_52%,#7c3aed)] text-sm font-black text-white shadow-lg shadow-blue-600/20 disabled:opacity-55">
-          {isScanning ? 'Scanning business card…' : 'Scan business card'}
-        </button>
+        {(!selectedFile || error) ? <button type="button" onClick={() => void runScan()} disabled={!canScan || isScanning} className="mt-4 min-h-14 w-full rounded-2xl bg-[linear-gradient(135deg,#2563ff,#62a6ff_52%,#7c3aed)] text-sm font-black text-white shadow-lg shadow-blue-600/20 disabled:opacity-55">
+          {isScanning ? 'Scanning business card…' : selectedFile ? 'Retry reading this photo' : 'Read entered text'}
+        </button> : null}
 
         <p className={`mt-3 rounded-2xl px-4 py-3 text-xs font-semibold leading-5 ${error ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-200' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{status}</p>
       </div>
@@ -253,7 +257,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
         <button type="button" onClick={saveLead} disabled={!canSave} className="mt-4 min-h-14 w-full rounded-2xl bg-slate-950 text-sm font-black text-white shadow-lg shadow-slate-950/15 disabled:opacity-55 dark:bg-white dark:text-slate-950">
           {isSaving ? 'Saving lead…' : createdLeadId ? 'Lead saved' : `Save ${leadType} lead`}
         </button>
-        {createdLeadId ? <p className="mt-3 rounded-2xl bg-emerald-50 px-4 py-3 text-xs font-black text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">Lead created successfully.</p> : null}
+        {createdLeadId ? <div className="mt-3 rounded-2xl bg-emerald-50 px-4 py-3 text-xs font-black text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200">Lead saved successfully. <a className="underline" href={`/leads/${encodeURIComponent(createdLeadId)}`}>Open saved lead</a></div> : null}
       </div>
     </section>
   );

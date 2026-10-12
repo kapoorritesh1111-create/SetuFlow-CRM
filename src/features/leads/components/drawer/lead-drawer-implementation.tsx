@@ -694,7 +694,7 @@ export function LeadDrawer({
           tone: "error",
           message:
             result.error ??
-            "We could not read enough contact details. Try a clearer photo or upload the file.",
+            "We could not read the photo. Enter the contact details below and save, or retry with a clearer photo.",
         });
         return;
       }
@@ -716,8 +716,8 @@ export function LeadDrawer({
         const guidance =
           extraction.boundary === "server_image_ocr_live" ||
           extraction.boundary === "server_pdf_ocr_live"
-            ? "We could not read enough contact details. Retake the photo closer to the card with less glare, or upload the file."
-            : "We could not read enough contact details. Retake the photo closer to the card with less glare, or upload the file.";
+            ? "We could not read the photo clearly. Enter the contact details below and save, or retry with a clearer photo."
+            : "We could not read the photo clearly. Enter the contact details below and save, or retry with a clearer photo.";
         setQuickScanStatus({ tone: "error", message: guidance });
         setState({ error: guidance });
         return;
@@ -755,14 +755,9 @@ export function LeadDrawer({
       });
       setPhoneSecondary((current) => draft.phoneSecondary || current);
       setWebsite((current) => draft.website || current);
-      setNotes((current) => {
-        const additions = [draft.notes, extraction.notes.join("\n")]
-          .map((value) => String(value ?? "").trim())
-          .filter(Boolean);
-        if (!additions.length) return current;
-        const existing = String(current ?? "").trim();
-        return [existing, ...additions].filter(Boolean).join("\n\n");
-      });
+      // OCR output belongs in contact fields. Preserve only salesperson-entered
+      // notes here; importing business card raw text obscures dictated needs.
+
       setSourceType(
         extraction.sourceType ||
           (sourceMode === "camera"
@@ -829,7 +824,7 @@ export function LeadDrawer({
     }
     const recognition = new Ctor();
     recognition.lang = "en-US";
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
     setIsDictatingNote(true);
     setDictationStatus("Listening…");
@@ -846,15 +841,16 @@ export function LeadDrawer({
       }
     };
     recognition.onerror = () => {
-      setDictationStatus(
-        "Voice note was not captured. Please try again or type the note.",
-      );
+      // This project's SpeechRecognition type declares a zero-argument callback.
+      // Avoid a non-portable event parameter; keep a clear permissions fallback.
+      setDictationStatus("Dictation stopped. Check microphone permission, or type your note below. No card data was added to notes.");
       setIsDictatingNote(false);
     };
     recognition.onend = () => {
       setIsDictatingNote(false);
     };
-    recognition.start();
+    try { recognition.start(); }
+    catch { setIsDictatingNote(false); setDictationStatus("Microphone could not start. Type your note below or use your keyboard microphone."); }
   };
 
   const categoryTree = useMemo(() => {
@@ -1244,7 +1240,9 @@ export function LeadDrawer({
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
     formData.set("lead_type", leadType);
-    formData.set("company_name", companyName);
+    // A card may identify the person but omit the company; the canonical lead
+    // schema requires a non-empty company_name. Match the standalone scanner.
+    formData.set("company_name", companyName.trim() || contactName.trim());
     formData.set("contact_name", contactName);
     formData.set("job_title", jobTitle);
     formData.set("email", email);
