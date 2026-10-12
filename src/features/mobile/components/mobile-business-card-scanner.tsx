@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { extractContactScan, createLeadFromContactScanReview } from '@/features/leads/server/contact-scan-actions';
 import type { ContactServerExtractionResult } from '@/lib/contact-exchange/contact-extraction';
 import { prepareMobileScanFile, MOBILE_SCAN_MAX_ORIGINAL_IMAGE_BYTES, MOBILE_SCAN_MAX_PDF_UPLOAD_BYTES } from '@/features/mobile/lib/mobile-card-image';
@@ -16,6 +16,8 @@ type Draft = {
   website: string;
   notes: string;
   sourceLabel: string;
+  familyId: string;
+  requirement: string;
 };
 
 function draftFromExtraction(extraction: ContactServerExtractionResult | null): Draft {
@@ -29,6 +31,8 @@ function draftFromExtraction(extraction: ContactServerExtractionResult | null): 
     website: extraction?.draft.website || '',
     notes: '',
     sourceLabel: extraction?.sourceLabel || 'Mobile business card scan',
+    familyId: '',
+    requirement: '',
   };
 }
 
@@ -55,7 +59,7 @@ async function tryBrowserTextDetection(file: File): Promise<string> {
   }
 }
 
-export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }: { initialLeadType?: 'buyer' | 'supplier'; eventId?: string | null }) {
+export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId, serviceFamilies = [] }: { initialLeadType?: 'buyer' | 'supplier'; eventId?: string | null; serviceFamilies?: Array<{ id: string; name: string }> }) {
   const [leadType, setLeadType] = useState<'buyer' | 'supplier'>(initialLeadType);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [scanFile, setScanFile] = useState<File | null>(null);
@@ -68,6 +72,9 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
   const [status, setStatus] = useState('Take or upload a business card photo. The scan will prefill the lead fields for review.');
   const [error, setError] = useState('');
   const [createdLeadId, setCreatedLeadId] = useState('');
+  const [dictating, setDictating] = useState(false);
+  const [dictationMessage, setDictationMessage] = useState('');
+  const recognitionRef = useRef<{ stop: () => void } | null>(null);
 
   const previewKind = useMemo(() => selectedFile?.type?.startsWith('image/') ? 'image' : selectedFile?.type === 'application/pdf' ? 'pdf' : 'none', [selectedFile]);
   const canScan = Boolean(scanFile || assistText.trim());
@@ -109,6 +116,28 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
     void runScan(file);
   }
 
+  function toggleDictation() {
+    if (dictating) { recognitionRef.current?.stop(); setDictating(false); return; }
+    const SpeechCtor = (window as unknown as { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any }).SpeechRecognition
+      ?? (window as unknown as { webkitSpeechRecognition?: new () => any }).webkitSpeechRecognition;
+    if (!SpeechCtor) {
+      setDictationMessage('Use your keyboard microphone to dictate into Customer requirements, or type your notes. Browser voice recognition is not available.');
+      return;
+    }
+    const recognition = new SpeechCtor();
+    recognition.lang = navigator.language || 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.onresult = (event: { results: ArrayLike<ArrayLike<{ transcript: string }>>; resultIndex: number }) => {
+      const text = Array.from(event.results).slice(event.resultIndex).map((result) => result[0]?.transcript ?? '').join(' ').trim();
+      if (text) setDraft((current) => ({ ...current, requirement: [current.requirement.trim(), text].filter(Boolean).join(' ') }));
+    };
+    recognition.onerror = () => { setDictating(false); setDictationMessage('Voice recording stopped. Check microphone permission or use your keyboard microphone.'); };
+    recognition.onend = () => setDictating(false);
+    try { recognition.start(); recognitionRef.current = recognition; setDictating(true); setDictationMessage('Listening… describe the customer requirement.'); }
+    catch { setDictationMessage('Microphone could not start. Use your keyboard microphone or type the requirement.'); }
+  }
+
   async function runScan(fileOverride?: File) {
     setIsScanning(true);
     setError('');
@@ -136,7 +165,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
       if (!result.extraction) throw new Error('No scan result returned.');
       setExtraction(result.extraction);
       const nextDraft = draftFromExtraction(result.extraction);
-      setDraft(nextDraft);
+      setDraft((current) => ({ ...nextDraft, familyId: current.familyId, requirement: current.requirement, notes: current.notes }));
       if (hasDraftSignal(nextDraft)) {
         setStatus('Lead fields were prefilled. Review and save when ready.');
       } else if (result.extraction.boundary === 'server_image_ocr_ready' || result.extraction.boundary === 'server_pdf_ocr_ready') {
@@ -170,7 +199,12 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
       formData.set('phone', draft.phone);
       formData.set('phone_secondary', draft.phoneSecondary);
       formData.set('website', draft.website);
-      formData.set('notes', draft.notes);
+      const chosenFamily = serviceFamilies.find((family) => family.id === draft.familyId);
+      formData.set('notes', [
+        chosenFamily ? `Interested in category: ${chosenFamily.name}` : '',
+        draft.requirement.trim(),
+        draft.notes.trim(),
+      ].filter(Boolean).join('\n\n'));
       formData.set('source_label', draft.sourceLabel || selectedFile?.name || 'Mobile business card scan');
       formData.set('source_profile', extraction?.sourceProfile || 'business_card');
       formData.set('extraction_boundary', extraction?.boundary || 'server_manual_text');
@@ -251,7 +285,22 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId }
           <input value={draft.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="Phone" inputMode="tel" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" data-mobile-scan-field="phone" />
           <input value={draft.phoneSecondary} onChange={(event) => updateField('phoneSecondary', event.target.value)} placeholder="Secondary phone" inputMode="tel" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
           <input value={draft.website} onChange={(event) => updateField('website', event.target.value)} placeholder="Website" inputMode="url" className="min-h-12 rounded-2xl border border-slate-200 px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
-          <textarea value={draft.notes} onChange={(event) => updateField('notes', event.target.value)} placeholder="Notes / context" rows={4} className="rounded-2xl border border-slate-200 p-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+          {serviceFamilies.length > 0 ? <label className="grid gap-2 text-sm font-semibold text-slate-950 dark:text-white">
+            Stark Packmate service family
+            <select value={draft.familyId} onChange={(event) => updateField('familyId', event.target.value)} className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+              <option value="">Select customer interest (optional)</option>
+              {serviceFamilies.map((family) => <option key={family.id} value={family.id}>{family.name}</option>)}
+            </select>
+          </label> : null}
+          <div className="rounded-2xl border border-sky-200 bg-sky-50/60 p-3 dark:border-sky-900 dark:bg-sky-950/30">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <label htmlFor="scan-customer-requirement" className="text-sm font-bold text-slate-950 dark:text-white">Customer requirements</label>
+              <button type="button" onClick={toggleDictation} aria-pressed={dictating} className="min-h-11 rounded-xl bg-sky-700 px-4 text-sm font-bold text-white">{dictating ? 'Stop dictation' : '🎙 Dictate'}</button>
+            </div>
+            <textarea id="scan-customer-requirement" value={draft.requirement} onChange={(event) => updateField('requirement', event.target.value)} placeholder="Describe pouch type, size, quantity, artwork, delivery or customer needs…" rows={4} className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
+            <p role="status" className="mt-2 text-xs text-slate-600 dark:text-slate-300">{dictationMessage || 'Speech is recorded only in customer requirements. If iOS does not support browser dictation, use the microphone on your keyboard.'}</p>
+          </div>
+          <textarea value={draft.notes} onChange={(event) => updateField('notes', event.target.value)} placeholder="Additional private sales notes (optional)" rows={3} className="rounded-2xl border border-slate-200 p-4 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
         </div>
 
         <button type="button" onClick={saveLead} disabled={!canSave} className="mt-4 min-h-14 w-full rounded-2xl bg-slate-950 text-sm font-black text-white shadow-lg shadow-slate-950/15 disabled:opacity-55 dark:bg-white dark:text-slate-950">
