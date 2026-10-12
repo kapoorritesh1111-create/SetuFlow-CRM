@@ -843,9 +843,7 @@ export function LeadDrawer({
     recognition.onerror = () => {
       // This project's SpeechRecognition type declares a zero-argument callback.
       // Avoid a non-portable event parameter; keep a clear permissions fallback.
-      setDictationStatus(reason === "not-allowed" || reason === "service-not-allowed"
-        ? "Microphone access denied. Allow microphone access in your browser, or type your note below."
-        : "Dictation stopped. Keep or type the note below; no card data was added to notes.");
+      setDictationStatus("Dictation stopped. Check microphone permission, or type your note below. No card data was added to notes.");
       setIsDictatingNote(false);
     };
     recognition.onend = () => {
