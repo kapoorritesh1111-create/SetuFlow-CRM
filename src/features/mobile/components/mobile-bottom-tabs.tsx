@@ -19,6 +19,8 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
   const [canAccessAdmin, setCanAccessAdmin] = useState(false);
   useEffect(() => {
     let active = true;
+    setGrants([]);
+    setCanAccessAdmin(false);
     fetch('/api/modules/grants', { cache: 'no-store' })
       .then(async (response) => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[]; enabledModules?: ModuleKey[]; canAccessAdmin?: boolean }>; })
       .then((payload) => { if (active) { setGrants(Array.isArray(payload.grants) ? payload.grants : []); setCanAccessAdmin(payload.canAccessAdmin === true); } })
