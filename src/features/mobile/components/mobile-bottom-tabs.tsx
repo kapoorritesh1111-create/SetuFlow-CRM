@@ -19,13 +19,37 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
   const [canAccessAdmin, setCanAccessAdmin] = useState(false);
   useEffect(() => {
     let active = true;
-    setGrants([]);
-    setCanAccessAdmin(false);
-    fetch('/api/modules/grants', { cache: 'no-store' })
-      .then(async (response) => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[]; enabledModules?: ModuleKey[]; canAccessAdmin?: boolean }>; })
-      .then((payload) => { if (active) { setGrants(Array.isArray(payload.grants) ? payload.grants : []); setCanAccessAdmin(payload.canAccessAdmin === true); } })
-      .catch(() => { if (active) { setGrants([]); setCanAccessAdmin(false); } });
-    return () => { active = false; };
+    let requestVersion = 0;
+    const refreshGrants = () => {
+      const version = ++requestVersion;
+      setGrants([]);
+      setCanAccessAdmin(false);
+      fetch('/api/modules/grants', { cache: 'no-store' })
+        .then(async (response) => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[]; enabledModules?: ModuleKey[]; canAccessAdmin?: boolean }>; })
+        .then((payload) => {
+          if (active && version === requestVersion) {
+            setGrants(Array.isArray(payload.grants) ? payload.grants : []);
+            setCanAccessAdmin(payload.canAccessAdmin === true);
+          }
+        })
+        .catch(() => {
+          if (active && version === requestVersion) {
+            setGrants([]);
+            setCanAccessAdmin(false);
+          }
+        });
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshGrants();
+    };
+    refreshGrants();
+    window.addEventListener('focus', refreshGrants);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refreshGrants);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, [pathname]);
   const enabledModules = getEnabledModuleSet(grants);
   const allowed = (href: string) => { const moduleDef = getModuleForNavHref(href); return !moduleDef || enabledModules.has(moduleDef.key); };
