@@ -24,7 +24,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
       .then((payload) => { if (active) { setGrants(Array.isArray(payload.grants) ? payload.grants : []); setCanAccessAdmin(payload.canAccessAdmin === true); } })
       .catch(() => { if (active) { setGrants([]); setCanAccessAdmin(false); } });
     return () => { active = false; };
-  }, []);
+  }, [pathname]);
   const enabledModules = getEnabledModuleSet(grants);
   const allowed = (href: string) => { const moduleDef = getModuleForNavHref(href); return !moduleDef || enabledModules.has(moduleDef.key); };
   const configuredTabs = (canonical ? canonicalMobileNavItems : standaloneMobileNavItems).filter((tab) => allowed(tab.href));
