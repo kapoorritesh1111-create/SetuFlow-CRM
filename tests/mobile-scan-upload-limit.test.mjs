@@ -11,7 +11,7 @@ test('mobile scanner optimizes phone photos before server action upload', () => 
   assert.match(utility, /MOBILE_SCAN_MAX_UPLOAD_BYTES = 3 \* 1024 \* 1024/);
   assert.match(utility, /canvas\.toBlob/);
   assert.match(utility, /new File\(\[blob\]/);
-  assert.match(scanner, /prepareMobileScanFile\(selectedFile\)/);
+  assert.match(scanner, /prepareMobileScanFile\(sourceFile\)/);
   assert.match(scanner, /Preparing photo for secure mobile scan/);
   assert.match(scanner, /Large phone photos are optimized before scan/);
 });

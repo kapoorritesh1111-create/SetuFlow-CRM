@@ -694,7 +694,7 @@ export function LeadDrawer({
           tone: "error",
           message:
             result.error ??
-            "We could not read enough contact details. Try a clearer photo or upload the file.",
+            "We could not read the photo. Enter the contact details below and save, or retry with a clearer photo.",
         });
         return;
       }
@@ -716,8 +716,8 @@ export function LeadDrawer({
         const guidance =
           extraction.boundary === "server_image_ocr_live" ||
           extraction.boundary === "server_pdf_ocr_live"
-            ? "We could not read enough contact details. Retake the photo closer to the card with less glare, or upload the file."
-            : "We could not read enough contact details. Retake the photo closer to the card with less glare, or upload the file.";
+            ? "We could not read the photo clearly. Enter the contact details below and save, or retry with a clearer photo."
+            : "We could not read the photo clearly. Enter the contact details below and save, or retry with a clearer photo.";
         setQuickScanStatus({ tone: "error", message: guidance });
         setState({ error: guidance });
         return;
@@ -1244,7 +1244,9 @@ export function LeadDrawer({
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
     formData.set("lead_type", leadType);
-    formData.set("company_name", companyName);
+    // A card may identify the person but omit the company; the canonical lead
+    // schema requires a non-empty company_name. Match the standalone scanner.
+    formData.set("company_name", companyName.trim() || contactName.trim());
     formData.set("contact_name", contactName);
     formData.set("job_title", jobTitle);
     formData.set("email", email);

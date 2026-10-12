@@ -122,3 +122,14 @@ test('OCR raw text fallback can still prefill business-card fields when structur
   assert.match(extraction, /providerResult\.draft\.companyName \|\| rawTextParsed\?\.draft\.companyName/);
   assert.match(extraction, /providerResult\.draft\.jobTitle \|\| rawTextParsed\?\.draft\.jobTitle/);
 });
+
+
+test('camera capture processes selected image immediately and keeps saved lead accessible', () => {
+  const scanner = readFileSync('src/features/mobile/components/mobile-business-card-scanner.tsx', 'utf8');
+  const drawer = readFileSync('src/features/leads/components/drawer/lead-drawer-implementation.tsx', 'utf8');
+  assert.match(scanner, /void runScan\(file\)/);
+  assert.match(scanner, /const sourceFile = fileOverride \?\? selectedFile/);
+  assert.match(scanner, /result\.success \|\| !result\.lead\?\.id/);
+  assert.match(scanner, /Open saved lead/);
+  assert.match(drawer, /companyName\.trim\(\) \|\| contactName\.trim\(\)/);
+});
