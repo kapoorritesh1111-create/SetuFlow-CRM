@@ -25,15 +25,9 @@ export type OfflineTradeCaptureQueueItem = {
 const STORAGE_KEY = 'setu:trade-event-offline-queue:v1';
 const CHANGE_EVENT = 'setu:trade-event-offline-queue-changed';
 const MAX_QUEUE_ITEMS = 150;
-const MAX_QUEUE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function canUseStorage() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
-
-function isFresh(item: OfflineTradeCaptureQueueItem) {
-  const createdAt = new Date(item.createdAt).getTime();
-  return Number.isFinite(createdAt) && Date.now() - createdAt <= MAX_QUEUE_AGE_MS;
 }
 
 function readQueue(): OfflineTradeCaptureQueueItem[] {
@@ -44,9 +38,7 @@ function readQueue(): OfflineTradeCaptureQueueItem[] {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .filter((item): item is OfflineTradeCaptureQueueItem => Boolean(item?.id && item?.payload?.tradeEventId && item?.createdAt))
-      .filter(isFresh)
-      .slice(-MAX_QUEUE_ITEMS);
+      .filter((item): item is OfflineTradeCaptureQueueItem => Boolean(item?.id && item?.payload?.tradeEventId && item?.createdAt));
   } catch {
     return [];
   }
@@ -55,8 +47,9 @@ function readQueue(): OfflineTradeCaptureQueueItem[] {
 function writeQueue(items: OfflineTradeCaptureQueueItem[]) {
   if (!canUseStorage()) return false;
   try {
-    const bounded = items.filter(isFresh).slice(-MAX_QUEUE_ITEMS);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(bounded));
+    // Unsynced customer leads must not disappear because of age or queue pressure.
+    if (items.length > MAX_QUEUE_ITEMS) return false;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
     return true;
   } catch {
@@ -90,7 +83,7 @@ export function enqueueOfflineTradeCapture(payload: OfflineTradeCapturePayload) 
     payload,
   };
   if (!writeQueue([...existing, next])) {
-    throw new Error('This browser could not safely store the offline lead. Keep this screen open and reconnect before leaving it.');
+    throw new Error('Offline storage is full or unavailable. No lead was queued. Keep this form open, sync earlier captures, or reconnect before leaving it.');
   }
   return next;
 }

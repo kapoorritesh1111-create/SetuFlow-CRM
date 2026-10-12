@@ -35,14 +35,21 @@ export default function PackagingQuoteShareControls({
   }
 
   function open(){
-    ensureLink((reviewUrl)=>window.open(reviewUrl,'_blank','noopener,noreferrer'));
+    // Open the tab on the user gesture; async share preparation would otherwise trigger popup blocking.
+    const tab=window.open('about:blank','_blank');
+    ensureLink((reviewUrl)=>{
+      if(tab){tab.opener=null;tab.location.replace(reviewUrl);}
+      else{setNotice(`Open customer quote: ${reviewUrl}`);}
+    });
   }
 
   function whatsappShare(){
+    const tab=window.open('about:blank','_blank');
     ensureLink((reviewUrl)=>{
       const message=encodeURIComponent(`Stark Packmate quote ${quoteNumber} is ready for review: ${reviewUrl}`);
       const href=phone?`https://wa.me/${phone}?text=${message}`:`https://wa.me/?text=${message}`;
-      window.open(href,'_blank','noopener,noreferrer');
+      if(tab){tab.opener=null;tab.location.replace(href);}
+      else{setNotice(`WhatsApp link ready: ${href}`);}
     });
   }
 

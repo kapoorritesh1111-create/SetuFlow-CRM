@@ -4,6 +4,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { requireOrganizationModule } from '@/lib/modules/require-organization-module';
 
 type CatalogRule = {
   id: string;
@@ -122,6 +123,7 @@ export async function GET() {
   const orgId = workspace.organization?.id;
   if (!workspace.user || !orgId) return NextResponse.json({ options: [], error: 'Workspace membership required.' }, { status: 401 });
 
+  await requireOrganizationModule(orgId, 'orders_compliance');
   const userDb = (await createClient()) as unknown as CatalogClient;
   const adminDb = createAdminSupabaseClient() as unknown as CatalogClient | null;
   const clients: CatalogClientCandidate[] = [

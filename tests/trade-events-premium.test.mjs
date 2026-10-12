@@ -115,8 +115,9 @@ test('canonical Quick Lead keeps the initiating event id, name and buyer-supplie
 
 test('mobile navigation keeps Events reachable after Quick Lead closes', () => {
   assert.match(mobileBottomTabs, /mobileMoreNavItems/);
-  assert.match(mobileBottomTabs, /Tasks & Events/);
-  assert.match(mobileBottomTabs, /Trade Event Command Center/);
+  assert.match(mobileBottomTabs, /Your workspace/);
+  assert.match(mobileBottomTabs, /Event capture and sync/);
+  assert.match(mobileBottomTabs, /permittedMoreItems\.map/);
   assert.match(mobileBottomTabs, /aria-controls="mobile-more-menu"/);
 });
 
@@ -129,8 +130,8 @@ test('mobile event capture falls back to a durable offline queue and syncs autom
   assert.match(offlineQueue, /setu:trade-event-offline-queue:v1/);
   assert.match(offlineQueue, /clientCaptureId/);
   assert.match(offlineQueue, /MAX_QUEUE_ITEMS = 150/);
-  assert.match(offlineQueue, /MAX_QUEUE_AGE_MS = 7 \* 24 \* 60 \* 60 \* 1000/);
-  assert.match(offlineQueue, /browser could not safely store the offline lead/i);
+  assert.doesNotMatch(offlineQueue, /MAX_QUEUE_AGE_MS/);
+  assert.match(offlineQueue, /No lead was queued/i);
   assert.match(offlineSync, /window\.addEventListener\('online'/);
   assert.match(offlineSync, /\/api\/trade-events\/offline-capture/);
   assert.match(offlineCapture, /saved on this device/i);

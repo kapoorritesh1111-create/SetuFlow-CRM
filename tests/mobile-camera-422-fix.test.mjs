@@ -21,7 +21,7 @@ test('mobile camera upload baseline OpenAI Vision has a chat vision fallback and
 
 test('mobile camera upload baseline scan progress is visible in the sticky lead footer', () => {
   const footer = read('src/features/leads/components/LeadDrawerFooter.tsx');
-  const drawer = read('src/features/leads/components/lead-drawer.tsx');
+  const drawer = read('src/features/leads/components/drawer/lead-drawer-implementation.tsx');
   assert.match(footer, /quickScanStatus\?:/);
   assert.match(footer, /Reading card/);
   assert.match(drawer, /quickScanStatus=\{\s*isQuickMode && !isEditingExistingLead\s*\?\s*quickScanStatus\s*:\s*undefined\s*\}/s);

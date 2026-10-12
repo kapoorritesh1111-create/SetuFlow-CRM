@@ -17,18 +17,19 @@ test('mobile capture has a real business card scan flow wired to extraction and 
   assert.match(scanner, /data-mobile-scan-field="email"/);
 });
 
-test('canonical leads quick capture renders scanner on mobile while desktop workspace remains preserved', () => {
+test('canonical leads retains mobile surface and working quick lead entry while desktop remains preserved', () => {
   const leads = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
-  assert.match(leads, /MobileBusinessCardScanner/);
-  assert.match(leads, /quickLeadEnabled \? \(/);
-  assert.match(leads, /RoleAwareLeadList/);
+  const mobile = readFileSync('src/features/leads/components/leads-mobile-surface.tsx', 'utf8');
+  const drawer = readFileSync('src/features/leads/components/drawer/lead-drawer-implementation.tsx', 'utf8');
+  assert.match(leads, /LeadsMobileSurface/);
   assert.match(leads, /LeadsWorkspace/);
   assert.match(leads, /hidden space-y-4 md:block/);
+  assert.match(mobile, /RoleAwareLeadList/);
+  assert.match(drawer, /extractContactScan/);
 });
 
-
 test('quick add lead camera scan writes OCR results into visible drawer fields', () => {
-  const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
+  const drawer = readFileSync('src/features/leads/components/drawer/lead-drawer-implementation.tsx', 'utf8');
   assert.match(drawer, /extractContactScan/);
   assert.match(drawer, /applyQuickScanExtraction/);
   assert.match(drawer, /prepareMobileScanFile/);
@@ -62,7 +63,7 @@ test('mobile Share vCard uses desktop-grade share system actions', () => {
 
 
 test('quick add lead uses explicit mobile contact-scan API and visible status path', () => {
-  const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
+  const drawer = readFileSync('src/features/leads/components/drawer/lead-drawer-implementation.tsx', 'utf8');
   const route = readFileSync('src/app/api/mobile/contact-scan/route.ts', 'utf8');
   assert.match(drawer, /fetch\([\"']\/api\/mobile\/contact-scan[\"']/);
   assert.match(drawer, /Reading card…/);
@@ -83,11 +84,16 @@ test('mobile vCard uses saved card phone settings and does not duplicate lead-pa
   assert.doesNotMatch(roleList, /<SignedInCard signedIn=\{signedIn\}/);
 });
 
-test('canonical orders has a blueprint-grade mobile order surface', () => {
-  const orders = readFileSync('src/app/(app)/orders/page.tsx', 'utf8');
-  assert.match(orders, /data-mobile-orders-blueprint="true"/);
-  assert.match(orders, /Execution desk/);
-  assert.match(orders, /hidden md:block mobile-premium-orders/);
+test('canonical orders mounts entitled mobile workspace in route layout without duplicating page', () => {
+  const page = readFileSync('src/app/(app)/orders/page.tsx', 'utf8');
+  const layout = readFileSync('src/app/(app)/orders/layout.tsx', 'utf8');
+  const mobile = readFileSync('src/features/orders/components/mobile-orders-workspace.tsx', 'utf8');
+  assert.match(page, /return null/);
+  assert.match(layout, /requireOrganizationModule\(workspace\.organization\.id, 'orders_compliance'\)/);
+  assert.match(layout, /<MobileOrdersWorkspace/);
+  assert.match(layout, /md:hidden/);
+  assert.match(layout, /hidden md:block/);
+  assert.match(mobile, /Order command center/);
 });
 
 test('contact parser extracts a realistic business card text block for mobile scan prefill', () => {

@@ -14,6 +14,7 @@ import { QuickCaptureSheet } from "./quick-capture-sheet";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 import { MetricGrid, MetricTile, SegmentedControl } from './primitives';
+import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
 
 type MobileScope = 'all' | 'buyer' | 'supplier';
 
@@ -82,6 +83,35 @@ function scopedHref(baseHref: string, scope: MobileScope) {
 }
 
 export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
+  const pathname = usePathname();
+  const [visibleModules, setVisibleModules] = useState<OrgModuleGrant[]>([]);
+  useEffect(() => {
+    let active = true;
+    let requestVersion = 0;
+    const refreshGrants = () => {
+      const version = ++requestVersion;
+      setVisibleModules([]);
+      fetch('/api/modules/grants', { cache: 'no-store' })
+        .then(async response => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
+        .then(data => { if (active && version === requestVersion) setVisibleModules(Array.isArray(data.grants) ? data.grants : []); })
+        .catch(() => { if (active && version === requestVersion) setVisibleModules([]); });
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshGrants();
+    };
+    refreshGrants();
+    window.addEventListener('focus', refreshGrants);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refreshGrants);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [pathname]);
+  const topModules = getEnabledModuleSet(visibleModules);
+  const canShareVCard = topModules.has('vcard');
+  const canUseGuru = topModules.has('setu_guru');
+  const canCapture = topModules.has('full_crm') || topModules.has('trade_show');
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [captureOpen, setCaptureOpen] = useState(false);
@@ -105,21 +135,21 @@ export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIde
             <p className="truncate text-lg font-black tracking-tight">{greeting}, {firstName}</p>
             <p className="mt-0.5 truncate text-xs font-semibold text-white/60">{dateLabel || "Today"}</p>
           </div>
-          <button type="button" onClick={() => setCaptureOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-teal-500 text-lg font-bold text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Quick capture" title="Quick capture">+</button>
-          <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></button>
-          <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button>
+          {canCapture ? <button type="button" onClick={() => setCaptureOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-teal-500 text-lg font-bold text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Quick capture" title="Quick capture">+</button> : null}
+          {canUseGuru ? <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></button> : null}
+          {canShareVCard ? <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button> : null}
           <Link href="/mobile/notifications" className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15" aria-label="Open notifications" title="Notifications"><SetuIcon name="bell" className="h-5 w-5" /></Link>
           <button type="button" onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-full" title={`Signed in as ${displayName}`} aria-label="Open profile settings"><UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" /></button>
         </div>
       </header>
-      <MobileActionDrawer open={open} onClose={() => setOpen(false)} signedIn={signedIn} onShareVCard={() => setShareOpen(true)} />
+      <MobileActionDrawer open={open} onClose={() => setOpen(false)} signedIn={signedIn} canShareVCard={canShareVCard} canUseDocuments={topModules.has('orders_compliance')} onShareVCard={() => setShareOpen(true)} />
       <MobileVCardShareSheet open={shareOpen} onClose={() => setShareOpen(false)} signedIn={signedIn} />
       <QuickCaptureSheet open={captureOpen} onClose={() => setCaptureOpen(false)} />
     </>
   );
 }
 
-export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard }: { open: boolean; onClose: () => void; canonical?: boolean; signedIn?: MobileSignedInIdentity; onShareVCard?: () => void }) {
+export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard, canShareVCard = false, canUseDocuments = false }: { open: boolean; onClose: () => void; canonical?: boolean; signedIn?: MobileSignedInIdentity; onShareVCard?: () => void; canShareVCard?: boolean; canUseDocuments?: boolean }) {
   if (!open) return null;
   const displayName = signedIn?.name ?? "SETU Flow user";
   const initials = signedIn?.initials ?? initialsFrom(displayName);
@@ -136,10 +166,10 @@ export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard }: { 
           </div>
         </div>
         <div className="mt-4 grid gap-2">
-          <button type="button" onClick={() => { onClose(); onShareVCard?.(); }} className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 text-left font-black text-blue-800 shadow-sm dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"><span>📇</span>Share vCard</button>
-          <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>👤</span>Profile card</Link>
-          <Link href="/documents" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>📄</span>Documents</Link>
-          <Link href="/compliance" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>🛡</span>Compliance</Link>
+          {canShareVCard ? <button type="button" onClick={() => { onClose(); onShareVCard?.(); }} className="flex min-h-12 items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 text-left font-black text-blue-800 shadow-sm dark:border-blue-900 dark:bg-blue-950/40 dark:text-sky-200"><span>📇</span>Share vCard</button> : null}
+          {canShareVCard ? <Link href="/card" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>👤</span>Profile card</Link> : null}
+          {canUseDocuments ? <Link href="/documents" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>📄</span>Documents</Link> : null}
+          {canUseDocuments ? <Link href="/compliance" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>🛡</span>Compliance</Link> : null}
           <Link href="/mobile/settings" onClick={onClose} className="flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 font-black text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white"><span>⚙</span>Settings</Link>
           <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Appearance</p>
@@ -175,12 +205,10 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
 export function MobileHomeHero({ data }: { data?: DashboardData }) {
   const openLeads = data ? getKpiValue(data, 'open-leads') : '—';
   const overdueFollowUps = data ? getKpiValue(data, 'overdue-followups') : '—';
-  const pipelineValue = data ? getKpiValue(data, 'pipeline-value') : 0;
   const activeQuotes = data ? getKpiValue(data, 'active-quotes') : '—';
   const metrics: MobileMetric[] = [
     { label: 'Open leads', value: openLeads, sub: 'Open leads', href: '/leads', icon: 'lead', tone: 'bg-white/10', valueTone: 'text-white' },
     { label: 'Due now', value: overdueFollowUps, sub: 'Overdue', href: '/leads?handoff=dashboard-overdue', icon: 'calendar', tone: 'bg-rose-400/20', valueTone: 'text-white' },
-    { label: 'Pipeline', value: formatCompactCurrency(pipelineValue), sub: 'Live value', href: '/pipeline', icon: 'workflow', tone: 'bg-sky-400/20', valueTone: 'text-white' },
     { label: 'Quotes', value: activeQuotes, sub: 'Active now', href: '/quotes', icon: 'quote', tone: 'bg-emerald-400/20', valueTone: 'text-white' },
   ];
 
@@ -198,6 +226,19 @@ export function MobileHomeHero({ data }: { data?: DashboardData }) {
 }
 
 export function MobileDashboardHome({ data }: { data: DashboardData }) {
+  const [moduleGrants, setModuleGrants] = useState<OrgModuleGrant[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/modules/grants', { cache: 'no-store' })
+      .then(async (response) => { if (!response.ok) throw new Error('Module grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
+      .then((payload) => { if (active) setModuleGrants(Array.isArray(payload.grants) ? payload.grants : []); })
+      .catch(() => { if (active) setModuleGrants([]); });
+    return () => { active = false; };
+  }, []);
+  const enabledModules = getEnabledModuleSet(moduleGrants);
+  const hasCrm = enabledModules.has('full_crm');
+  const hasOrders = enabledModules.has('orders_compliance');
+  const hasTradeShow = enabledModules.has('trade_show');
   const router = useRouter();
   const searchParams = useSearchParams();
   const [scope, setScope] = useState<MobileScope>(() => scopeFromMode(searchParams.get('mode')));
@@ -213,9 +254,7 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
 
   const openLeads = getKpiValue(data, 'open-leads');
   const overdueFollowUps = getKpiValue(data, 'overdue-followups');
-  const pipelineValue = getKpiValue(data, 'pipeline-value');
   const activeQuotes = getKpiValue(data, 'active-quotes');
-  const complianceBlockers = getKpiValue(data, 'compliance-blockers');
   const trackedOrders = data.executionReadiness.trackedOrders;
   const recentActivity = data.recentActivity.slice(0, 5);
 
@@ -230,27 +269,25 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
         value={scope}
         onChange={changeScope}
       />
-      <section aria-label="Mobile quick actions" className="grid grid-cols-4 gap-2">
+      <section aria-label="Mobile quick actions" className="grid grid-cols-2 gap-2">
         {[
-          { href: '/mobile/capture', label: 'Scan card', icon: 'lead' as SetuIconName },
-          { href: '/trade-events', label: 'Trade show', icon: 'calendar' as SetuIconName },
-          { href: '/quotes', label: 'Quotes', icon: 'quote' as SetuIconName },
-          { href: '/orders', label: 'Orders', icon: 'orders' as SetuIconName },
+          ...(hasCrm ? [{ href: '/mobile/capture', label: 'Scan card', icon: 'lead' as SetuIconName }, { href: '/leads?quickLead=1', label: 'New lead', icon: 'lead' as SetuIconName }] : []),
+          ...(hasTradeShow ? [{ href: '/trade-events', label: 'Trade show', icon: 'calendar' as SetuIconName }] : []),
         ].map((action) => (
-          <Link key={action.href} href={action.href} className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-1 px-1 py-3 text-center text-content-primary shadow-soft">
+          <Link key={action.href} href={action.href} className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-1 px-2 py-3 text-center text-content-primary shadow-soft transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-700">
             <SetuIcon name={action.icon} className="h-5 w-5 text-brand-700" />
             <span className="text-[11px] font-semibold">{action.label}</span>
           </Link>
         ))}
       </section>
+      <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-wider text-content-muted">Your workspace</p><h2 className="text-base font-bold text-content-primary">Priorities at a glance</h2></div><Link href="/tasks" className="min-h-11 inline-flex items-center text-xs font-semibold text-brand-700">My tasks →</Link></div>
       <MetricGrid>
-        <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Open leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} in pipeline`} href={scopedHref('/leads', scope)} />
-        <MetricTile tone="danger" icon={<SetuIcon name="calendar" className="h-4 w-4" />} value={overdueFollowUps} label="Follow-ups" sub="Overdue" href={scopedHref('/leads?handoff=dashboard-overdue', scope)} />
-        <MetricTile tone="brand" icon={<span className="text-sm font-bold">$</span>} value={formatCompactCurrency(pipelineValue)} label="Pipeline" sub="Live value" href={scopedHref('/pipeline', scope)} />
-        <MetricTile tone="stage-contacted" icon={<SetuIcon name="quote" className="h-4 w-4" />} value={activeQuotes} label="Quotes" sub="Active now" href={scopedHref('/quotes', scope)} />
-        <MetricTile tone="accent" icon={<SetuIcon name="orders" className="h-4 w-4" />} value={trackedOrders} label="Orders" sub="Execution" href={scopedHref('/orders', scope)} />
-        <MetricTile tone="warning" icon={<SetuIcon name="security" className="h-4 w-4" />} value={complianceBlockers} label="Compliance" sub="Needs review" href={scopedHref('/compliance', scope)} />
+        {hasCrm ? <MetricTile tone="stage-new" icon={<SetuIcon name="lead" className="h-4 w-4" />} value={openLeads} label="Open leads" sub={`${scope === 'all' ? 'All' : scope === 'buyer' ? 'Buyer' : 'Supplier'} in pipeline`} href={scopedHref('/leads', scope)} /> : null}
+        {hasCrm ? <MetricTile tone="danger" icon={<SetuIcon name="calendar" className="h-4 w-4" />} value={overdueFollowUps} label="Follow-ups" sub="Overdue" href={scopedHref('/leads?handoff=dashboard-overdue', scope)} /> : null}
+        {hasCrm ? <MetricTile tone="stage-contacted" icon={<SetuIcon name="quote" className="h-4 w-4" />} value={activeQuotes} label="Quotes" sub="Active now" href={scopedHref('/quotes', scope)} /> : null}
+        {hasOrders ? <MetricTile tone="accent" icon={<SetuIcon name="orders" className="h-4 w-4" />} value={trackedOrders} label="Orders" sub="Execution" href={scopedHref('/orders', scope)} /> : null}
       </MetricGrid>
+      {hasCrm ? <section aria-label="CRM and quote workspace" className="rounded-panel border border-line bg-surface-1 p-4 shadow-panel"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-content-muted">Customer journey</p><h2 className="mt-1 text-base font-semibold text-content-primary">Keep deals moving</h2><p className="mt-1 text-xs text-content-muted">Open the existing CRM workflows without losing customer history.</p></div><SetuIcon name="workflow" className="h-5 w-5 shrink-0 text-brand-700" /></div><div className="mt-3 grid grid-cols-2 gap-2"><Link href="/leads/inbound" className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-center text-xs font-semibold text-content-primary">Inbound leads</Link><Link href="/quotes" className="flex min-h-12 items-center justify-center rounded-xl border border-line bg-surface-2 px-3 text-center text-xs font-semibold text-content-primary">Review quotes</Link></div></section> : null}
       <section className="overflow-hidden rounded-panel border border-line bg-surface-1 p-4 shadow-panel">
         <div className="flex items-center justify-between gap-3">
           <div>

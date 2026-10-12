@@ -15,11 +15,11 @@ test('mobile lead cards use real navigation actions for Open and Quote', () => {
 test('Quick Add Lead footer is not hidden behind mobile bottom tabs and does not show disabled previous on first step', () => {
   const rightDrawer = readFileSync('src/components/RightDrawer.tsx', 'utf8');
   const footer = readFileSync('src/features/leads/components/LeadDrawerFooter.tsx', 'utf8');
-  const drawer = readFileSync('src/features/leads/components/lead-drawer.tsx', 'utf8');
+  const drawer = readFileSync('src/features/leads/components/drawer/lead-drawer-implementation.tsx', 'utf8');
 
-  assert.match(rightDrawer, /z-\[120\]/);
+  assert.match(rightDrawer, /z-\[920\]/);
   assert.match(footer, /wizard && wizard\.canGoBack \?/);
   assert.doesNotMatch(footer, /disabled=\{!wizard\.canGoBack \|\| isPending\}/);
   assert.match(drawer, /wizard=\{\s*isQuickMode && !isEditingExistingLead\s*\?\s*undefined\s*:\s*\{/s);
-  assert.match(footer, /isQuickMode \? [\"']✓ Save lead[\"']/);
+  assert.match(footer, /isQuickMode \? 'Save lead'/);
 });

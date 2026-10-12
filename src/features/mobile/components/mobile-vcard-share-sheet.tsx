@@ -82,10 +82,10 @@ export function MobileVCardShareSheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/65 px-4 py-5 backdrop-blur-sm" onClick={onClose}>
-      <div className="mx-auto flex min-h-full max-w-[430px] items-center justify-center">
-        <section className="w-full overflow-hidden rounded-hero border border-sky-300/40 bg-white shadow-[0_24px_90px_rgba(15,23,42,.36)] dark:border-sky-800/60 dark:bg-slate-950" onClick={(event) => event.stopPropagation()}>
-          <div className="bg-[linear-gradient(145deg,#071827_0%,#0b2e4a_58%,#1267b5_120%)] p-7 text-white">
+    <div className="fixed inset-0 z-[500] overflow-y-auto overscroll-contain bg-slate-950/65 px-3 py-[max(12px,env(safe-area-inset-top))] pb-[max(20px,env(safe-area-inset-bottom))] backdrop-blur-sm sm:px-4" onClick={onClose}>
+      <div className="mx-auto flex min-h-full max-w-[430px] items-start justify-center sm:items-center">
+        <section className="w-full min-w-0 overflow-hidden rounded-hero border border-sky-300/40 bg-white shadow-[0_24px_90px_rgba(15,23,42,.36)] dark:border-sky-800/60 dark:bg-slate-950" onClick={(event) => event.stopPropagation()}>
+          <div className="bg-[linear-gradient(145deg,#071827_0%,#0b2e4a_58%,#1267b5_120%)] p-4 text-white sm:p-7">
             <div className="flex items-start justify-between gap-4">
               <UserAvatar name={signedIn?.name} email={signedIn?.email} avatarUrl={avatarUrl} initials={initials} size="lg" className="border border-white/35 shadow-xl shadow-sky-950/40" />
               <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full bg-white/15 text-2xl text-white" aria-label="Close Share vCard">×</button>
@@ -96,7 +96,7 @@ export function MobileVCardShareSheet({
             {signedIn?.primaryPhone ? <p className="mt-1 text-xs font-semibold text-sky-100">Cell: {signedIn.primaryPhone}</p> : null}
           </div>
 
-          <div className="grid gap-4 p-6">
+          <div className="grid gap-3 p-4 sm:gap-4 sm:p-6">
             <div className="text-center">
               <img src={qrImageUrl} alt="QR code for digital vCard" className="mx-auto h-36 w-36 rounded-card border border-slate-200 bg-white p-2 shadow-sm" />
               <p className="mt-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Scan to open card</p>

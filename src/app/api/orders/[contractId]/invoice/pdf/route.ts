@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { requireOrganizationModule } from '@/lib/modules/require-organization-module';
 import { buildOrderDocumentPdf, type OrderPdfLine } from '@/lib/orders/order-document-pdf';
 import { loadOrganizationLogo } from '@/lib/pdf/organization-logo';
 import { recordGeneratedDocument } from '@/lib/documents/generated-document-registry';
@@ -14,6 +15,7 @@ export async function GET(_request: Request, { params }: { params: { contractId:
   const organizationId = workspace.organization?.id;
   if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
 
+  await requireOrganizationModule(organizationId, 'orders_compliance');
   const db = (await createClient()) as any;
   const { contractId } = params;
   const { data: contract, error: contractError } = await db.from('contracts').select('id, quote_id, signed_at, commercial_lock_state, pricing_basis, quote_currency, execution_state, status, created_at').eq('organization_id', organizationId).eq('id', contractId).maybeSingle();

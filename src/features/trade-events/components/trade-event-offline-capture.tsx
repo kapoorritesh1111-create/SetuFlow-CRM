@@ -147,7 +147,7 @@ export function TradeEventOfflineCapture({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">{pendingCount} capture{pendingCount === 1 ? '' : 's'} waiting to sync</p>
-              <p className="mt-1 text-xs font-semibold text-amber-800">Keep Setu Flow open after reconnecting. Sync retries automatically.</p>
+              <p className="mt-1 text-xs font-semibold text-amber-800">Keep this device available until the server confirms sync. Pending captures are retained until confirmed; review failed captures below.</p>
             </div>
             {online ? <button type="button" onClick={() => void flushOfflineTradeCaptures()} className="rounded-xl bg-amber-900 px-3 py-2 text-xs font-black text-white">Sync now</button> : null}
           </div>

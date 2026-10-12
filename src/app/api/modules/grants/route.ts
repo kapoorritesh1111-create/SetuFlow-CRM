@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { MODULE_KEYS, normalizeModuleKey, type ModuleKey } from '@/lib/modules/module-grants';
 import { createClient } from '@/lib/supabase/server';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { isVerifiedPlatformSupport } from '@/lib/workspace/platform-support';
 
 type ModuleGrantRow = {
   module_key: string;
@@ -19,9 +20,10 @@ type ModuleGrantReadClient = {
 export async function GET() {
   const workspace = await requireWorkspace();
   if (workspace.missingEnv || !workspace.organization) {
-    return NextResponse.json({ enabledModules: MODULE_KEYS, grants: [] }, { status: 200 });
+    return NextResponse.json({ enabledModules: [], grants: [], error: 'workspace_unavailable' }, { status: 403 });
   }
 
+  const platformSupport = await isVerifiedPlatformSupport(workspace.user?.id);
   const supabase = (await createClient()) as unknown as ModuleGrantReadClient;
   const { data, error } = await supabase
     .from('org_module_grants')
@@ -29,7 +31,7 @@ export async function GET() {
     .eq('organization_id', workspace.organization.id);
 
   if (error) {
-    return NextResponse.json({ enabledModules: MODULE_KEYS, grants: [], error: 'module_grants_unavailable' }, { status: 200 });
+    return NextResponse.json({ enabledModules: [], grants: [], error: 'module_grants_unavailable' }, { status: 503 });
   }
 
   const grants = (data ?? [])
@@ -39,7 +41,8 @@ export async function GET() {
     })
     .filter((row): row is { module_key: ModuleKey; enabled: boolean } => row !== null);
 
-  const enabledModules = grants.length === 0 ? MODULE_KEYS : grants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
+  const effectiveGrants = platformSupport ? MODULE_KEYS.map((module_key) => ({ module_key, enabled: true })) : grants;
+  const enabledModules = effectiveGrants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
 
-  return NextResponse.json({ enabledModules, grants });
+  return NextResponse.json({ enabledModules, grants: effectiveGrants, canAccessAdmin: workspace.canAccessAdmin || platformSupport, isPlatformSupport: platformSupport });
 }

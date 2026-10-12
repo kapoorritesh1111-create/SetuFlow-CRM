@@ -15,11 +15,9 @@ export const MODULE_DEFINITIONS: readonly ModuleDefinition[] = [
   { key: 'setu_mail', title: 'Setu Communications', subtitle: 'Business email, calendar, meetings and booking for the trade team with CRM-aware communication.', routes: ['/mail', '/calendar', '/book', '/admin/mail', '/admin/meetings'] },
 ];
 
-// Setu Communications is a paid add-on and must be explicitly granted.
-const DEFAULT_ENABLED_MODULES = new Set<ModuleKey>(MODULE_KEYS.filter((key) => key !== 'setu_mail'));
 export function normalizeModuleKey(value: unknown): ModuleKey | null { return MODULE_KEYS.find((key) => key === value) ?? null; }
-export function getEnabledModuleSet(grants: readonly OrgModuleGrant[] | null | undefined) { if (!grants || grants.length === 0) return new Set(DEFAULT_ENABLED_MODULES); const enabled = new Set<ModuleKey>(); for (const grant of grants) { const key = normalizeModuleKey(grant.module_key); if (key && grant.enabled) enabled.add(key); } return enabled; }
+export function getEnabledModuleSet(grants: readonly OrgModuleGrant[] | null | undefined) { if (!grants || grants.length === 0) return new Set<ModuleKey>(); const enabled = new Set<ModuleKey>(); for (const grant of grants) { const key = normalizeModuleKey(grant.module_key); if (key && grant.enabled) enabled.add(key); } return enabled; }
 export function isModuleEnabled(enabledModules: ReadonlySet<ModuleKey>, moduleKey: ModuleKey) { return enabledModules.has(moduleKey); }
-export function getModuleForPath(pathname: string): ModuleDefinition | null { const cleanPath = pathname.split('?')[0] || '/'; return MODULE_DEFINITIONS.find((moduleDef) => moduleDef.routes.some((route) => cleanPath === route || cleanPath.startsWith(route + '/'))) ?? null; }
+export function getModuleForPath(pathname: string): ModuleDefinition | null { const cleanPath = pathname.split('?')[0] || '/'; return MODULE_DEFINITIONS.flatMap((moduleDef) => moduleDef.routes.map((route) => ({ moduleDef, route }))).filter(({ route }) => cleanPath === route || cleanPath.startsWith(route + '/')).sort((a, b) => b.route.length - a.route.length)[0]?.moduleDef ?? null; }
 export function isPathEnabled(pathname: string, enabledModules: ReadonlySet<ModuleKey>) { const moduleDef = getModuleForPath(pathname); return !moduleDef || enabledModules.has(moduleDef.key); }
 export function getModuleForNavHref(href: string): ModuleDefinition | null { return getModuleForPath(href); }

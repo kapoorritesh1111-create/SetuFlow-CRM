@@ -333,7 +333,7 @@ function Preview({ type, rows, onBack }: { type: ReportKey; rows: ReportRow[]; o
   }, [headers, sortKey]);
 
   return (
-    <section id="active-report" className="scroll-mt-28 rounded-panel border border-blue-100 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.055)]">
+    <section id="active-report" className="min-w-0 scroll-mt-28 rounded-panel border border-blue-100 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.055)] sm:p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Active report</p>
@@ -361,7 +361,7 @@ function Preview({ type, rows, onBack }: { type: ReportKey; rows: ReportRow[]; o
           {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <p className="mb-2 text-xs font-medium text-slate-500 md:hidden">Swipe sideways to see all report columns.</p><div role="region" aria-label="Report results, scroll horizontally for additional columns" tabIndex={0} className="max-w-full overflow-x-auto overscroll-x-contain rounded-xl border border-slate-100">
         <table className="min-w-[760px] w-full divide-y divide-slate-100">
           <thead>
             <tr>{headers.map((key) => <th key={key} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{key}</th>)}</tr>

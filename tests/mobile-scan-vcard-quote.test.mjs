@@ -5,7 +5,7 @@ import { test } from 'node:test';
 const read = (path) => readFileSync(path, 'utf8');
 
 test('mobile scan vCard quote baseline: mobile quick scan requires live OCR and never accepts generic image filename as company', () => {
-  const drawer = read('src/features/leads/components/lead-drawer.tsx');
+  const drawer = read('src/features/leads/components/drawer/lead-drawer-implementation.tsx');
   const route = read('src/app/api/mobile/contact-scan/route.ts');
   const parser = read('src/lib/contact-exchange/contact-parser.ts');
 
@@ -28,13 +28,12 @@ test('mobile scan vCard quote baseline: vCard sharing uses public card query con
   assert.match(publicCard, /get\('name'\) \|\| get\('fullName'\)/, 'public parser should stay backwards compatible with old fullName URLs');
 });
 
-test('mobile scan vCard quote baseline: canonical lead quote route includes a mobile-safe quote surface and hides desktop workspace on phones', () => {
+test('canonical lead quote route preserves pricing v5 and approval paths for mobile', () => {
   const quotePage = read('src/app/(app)/leads/[leadId]/quote/page.tsx');
-
-  assert.match(quotePage, /function MobileSafeLeadQuoteSurface/, 'quote route must include a mobile-safe quote surface');
-  assert.match(quotePage, /md:hidden/, 'mobile quote surface must be visible on phone viewports');
-  assert.match(quotePage, /hidden md:block/, 'desktop quote workspace must be hidden on phone viewports');
-  assert.match(quotePage, /Full advanced controls remain available on desktop/, 'mobile copy should set clear handoff expectations');
+  assert.match(quotePage, /PremiumPackagingQuoteBuilderV5/);
+  assert.match(quotePage, /getLeadProfileData\(workspace\.organization\.id, params\.leadId\)/);
+  assert.match(quotePage, /CanonicalQuoteBuilderApprovalQueueV2/);
+  assert.match(quotePage, /PricingV4SalesConfigurator/);
 });
 
 test('mobile scan vCard quote baseline: customer-facing quote language no longer says repo surface', () => {
