@@ -83,15 +83,31 @@ function scopedHref(baseHref: string, scope: MobileScope) {
 }
 
 export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
+  const pathname = usePathname();
   const [visibleModules, setVisibleModules] = useState<OrgModuleGrant[]>([]);
   useEffect(() => {
     let active = true;
-    fetch('/api/modules/grants', { cache: 'no-store' })
-      .then(async response => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
-      .then(data => { if (active) setVisibleModules(Array.isArray(data.grants) ? data.grants : []); })
-      .catch(() => { if (active) setVisibleModules([]); });
-    return () => { active = false; };
-  }, []);
+    let requestVersion = 0;
+    const refreshGrants = () => {
+      const version = ++requestVersion;
+      setVisibleModules([]);
+      fetch('/api/modules/grants', { cache: 'no-store' })
+        .then(async response => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
+        .then(data => { if (active && version === requestVersion) setVisibleModules(Array.isArray(data.grants) ? data.grants : []); })
+        .catch(() => { if (active && version === requestVersion) setVisibleModules([]); });
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshGrants();
+    };
+    refreshGrants();
+    window.addEventListener('focus', refreshGrants);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refreshGrants);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [pathname]);
   const topModules = getEnabledModuleSet(visibleModules);
   const canShareVCard = topModules.has('vcard');
   const canUseGuru = topModules.has('setu_guru');

@@ -23,3 +23,20 @@ test('outdated permission requests cannot restore previous tenant navigation', (
   assert.match(effect, /const version = \+\+requestVersion/);
   assert.equal((effect.match(/active && version === requestVersion/g) ?? []).length, 2);
 });
+
+test('mobile top bar refreshes licensed actions and discards stale grants', () => {
+  const header = readFileSync(new URL('../src/features/mobile/components/mobile-navigation.tsx', import.meta.url), 'utf8');
+  const start = header.indexOf('export function BrandedMobileTopBar');
+  const end = header.indexOf('export function MobileActionDrawer', start);
+  const block = header.slice(start, end);
+  assert.match(block, /setVisibleModules\(\[\]\);\s*fetch\('\/api\/modules\/grants'/);
+  assert.match(block, /version === requestVersion/);
+  assert.match(block, /window\.addEventListener\('focus', refreshGrants\)/);
+  assert.match(block, /document\.addEventListener\('visibilitychange', refreshWhenVisible\)/);
+  assert.match(block, /\}, \[pathname\]\);/);
+});
+
+test('theme choice provides minimum 44px touch targets', () => {
+  const theme = readFileSync(new URL('../src/features/mobile/components/theme-toggle.tsx', import.meta.url), 'utf8');
+  assert.match(theme, /min-h-11 rounded-/);
+});

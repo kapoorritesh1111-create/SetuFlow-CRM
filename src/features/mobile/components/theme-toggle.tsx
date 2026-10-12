@@ -27,7 +27,7 @@ export function ThemeToggle() {
           key={option.value}
           type="button"
           onClick={() => choose(option.value)}
-          className={`min-h-10 rounded-[9px] text-xs font-semibold transition ${
+          className={`min-h-11 rounded-[9px] text-xs font-semibold transition ${
             preference === option.value ? 'bg-brand-700 text-white' : 'text-content-secondary'
           }`}
         >
