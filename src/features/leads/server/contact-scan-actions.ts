@@ -94,6 +94,66 @@ function parseReviewedLeadType(formData: FormData): 'buyer' | 'supplier' | null 
   return null;
 }
 
+
+// Trade-show follow-up is best-effort AFTER the canonical CRM save. A failed
+// provider call cannot roll back the customer's lead or cause a duplicate scan.
+async function sendTradeShowScanThankYou(input: { leadId: string; eventId: string; contactName: string; phone: string; email: string; requirements: string }) {
+  const workspace = await requireWorkspace();
+  if (!workspace.user || !workspace.organization || workspace.organization.id !== 'b97913cb-3b95-4247-8ced-ffdc0d392d2a') return;
+  const db: any = await createClient();
+  const { data: event } = await db.from('trade_events').select('id,name').eq('id',input.eventId).eq('organization_id',workspace.organization.id).maybeSingle();
+  if (!event?.id) return;
+  const { data: sent } = await db.from('communications').select('id').eq('organization_id',workspace.organization.id).eq('lead_id',input.leadId).eq('communication_type','trade_show_scan_thank_you').limit(1);
+  if (sent?.length) return;
+  const { data: brochures } = await db.from('catalog_brochures').select('id,name').eq('organization_id',workspace.organization.id).eq('is_active',true);
+  const active = (brochures ?? []) as Array<{id:string;name:string}>;
+  const lower = input.requirements.toLowerCase();
+  const family = /flat.?bottom/.test(lower) ? 'flat bottom' : /center.?seal|centre.?seal|3.?side|three.?side|css|3ss/.test(lower) ? 'center seal' : 'stand';
+  const selected = active.find((b) => b.name.toLowerCase().includes(family))
+    ?? active.find((b) => /stand.?up/i.test(b.name));
+  if (!selected) { console.error('[trade-show-thank-you] no active brochure'); return; }
+  const { createCatalogBrochureShare } = await import('@/features/catalog-brochures/server');
+  const share = await createCatalogBrochureShare({ brochureId:selected.id,leadId:input.leadId,channel:'trade_show_follow_up' });
+  const { data: card } = await db.from('my_card_settings').select('share_slug').eq('organization_id',workspace.organization.id).eq('user_id',workspace.user.id).maybeSingle();
+  const vcardUrl = card?.share_slug ? `https://www.setuflowcrm.com/card?share=${encodeURIComponent(card.share_slug)}` : '';
+  const greeting = input.contactName.trim() || 'Customer';
+  const body = `Hi ${greeting}, thank you for visiting the Stark Packmate stall at ${event.name}. Here is our ${share.brochureName}: ${share.url}.${vcardUrl ? ` Save my digital contact card: ${vcardUrl}` : ''}`;
+  const templateName = process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE?.trim();
+  const digits = input.phone.replace(/\D/g,'');
+  const countryCode = digits.length === 12 && digits.startsWith('91') ? '91' : '';
+  const localNumber = countryCode ? digits.slice(2) : digits.length === 10 ? digits : '';
+  let channel = 'none';
+  let providerId = '';
+  let failure = '';
+  if (templateName && localNumber) {
+    try {
+      const { sendInteraktTemplate } = await import('@/features/integrations/interakt/client');
+      // Dedicated approved template must contain exactly these five body placeholders.
+      const delivered = await sendInteraktTemplate({countryCode:'91',phoneNumber:localNumber,templateName,languageCode:process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE_LANGUAGE || 'en',bodyValues:[greeting,String(event.name),share.url,vcardUrl || 'Contact available on request',String(workspace.profile?.full_name || 'Stark Packmate team')],callbackData:JSON.stringify({source:'trade_show_scan_thank_you',lead_id:input.leadId,event_id:input.eventId})});
+      providerId = delivered.id;
+      channel = 'whatsapp';
+    } catch (e) { failure = e instanceof Error ? e.message : 'WhatsApp provider failed'; }
+  }
+  if (channel === 'none' && input.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.email)) {
+    try {
+      const { getSetuNotificationFromAddress,sendTransactionalEmail } = await import('@/features/client-onboarding/server/notifications');
+      const from = getSetuNotificationFromAddress();
+      if (from) {
+        const outcome = await sendTransactionalEmail({from,to:input.email,subject:`Thank you for visiting Stark Packmate at ${event.name}`,text:body,html:`<p>${body.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</p>`});
+        if (outcome.status === 'email_sent') channel = 'email'; else failure = outcome.error || 'Email failed';
+      }
+    } catch(e) { failure = e instanceof Error ? e.message : 'Email provider failed'; }
+  }
+  const { error: auditError } = await db.from('communications').insert({
+    organization_id:workspace.organization.id,lead_id:input.leadId,related_entity:'lead',related_id:input.leadId,
+    communication_type:'trade_show_scan_thank_you',direction:'outbound',channel:channel === 'none' ? 'system' : channel,
+    subject:`Trade show thank-you: ${event.name}`,body,summary:channel === 'none' ? 'Thank-you pending: provider/template unavailable' : 'Trade show thank-you sent',
+    status:channel === 'none' ? 'failed' : 'sent',sent_at:channel === 'none' ? null : new Date().toISOString(),
+    created_by:workspace.user.id,metadata:{event_id:input.eventId,brochure_id:selected.id,share_id:share.id,vcard_url:vcardUrl,interakt_template:templateName||null,provider_id:providerId,failure},
+  });
+  if (auditError) console.error('[trade-show-thank-you] audit failed',auditError);
+}
+
 export async function createLeadFromContactScanReview(formData: FormData): Promise<ContactScanCreateLeadResult> {
   const companyName = String(formData.get('company_name') ?? '').trim() || String(formData.get('contact_name') ?? '').trim() || 'Scanned contact';
   const contactName = String(formData.get('contact_name') ?? '').trim();
@@ -148,6 +208,14 @@ export async function createLeadFromContactScanReview(formData: FormData): Promi
   if (eventDraft) {
     try { await linkCreatedLeadToTradeEventScan(eventDraft, result.lead.id); }
     catch (error) { interactionSaved = false; console.error('[trade-event-scan] event interaction save failed', error); }
+  }
+
+  if (eventDraft && interactionSaved) {
+    try {
+      await sendTradeShowScanThankYou({leadId:result.lead.id,eventId:tradeEventId,contactName,phone,email,requirements:notes});
+    } catch (error) {
+      console.error('[trade-show-thank-you] post-save follow-up failed',error);
+    }
   }
 
   return {
