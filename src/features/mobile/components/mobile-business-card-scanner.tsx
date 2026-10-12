@@ -27,7 +27,7 @@ function draftFromExtraction(extraction: ContactServerExtractionResult | null): 
     phone: extraction?.draft.phone || '',
     phoneSecondary: extraction?.draft.phoneSecondary || '',
     website: extraction?.draft.website || '',
-    notes: extraction?.draft.notes || '',
+    notes: '',
     sourceLabel: extraction?.sourceLabel || 'Mobile business card scan',
   };
 }

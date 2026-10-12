@@ -228,11 +228,9 @@ export function TradeEventEntryCapture({ events }: { events: TradeEventOption[] 
       formData.set('handoff_reconciliation_notes', handoffReconciliationNotes.trim());
       formData.set('handoff_export_evidence', handoffExportEvidence.trim());
       formData.set('handoff_export_confirmed', handoffExportConfirmed ? 'yes' : 'no');
-      const reviewNotes = [
-        operatorNotes.trim(),
-        ocrFileLabel.trim() ? `OCR source: ${ocrFileLabel.trim()}` : 'OCR source: business card review',
-        ocrText.trim() ? `OCR excerpt:\n${ocrText.trim().slice(0, 500)}` : null,
-      ].filter(Boolean).join('\n\n');
+      // Raw OCR is source metadata, never the salesperson's requirements.
+      // Keep contact facts in reviewed fields and only explicit notes here.
+      const reviewNotes = operatorNotes.trim();
       formData.set('captured_notes', reviewNotes);
     }
 

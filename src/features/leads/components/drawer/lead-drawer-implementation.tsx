@@ -755,14 +755,9 @@ export function LeadDrawer({
       });
       setPhoneSecondary((current) => draft.phoneSecondary || current);
       setWebsite((current) => draft.website || current);
-      setNotes((current) => {
-        const additions = [draft.notes, extraction.notes.join("\n")]
-          .map((value) => String(value ?? "").trim())
-          .filter(Boolean);
-        if (!additions.length) return current;
-        const existing = String(current ?? "").trim();
-        return [existing, ...additions].filter(Boolean).join("\n\n");
-      });
+      // OCR output belongs in contact fields. Preserve only salesperson-entered
+      // notes here; importing business card raw text obscures dictated needs.
+
       setSourceType(
         extraction.sourceType ||
           (sourceMode === "camera"
@@ -829,7 +824,7 @@ export function LeadDrawer({
     }
     const recognition = new Ctor();
     recognition.lang = "en-US";
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
     setIsDictatingNote(true);
     setDictationStatus("Listening…");
@@ -845,16 +840,18 @@ export function LeadDrawer({
         setDictationStatus("Note added.");
       }
     };
-    recognition.onerror = () => {
-      setDictationStatus(
-        "Voice note was not captured. Please try again or type the note.",
-      );
+    recognition.onerror = (event) => {
+      const reason = String((event as { error?: string })?.error ?? "");
+      setDictationStatus(reason === "not-allowed" || reason === "service-not-allowed"
+        ? "Microphone access denied. Allow microphone access in your browser, or type your note below."
+        : "Dictation stopped. Keep or type the note below; no card data was added to notes.");
       setIsDictatingNote(false);
     };
     recognition.onend = () => {
       setIsDictatingNote(false);
     };
-    recognition.start();
+    try { recognition.start(); }
+    catch { setIsDictatingNote(false); setDictationStatus("Microphone could not start. Type your note below or use your keyboard microphone."); }
   };
 
   const categoryTree = useMemo(() => {
