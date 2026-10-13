@@ -1434,7 +1434,12 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
   const isCoordinator = workspace.currentRoles.includes('sales_coordinator');
   const isAssignmentManager = workspace.currentRoles.some(role => ['owner', 'admin', 'manager'].includes(role));
   if (isCoordinator && !isAssignmentManager && requestedOwner && requestedOwner !== currentUser.id) {
-    return { error: 'Creating a lead for another owner requires an authorized manager. Ask Akshay or Surbhi to transfer it after creation.' };
+    const grantDb = createAdminSupabaseClient();
+    if (!grantDb || organization.id !== STARK_PACKMATE_ORG_ID) return { error: 'Owner delegation authorization is unavailable.' };
+    const { data: permission } = await (grantDb as any).from('sales_coordinator_authorizations')
+      .select('owner_user_id').eq('organization_id',organization.id)
+      .eq('owner_user_id',requestedOwner).eq('coordinator_user_id',currentUser.id).maybeSingle();
+    if (!permission) return { error: 'This sales owner has not authorized you to create leads on their behalf.' };
   }
   if (isCoordinator && !isAssignmentManager && existingLeadId) {
     const scopedDb = createAdminSupabaseClient();
