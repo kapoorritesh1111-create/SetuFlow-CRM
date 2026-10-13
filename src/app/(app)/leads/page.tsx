@@ -121,7 +121,11 @@ export default async function LeadsPage({
     ? await (coordinationClient as any).from('leads').select('id,coordinator_user_id').eq('organization_id', workspace.organization.id)
     : { data: [] };
   const coordinatorAssignments: Record<string,string|null> = {};
-  for (const row of coordinationRows ?? []) coordinatorAssignments[row.id] = row.coordinator_user_id ?? null;
+  const exposedLeadIds = new Set(data.leads.map(lead => lead.id));
+  for (const row of coordinationRows ?? []) {
+    if (exposedLeadIds.has(row.id)) coordinatorAssignments[row.id] = row.coordinator_user_id ?? null;
+  }
+  // Never send assignment metadata for unrelated leads to a sales browser.
 
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
