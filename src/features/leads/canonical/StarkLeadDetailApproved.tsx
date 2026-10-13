@@ -48,14 +48,14 @@ export default function StarkLeadDetailApproved({data,teamMembers,backHref,commu
      {visibleQuotes.map((q:any)=>{
        const state=quoteStatus(q),locked=quoteStatesLocked.has(state)||Boolean(q.sent_version_id),open=expandedQuoteId===String(q.id),lines=Array.isArray(q.lineItems)?q.lineItems:[];
        const priced=lines.filter((l:any)=>Number(l.unit_price??0)>0);
-       const total=Number(q.total_quote_value??q.total_value??q.total_amount??q.grand_total??0);
+       const total=priced.reduce((sum:number,l:any)=>sum+Number(l.quantity??0)*Number(l.unit_price??0),0);
        const currency=String(q.display_currency??q.currency??'INR');
        return <article key={q.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
          <div className="flex flex-wrap items-start justify-between gap-3">
            <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="text-base font-black text-slate-950">{q.quote_number||'Quotation'}</h4><span className={'rounded-full px-2 py-1 text-[10px] font-bold '+(locked?'bg-slate-100 text-slate-700':'bg-blue-50 text-blue-800')}>{title(state)}{locked?' · Read only':''}</span></div>
              <p className="mt-1 text-xs text-slate-500">{priced.length} priced product{priced.length===1?'':'s'}{lines.length>priced.length?' · '+(lines.length-priced.length)+' unpriced requirement(s)':''} · {q.updated_at||q.created_at?new Date(q.updated_at||q.created_at).toLocaleDateString('en-IN'):'Date unavailable'}</p>
            </div>
-           <div className="text-right"><p className="text-base font-black text-slate-950">{total>0?quoteMoney(total,currency):'Value pending'}</p><p className="text-[11px] text-slate-500">{locked?'Preserved customer offer':'Editable quotation'}</p></div>
+           <div className="text-right"><p className="text-base font-black text-slate-950">{total>0?quoteMoney(total,currency):'Value pending'}</p><p className="text-[11px] text-slate-500">{total>0?'Line subtotal before tax':locked?'Preserved customer offer':'Editable quotation'}</p></div>
          </div>
          <div className="mt-3 flex flex-wrap gap-2">
            <button type="button" onClick={()=>setExpandedQuoteId(open?null:String(q.id))} aria-expanded={open} className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-800">{open?'Hide':'View'} details</button>
