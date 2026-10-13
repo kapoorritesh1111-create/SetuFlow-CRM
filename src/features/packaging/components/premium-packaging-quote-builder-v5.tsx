@@ -208,6 +208,11 @@ export default function PremiumPackagingQuoteBuilderV5({
             return <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-white p-3">
               <div><p className="text-sm font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p>
                 <p className="text-xs font-semibold text-slate-600">{family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??'Dimensions not specified')} · {line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString()} kg · ${money(Number(line.displayUnitPrice),currency)}/kg`:`Qty ${Number(line.quantity??0).toLocaleString()} · ${money(Number(line.unitPrice??0),currency)}/pc`}</p></div>
+              {family!=='sup'?<label className="text-xs font-bold text-slate-700">Customer quotation price
+                <select aria-label="Customer quotation price unit" disabled={pending} value={line.customerQuoteUnit??(String(line.supplyForm).endsWith('_roll')?'kg':'pcs')} onChange={e=>updateQuoteUnit(id,e.target.value as 'kg'|'pcs')} className="ml-2 rounded-lg border border-blue-200 bg-white p-2">
+                  <option value="pcs">Per piece</option><option value="kg" disabled={!(Number(line.finishedWeightKg)>0)}>Per kg</option>
+                </select>
+              </label>:null}
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={()=>manageLine(id,family,'duplicate')} className="rounded-lg border border-blue-300 px-3 py-2 text-xs font-black text-blue-800">+ Another size (duplicate)</button>
                 <button type="button" onClick={()=>manageLine(id,family,'edit')} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700">Edit size / qty</button>
