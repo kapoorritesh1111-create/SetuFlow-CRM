@@ -18,7 +18,7 @@ const NL = String.fromCharCode(10);
 const BS = String.fromCharCode(92);
 
 type PdfText = { x: number; y: number; text: string; size: number; bold: boolean; color: string; right: boolean };
-type PdfRow = { sku: string; product: string; qty: number; basis: string; casePrice: number; total: number };
+type PdfRow = { sku: string; product: string; specification?: string; qty: number; basis: string; casePrice: number; total: number };
 type PdfData = {
   quoteNo: string;
   volumeSuggestions?: string[];
@@ -174,7 +174,8 @@ function buildPdf(data: PdfData) {
     box(18, y - 15, 576, 21, index % 2 ? '#ffffff' : '#f8fafc', LINE);
     put(24, y - 6, String(index + 1), 5.2);
     put(62, y - 6, clip(row.sku, 16), 5.2);
-    put(142, y - 6, clip(row.product, 34), 5.2, index === 0);
+    put(142, y - 4, clip(row.product, 40), 5.2, index === 0);
+    if (row.specification) put(142, y - 12, clip(row.specification, 76), 4.4, false, MUTED);
     put(318, y - 6, String(row.qty || '-'), 5.2, false, INK, true);
     put(372, y - 6, row.basis, 5.2);
     put(458, y - 6, money(row.casePrice, data.currency), 5.2, index === 0, INK, true);
@@ -307,13 +308,19 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     });
   });
   const productIds = Array.from(new Set(lines.map((line) => line.product_id).filter(Boolean)));
-  const [{ data: products }, { data: variants }] = await Promise.all([
+  const packagingFamilyIds = Array.from(new Set(lines.map((line) => line.packaging_family_id).filter(Boolean)));
+  const packagingVariationIds = Array.from(new Set(lines.map((line) => line.packaging_product_variation_id).filter(Boolean)));
+  const [{ data: products }, { data: variants }, { data: packagingFamilies }, { data: packagingVariations }] = await Promise.all([
     productIds.length ? db.from('products').select('id, name, sku, sku_code').eq('organization_id', resolvedOrganizationId).in('id', productIds) : Promise.resolve({ data: [] }),
     productIds.length ? db.from('product_variants').select('id, product_id, name, sku_code').in('product_id', productIds) : Promise.resolve({ data: [] }),
+    packagingFamilyIds.length ? db.from('packaging_service_families').select('id,name').eq('organization_id',resolvedOrganizationId).in('id',packagingFamilyIds) : Promise.resolve({data:[]}),
+    packagingVariationIds.length ? db.from('packaging_product_variations').select('id,name,dimension_label,width_mm,height_mm,bottom_gusset_each_mm').in('id',packagingVariationIds) : Promise.resolve({data:[]}),
   ]);
 
   const productMap = new Map((products ?? []).map((product: any) => [product.id, product]));
   const variantMap = new Map((variants ?? []).map((variant: any) => [variant.id, variant]));
+  const familyMap = new Map((packagingFamilies ?? []).map((entry: any) => [String(entry.id),entry]));
+  const packagingVariationMap = new Map((packagingVariations ?? []).map((entry: any) => [String(entry.id),entry]));
   const quoteBase = quoteBasis(quote.pricing_basis);
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
   const logoImage = await loadOrganizationLogo(db, resolvedOrganizationId, org);
@@ -327,7 +334,21 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     if (line.line_type === 'packaging') {
       const qty = num(line.quantity, 1);
       const unitPrice = num(line.unit_price);
-      return { sku: 'PKG', product: text(line.input_snapshot_json?.spec_summary, 'Custom packaging line'), qty, basis: quoteBase, casePrice: unitPrice, total: qty * unitPrice };
+      const snapshot = line.input_snapshot_json ?? {};
+      const input = snapshot.input ?? {};
+      const family: any = familyMap.get(String(line.packaging_family_id ?? snapshot.family_id ?? '')) ?? {};
+      const variation: any = packagingVariationMap.get(String(line.packaging_product_variation_id ?? '')) ?? {};
+      const product: any = productMap.get(line.product_id) ?? {};
+      const size = text(variation.dimension_label ?? input.dimension_label ?? snapshot.dimension_label ??
+        (input.width_mm && input.height_mm ? [input.width_mm,input.height_mm,input.bottom_gusset_each_mm].filter(Boolean).join(' x ') + ' mm' : null),'');
+      const substrate = text(input.substrate ?? input.construction ?? input.material_construction ?? snapshot.substrate ?? snapshot.construction ?? snapshot.spec_summary,'');
+      const productName = text(product.name ?? variation.name ?? snapshot.product_name ?? family.name,'Packaging item');
+      const details = [
+        family.name ? 'Family: ' + family.name : '',
+        size ? 'Size: ' + size : '',
+        substrate ? 'Substrate: ' + substrate : '',
+      ].filter(Boolean).join(' | ');
+      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, qty, basis: quoteBase, casePrice: unitPrice, total: qty * unitPrice };
     }
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
