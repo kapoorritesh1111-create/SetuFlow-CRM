@@ -53,6 +53,8 @@ export default function StarkLeadDetailApproved({data,teamMembers,backHref,commu
        return <article key={q.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
          <div className="flex flex-wrap items-start justify-between gap-3">
            <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h4 className="text-base font-black text-slate-950">{q.quote_number||'Quotation'}</h4><span className={'rounded-full px-2 py-1 text-[10px] font-bold '+(locked?'bg-slate-100 text-slate-700':'bg-blue-50 text-blue-800')}>{title(state)}{locked?' · Read only':''}</span></div>
+             {q.industry_metadata?.revision_source_quote_id?<p className="mt-1 text-xs font-semibold text-blue-800">Revised from {quotes.find((parent:any)=>parent.id===q.industry_metadata.revision_source_quote_id)?.quote_number??"earlier quotation"} · New offer</p>:null}
+             {q.sent_at?<p className="mt-1 text-xs text-slate-500">Sent {new Date(q.sent_at).toLocaleDateString("en-IN")}</p>:null}
              <p className="mt-1 text-xs text-slate-500">{priced.length} priced product{priced.length===1?'':'s'}{lines.length>priced.length?' · '+(lines.length-priced.length)+' unpriced requirement(s)':''} · {q.updated_at||q.created_at?new Date(q.updated_at||q.created_at).toLocaleDateString('en-IN'):'Date unavailable'}</p>
            </div>
            <div className="text-right"><p className="text-base font-black text-slate-950">{total>0?quoteMoney(total,currency):'Value pending'}</p><p className="text-[11px] text-slate-500">{total>0?'Line subtotal before tax':locked?'Preserved customer offer':'Editable quotation'}</p></div>
