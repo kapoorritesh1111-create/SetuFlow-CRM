@@ -137,13 +137,6 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
     p_idempotency_key: idempotencyKey,
   };
   const { data: draftResult, error: rpcError } = await db.rpc(draftRpc, draftArgs);
-  /* original call retained for audit of unchanged arguments
-
-    p_organization_id: workspace.organization.id,
-    p_lead_id: leadId,
-    p_actor_user_id: workspace.user.id,
-    p_idempotency_key: idempotencyKey,
-  }); */
 
   if (rpcError) {
     logServerError('createLeadQuoteDraftFromLead.rpc', rpcError);
