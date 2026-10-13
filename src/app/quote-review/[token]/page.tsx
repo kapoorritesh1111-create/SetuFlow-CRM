@@ -3,6 +3,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import QuoteDecisionForm from './quote-decision-form';
 import QuoteVolumeOptionAction from './quote-volume-option-action';
 import { customerVolumeSuggestions } from '@/lib/packaging-pricing-v5/volume-suggestions';
+import { isStarkPackmateOrganization, STARK_PACKMATE_POLICY, STARK_PACKMATE_POLICY_TITLE, STARK_PACKMATE_POLICY_INTRO, STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT } from '@/lib/quotes/stark-packmate-policy';
 
 export const dynamic = 'force-dynamic';
 
@@ -198,6 +199,24 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
           <p className="mt-2 text-sm font-semibold text-slate-600">Open any artwork or proof associated with this quotation. If artwork has not been supplied yet, use the KLD shown with the product above.</p>
           {artworkAttachments.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{artworkAttachments.map((attachment: any) => <a key={attachment.id} target="_blank" rel="noopener noreferrer" href={`/api/public/quote-attachment/${token}/${attachment.id}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-violet-300 hover:bg-violet-50"><div className="text-[10px] font-black uppercase tracking-wide text-violet-600">{label(attachment.attachment_type || 'Artwork')}</div><div className="mt-1 text-sm font-black text-slate-900">{attachment.file_name}</div><div className="mt-2 text-xs font-bold text-slate-500">Open attachment ↗</div></a>)}</div> : <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-semibold text-slate-500">No customer artwork or in-progress design file has been attached to this lead yet.</div>}
         </section>
+
+        {isStarkPackmateOrganization(org) ? (
+          <section className="rounded-3xl border border-blue-200 bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Terms & Conditions</p>
+            <h2 className="mt-1 text-xl font-black">{STARK_PACKMATE_POLICY_TITLE}</h2>
+            <p className="mt-2 text-sm font-semibold text-slate-600">{STARK_PACKMATE_POLICY_INTRO}</p>
+            <a target="_blank" rel="noopener noreferrer" href={`/api/quotes/${quote.id}/pdf?token=${token}&download=1`} className="mt-3 inline-flex rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white">Download quotation with complete policy (PDF)</a>
+            <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <summary className="cursor-pointer text-sm font-bold text-slate-900">Read all 12 policy sections</summary>
+              <div className="mt-4 space-y-4">
+                {STARK_PACKMATE_POLICY.map(section => (
+                  <div key={section.title}><h3 className="text-sm font-black">{section.title}</h3><ul className="mt-2 list-disc space-y-1 pl-5">{section.points.map(point=><li key={point} className="text-sm text-slate-700">{point}</li>)}</ul></div>
+                ))}
+                <p className="text-sm font-semibold text-slate-700">{STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT}</p>
+              </div>
+            </details>
+          </section>
+        ) : null}
 
         <section className="rounded-3xl border border-emerald-200 bg-white p-5 shadow-sm sm:p-6">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Your Decision</p>
