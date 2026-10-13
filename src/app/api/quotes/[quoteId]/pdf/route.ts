@@ -38,6 +38,7 @@ type PdfData = {
   taxLabel?: string;
   logoImage?: PdfImage | null;
   includeStarkPolicy?: boolean;
+  domesticQuote?: boolean;
 };
 
 function num(value: unknown, fallback = 0) {
@@ -136,7 +137,7 @@ function buildPdf(data: PdfData) {
   put(574, 739, `${data.quoteDate} | Valid ${data.validUntil}`, 5.7, false, MUTED, true);
 
   box(24, 612, 176, 92, PANEL, LINE);
-  put(36, 686, 'SELLER / EXPORTER', 6.5, true, BLUE);
+  put(36, 686, data.domesticQuote ? 'SELLER' : 'SELLER / EXPORTER', 6.5, true, BLUE);
   put(36, 672, clip(data.org?.legal_name ?? data.org?.name, 34, 'Seller'), 8, true);
   put(36, 658, clip(data.org?.registered_address, 38), 6.2, false, MUTED);
   put(36, 648, clip([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '), 38), 6.2, false, MUTED);
@@ -144,7 +145,7 @@ function buildPdf(data: PdfData) {
   put(36, 622, `Tax ID: ${clip(data.org?.tax_id, 28)}`, 6.2, false, MUTED);
 
   box(216, 612, 176, 92, PANEL, LINE);
-  put(228, 686, 'BUYER / IMPORTER', 6.5, true, BLUE);
+  put(228, 686, data.domesticQuote ? 'CUSTOMER' : 'BUYER / IMPORTER', 6.5, true, BLUE);
   put(228, 672, clip(data.buyer?.company_name, 34, 'Buyer pending'), 8, true);
   put(228, 658, clip(data.buyer?.contact_name, 35, ''), 6.2, false, MUTED);
   put(228, 648, clip(data.buyer?.country, 35, data.destination), 6.2, false, MUTED);
@@ -152,14 +153,14 @@ function buildPdf(data: PdfData) {
   put(228, 622, clip(data.buyer?.phone, 36), 6.2, false, MUTED);
 
   box(408, 612, 180, 92, PANEL, LINE);
-  [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} Incoterms 2020`], ['Named place', data.place], ['Currency', data.currency], ['Lines', String(data.rows.length)]].forEach(([label, value], index) => {
+  (data.domesticQuote ? [['Quote type','Domestic supply'],['Pricing','Direct / per unit'],['Tax','GST as shown'],['Validity',data.validUntil],['Currency',data.currency],['Lines',String(data.rows.length)]] : [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} Incoterms 2020`], ['Named place', data.place], ['Currency', data.currency], ['Lines', String(data.rows.length)]]).forEach(([label, value], index) => {
     const y = 688 - index * 12;
     put(420, y, label, 5.3, true, MUTED);
     put(580, y, clip(value, 24), 5.7, false, INK, true);
   });
 
   box(left, 590, 564, 14, '#eef6ff', '#bfdbfe');
-  put(36, 594, 'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.', 5.45, false, '#1e3a8a');
+  put(36, 594, data.domesticQuote ? 'Domestic supply quotation. GST is shown in the financial summary; delivery arrangements are subject to order confirmation.' : 'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.', 5.45, false, '#1e3a8a');
 
   let y = 560;
   box(18, y - 17, 576, 20, '#e2e8f0', LINE);
@@ -167,7 +168,7 @@ function buildPdf(data: PdfData) {
   put(62, y - 10, 'SKU', 5, true, NAVY);
   put(142, y - 10, 'Product / Service', 5, true, NAVY);
   put(318, y - 10, 'Qty', 5, true, NAVY, true);
-  put(372, y - 10, 'Basis', 5, true, NAVY);
+  put(372, y - 10, data.domesticQuote ? 'Pricing' : 'Basis', 5, true, NAVY);
   put(458, y - 10, `${data.currency}/Unit`, 5, true, NAVY, true);
   put(582, y - 10, `Total ${data.currency}`, 5, true, NAVY, true);
   y -= 23;
@@ -192,11 +193,11 @@ function buildPdf(data: PdfData) {
   y -= 44;
   box(24, y - 68, 274, 68, PANEL, LINE);
   put(36, y - 15, 'COMMERCIAL DETAILS', 7, true, NAVY);
-  [`Destination: ${data.destination}`, `Pricing basis: ${data.basis}`, `Named place: ${data.place}`, `Validity: ${data.validUntil}`].forEach((lineText, index) => put(36, y - 31 - index * 10, `- ${clip(lineText, 72)}`, 5.7, false, MUTED));
+  (data.domesticQuote ? ['Sale type: Domestic', 'Pricing: Direct unit price', 'Tax: GST as shown', `Validity: ${data.validUntil}`] : [`Destination: ${data.destination}`, `Pricing basis: ${data.basis}`, `Named place: ${data.place}`, `Validity: ${data.validUntil}`]).forEach((lineText, index) => put(36, y - 31 - index * 10, `- ${clip(lineText, 72)}`, 5.7, false, MUTED));
 
   box(314, y - 68, 274, 68, PANEL, LINE);
   put(326, y - 15, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY);
-  [['Subtotal', money(subtotal, data.currency)], ['Freight / insurance', 'Not included'], [taxTotal > 0 ? (data.taxLabel || 'GST') : 'Taxes / duties', taxTotal > 0 ? money(taxTotal, data.currency) : 'Per Incoterm'], ['Amount payable', money(total, data.currency)]].forEach(([label, value], index) => {
+  [['Subtotal', money(subtotal, data.currency)], [data.domesticQuote ? 'Delivery charges' : 'Freight / insurance', data.domesticQuote ? 'As agreed' : 'Not included'], [taxTotal > 0 ? (data.taxLabel || 'GST') : (data.domesticQuote ? 'GST' : 'Taxes / duties'), taxTotal > 0 ? money(taxTotal, data.currency) : (data.domesticQuote ? 'As applicable' : 'Per Incoterm')], ['Amount payable', money(total, data.currency)]].forEach(([label, value], index) => {
     put(326, y - 31 - index * 10, label, 5.8, false, MUTED);
     put(580, y - 31 - index * 10, value, 5.8, index === 3, INK, true);
   });
@@ -205,7 +206,13 @@ function buildPdf(data: PdfData) {
   box(left, y - 76, right - left, 76, '#ffffff', LINE);
   const suggestionLines=(data.volumeSuggestions ?? []).slice(0,2);
   put(36, y - 15, suggestionLines.length ? 'VOLUME SAVINGS & TERMS' : 'TERMS & CONDITIONS', 7, true, NAVY);
-  const termLines = suggestionLines.length
+  const termLines = data.domesticQuote ? [
+    ...suggestionLines.map((item)=>`More quantity: ${item}`),
+    `Quote valid until ${data.validUntil}.`,
+    'Direct unit prices in INR; GST as detailed above.',
+    'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.',
+    'See the attached Stark Packmate order, delivery and rejection policy.',
+  ] : suggestionLines.length
     ? [
         ...suggestionLines.map((item)=>`More quantity: ${item}`),
         `Quote valid until ${data.validUntil}.`,
@@ -377,6 +384,14 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   const constructionMap = new Map((constructions ?? []).map((entry:any)=>[String(entry.id),entry]));
   const quoteBase = quoteBasis(quote.pricing_basis);
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
+  // Missing buyer country is common for Stark domestic leads; do not infer export terms
+  // from the legacy quote pricing_basis default. A specified non-India country or export
+  // destination explicitly keeps the export template.
+  const buyerCountry = String(country?.name ?? leadRow?.country ?? '').trim().toLowerCase();
+  const domesticQuote = isStarkPackmateOrganization(org) &&
+    (buyerCountry === 'india' || buyerCountry === 'in' ||
+      (!buyerCountry && currency === 'INR' && !quote.destination_port && !quote.country_id));
+  const displayBasis = domesticQuote ? 'Direct' : quoteBase;
   const logoImage = await loadOrganizationLogo(db, resolvedOrganizationId, org);
   const { data: optionalCharges } = await db.from('quote_optional_charges').select('label, amount, currency').eq('organization_id', resolvedOrganizationId).eq('quote_id', quote.id);
 
@@ -404,16 +419,16 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
         size ? 'Size: ' + size : '',
         substrate ? 'Substrate: ' + substrate : '',
       ].filter(Boolean).join(' | ');
-      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, qty, basis: quoteBase, casePrice: unitPrice, total: qty * unitPrice };
+      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, qty, basis: displayBasis, casePrice: unitPrice, total: qty * unitPrice };
     }
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
     const unitPrice = num(line.unit_price ?? line.catalog_price_amount);
-    return { sku: text(variant.sku_code ?? product.sku_code ?? product.sku), product: text(product.name ?? variant.name, 'Catalog line'), qty: num(line.quantity, 1), basis: quoteBase, casePrice: unitPrice, total: num(line.quantity, 1) * unitPrice };
+    return { sku: text(variant.sku_code ?? product.sku_code ?? product.sku), product: text(product.name ?? variant.name, 'Catalog line'), qty: num(line.quantity, 1), basis: displayBasis, casePrice: unitPrice, total: num(line.quantity, 1) * unitPrice };
   });
   for (const charge of (optionalCharges ?? []) as any[]) {
     const amount = num(charge.amount);
-    if (amount > 0) rows.push({ sku: '—', product: text(charge.label, 'Additional charge'), qty: 1, basis: quoteBase, casePrice: amount, total: amount });
+    if (amount > 0) rows.push({ sku: '—', product: text(charge.label, 'Additional charge'), qty: 1, basis: displayBasis, casePrice: amount, total: amount });
   }
 
   const volumeSuggestions = lines
@@ -440,7 +455,8 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     market: text(market?.name),
     destination: text(country?.name ?? leadRow?.country),
     place: text(quote.destination_port ?? freight?.destination_port ?? country?.default_port_of_loading, 'Confirm place before sending'),
-    basis: quoteBase,
+    basis: displayBasis,
+    domesticQuote,
     currency,
     quoteDate: dateText(quote.updated_at ?? quote.created_at),
     validUntil: dateText(quote.valid_until),
