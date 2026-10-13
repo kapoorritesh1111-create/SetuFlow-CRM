@@ -88,6 +88,10 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
     redirect(`/leads/${leadId}?mode=suppliers&quoteDraftError=${encodeURIComponent('Supplier records use Cost Requests, not buyer quotes.')}`);
   }
 
+  if (sourceQuoteId && workspace.organization.id !== 'b97913cb-3b95-4247-8ced-ffdc0d392d2a') {
+    redirect(`/leads/${leadId}/quote?quoteDraftError=${encodeURIComponent('Source-based revision is not enabled for this organization.')}`);
+  }
+
   if (sourceQuoteId) {
     const { data: sourceQuote, error: sourceQuoteError } = await db
       .from('quotes')
