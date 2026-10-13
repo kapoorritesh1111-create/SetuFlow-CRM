@@ -27,7 +27,7 @@ export async function assignLeadCoordination(input: {
   .select('id,owner_user_id,coordinator_user_id,created_by')
   .eq('organization_id', organizationId).in('id', ids);
  if (loadError || !leads || leads.length !== ids.length) return { error: 'Some selected leads are unavailable.' };
- if (!isAdmin && leads.some(lead => lead.owner_user_id !== userId))
+ if (!isAdmin && leads.some((lead: { owner_user_id: string | null }) => lead.owner_user_id !== userId))
   return { error: 'Only the lead owner or an administrator can delegate these leads.' };
  if (input.changeOwner && !isAdmin) return { error: 'Only authorized managers can change ownership.' };
  const members = new Set<string>();
@@ -42,15 +42,15 @@ export async function assignLeadCoordination(input: {
  }
  // A batch should never silently ignore an unsuccessful record.
  let updated = 0;
- for (const lead of leads) {
+ for (const lead of leads as Array<{ id: string; owner_user_id: string | null; coordinator_user_id: string | null }>) {
   const nextOwner = input.changeOwner ? input.ownerUserId! : lead.owner_user_id;
   const nextCoordinator = input.coordinatorUserId || null;
-  const { error } = await (db as any).from('leads').update({
+  const { error, data: changed } = await (db as any).from('leads').update({
    ...(input.changeOwner ? {owner_user_id: nextOwner} : {}),
    coordinator_user_id: nextCoordinator,
    updated_by: userId,
-  }).eq('organization_id', organizationId).eq('id',lead.id).eq('owner_user_id',lead.owner_user_id);
-  if (error) return { error: `Updated ${updated} of ${ids.length}. Remaining assignments were not applied: ${error.message}`, updated };
+  }).eq('organization_id', organizationId).eq('id',lead.id).eq('owner_user_id',lead.owner_user_id).select('id');
+  if (error || !changed?.length) return { error: `Updated ${updated} of ${ids.length}. Remaining assignments were not applied: ${error?.message ?? 'Lead changed concurrently'}`, updated };
   await (db as any).from('lead_coordination_audit').insert({
    organization_id: organizationId,lead_id:lead.id,actor_user_id:userId,
    old_owner_user_id:lead.owner_user_id,new_owner_user_id:nextOwner,
