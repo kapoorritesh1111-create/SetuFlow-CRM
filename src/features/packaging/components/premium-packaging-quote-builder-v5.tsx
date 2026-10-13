@@ -154,10 +154,26 @@ export default function PremiumPackagingQuoteBuilderV5({
   const supSizeById=new Map((supOptions?.sizes??[]).map((x:any)=>[String(x.id),x]));
   const supConstructionById=new Map((supOptions?.constructions??[]).map((x:any)=>[String(x.id),x]));
 
-  // Shared commercial editor: visible from the first product step and from Step 3.
-  // All updates go through the same server-side approval and audit workflow.
-  function renderSavedLineEditor(){return (
-    <div className="mt-4 space-y-3">
+  return <section id="packaging-quote-studio" className="mb-5 overflow-hidden rounded-[30px] border border-slate-200 bg-slate-100 shadow-[0_24px_70px_rgba(15,23,42,0.10)]">
+    <div className="bg-[radial-gradient(circle_at_top_right,_rgba(45,212,191,0.20),_transparent_32%),linear-gradient(135deg,#07111f_0%,#0f2137_52%,#123c4b_100%)] px-5 py-5 text-white sm:px-6">
+      <div className="flex flex-wrap items-start justify-between gap-5">
+        <div><div className="flex flex-wrap items-center gap-2"><span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-teal-200">Packaging Quote Studio</span><span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-200">Approved pricing</span></div><h1 className="mt-3 text-2xl font-black sm:text-3xl">{buyerName||'Buyer quote'}</h1><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-300"><span>{quoteNumber}</span><span className="capitalize">{status}</span><span>{currency}</span></div></div>
+        <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:w-auto sm:min-w-[360px] sm:grid-cols-3"><div className="rounded-2xl border border-white/10 bg-white/10 p-3"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Quote items</div><div className="mt-1 text-xl font-black">{lineCount}</div></div><div className="rounded-2xl border border-white/10 bg-white/10 p-3"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Requested qty</div><div className="mt-1 text-lg font-black">{requestedQuantity>0?Number(requestedQuantity).toLocaleString():'—'}</div></div><div className="rounded-2xl border border-white/10 bg-white/10 p-3"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Current value</div><div className="mt-1 break-words text-base font-black sm:text-lg">{quoteTotal>0?money(quoteTotal,currency):lineCount>0?'Pricing pending':'—'}</div></div></div>
+      </div>
+      <div className="mt-5 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">{steps.map(([no,label,sub],idx)=>{const n=idx+1;const current=n===step;const complete=n<step;return <button type="button" onClick={()=>goStep(n)} key={label} className={'rounded-2xl border px-3 py-3 text-left transition '+(current?'border-teal-300 bg-teal-300/15':complete?'border-emerald-300/20 bg-emerald-300/10':'border-white/10 bg-white/5 hover:bg-white/10')}><div className={'flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black '+(current?'bg-teal-300 text-slate-950':complete?'bg-emerald-400 text-slate-950':'bg-white/10 text-white')}>{complete?'✓':no}</div><div className="mt-2 text-xs font-black">{label}</div><div className="mt-0.5 text-[9px] font-semibold text-slate-400">{sub}</div></button>})}</div>
+    </div>
+
+    {step===1?<div className="bg-white p-5 sm:p-6">
+      <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Product & Requirement</div><h2 className="mt-1 text-2xl font-black text-slate-950">Start from the customer requirement</h2><p className="mt-1 text-sm font-semibold text-slate-500">Use what Sales already captured, edit it if needed, or add another packaging family.</p></div>
+      <section aria-label="Quote items and price adjustments" className="mt-5 rounded-2xl border-2 border-blue-200 bg-blue-50/60 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div><p className="text-xs font-black uppercase tracking-wide text-blue-700">Your quote · {pricedLineCount} saved line{pricedLineCount===1?'':'s'}</p>
+            <h3 className="mt-1 text-lg font-black text-slate-950">Add multiple sizes or service families</h3>
+            <p className="mt-1 text-sm text-slate-700">Every saved size is a separate line. Add another size from the same family, or select another service family below. You do not need to finish the quote first.</p>
+          </div>
+          <button type="button" onClick={()=>goStep(3)} className="rounded-xl border border-blue-300 bg-white px-4 py-3 text-sm font-black text-blue-800">Review all prices & discounts →</button>
+        </div>
+        {pricedLineCount>0 ? (<div className="mt-4 space-y-3">
         {[...supSavedLines,...frameSavedLines].length ? [...supSavedLines,...frameSavedLines].map((line:any)=>{
           const lineId=String(line.lineId??'');
           const basePrice=Number(line.baseUnitPrice??line.unitPrice??0);
@@ -181,29 +197,7 @@ export default function PremiumPackagingQuoteBuilderV5({
             </div>:<button type="button" onClick={()=>beginAdjust(line)} className="mt-3 min-h-11 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900">Discount / Custom Price</button>}
           </div>;
         }):<p className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm font-semibold text-slate-500">No saved packaging lines yet. Add a product before reviewing commercial terms.</p>}
-      </div>
-  );}
-
-  return <section id="packaging-quote-studio" className="mb-5 overflow-hidden rounded-[30px] border border-slate-200 bg-slate-100 shadow-[0_24px_70px_rgba(15,23,42,0.10)]">
-    <div className="bg-[radial-gradient(circle_at_top_right,_rgba(45,212,191,0.20),_transparent_32%),linear-gradient(135deg,#07111f_0%,#0f2137_52%,#123c4b_100%)] px-5 py-5 text-white sm:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-5">
-        <div><div className="flex flex-wrap items-center gap-2"><span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-teal-200">Packaging Quote Studio</span><span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-200">Approved pricing</span></div><h1 className="mt-3 text-2xl font-black sm:text-3xl">{buyerName||'Buyer quote'}</h1><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-300"><span>{quoteNumber}</span><span className="capitalize">{status}</span><span>{currency}</span></div></div>
-        <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:w-auto sm:min-w-[360px] sm:grid-cols-3"><div className="rounded-2xl border border-white/10 bg-white/10 p-3"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Quote items</div><div className="mt-1 text-xl font-black">{lineCount}</div></div><div className="rounded-2xl border border-white/10 bg-white/10 p-3"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Requested qty</div><div className="mt-1 text-lg font-black">{requestedQuantity>0?Number(requestedQuantity).toLocaleString():'—'}</div></div><div className="rounded-2xl border border-white/10 bg-white/10 p-3"><div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Current value</div><div className="mt-1 break-words text-base font-black sm:text-lg">{quoteTotal>0?money(quoteTotal,currency):lineCount>0?'Pricing pending':'—'}</div></div></div>
-      </div>
-      <div className="mt-5 grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">{steps.map(([no,label,sub],idx)=>{const n=idx+1;const current=n===step;const complete=n<step;return <button type="button" onClick={()=>goStep(n)} key={label} className={'rounded-2xl border px-3 py-3 text-left transition '+(current?'border-teal-300 bg-teal-300/15':complete?'border-emerald-300/20 bg-emerald-300/10':'border-white/10 bg-white/5 hover:bg-white/10')}><div className={'flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black '+(current?'bg-teal-300 text-slate-950':complete?'bg-emerald-400 text-slate-950':'bg-white/10 text-white')}>{complete?'✓':no}</div><div className="mt-2 text-xs font-black">{label}</div><div className="mt-0.5 text-[9px] font-semibold text-slate-400">{sub}</div></button>})}</div>
-    </div>
-
-    {step===1?<div className="bg-white p-5 sm:p-6">
-      <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Product & Requirement</div><h2 className="mt-1 text-2xl font-black text-slate-950">Start from the customer requirement</h2><p className="mt-1 text-sm font-semibold text-slate-500">Use what Sales already captured, edit it if needed, or add another packaging family.</p></div>
-      <section aria-label="Quote items and price adjustments" className="mt-5 rounded-2xl border-2 border-blue-200 bg-blue-50/60 p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-xs font-black uppercase tracking-wide text-blue-700">Your quote · {pricedLineCount} saved line{pricedLineCount===1?'':'s'}</p>
-            <h3 className="mt-1 text-lg font-black text-slate-950">Add multiple sizes or service families</h3>
-            <p className="mt-1 text-sm text-slate-700">Every saved size is a separate line. Add another size from the same family, or select another service family below. You do not need to finish the quote first.</p>
-          </div>
-          <button type="button" onClick={()=>goStep(3)} className="rounded-xl border border-blue-300 bg-white px-4 py-3 text-sm font-black text-blue-800">Review all prices & discounts →</button>
-        </div>
-        {pricedLineCount>0 ? renderSavedLineEditor() : <p className="mt-4 rounded-xl border border-dashed border-blue-200 bg-white p-4 text-sm font-semibold text-slate-600">No products priced yet. Select a family below, calculate the first size and save it. Return here to add more sizes, duplicate a line, or set an approved customer price.</p>}
+      </div>) : <p className="mt-4 rounded-xl border border-dashed border-blue-200 bg-white p-4 text-sm font-semibold text-slate-600">No products priced yet. Select a family below, calculate the first size and save it. Return here to add more sizes, duplicate a line, or set an approved customer price.</p>}
       </section>
       <QuoteRequirementPanel leadId={leadId} available={available} onUse={useRequirement} onStartFresh={startWithoutRequirement}/>
       <div className="mt-6 flex items-end justify-between gap-3"><div><div className="text-base font-black text-slate-950">+ Add a quote line — choose service family</div><div className="mt-1 text-[11px] font-semibold text-slate-500">Choose the same family to add a different size, or a different family for another product. Existing quote lines are preserved.</div></div></div>
@@ -213,7 +207,31 @@ export default function PremiumPackagingQuoteBuilderV5({
     </div>:null}
 
     {step===2?<div className="p-4 sm:p-5">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 2 · Configure & Price</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Confirm the specification, size or dimensions, KLD and quantity. Pricing and higher-volume options stay in the same workspace.</p>{requirementSeed?<div className="mt-2 flex flex-wrap items-center gap-2"><div className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black text-cyan-800">Using lead requirement · {requirementSeed.dimensions||requirementSeed.quantity||'captured requirement'}</div><button type="button" onClick={()=>goStep(1)} className="text-[10px] font-black text-blue-700 underline">Change requirement</button><button type="button" onClick={()=>setRequirementSeed(null)} className="text-[10px] font-black text-slate-600 underline">D      {renderSavedLineEditor()}d-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{lineError}</p>:null}
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 2 · Configure & Price</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Confirm the specification, size or dimensions, KLD and quantity. Pricing and higher-volume options stay in the same workspace.</p>{requirementSeed?<div className="mt-2 flex flex-wrap items-center gap-2"><div className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black text-cyan-800">Using lead requirement · {requirementSeed.dimensions||requirementSeed.quantity||'captured requirement'}</div><button type="button" onClick={()=>goStep(1)} className="text-[10px] font-black text-blue-700 underline">Change requirement</button><button type="button" onClick={()=>setRequirementSeed(null)} className="text-[10px] font-black text-slate-600 underline">D      <div className="mt-4 space-y-3">
+        {[...supSavedLines,...frameSavedLines].length ? [...supSavedLines,...frameSavedLines].map((line:any)=>{
+          const lineId=String(line.lineId??'');
+          const basePrice=Number(line.baseUnitPrice??line.unitPrice??0);
+          const quantity=Number(line.quantity??0);
+          const lineFamily:FamilyKey = supSavedLines.some((item:any)=>String(item.lineId)===lineId) ? 'sup' : (String(line.familySlug??line.family_slug??'').includes('3')?'3ss':'center-seal');
+          return <div key={lineId} className="rounded-2xl border border-slate-200 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><p className="text-sm font-black text-slate-950">{familyMeta(lineFamily).label}</p><p className="mt-1 text-xs font-semibold text-slate-500">{lineFamily==='sup' ? (supSizeById.get(String(line.sizeProfileId))?.name ?? supSizeById.get(String(line.sizeProfileId))?.size_key ?? 'Saved size') : (line.sizeLabel ?? line.sizeName ?? line.dimensions ?? 'Saved size')} · Qty {quantity>0?quantity.toLocaleString():'—'} · {basePrice>0?money(basePrice,currency)+' / pc':'Approved pricing'}</p>{line.discountType&&line.discountType!=='none'?<p className="mt-1 text-xs font-bold text-emerald-700">Adjusted customer price: {money(Number(line.unitPrice??0),currency)} / pc · {Number(line.discountPercent??0).toFixed(2)}% discount {line.approvalRequired?'· Approval required':''}</p>:null}</div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={()=>manageLine(lineId,lineFamily,'edit')} className="min-h-11 rounded-xl border border-blue-200 px-3 text-xs font-bold text-blue-700">Edit qty / spec</button>
+                <button type="button" onClick={()=>manageLine(lineId,lineFamily,'duplicate')} className="min-h-11 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700">Duplicate</button>
+                <button type="button" disabled={pending} onClick={()=>removeLine(line)} className="min-h-11 rounded-xl border border-rose-200 px-3 text-xs font-bold text-rose-700 disabled:opacity-50">Remove</button>
+              </div>
+            </div>
+            {adjustingLineId===lineId?<div className="mt-4 rounded-xl bg-slate-50 p-3">
+              <label className="block text-xs font-bold text-slate-700">Customer price adjustment<select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"><option value="percent">Discount (%)</option><option value="amount">Discount (₹ per piece)</option><option value="customer_price">Approved customer price (₹ per piece)</option></select></label>
+              <label className="mt-3 block text-xs font-bold text-slate-700">{discountType==='customer_price'?'Customer price / pc':'Discount value'}<input type="number" inputMode="decimal" min="0" value={discountType==='customer_price'?existingCustomerPrice:discountValue} onChange={e=>discountType==='customer_price'?setExistingCustomerPrice(e.target.value):setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
+              <label className="mt-3 block text-xs font-bold text-slate-700">Reason for price adjustment (required)<input required value={discountReason} onChange={e=>setDiscountReason(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
+              <p className="mt-2 text-xs text-amber-700">More than 15% below approved pricing requires approval before send.</p>
+              <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={pending} onClick={()=>saveAdjustment(line)} className="min-h-11 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white disabled:opacity-50">Save adjustment</button><button type="button" disabled={pending} onClick={()=>clearAdjustment(line)} className="min-h-11 rounded-xl border border-slate-300 px-4 text-xs font-bold text-slate-700">Remove discount</button><button type="button" onClick={()=>setAdjustingLineId('')} className="min-h-11 px-3 text-xs font-bold text-slate-600">Cancel</button></div>
+            </div>:<button type="button" onClick={()=>beginAdjust(line)} className="mt-3 min-h-11 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900">Discount / Custom Price</button>}
+          </div>;
+        }):<p className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm font-semibold text-slate-500">No saved packaging lines yet. Add a product before reviewing commercial terms.</p>}
+      </div>d-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{lineError}</p>:null}
       {lineNotice?<p role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{lineNotice}</p>:null}
       <div className="mt-5 space-y-3">
         {[...supSavedLines,...frameSavedLines].length ? [...supSavedLines,...frameSavedLines].map((line:any)=>{
