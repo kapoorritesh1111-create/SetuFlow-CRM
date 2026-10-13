@@ -1,3 +1,4 @@
+import {resolveFrameQuotePresentation} from '@/lib/packaging-pricing-v5/customer-quote-unit';
 import { notFound } from 'next/navigation';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import QuoteDecisionForm from './quote-decision-form';
@@ -128,6 +129,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               const artworkIsImage = proofIsImage || Boolean(!proofUrl && imageArtwork);
               const name = product?.name || variation?.name || family?.name || line.notes || `Packaging item ${index + 1}`;
               const lineTotal = Number(line.quantity || 0) * Number(line.unit_price || 0);
+              const view=resolveFrameQuotePresentation(line);
               const alternatives = customerVolumeSuggestions(
                 line.quantity,
                 line.unit_price,
@@ -147,10 +149,10 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
                     <div className="p-5 sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1"><h3 className="text-lg font-black">{name}</h3><p className="mt-1 text-sm font-semibold text-slate-500">{snapshot.spec_summary || line.notes || family?.description || product?.description || 'Packaging specification as quoted.'}</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">{variation?.capacity_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.capacity_label}</span> : null}{variation?.dimension_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.dimension_label}</span> : null}{input.finish ? <span className="rounded-full bg-slate-100 px-3 py-1">Finish: {label(input.finish)}</span> : null}{input.zipper ? <span className="rounded-full bg-slate-100 px-3 py-1">Zipper</span> : null}{input.print_colors ? <span className="rounded-full bg-slate-100 px-3 py-1">{input.print_colors}-color print</span> : null}</div></div>
-                    <div className="text-right"><div className="text-sm font-bold text-slate-500">{Number(line.quantity || 0).toLocaleString()} pcs × {money(line.unit_price, line.currency || currency)}</div><div className="mt-1 text-lg font-black">{money(lineTotal, line.currency || currency)}</div></div>
+                    <div className="text-right"><div className="text-sm font-bold text-slate-500">{view.isFrame?view.displayQuantity.toLocaleString('en-IN',{maximumFractionDigits:2}):Number(line.quantity||0).toLocaleString()} {view.isFrame?view.unit:'pcs'} × {money(view.isFrame?view.displayPrice:line.unit_price, line.currency || currency)} / {view.isFrame?view.unit:'pc'}</div><div className="mt-1 text-lg font-black">{money(lineTotal, line.currency || currency)}</div></div>
                   </div>
 
-                  {alternatives.length ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  {alternatives.length && (!view.isFrame || view.unit==='pcs') ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                     <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Save more at higher quantities</p>
                     <p className="mt-1 text-xs font-semibold text-slate-600">Your quoted quantity stays unchanged. If you increase the order quantity, these suggested prices show how the approved per-piece price can reduce.</p>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
