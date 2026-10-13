@@ -81,7 +81,7 @@ async function getMutableQuote(formData: FormData) {
   const supabase: any = await createClient();
   const { data: quote, error } = await supabase
     .from('quotes')
-    .select('id, lead_id, organization_id, status, currency, display_currency, current_version_id, approval_required')
+    .select('id, lead_id, organization_id, status, currency, display_currency, current_version_id, approval_required, industry_metadata')
     .eq('organization_id', workspace.organization.id)
     .eq('lead_id', leadId)
     .eq('id', quoteId)
@@ -357,6 +357,13 @@ export async function sendCanonicalQuote(formData: FormData) {
   try {
     const { workspace, supabase, quote } = await getMutableQuote(formData);
     if (!quote.current_version_id) throw new Error('Current quote version is required.');
+    if (quote.industry_metadata?.revision_reprice_required) {
+      const {data: lines,error:lineError}=await supabase.from('quote_line_items')
+        .select('id,unit_price,quantity').eq('quote_id',quote.id);
+      if(lineError) throw new Error('Cannot verify revised quote pricing: '+lineError.message);
+      if(!lines?.length || lines.some((line:any)=>!(Number(line.unit_price)>0) || !(Number(line.quantity)>0)))
+        throw new Error('Revised quote includes an unpriced line. Recalculate every copied size and family before sending.');
+    }
     const approvalRequired = text(formData.get('approval_required')) === 'true' || Boolean(quote.approval_required);
     const { error } = await supabase.rpc('app_send_quote_version_with_fanout_tx', { p_quote_version_id: quote.current_version_id, p_actor_user_id: workspace.user!.id, p_actor_name: workspace.user!.email || 'Setu Flow user', p_plain_notes: text(formData.get('plain_notes')) || 'Quote sent from canonical send gate.', p_approval_required: approvalRequired, p_approval_state: approvalRequired ? 'pending' : 'none', p_action_source: 'canonical_quote_builder' });
     if (error) throw new Error(error.message);
