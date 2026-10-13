@@ -46,7 +46,7 @@ export default function StarkLeadDetailApproved({data,teamMembers,backHref,commu
    </div>
    <div className="space-y-3">
      {visibleQuotes.map((q:any)=>{
-       const state=quoteStatus(q),locked=quoteStatesLocked.has(state),open=expandedQuoteId===String(q.id),lines=Array.isArray(q.lineItems)?q.lineItems:[];
+       const state=quoteStatus(q),locked=quoteStatesLocked.has(state)||Boolean(q.sent_version_id),open=expandedQuoteId===String(q.id),lines=Array.isArray(q.lineItems)?q.lineItems:[];
        const priced=lines.filter((l:any)=>Number(l.unit_price??0)>0);
        const total=Number(q.total_quote_value??q.total_value??q.total_amount??q.grand_total??0);
        const currency=String(q.display_currency??q.currency??'INR');
@@ -61,7 +61,7 @@ export default function StarkLeadDetailApproved({data,teamMembers,backHref,commu
            <button type="button" onClick={()=>setExpandedQuoteId(open?null:String(q.id))} aria-expanded={open} className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-800">{open?'Hide':'View'} details</button>
            {!locked?<Link href={`/leads/${lead.id}/quote?quoteId=${q.id}&step=1`} className="inline-flex items-center rounded-lg bg-blue-700 px-3 py-2 text-xs font-bold text-white">Continue editing</Link>:null}
            <a href={`/api/quotes/${encodeURIComponent(String(q.id))}/pdf`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Quotation PDF</a>
-           {locked?<span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">Sent offer locked — create a new draft for changes</span>:null}
+           {locked?<form action={createLeadQuoteDraftFromLead}><input type="hidden" name="lead_id" value={lead.id}/><input type="hidden" name="source_quote_id" value={String(q.id)}/><input type="hidden" name="force_new" value="true"/><button type="submit" className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-bold text-white">Create revision / new offer</button></form>:null}
          </div>
          {open?<div className="mt-3 rounded-xl bg-slate-50 p-3">
             <h5 className="text-xs font-black uppercase tracking-wide text-slate-600">Quotation specification and history</h5>
