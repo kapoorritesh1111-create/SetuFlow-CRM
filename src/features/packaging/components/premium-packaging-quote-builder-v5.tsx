@@ -1,5 +1,5 @@
-import {setStarkFrameCustomerQuoteUnit} from '@/features/packaging/server/customer-quote-unit-actions';
 'use client';
+import {setStarkFrameCustomerQuoteUnit} from '@/features/packaging/server/customer-quote-unit-actions';
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -263,7 +263,7 @@ export default function PremiumPackagingQuoteBuilderV5({
               return <div key={id} className={'rounded-xl border p-3 '+(isEditing?'border-blue-500 bg-blue-50':'border-slate-200 bg-slate-50')}>
                 <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-xs font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p><p className="text-xs font-semibold text-slate-600">{size}</p></div>{isEditing?<span className="rounded-full bg-blue-700 px-2 py-1 text-[10px] font-bold text-white">{intent?.mode==='duplicate'?'Duplicating':'Editing'}</span>:null}</div>
                 {family!=='sup'?<label className="mt-2 block text-xs font-bold text-slate-700">Customer quote basis
-                  <select aria-label="Customer quotation price unit" disabled={pending||line.customerQuoteUnit==='pcs'&&Number(line.finishedWeightKg)<=0} value={line.customerQuoteUnit??(String(line.supplyForm).endsWith('_roll')?'kg':'pcs')} onChange={e=>updateQuoteUnit(id,e.target.value as 'kg'|'pcs')} className="mt-1 w-full rounded-lg border border-blue-200 bg-white p-2">
+                  <select aria-label="Customer quotation price unit" disabled={pending} value={line.customerQuoteUnit??(String(line.supplyForm).endsWith('_roll')?'kg':'pcs')} onChange={e=>updateQuoteUnit(id,e.target.value as 'kg'|'pcs')} className="mt-1 w-full rounded-lg border border-blue-200 bg-white p-2">
                     <option value="pcs">Per piece</option><option value="kg" disabled={!(Number(line.finishedWeightKg)>0)}>Per kg</option>
                   </select>
                 </label>:null}
