@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { ReportsWorkspace } from '@/features/reports/components/reports-workspace';
@@ -59,9 +60,29 @@ export default async function ReportsPage({ searchParams }: { searchParams?: { m
     );
   }
 
+  const isSupervisor = currentRoles.some(role => ['owner','admin','manager'].includes(role));
+  const db = createAdminSupabaseClient();
+  const { data: assignmentRows } = db
+    ? await (db as any).from('leads').select('id, owner_user_id, coordinator_user_id, created_by, company_name')
+        .eq('organization_id',workspace.organization.id)
+    : { data: [] };
+  const visibleAssignments: Array<{ id: string; owner_user_id: string | null; coordinator_user_id: string | null; created_by: string | null; company_name: string }> =
+    (assignmentRows ?? []).filter((item: any) => isSupervisor || item.owner_user_id === workspace.user?.id || item.coordinator_user_id === workspace.user?.id);
+  const owned = visibleAssignments.filter(item => item.owner_user_id === workspace.user?.id).length;
+  const coordinated = visibleAssignments.filter(item => item.coordinator_user_id === workspace.user?.id).length;
+  const created = visibleAssignments.filter(item => item.created_by === workspace.user?.id).length;
   return (
     <div className="space-y-5">
       <QueryIssuesAlert issues={data.queryIssues} title="Some reporting sources could not be loaded" />
+      <section className="rounded-panel border border-line bg-surface p-4">
+        <h2 className="text-base font-semibold text-content">Lead ownership and coordination</h2>
+        <p className="mt-1 text-sm text-content-secondary">Coordinator credit is separate from lead ownership and revenue attribution.</p>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-card bg-surface-secondary p-3"><p className="text-xs text-content-secondary">Owned by me</p><p className="text-xl font-semibold">{owned}</p></div>
+          <div className="rounded-card bg-surface-secondary p-3"><p className="text-xs text-content-secondary">Coordinated by me</p><p className="text-xl font-semibold">{coordinated}</p></div>
+          <div className="rounded-card bg-surface-secondary p-3"><p className="text-xs text-content-secondary">Created by me</p><p className="text-xl font-semibold">{created}</p></div>
+        </div>
+      </section>
       <ReportsWorkspace data={data} readOnlyMessage={readOnlyMessage} />
     </div>
   );
