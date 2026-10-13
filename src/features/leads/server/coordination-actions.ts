@@ -23,6 +23,7 @@ export async function assignLeadCoordination(input: {
  if (!canCoordinate) return { error: 'Not authorized to assign lead coordination.' };
  const db = createAdminSupabaseClient();
  if (!db) return { error: 'Administrative database connection unavailable.' };
+ if (organizationId !== 'b97913cb-3b95-4247-8ced-ffdc0d392d2a') return { error: 'Coordinator delegation is currently enabled for Stark Packmate only.' };
  const { data: leads, error: loadError } = await (db as any).from('leads')
   .select('id,owner_user_id,coordinator_user_id,created_by')
   .eq('organization_id', organizationId).in('id', ids);
@@ -51,11 +52,12 @@ export async function assignLeadCoordination(input: {
    updated_by: userId,
   }).eq('organization_id', organizationId).eq('id',lead.id).eq('owner_user_id',lead.owner_user_id).select('id');
   if (error || !changed?.length) return { error: `Updated ${updated} of ${ids.length}. Remaining assignments were not applied: ${error?.message ?? 'Lead changed concurrently'}`, updated };
-  await (db as any).from('lead_coordination_audit').insert({
+  const { error: auditError } = await (db as any).from('lead_coordination_audit').insert({
    organization_id: organizationId,lead_id:lead.id,actor_user_id:userId,
    old_owner_user_id:lead.owner_user_id,new_owner_user_id:nextOwner,
    old_coordinator_user_id:lead.coordinator_user_id,new_coordinator_user_id:nextCoordinator,
   });
+  if (auditError) return { error: `Assignment saved but audit logging failed for lead ${lead.id}; contact support.`,updated };
   updated++;
  }
  revalidatePath('/leads');
