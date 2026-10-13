@@ -170,7 +170,7 @@ function buildPdf(data: PdfData) {
   put(142, y - 10, 'Product / Service', 5, true, NAVY);
   put(318, y - 10, 'Qty', 5, true, NAVY, true);
   put(372, y - 10, data.domesticQuote ? 'Pricing' : 'Basis', 5, true, NAVY);
-  put(458, y - 10, `${data.currency}/Unit`, 5, true, NAVY, true);
+  put(458, y - 10, `${data.currency}/Rate`, 5, true, NAVY, true);
   put(582, y - 10, `Total ${data.currency}`, 5, true, NAVY, true);
   y -= 23;
 
@@ -483,7 +483,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   }
 
   const volumeSuggestions = lines
-    .filter((line) => line.line_type === 'packaging' && Number(line.calculation_version) === 5)
+    .filter((line) => line.line_type === 'packaging' && Number(line.calculation_version) === 5 && (!resolveFrameQuotePresentation(line).isFrame || resolveFrameQuotePresentation(line).unit==='pcs'))
     .flatMap((line, lineIndex) => {
       const suggestions = customerVolumeSuggestions(
         line.quantity,
