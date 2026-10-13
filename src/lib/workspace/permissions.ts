@@ -17,16 +17,16 @@ export type WorkspaceCapability =
 const CAPABILITY_ROLES: Record<WorkspaceCapability, readonly WorkspaceRole[]> = {
   'catalog.manage': ['owner', 'admin', 'manager'],
   'settings.manage': ['owner', 'admin', 'manager'],
-  'lead.manage': ['owner', 'admin', 'manager', 'sales', 'field_sales', 'operations', 'sourcing', 'procurement', 'contributor', 'ordering'],
+  'lead.manage': ['owner', 'admin', 'manager', 'sales', 'field_sales', 'sales_coordinator', 'operations', 'sourcing', 'procurement', 'contributor', 'ordering'],
   'quote.send': ['owner', 'admin', 'manager', 'sales'],
   'compliance.review': ['owner', 'admin', 'manager', 'operations'],
-  'reporting.view': ['owner', 'admin', 'manager', 'sales', 'operations', 'contributor', 'viewer'],
+  'reporting.view': ['owner', 'admin', 'manager', 'sales', 'sales_coordinator', 'operations', 'contributor', 'viewer'],
   // S27-STARK-A2: packaging-vertical role scoping for a multi-team org
   // (Design = artwork/proof work, Operations = dispatch/production floor,
   // Ordering = order entry and reorders without send/approve authority).
   'packaging.design': ['owner', 'admin', 'manager', 'design'],
   'packaging.production': ['owner', 'admin', 'manager', 'operations'],
-  'packaging.order_entry': ['owner', 'admin', 'manager', 'sales', 'ordering'],
+  'packaging.order_entry': ['owner', 'admin', 'manager', 'sales', 'sales_coordinator', 'ordering'],
 };
 
 const CAPABILITY_LABELS: Record<WorkspaceCapability, string> = {
