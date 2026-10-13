@@ -1,3 +1,4 @@
+import {setStarkFrameCustomerQuoteUnit} from '@/features/packaging/server/customer-quote-unit-actions';
 'use client';
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
@@ -108,6 +109,15 @@ export default function PremiumPackagingQuoteBuilderV5({
   function manageLine(lineId:string,family:FamilyKey,mode:'edit'|'duplicate'){
     setBasketReview(false);setActive(family);setIntent({lineId,mode});goStep(2);
   }
+  function updateQuoteUnit(lineId:string,unit:'kg'|'pcs'){
+    setLineError('');setLineNotice('');
+    startTransition(async()=>{
+      const result=await setStarkFrameCustomerQuoteUnit({quoteId,leadId,lineId,unit});
+      if(!result.ok){setLineError(result.error);return;}
+      setLineNotice('Customer quote unit saved. The PDF and customer link will use this basis.');
+      router.refresh();
+    });
+  }
   function savedLineSuccessfully(lineId:string){
     setLastSavedLineId(lineId);
     setBasketReview(true);
@@ -197,7 +207,7 @@ export default function PremiumPackagingQuoteBuilderV5({
             const family:FamilyKey=supSavedLines.some((saved:any)=>String(saved.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal';
             return <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-white p-3">
               <div><p className="text-sm font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p>
-                <p className="text-xs font-semibold text-slate-600">{family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??'Dimensions not specified')} · Qty {Number(line.quantity??0).toLocaleString()} · {money(Number(line.unitPrice??0),currency)} / pc</p></div>
+                <p className="text-xs font-semibold text-slate-600">{family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??'Dimensions not specified')} · {line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString()} kg · ${money(Number(line.displayUnitPrice),currency)}/kg`:`Qty ${Number(line.quantity??0).toLocaleString()} · ${money(Number(line.unitPrice??0),currency)}/pc`}</p></div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={()=>manageLine(id,family,'duplicate')} className="rounded-lg border border-blue-300 px-3 py-2 text-xs font-black text-blue-800">+ Another size (duplicate)</button>
                 <button type="button" onClick={()=>manageLine(id,family,'edit')} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700">Edit size / qty</button>
@@ -252,7 +262,12 @@ export default function PremiumPackagingQuoteBuilderV5({
               const isEditing=intent?.lineId===id;
               return <div key={id} className={'rounded-xl border p-3 '+(isEditing?'border-blue-500 bg-blue-50':'border-slate-200 bg-slate-50')}>
                 <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-xs font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p><p className="text-xs font-semibold text-slate-600">{size}</p></div>{isEditing?<span className="rounded-full bg-blue-700 px-2 py-1 text-[10px] font-bold text-white">{intent?.mode==='duplicate'?'Duplicating':'Editing'}</span>:null}</div>
-                <p className="mt-2 text-xs font-semibold text-slate-700">Qty {Number(line.quantity??0).toLocaleString()} · {money(Number(line.unitPrice??0),currency)} / pc</p>
+                {family!=='sup'?<label className="mt-2 block text-xs font-bold text-slate-700">Customer quote basis
+                  <select aria-label="Customer quotation price unit" disabled={pending||line.customerQuoteUnit==='pcs'&&Number(line.finishedWeightKg)<=0} value={line.customerQuoteUnit??(String(line.supplyForm).endsWith('_roll')?'kg':'pcs')} onChange={e=>updateQuoteUnit(id,e.target.value as 'kg'|'pcs')} className="mt-1 w-full rounded-lg border border-blue-200 bg-white p-2">
+                    <option value="pcs">Per piece</option><option value="kg" disabled={!(Number(line.finishedWeightKg)>0)}>Per kg</option>
+                  </select>
+                </label>:null}
+                <p className="mt-2 text-xs font-semibold text-slate-700">{line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString()} kg · ${money(Number(line.displayUnitPrice),currency)} / kg`:`Qty ${Number(line.quantity??0).toLocaleString()} · ${money(Number(line.unitPrice??0),currency)} / pc`}</p>
                 <p className="text-sm font-black text-slate-900">{money(Number(line.quantity??0)*Number(line.unitPrice??0),currency)}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button type="button" onClick={()=>manageLine(id,family,'edit')} className="rounded-lg border border-blue-200 bg-white px-2.5 py-2 text-[11px] font-bold text-blue-800">Edit</button>
