@@ -130,18 +130,9 @@ export default async function QuotePage({
   const optionalChargeTotal = (packaging?.charges ?? []).reduce((sum:number,item:any)=>sum+Math.max(0,Number(item.amount??0)),0);
   const v5TaxTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.calculation_version)===5?Math.max(0,Number(line.pricing_breakdown_json?.selling_price?.gst??0)):0),0) : 0;
   const liveQuoteTotal = pricingLineTotal + optionalChargeTotal + v5TaxTotal;
-  const commercialQuoteLines = activeQuote ? (activeQuote.lineItems as any[]).filter((line:any)=>{
-    const isPlaceholder=line?.input_snapshot_json?.source==='lead_requirement' && Number(line.unit_price??0)<=0;
-    if(!isPlaceholder) return true;
-    const family=String(line.packaging_family_id??line.input_snapshot_json?.family_id??'');
-    const size=String(line.packaging_size_profile_v5_id??line.input_snapshot_json?.size_profile_id??'');
-    return !(activeQuote.lineItems as any[]).some((priced:any)=>{
-      if(Number(priced.calculation_version)!==5||Number(priced.unit_price??0)<=0) return false;
-      const pricedFamily=String(priced.packaging_family_id??priced.input_snapshot_json?.family_id??'');
-      const pricedSize=String(priced.packaging_size_profile_v5_id??priced.input_snapshot_json?.input?.size_profile_id??'');
-      return pricedFamily===family&&(!size||!pricedSize||pricedSize===size);
-    });
-  }) : [];
+  const commercialQuoteLines = activeQuote ? (activeQuote.lineItems as any[]).filter((line:any)=>
+    !(line.input_snapshot_json?.source==='lead_requirement' && Number(line.unit_price??0)<=0)
+  ) : [];
   const activeQuoteLineCount = commercialQuoteLines.length;
   const activeRequestedQuantity = commercialQuoteLines.reduce((sum:number,line:any)=>sum+Math.max(0,Number(line.quantity??0)),0);
   const workflowStep = Math.min(4,Math.max(1,Number(readParam(searchParams?.step).trim() || '1') || 1));

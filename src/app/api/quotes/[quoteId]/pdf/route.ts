@@ -350,18 +350,10 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   const marketId = quote.market_id ?? country?.market_id ?? null;
   const { data: market } = marketId ? await db.from('markets').select('id, name').eq('organization_id', resolvedOrganizationId).eq('id', marketId).maybeSingle() : { data: null };
   const allLines=(items??[]) as any[];
-  const pricedV5=allLines.filter((line:any)=>Number(line.calculation_version)===5&&num(line.unit_price)>0);
-  const lines=allLines.filter((line:any)=>{
-    const isPlaceholder=line?.input_snapshot_json?.source==='lead_requirement'&&num(line.unit_price)<=0;
-    if(!isPlaceholder) return true;
-    const family=String(line.packaging_family_id??line.input_snapshot_json?.family_id??'');
-    const size=String(line.packaging_size_profile_v5_id??line.input_snapshot_json?.size_profile_id??'');
-    return !pricedV5.some((priced:any)=>{
-      const pricedFamily=String(priced.packaging_family_id??priced.input_snapshot_json?.family_id??'');
-      const pricedSize=String(priced.packaging_size_profile_v5_id??priced.input_snapshot_json?.input?.size_profile_id??'');
-      return pricedFamily===family&&(!size||!pricedSize||size===pricedSize);
-    });
-  });
+  // Zero-price lead inquiry placeholders were never selected as customer quote lines.
+  const lines=allLines.filter((line:any)=>
+    !(line.input_snapshot_json?.source==='lead_requirement' && num(line.unit_price)<=0)
+  );
   const productIds = Array.from(new Set(lines.map((line) => line.product_id).filter(Boolean)));
   const packagingFamilyIds = Array.from(new Set(lines.map((line) => line.packaging_family_id).filter(Boolean)));
   const packagingVariationIds = Array.from(new Set(lines.map((line) => line.packaging_product_variation_id).filter(Boolean)));

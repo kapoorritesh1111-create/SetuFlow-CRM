@@ -151,7 +151,9 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
   if(sourceQuoteId && draft?.quote_id) draft.created = false;
   if (!draft?.quote_id) redirect(`/leads/${leadId}/quote?quoteDraftError=empty-rpc-result`);
 
-  if (!sourceQuoteId && draft.created && draft.quote_version_id) {
+  // Stark Packmate requirements belong to the lead until Sales explicitly chooses one.
+  // Never seed a zero-price inquiry requirement into a new customer quotation.
+  if (!sourceQuoteId && draft.created && draft.quote_version_id && workspace.organization.id !== 'b97913cb-3b95-4247-8ced-ffdc0d392d2a') {
     const [{ data: quoteRow }, { data: requirements }] = await Promise.all([
       db.from('quotes').select('currency,display_currency').eq('organization_id',workspace.organization.id).eq('id',draft.quote_id).maybeSingle(),
       db.from('lead_product_interests').select('id,label,product_id,source_context,created_at').eq('organization_id',workspace.organization.id).eq('lead_id',leadId).in('interest_type',['captured_requirement','manual_requirement']).is('product_id',null).order('created_at',{ascending:true})

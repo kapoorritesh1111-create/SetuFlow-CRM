@@ -78,18 +78,10 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   const byVariation = new Map<string, any>((variations ?? []).map((r: any) => [String(r.id), r]));
   const byKld = new Map<string, any>((klds ?? []).map((r: any) => [String(r.id), r]));
   const currency = quote.display_currency || quote.currency || 'INR';
-  const pricedV5=(lines ?? []).filter((line:any)=>Number(line.calculation_version)===5&&Number(line.unit_price??0)>0);
-  const displayLines=(lines ?? []).filter((line:any)=>{
-    const isPlaceholder=line?.input_snapshot_json?.source==='lead_requirement'&&Number(line.unit_price??0)<=0;
-    if(!isPlaceholder) return true;
-    const family=String(line.packaging_family_id??line.input_snapshot_json?.family_id??'');
-    const size=String(line.packaging_size_profile_v5_id??line.input_snapshot_json?.size_profile_id??'');
-    return !pricedV5.some((priced:any)=>{
-      const pricedFamily=String(priced.packaging_family_id??priced.input_snapshot_json?.family_id??'');
-      const pricedSize=String(priced.packaging_size_profile_v5_id??priced.input_snapshot_json?.input?.size_profile_id??'');
-      return pricedFamily===family&&(!size||!pricedSize||size===pricedSize);
-    });
-  });
+  // Legacy inquiry placeholders remain lead context and cannot appear in the shared offer.
+  const displayLines=(lines ?? []).filter((line:any)=>
+    !(line.input_snapshot_json?.source==='lead_requirement' && Number(line.unit_price??0)<=0)
+  );
   const subtotal = displayLines.reduce((sum:number,line:any)=>sum+Number(line.quantity||0)*Number(line.unit_price||0),0);
   const taxTotal = displayLines.reduce((sum:number,line:any)=>Number(line.calculation_version)===5?sum+Math.max(0,Number(line.pricing_breakdown_json?.selling_price?.gst??0)):sum,0);
   const total = subtotal + taxTotal;

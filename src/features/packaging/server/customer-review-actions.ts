@@ -66,6 +66,17 @@ export async function preparePackagingQuoteCustomerShare(input:{leadId:string;qu
     if(lineError) throw new Error(lineError.message);
     const priced=(versionLines??[]).filter((line:any)=>Number(line.final_unit_price??0)>0&&Number(line.moq??0)>0);
     if(!priced.length) return {ok:false,error:'Add at least one priced quote item before sharing.'};
+    // Check the actual saved commercial lines. Legacy unselected lead requirements
+    // are not quote items; every selected customer item must have approved pricing.
+    const {data:commercialLines,error:commercialError}=await supabase.from('quote_line_items')
+      .select('id,quantity,unit_price,input_snapshot_json').eq('quote_id',quote.id);
+    if(commercialError) throw new Error('Unable to verify quotation lines: '+commercialError.message);
+    const selectedLines=(commercialLines??[]).filter((line:any)=>
+      !(line.input_snapshot_json?.source==='lead_requirement'&&Number(line.unit_price??0)<=0));
+    if(!selectedLines.length) return {ok:false,error:'Add a priced product before sharing the quote.'};
+    if(selectedLines.some((line:any)=>Number(line.unit_price??0)<=0||Number(line.quantity??0)<=0))
+      return {ok:false,error:'An included quote line is unpriced. Price or remove every selected item before sharing.'};
+
     if((versionLines??[]).some((line:any)=>line?.calculation_meta?.approval_required===true)) return {ok:false,error:'Pricing approval is required before this quote can be shared.'};
 
     // Preparing or manually sharing the customer review link does not lock the quote.
@@ -119,6 +130,14 @@ export async function sendPackagingQuoteCustomerPackage(input: { leadId: string;
       .maybeSingle();
     if (quoteError) throw new Error(quoteError.message);
     if (!quote?.id) return { ok: false, error: 'Quote was not found.' };
+    const {data:shareLines,error:shareLinesError}=await supabase.from('quote_line_items')
+      .select('id,quantity,unit_price,input_snapshot_json').eq('quote_id',quote.id);
+    if(shareLinesError) throw new Error('Unable to verify quote lines: '+shareLinesError.message);
+    const selectedShareLines=(shareLines??[]).filter((line:any)=>
+      !(line.input_snapshot_json?.source==='lead_requirement'&&Number(line.unit_price??0)<=0));
+    if(!selectedShareLines.length||selectedShareLines.some((line:any)=>Number(line.quantity??0)<=0||Number(line.unit_price??0)<=0))
+      return {ok:false,error:'Price all selected quotation items before emailing the customer.'};
+
 
     const { data: lead, error: leadError } = await supabase
       .from('leads')
@@ -135,9 +154,9 @@ export async function sendPackagingQuoteCustomerPackage(input: { leadId: string;
     const now = new Date().toISOString();
     const reviewUrl = `${appOrigin()}/public/quote-review/${token}`;
     const {data:quoteLines,error:quoteLinesError}=await supabase.from('quote_line_items')
-      .select('id,packaging_family_id').eq('quote_id',quote.id);
+      .select('id,packaging_family_id,unit_price,input_snapshot_json').eq('quote_id',quote.id);
     if(quoteLinesError) throw new Error('Unable to check customer brochure mappings: '+quoteLinesError.message);
-    const familyIds=[...new Set((quoteLines??[]).map((l:any)=>String(l.packaging_family_id??'')).filter(Boolean))];
+    const familyIds=[...new Set((quoteLines??[]).filter((l:any)=>Number(l.unit_price??0)>0).map((l:any)=>String(l.packaging_family_id??'')).filter(Boolean))];
     const {data:brochureMappings,error:brochureMappingError}=familyIds.length
       ? await supabase.from('catalog_brochure_families').select('packaging_family_id,brochure_id').in('packaging_family_id',familyIds)
       : {data:[],error:null};
@@ -149,7 +168,7 @@ export async function sendPackagingQuoteCustomerPackage(input: { leadId: string;
     if(brochureError) throw new Error('Unable to check approved brochures: '+brochureError.message);
     const activeIds=new Set((brochures??[]).map((b:any)=>String(b.id)));
     const matchingFamilies=new Set((brochureMappings??[]).filter((m:any)=>activeIds.has(String(m.brochure_id))).map((m:any)=>String(m.packaging_family_id)));
-    const brochureLinks=(quoteLines??[]).filter((l:any)=>matchingFamilies.has(String(l.packaging_family_id)))
+    const brochureLinks=(quoteLines??[]).filter((l:any)=>Number(l.unit_price??0)>0&&matchingFamilies.has(String(l.packaging_family_id)))
       .map((l:any)=>{
         const mapping=(brochureMappings??[]).find((m:any)=>String(m.packaging_family_id)===String(l.packaging_family_id)&&activeIds.has(String(m.brochure_id)));
         const brochure=(brochures??[]).find((b:any)=>String(b.id)===String(mapping?.brochure_id));
