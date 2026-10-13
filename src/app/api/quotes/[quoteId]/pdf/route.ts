@@ -5,6 +5,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { loadOrganizationLogo, type PdfImage } from '@/lib/pdf/organization-logo';
 import { customerVolumeSuggestions } from '@/lib/packaging-pricing-v5/volume-suggestions';
+import { isStarkPackmateOrganization, STARK_PACKMATE_POLICY, STARK_PACKMATE_POLICY_TITLE, STARK_PACKMATE_POLICY_INTRO, STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT } from '@/lib/quotes/stark-packmate-policy';
 
 export const runtime = 'nodejs';
 
@@ -18,7 +19,7 @@ const NL = String.fromCharCode(10);
 const BS = String.fromCharCode(92);
 
 type PdfText = { x: number; y: number; text: string; size: number; bold: boolean; color: string; right: boolean };
-type PdfRow = { sku: string; product: string; qty: number; basis: string; casePrice: number; total: number };
+type PdfRow = { sku: string; product: string; specification?: string; qty: number; basis: string; casePrice: number; total: number };
 type PdfData = {
   quoteNo: string;
   volumeSuggestions?: string[];
@@ -36,6 +37,7 @@ type PdfData = {
   taxTotal?: number;
   taxLabel?: string;
   logoImage?: PdfImage | null;
+  includeStarkPolicy?: boolean;
 };
 
 function num(value: unknown, fallback = 0) {
@@ -174,7 +176,8 @@ function buildPdf(data: PdfData) {
     box(18, y - 15, 576, 21, index % 2 ? '#ffffff' : '#f8fafc', LINE);
     put(24, y - 6, String(index + 1), 5.2);
     put(62, y - 6, clip(row.sku, 16), 5.2);
-    put(142, y - 6, clip(row.product, 34), 5.2, index === 0);
+    put(142, y - 4, clip(row.product, 40), 5.2, index === 0);
+    if (row.specification) put(142, y - 12, clip(row.specification, 76), 4.4, false, MUTED);
     put(318, y - 6, String(row.qty || '-'), 5.2, false, INK, true);
     put(372, y - 6, row.basis, 5.2);
     put(458, y - 6, money(row.casePrice, data.currency), 5.2, index === 0, INK, true);
@@ -228,8 +231,54 @@ function buildPdf(data: PdfData) {
   const content = add(`<< /Length ${Buffer.byteLength(stream, 'binary')} >>${NL}stream${NL}${stream}${NL}endstream`);
   const xobjects = logoObj ? `/XObject << /Logo ${logoObj} 0 R >>` : '';
   const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> ${xobjects} >> /Contents ${content} 0 R >>`);
-  const pages = add(`<< /Type /Pages /Kids [${page} 0 R] /Count 1 >>`);
-  objects[page - 1] = objects[page - 1].replace('/Parent 0 0 R', `/Parent ${pages} 0 R`);
+  const pageRefs = [page];
+  if (data.includeStarkPolicy) {
+    type PolicyLine = { content: string; header?: boolean };
+    const policyLines: PolicyLine[] = [{content:'STARK PACKMATE',header:true},{content:STARK_PACKMATE_POLICY_TITLE,header:true},{content:''}];
+    const wrap = (value:string, max:number):string[] => {
+      const words = value.replace(/[\u2013\u2014]/g,'-').replace(/\u00b1/g,'+/-').replace(/\u00d7/g,'x').split(/\s+/);
+      const out:string[]=[]; let current='';
+      for(const word of words){ if(current && (current+' '+word).length>max){out.push(current);current=word;}else current=current?current+' '+word:word;}
+      if(current)out.push(current);
+      return out;
+    };
+    wrap(STARK_PACKMATE_POLICY_INTRO,105).forEach(content=>policyLines.push({content}));
+    policyLines.push({content:''});
+    for(const section of STARK_PACKMATE_POLICY){
+      policyLines.push({content:section.title,header:true});
+      for(const point of section.points) {
+        const wrapped=wrap('- '+point,110);
+        wrapped.forEach(content=>policyLines.push({content}));
+        policyLines.push({content:''});
+      }
+    }
+    wrap(STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT,105).forEach(content=>policyLines.push({content}));
+    const pageChunks:PolicyLine[][]=[]; let chunk:PolicyLine[]=[];let used=0;
+    for(const entry of policyLines){
+      const height=entry.header?15:entry.content?10.5:5;
+      if(chunk.length && used+height>690){pageChunks.push(chunk);chunk=[];used=0;}
+      chunk.push(entry);used+=height;
+    }
+    if(chunk.length)pageChunks.push(chunk);
+    for(const [index,entries] of pageChunks.entries()){
+      const policyOps:string[]=['1 1 1 rg 0 0 612 792 re f'];
+      let py=746;
+      for(const entry of entries){
+        const bold=Boolean(entry.header);
+        if(entry.content){
+          const safe=entry.content.normalize('NFKD').replace(/[^\x20-\x7e]/g,'');
+          policyOps.push('BT '+rgb(bold?NAVY:INK)+' rg /F'+(bold?'B':'R')+' '+(bold?9:7.2)+' Tf 1 0 0 1 40 '+py.toFixed(2)+' Tm ('+pdfText(safe)+') Tj ET');
+        }
+        py-=bold?15:entry.content?10.5:5;
+      }
+      policyOps.push('BT '+rgb(MUTED)+' rg /FR 7 Tf 1 0 0 1 40 32 Tm (Stark Packmate Pvt. Ltd. | Innovative Packaging Digital Solutions - Policy '+(index+1)+'/'+pageChunks.length+') Tj ET');
+      const policyStream=policyOps.join(NL);
+      const policyContent=add('<< /Length '+Buffer.byteLength(policyStream,'binary')+' >>'+NL+'stream'+NL+policyStream+NL+'endstream');
+      pageRefs.push(add('<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR '+font+' 0 R /FB '+fontBold+' 0 R >> >> /Contents '+policyContent+' 0 R >>'));
+    }
+  }
+  const pages = add(`<< /Type /Pages /Kids [${pageRefs.map(ref=>ref+' 0 R').join(' ')}] /Count ${pageRefs.length} >>`);
+  for(const pageRef of pageRefs) objects[pageRef-1]=objects[pageRef-1].replace('/Parent 0 0 R',`/Parent ${pages} 0 R`);
   const catalog = add(`<< /Type /Catalog /Pages ${pages} 0 R >>`);
 
   let pdf = `%PDF-1.4${NL}`;
@@ -307,13 +356,25 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     });
   });
   const productIds = Array.from(new Set(lines.map((line) => line.product_id).filter(Boolean)));
-  const [{ data: products }, { data: variants }] = await Promise.all([
+  const packagingFamilyIds = Array.from(new Set(lines.map((line) => line.packaging_family_id).filter(Boolean)));
+  const packagingVariationIds = Array.from(new Set(lines.map((line) => line.packaging_product_variation_id).filter(Boolean)));
+  const sizeProfileIds = Array.from(new Set(lines.map((line) => line.packaging_size_profile_v5_id ?? line.input_snapshot_json?.input?.size_profile_id).filter(Boolean)));
+  const constructionIds = Array.from(new Set(lines.map((line) => line.input_snapshot_json?.input?.construction_id ?? line.input_snapshot_json?.construction_id).filter(Boolean)));
+  const [{ data: products }, { data: variants }, { data: packagingFamilies }, { data: packagingVariations }, {data: sizeProfiles}, {data: constructions}] = await Promise.all([
     productIds.length ? db.from('products').select('id, name, sku, sku_code').eq('organization_id', resolvedOrganizationId).in('id', productIds) : Promise.resolve({ data: [] }),
     productIds.length ? db.from('product_variants').select('id, product_id, name, sku_code').in('product_id', productIds) : Promise.resolve({ data: [] }),
+    packagingFamilyIds.length ? db.from('packaging_service_families').select('id,name').eq('organization_id',resolvedOrganizationId).in('id',packagingFamilyIds) : Promise.resolve({data:[]}),
+    packagingVariationIds.length ? db.from('packaging_product_variations').select('id,name,dimension_label,width_mm,height_mm,bottom_gusset_each_mm').in('id',packagingVariationIds) : Promise.resolve({data:[]}),
+    sizeProfileIds.length ? db.from('packaging_size_profiles_v5').select('id,name,width_mm,height_mm,bottom_gusset_each_mm').eq('organization_id',resolvedOrganizationId).in('id',sizeProfileIds) : Promise.resolve({data:[]}),
+    constructionIds.length ? db.from('packaging_constructions_v5').select('id,name').eq('organization_id',resolvedOrganizationId).in('id',constructionIds) : Promise.resolve({data:[]}),
   ]);
 
   const productMap = new Map((products ?? []).map((product: any) => [product.id, product]));
   const variantMap = new Map((variants ?? []).map((variant: any) => [variant.id, variant]));
+  const familyMap = new Map((packagingFamilies ?? []).map((entry: any) => [String(entry.id),entry]));
+  const packagingVariationMap = new Map((packagingVariations ?? []).map((entry: any) => [String(entry.id),entry]));
+  const sizeProfileMap = new Map((sizeProfiles ?? []).map((entry:any)=>[String(entry.id),entry]));
+  const constructionMap = new Map((constructions ?? []).map((entry:any)=>[String(entry.id),entry]));
   const quoteBase = quoteBasis(quote.pricing_basis);
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
   const logoImage = await loadOrganizationLogo(db, resolvedOrganizationId, org);
@@ -327,7 +388,23 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     if (line.line_type === 'packaging') {
       const qty = num(line.quantity, 1);
       const unitPrice = num(line.unit_price);
-      return { sku: 'PKG', product: text(line.input_snapshot_json?.spec_summary, 'Custom packaging line'), qty, basis: quoteBase, casePrice: unitPrice, total: qty * unitPrice };
+      const snapshot = line.input_snapshot_json ?? {};
+      const input = snapshot.input ?? {};
+      const family: any = familyMap.get(String(line.packaging_family_id ?? snapshot.family_id ?? '')) ?? {};
+      const variation: any = packagingVariationMap.get(String(line.packaging_product_variation_id ?? '')) ?? {};
+      const product: any = productMap.get(line.product_id) ?? {};
+      const sizeProfile:any = sizeProfileMap.get(String(line.packaging_size_profile_v5_id ?? input.size_profile_id ?? '')) ?? {};
+      const construction:any = constructionMap.get(String(input.construction_id ?? snapshot.construction_id ?? '')) ?? {};
+      const size = text(sizeProfile.name ?? (sizeProfile.width_mm && sizeProfile.height_mm ? [sizeProfile.width_mm,sizeProfile.height_mm,sizeProfile.bottom_gusset_each_mm].filter(Boolean).join(' x ')+' mm':null) ?? variation.dimension_label ?? input.dimension_label ?? snapshot.dimension_label ??
+        (input.width_mm && input.height_mm ? [input.width_mm,input.height_mm,input.bottom_gusset_each_mm].filter(Boolean).join(' x ') + ' mm' : null),'');
+      const substrate = text(construction.name ?? input.substrate ?? input.construction ?? input.material_construction ?? snapshot.substrate ?? snapshot.construction ?? snapshot.spec_summary,'');
+      const productName = text(product.name ?? variation.name ?? snapshot.product_name ?? family.name,'Packaging item');
+      const details = [
+        family.name ? 'Family: ' + family.name : '',
+        size ? 'Size: ' + size : '',
+        substrate ? 'Substrate: ' + substrate : '',
+      ].filter(Boolean).join(' | ');
+      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, qty, basis: quoteBase, casePrice: unitPrice, total: qty * unitPrice };
     }
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
@@ -373,6 +450,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     taxTotal: v5TaxTotal,
     taxLabel: v5TaxTotal > 0 ? 'GST' : undefined,
     logoImage,
+    includeStarkPolicy: isStarkPackmateOrganization(org),
   });
 
   if(!token){
