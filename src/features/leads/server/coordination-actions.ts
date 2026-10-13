@@ -22,7 +22,8 @@ export async function assignLeadCoordination(input: {
  const canCoordinate = isAdmin || roles.some(role => ['sales','sales_coordinator'].includes(role));
  if (!canCoordinate) return { error: 'Not authorized to assign lead coordination.' };
  const db = createAdminSupabaseClient();
- const { data: leads, error: loadError } = await db.from('leads')
+ if (!db) return { error: 'Administrative database connection unavailable.' };
+ const { data: leads, error: loadError } = await (db as any).from('leads')
   .select('id,owner_user_id,coordinator_user_id,created_by')
   .eq('organization_id', organizationId).in('id', ids);
  if (loadError || !leads || leads.length !== ids.length) return { error: 'Some selected leads are unavailable.' };
@@ -35,7 +36,7 @@ export async function assignLeadCoordination(input: {
  }
  if (input.changeOwner && !input.ownerUserId) return { error: 'Select a new owner.' };
  if (members.size) {
-  const { data: active } = await db.from('organization_members').select('user_id')
+  const { data: active } = await (db as any).from('organization_members').select('user_id')
    .eq('organization_id', organizationId).eq('is_active', true).in('user_id', [...members]);
   if (!active || active.length !== members.size) return { error: 'Select active members from this organization.' };
  }
@@ -44,13 +45,13 @@ export async function assignLeadCoordination(input: {
  for (const lead of leads) {
   const nextOwner = input.changeOwner ? input.ownerUserId! : lead.owner_user_id;
   const nextCoordinator = input.coordinatorUserId || null;
-  const { error } = await db.from('leads').update({
+  const { error } = await (db as any).from('leads').update({
    ...(input.changeOwner ? {owner_user_id: nextOwner} : {}),
    coordinator_user_id: nextCoordinator,
    updated_by: userId,
   }).eq('organization_id', organizationId).eq('id',lead.id).eq('owner_user_id',lead.owner_user_id);
   if (error) return { error: `Updated ${updated} of ${ids.length}. Remaining assignments were not applied: ${error.message}`, updated };
-  await db.from('lead_coordination_audit').insert({
+  await (db as any).from('lead_coordination_audit').insert({
    organization_id: organizationId,lead_id:lead.id,actor_user_id:userId,
    old_owner_user_id:lead.owner_user_id,new_owner_user_id:nextOwner,
    old_coordinator_user_id:lead.coordinator_user_id,new_coordinator_user_id:nextCoordinator,
