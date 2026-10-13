@@ -21,20 +21,12 @@ function quoteCurrency(data: LeadProfileData, quote: any | null) { return quote?
 function finalPrice(item: any) { return Number(item.unit_price ?? item.final_unit_price ?? item.catalog_price_amount ?? 0); }
 function defaultMoq(item: any) { return Number(item.moq ?? item.quantity ?? 1) || 1; }
 function packagingLineItems(quote: any | null) {
-  const all=(quote?.lineItems ?? []).filter((item:any)=>item.line_type==='packaging');
-  const priced=all.filter((item:any)=>Number(item.calculation_version)===5&&finalPrice(item)>0);
-  return all.filter((item:any)=>{
-    const source=String(item.input_snapshot_json?.source??'');
-    if(source!=='lead_requirement'||finalPrice(item)>0) return true;
-    const familyId=String(item.packaging_family_id??item.input_snapshot_json?.family_id??'');
-    const sizeId=String(item.packaging_size_profile_v5_id??item.input_snapshot_json?.size_profile_id??'');
-    const matched=priced.some((pricedLine:any)=>{
-      const pricedFamily=String(pricedLine.packaging_family_id??pricedLine.input_snapshot_json?.family_id??'');
-      const pricedSize=String(pricedLine.packaging_size_profile_v5_id??pricedLine.input_snapshot_json?.input?.size_profile_id??'');
-      return familyId===pricedFamily&&(!sizeId||!pricedSize||sizeId===pricedSize);
-    });
-    return !matched;
-  });
+  // Inquiry requirements are lead context, not quoted products.
+  // Legacy draft seeding must never turn a zero-price requirement into a customer offer.
+  return (quote?.lineItems ?? []).filter((item:any) =>
+    item.line_type === 'packaging' &&
+    !(item.input_snapshot_json?.source === 'lead_requirement' && Number(item.unit_price ?? 0) <= 0)
+  );
 }
 function lineItems(quote: any | null, data: LeadProfileData) {
   const allLines = quote?.lineItems ?? [];
