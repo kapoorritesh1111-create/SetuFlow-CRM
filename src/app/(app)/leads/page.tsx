@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { LeadsWorkspace } from '@/features/leads/components/leads-workspace';
@@ -114,6 +115,18 @@ export default async function LeadsPage({
   const canAccessStarkInbound = workspace.canAccessAdmin || normalizedRoles.includes('sales');
   const canManageStarkInboundAssignments = normalizedRoles.some((role) => ['owner', 'manager', 'admin'].includes(role));
 
+  const canDelegateLeads = workspace.currentRoles.some(role => ['owner', 'admin', 'manager', 'sales', 'sales_coordinator'].includes(role));
+  const coordinationClient = createAdminSupabaseClient();
+  const { data: coordinationRows } = coordinationClient && canDelegateLeads
+    ? await (coordinationClient as any).from('leads').select('id,coordinator_user_id').eq('organization_id', workspace.organization.id)
+    : { data: [] };
+  const coordinatorAssignments: Record<string,string|null> = {};
+  const exposedLeadIds = new Set(data.leads.map(lead => lead.id));
+  for (const row of coordinationRows ?? []) {
+    if (exposedLeadIds.has(row.id)) coordinatorAssignments[row.id] = row.coordinator_user_id ?? null;
+  }
+  // Never send assignment metadata for unrelated leads to a sales browser.
+
   const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
   const mobileSignedIn = await buildMobileSignedInSummary(workspace as any);
@@ -181,6 +194,8 @@ export default async function LeadsPage({
         />
         <LeadsWorkspace
           currentUserId={viewModel.currentUserId}
+          coordinatorAssignments={coordinatorAssignments}
+          canDelegateLeads={canDelegateLeads}
           canManageLeads={viewModel.canManageLeads}
           guidedTrialCoach={guidedTrialCoach}
           readOnlyMessage={viewModel.readOnlyMessage}

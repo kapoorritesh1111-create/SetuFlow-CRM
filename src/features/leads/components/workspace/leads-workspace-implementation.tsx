@@ -15,6 +15,7 @@ import { WorkspaceState } from '@/components/ui/workspace-state';
 import { StateMessage } from '@/components/ui/state-message';
 import { NoticeToast } from '@/components/ui/notice-toast';
 import { batchScheduleLeadFollowUps, batchMoveLeadsToStage, batchDeleteLeads, deleteLead, scheduleLeadFollowUp, completeLeadFollowUp, openOrCreateLeadQuoteDraft, saveLeadQuoteDraftPreview, recordLeadQuoteApprovalRequest, approveLeadQuoteAdjustment, rejectLeadQuoteAdjustment } from '@/features/leads/server/actions';
+import { assignLeadCoordination } from '@/features/leads/server/coordination-actions';
 import { markQuoteAsDirectOrder } from '@/features/quotes/server/actions';
 import { getFollowUpBadgeClasses, getFollowUpLabel, getFollowUpVisualState } from '@/lib/lead-status';
 import { computeLeadHealth, compareLeadHealthPriority } from '@/lib/lead-health';
@@ -202,6 +203,8 @@ export function handleLeadCommandCenterKeyDown(event: KeyboardEvent<HTMLElement>
 
 export function LeadsWorkspace({
   currentUserId,
+  coordinatorAssignments = {},
+  canDelegateLeads = false,
   leads,
   stages,
   pipelines,
@@ -294,6 +297,9 @@ export function LeadsWorkspace({
   const [advHasQuote, setAdvHasQuote] = useState('');
   const [advSourceType, setAdvSourceType] = useState('');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  const [coordinatorSelection, setCoordinatorSelection] = useState('');
+  const [coordinationState, setCoordinationState] = useState<FormState>({});
+  const [coordinationPending, startCoordinationTransition] = useTransition();
   const [batchFollowUpAt, setBatchFollowUpAt] = useState('');
   const [batchNextStepId, setBatchNextStepId] = useState('');
   const [batchState, setBatchState] = useState<FormState>({});
@@ -1019,6 +1025,17 @@ export function LeadsWorkspace({
     return groups.filter((group) => group.leads.length > 0);
   }, [complianceBlockedLeadIds, stageMap, stableNowIso, terminalStageIds, visibleLeads]);
 
+  const handleBulkCoordination = () => {
+    if (!selectedLeadIds.length) return;
+    setCoordinationState({});
+    startCoordinationTransition(() => {
+      void assignLeadCoordination({leadIds:selectedLeadIds,coordinatorUserId:coordinatorSelection || null}).then(result => {
+        setCoordinationState(result);
+        if (result.success) { setSelectedLeadIds([]); router.refresh(); }
+      });
+    });
+  };
+
   const handleBatchFollowUpSubmit = () => {
     const formData = new FormData();
     selectedLeadIds.forEach((leadId) => formData.append('lead_ids', leadId));
@@ -1741,6 +1758,7 @@ export function LeadsWorkspace({
             </button>
           );
         })}
+        {canDelegateLeads ? <p className="text-xs text-content-secondary">Coordinator assignments: {Object.values(coordinatorAssignments).filter(Boolean).length} delegated leads in this list.</p> : null}
         {!canManageLeads && readOnlyMessage ? (
           <span style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: '#d97706', padding: '6px 12px' }}>⚠ Read-only</span>
         ) : null}
@@ -1825,6 +1843,15 @@ export function LeadsWorkspace({
             <button type="button" onClick={handleBatchStageSubmit} disabled={isBatchStagePending || !batchStageId}
               style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px', fontWeight: 600, background: 'white', color: '#334155', cursor: 'pointer' }}
             >Apply</button>
+            {canDelegateLeads ? (
+              <>
+                <select aria-label="Select sales coordinator" value={coordinatorSelection} onChange={(e) => setCoordinatorSelection(e.target.value)} className="rounded-ctl border border-line bg-surface px-3 py-2 text-xs">
+                  <option value="">Remove coordinator</option>
+                  {profiles.map(profile => <option key={profile.id} value={profile.id}>{profile.full_name || profile.username || profile.id}</option>)}
+                </select>
+                <button type="button" onClick={handleBulkCoordination} disabled={coordinationPending} className="rounded-ctl bg-brand-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Assign coordinator</button>
+              </>
+            ) : null}
             <div style={{ flex: 1 }}></div>
             <button type="button" onClick={handleBatchDeleteLeads} disabled={isDeletePending || !canManageLeads}
               style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #fecaca', fontSize: '11px', fontWeight: 700, background: '#fff1f2', color: '#be123c', cursor: isDeletePending ? 'wait' : 'pointer' }}
@@ -1836,6 +1863,8 @@ export function LeadsWorkspace({
         ) : null}
 
         {/* Batch state messages */}
+        {coordinationState.error ? <StateMessage title="Coordinator assignment failed" tone="danger" description={coordinationState.error} /> : null}
+        {coordinationState.success ? <StateMessage title="Coordinator updated" tone="success" description={coordinationState.success} /> : null}
         {batchState.error ? <StateMessage title="Bulk follow-up update failed" tone="danger" description={batchState.error} /> : null}
         {batchState.success ? <StateMessage title="Bulk follow-up update applied" tone="success" description={batchState.success} /> : null}
         {batchStageState.error ? <StateMessage title="Batch stage move failed" tone="danger" description={batchStageState.error} /> : null}

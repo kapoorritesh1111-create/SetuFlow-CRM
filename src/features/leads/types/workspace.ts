@@ -73,6 +73,8 @@ export type LeadQuickCapturePrefill = {
 
 export type LeadsWorkspaceProps = {
   currentUserId: string;
+  coordinatorAssignments?: Record<string, string | null>;
+  canDelegateLeads?: boolean;
   canManageLeads?: boolean;
   readOnlyMessage?: string | null;
   isWorkspaceEmpty?: boolean;
