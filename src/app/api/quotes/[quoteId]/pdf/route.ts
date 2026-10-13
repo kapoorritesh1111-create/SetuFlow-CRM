@@ -1,3 +1,4 @@
+import {resolveFrameQuotePresentation} from '@/lib/packaging-pricing-v5/customer-quote-unit';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
@@ -451,6 +452,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   const rows: PdfRow[] = lines.map((line) => {
     if (line.line_type === 'packaging') {
       const qty = num(line.quantity, 1);
+      const view=resolveFrameQuotePresentation(line);
       const unitPrice = num(line.unit_price);
       const snapshot = line.input_snapshot_json ?? {};
       const input = snapshot.input ?? {};
@@ -468,7 +470,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
         size ? 'Size: ' + size : '',
         substrate ? 'Substrate: ' + substrate : '',
       ].filter(Boolean).join(' | ');
-      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, qty, basis: displayBasis, casePrice: unitPrice, total: qty * unitPrice };
+      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, qty: view.isFrame?view.displayQuantity:qty, basis:view.isFrame?(view.unit==='kg'?'kg':'pcs'):displayBasis, casePrice:view.isFrame?view.displayPrice:unitPrice, total:qty*unitPrice };
     }
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
