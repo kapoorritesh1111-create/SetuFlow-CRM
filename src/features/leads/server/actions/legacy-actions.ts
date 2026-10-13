@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
 import { writeAuditLog } from '@/lib/auditLog';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { leadSchema } from '@/features/leads/schemas/lead';
@@ -1425,6 +1426,29 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
   const organization = workspace.organization;
 
   if (!currentUser || !organization) return { error: 'Not authenticated.' };
+
+  // Coordinator can create a lead for a supervisor only after they were explicitly
+  // delegated at least one lead by that owner; owners/admins retain full override.
+  const requestedOwner = String(formData.get('owner_user_id') ?? '').trim();
+  const existingLeadId = String(formData.get('lead_id') ?? '').trim();
+  const isCoordinator = workspace.currentRoles.includes('sales_coordinator');
+  const isAssignmentManager = workspace.currentRoles.some(role => ['owner', 'admin', 'manager'].includes(role));
+  if (isCoordinator && !isAssignmentManager && requestedOwner && requestedOwner !== currentUser.id) {
+    const scopedDb = createAdminSupabaseClient();
+    if (!scopedDb) return { error: 'Cannot validate delegation permissions.' };
+    const { data: authorized } = await (scopedDb as any).from('leads')
+      .select('id').eq('organization_id', organization.id)
+      .eq('owner_user_id', requestedOwner).eq('coordinator_user_id', currentUser.id).limit(1);
+    if (!authorized?.length) return { error: 'This owner has not authorized you to create leads on their behalf.' };
+  }
+  if (isCoordinator && !isAssignmentManager && existingLeadId) {
+    const scopedDb = createAdminSupabaseClient();
+    if (!scopedDb) return { error: 'Cannot validate lead access.' };
+    const { data: assigned } = await (scopedDb as any).from('leads')
+      .select('owner_user_id,coordinator_user_id').eq('organization_id',organization.id).eq('id',existingLeadId).maybeSingle();
+    if (!assigned || (assigned.owner_user_id !== currentUser.id && assigned.coordinator_user_id !== currentUser.id))
+      return { error: 'You do not have access to edit this lead.' };
+  }
 
   const submittedPhoneCode = normalizeLeadInputText(formData.get('phone_country_code'));
   const rawPhoneValue = normalizeLeadInputText(formData.get('phone'));
