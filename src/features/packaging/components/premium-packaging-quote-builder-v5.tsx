@@ -91,10 +91,10 @@ export default function PremiumPackagingQuoteBuilderV5({
   }
 
   const steps=[
-    ['1','Product & Requirement','Use captured requirement or add product'],
-    ['2','Configure & Price','Specification, KLD, artwork and pricing'],
-    ['3','Commercials','Terms and final customer price'],
-    ['4','Review & Send','Preview, approve and send'],
+    ['1','Quote Basket','Requirements and saved lines'],
+    ['2','Product Workspace','Sizes, families, specifications and pricing'],
+    ['3','Commercials','Customer price, discounts and approvals'],
+    ['4','Review & Send','Confirm customer offer and send'],
   ];
 
   function chooseFamily(key:FamilyKey){setActive(key);setIntent(null);setRequirementSeed(null);goStep(2);}
@@ -166,10 +166,10 @@ export default function PremiumPackagingQuoteBuilderV5({
     </div>
 
     {step===1?<div className="bg-white p-5 sm:p-6">
-      <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Product & Requirement</div><h2 className="mt-1 text-2xl font-black text-slate-950">Start from the customer requirement</h2><p className="mt-1 text-sm font-semibold text-slate-500">Use what Sales already captured, edit it if needed, or add another packaging family.</p></div>
+      <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Product & Requirement</div><h2 className="mt-1 text-2xl font-black text-slate-950">Build your customer quotation</h2><p className="mt-1 text-sm font-semibold text-slate-500">Use what Sales already captured, edit it if needed, or add another packaging family.</p></div>
       <div className="mt-5 rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-xs font-black uppercase tracking-wide text-blue-700">Quote basket · {pricedLineCount} saved items</p>
+          <div><p className="text-xs font-black uppercase tracking-wide text-blue-700">Quote basket · {pricedLineCount} priced items</p>
             <h3 className="mt-1 text-lg font-black text-slate-950">Add multiple sizes or service families</h3>
             <p className="mt-1 text-sm font-semibold text-slate-600">Each size is its own quote line. Use Duplicate to copy specifications for a new size, or select another service family below. Your existing lines remain saved.</p>
           </div>
@@ -199,6 +199,14 @@ export default function PremiumPackagingQuoteBuilderV5({
     </div>:null}
 
     {step===2?<div className="p-4 sm:p-5">
+      <section aria-label="Product family switcher" className="mb-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div><h3 className="text-sm font-black text-slate-950">Build your multi-product quotation</h3><p className="mt-1 text-xs font-semibold text-slate-600">Change the family or size without leaving this workspace. Every saved item stays in the quote basket.</p></div>
+          <button type="button" onClick={()=>goStep(3)} className="rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-black text-white">Review all line prices →</button>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">{available.map((family)=>{const meta=familyMeta(family);return <button key={family} type="button" aria-pressed={active===family} onClick={()=>{setActive(family);setIntent(null);setRequirementSeed(null);}} className={'rounded-xl border px-4 py-3 text-left text-xs font-bold transition '+(active===family?'border-blue-600 bg-blue-700 text-white':'border-slate-200 bg-white text-slate-700 hover:border-blue-400')}>{meta.label}</button>})}</div>
+        {intent?.mode==='duplicate'?<p role="status" className="mt-3 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-800">Creating a new line from a saved item. Choose the new size and recalculate before saving; the original remains unchanged.</p>:null}
+      </section>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 2 · Configure & Price</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Confirm the specification, size or dimensions, KLD and quantity. Pricing and higher-volume options stay in the same workspace.</p>{requirementSeed?<div className="mt-2 flex flex-wrap items-center gap-2"><div className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black text-cyan-800">Using lead requirement · {requirementSeed.dimensions||requirementSeed.quantity||'captured requirement'}</div><button type="button" onClick={()=>goStep(1)} className="text-[10px] font-black text-blue-700 underline">Change requirement</button><button type="button" onClick={()=>setRequirementSeed(null)} className="text-[10px] font-black text-slate-600 underline">Don't use requirement</button></div>:null}</div></div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0">{active==='sup'&&supOptions?<PricingV5SalesConfigurator quoteId={quoteId} leadId={leadId} options={supOptions} savedLines={supSavedLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}{(active==='center-seal'||active==='3ss')&&filteredFrame?.templates?.length?<PricingV5FrameSalesConfigurator quoteId={quoteId} leadId={leadId} options={filteredFrame} savedLines={filteredFrameLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}</div>
