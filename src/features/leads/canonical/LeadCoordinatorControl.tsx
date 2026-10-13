@@ -1,10 +1,11 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { authorizeCoordinator } from '@/features/leads/server/creation-authorization';
 import { assignLeadCoordination } from '@/features/leads/server/coordination-actions';
 
-export default function LeadCoordinatorControl({leadId, coordinatorId, members}: {
- leadId:string; coordinatorId:string|null; members:Array<{id:string;name:string}>;
+export default function LeadCoordinatorControl({leadId, coordinatorId, members, ownerId, canAuthorize}: {
+ leadId:string; coordinatorId:string|null; members:Array<{id:string;name:string}>; ownerId:string|null; canAuthorize:boolean;
 }) {
  const [selected,setSelected]=useState(coordinatorId??'');
  const [message,setMessage]=useState('');
@@ -16,6 +17,7 @@ export default function LeadCoordinatorControl({leadId, coordinatorId, members}:
    <option value="">No coordinator</option>{members.map(person=><option key={person.id} value={person.id}>{person.name}</option>)}
   </select>
   <button type="button" disabled={pending || selected===(coordinatorId??'')} onClick={()=>{setMessage('');startTransition(()=>{void assignLeadCoordination({leadIds:[leadId],coordinatorUserId:selected||null}).then(result=>{setMessage(result.error??result.success??'Not saved');if(result.success)router.refresh()})})}} className="rounded-ctl bg-brand-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Save coordinator</button>
+  {canAuthorize && ownerId && selected ? <button type="button" disabled={pending} onClick={()=>{startTransition(()=>{void authorizeCoordinator(ownerId,selected).then(result=>setMessage(result.error??result.success??'Not saved'))})}} className="rounded-ctl border border-line px-3 py-2 text-sm">Authorize lead creation for owner</button> : null}
   {message?<p role="status" className="w-full text-xs text-content-secondary">{message}</p>:null}
  </div>;
 }
