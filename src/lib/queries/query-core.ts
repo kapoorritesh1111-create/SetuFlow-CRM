@@ -402,6 +402,9 @@ export type LeadsPageData = QueryIssuePayload & {
     current_version_id?: string | null;
     sent_version_id?: string | null;
     accepted_version_id?: string | null;
+    sent_at?: string | null;
+    display_currency?: string | null;
+    industry_metadata?: any;
     pricing_basis?: string | null;
     approval_required?: boolean | null;
     approved_at?: string | null;
@@ -427,6 +430,7 @@ export type LeadsPageData = QueryIssuePayload & {
       // S24-SPEN packaging columns (generated types lag schema)
       line_type?: string | null;
       packaging_family_id?: string | null;
+      packaging_size_profile_v5_id?: string | null;
       packaging_template_id?: string | null;
       input_snapshot_json?: any;
       pricing_breakdown_json?: any;
@@ -2383,7 +2387,7 @@ export async function getLeadsPageData(organizationId: string): Promise<LeadsPag
       ? supabase
           .from('quote_line_items')
           .select(
-            'id, quote_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes'
+            'id, quote_id, product_id, product_variant_id, catalog_price_id, catalog_price_amount, catalog_price_currency, quantity, unit_price, currency, is_price_overridden, override_reason, overridden_by, overridden_at, notes, line_type, packaging_family_id, packaging_size_profile_v5_id, input_snapshot_json, calculation_version'
           )
           .in('quote_id', quoteIds)
       : Promise.resolve({ data: [], error: null }),
@@ -2648,7 +2652,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     supabase.from('lead_markets').select('lead_id, market_id').eq('lead_id', leadId),
     supabase.from('lead_product_interests').select('lead_id, product_id, label, interest_type, source_context').eq('lead_id', leadId),
     supabase.from('rfqs').select('id, lead_id, status, currency, validity_date, created_at, updated_at, notes').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
-    supabase.from('quotes').select('id, lead_id, rfq_id, status, currency, pricing_basis, created_at, updated_at, notes, notes_internal, quote_number, current_version_id, sent_version_id, accepted_version_id, approval_required, approved_at, approved_by').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
+    supabase.from('quotes').select('id, lead_id, rfq_id, status, currency, display_currency, pricing_basis, created_at, updated_at, sent_at, notes, notes_internal, quote_number, current_version_id, sent_version_id, accepted_version_id, approval_required, approved_at, approved_by, industry_metadata').eq('organization_id', organizationId).eq('lead_id', leadId).order('created_at', { ascending: false }),
     supabase.from('lead_compliance_items').select('id, lead_id, compliance_item_id, document_id, status, created_at, submitted_at, approved_at, due_at, severity, reviewed_at').eq('lead_id', leadId).order('created_at', { ascending: false }),
     supabase.from('compliance_checklist_items').select('id, code, description').order('created_at', { ascending: false }),
     supabase.from('documents').select('id, related_entity, related_id, file_name, doc_type, status, uploaded_at, uploaded_by, reviewer_user_id, reviewed_at, review_notes, expires_at, version, version_label, requirement_code').eq('organization_id', organizationId).eq('related_entity', 'lead').eq('related_id', leadId).order('uploaded_at', { ascending: false }),
