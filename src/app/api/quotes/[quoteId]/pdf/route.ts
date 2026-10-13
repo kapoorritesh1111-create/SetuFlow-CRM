@@ -5,6 +5,7 @@ import { hasSupabaseEnv } from '@/lib/env';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { loadOrganizationLogo, type PdfImage } from '@/lib/pdf/organization-logo';
 import { customerVolumeSuggestions } from '@/lib/packaging-pricing-v5/volume-suggestions';
+import { isStarkPackmateOrganization, STARK_PACKMATE_POLICY, STARK_PACKMATE_POLICY_TITLE, STARK_PACKMATE_POLICY_INTRO, STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT } from '@/lib/quotes/stark-packmate-policy';
 
 export const runtime = 'nodejs';
 
@@ -36,6 +37,7 @@ type PdfData = {
   taxTotal?: number;
   taxLabel?: string;
   logoImage?: PdfImage | null;
+  includeStarkPolicy?: boolean;
 };
 
 function num(value: unknown, fallback = 0) {
@@ -229,8 +231,54 @@ function buildPdf(data: PdfData) {
   const content = add(`<< /Length ${Buffer.byteLength(stream, 'binary')} >>${NL}stream${NL}${stream}${NL}endstream`);
   const xobjects = logoObj ? `/XObject << /Logo ${logoObj} 0 R >>` : '';
   const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> ${xobjects} >> /Contents ${content} 0 R >>`);
-  const pages = add(`<< /Type /Pages /Kids [${page} 0 R] /Count 1 >>`);
-  objects[page - 1] = objects[page - 1].replace('/Parent 0 0 R', `/Parent ${pages} 0 R`);
+  const pageRefs = [page];
+  if (data.includeStarkPolicy) {
+    type PolicyLine = { content: string; header?: boolean };
+    const policyLines: PolicyLine[] = [{content:'STARK PACKMATE',header:true},{content:STARK_PACKMATE_POLICY_TITLE,header:true},{content:''}];
+    const wrap = (value:string, max:number):string[] => {
+      const words = value.replace(/[\u2013\u2014]/g,'-').replace(/\u00b1/g,'+/-').replace(/\u00d7/g,'x').split(/\s+/);
+      const out:string[]=[]; let current='';
+      for(const word of words){ if(current && (current+' '+word).length>max){out.push(current);current=word;}else current=current?current+' '+word:word;}
+      if(current)out.push(current);
+      return out;
+    };
+    wrap(STARK_PACKMATE_POLICY_INTRO,105).forEach(content=>policyLines.push({content}));
+    policyLines.push({content:''});
+    for(const section of STARK_PACKMATE_POLICY){
+      policyLines.push({content:section.title,header:true});
+      for(const point of section.points) {
+        const wrapped=wrap('- '+point,110);
+        wrapped.forEach(content=>policyLines.push({content}));
+        policyLines.push({content:''});
+      }
+    }
+    wrap(STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT,105).forEach(content=>policyLines.push({content}));
+    const pageChunks:PolicyLine[][]=[]; let chunk:PolicyLine[]=[];let used=0;
+    for(const entry of policyLines){
+      const height=entry.header?15:entry.content?10.5:5;
+      if(chunk.length && used+height>690){pageChunks.push(chunk);chunk=[];used=0;}
+      chunk.push(entry);used+=height;
+    }
+    if(chunk.length)pageChunks.push(chunk);
+    for(const [index,entries] of pageChunks.entries()){
+      const policyOps:string[]=['1 1 1 rg 0 0 612 792 re f'];
+      let py=746;
+      for(const entry of entries){
+        const bold=Boolean(entry.header);
+        if(entry.content){
+          const safe=entry.content.normalize('NFKD').replace(/[^\x20-\x7e]/g,'');
+          policyOps.push('BT '+rgb(bold?NAVY:INK)+' rg /F'+(bold?'B':'R')+' '+(bold?9:7.2)+' Tf 1 0 0 1 40 '+py.toFixed(2)+' Tm ('+pdfText(safe)+') Tj ET');
+        }
+        py-=bold?15:entry.content?10.5:5;
+      }
+      policyOps.push('BT '+rgb(MUTED)+' rg /FR 7 Tf 1 0 0 1 40 32 Tm (Stark Packmate Pvt. Ltd. | Innovative Packaging Digital Solutions - Policy '+(index+1)+'/'+pageChunks.length+') Tj ET');
+      const policyStream=policyOps.join(NL);
+      const policyContent=add('<< /Length '+Buffer.byteLength(policyStream,'binary')+' >>'+NL+'stream'+NL+policyStream+NL+'endstream');
+      pageRefs.push(add('<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR '+font+' 0 R /FB '+fontBold+' 0 R >> >> /Contents '+policyContent+' 0 R >>'));
+    }
+  }
+  const pages = add(`<< /Type /Pages /Kids [${pageRefs.map(ref=>ref+' 0 R').join(' ')}] /Count ${pageRefs.length} >>`);
+  for(const pageRef of pageRefs) objects[pageRef-1]=objects[pageRef-1].replace('/Parent 0 0 R',`/Parent ${pages} 0 R`);
   const catalog = add(`<< /Type /Catalog /Pages ${pages} 0 R >>`);
 
   let pdf = `%PDF-1.4${NL}`;
@@ -394,6 +442,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     taxTotal: v5TaxTotal,
     taxLabel: v5TaxTotal > 0 ? 'GST' : undefined,
     logoImage,
+    includeStarkPolicy: isStarkPackmateOrganization(org),
   });
 
   if(!token){
