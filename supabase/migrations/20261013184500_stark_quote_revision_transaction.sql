@@ -15,6 +15,7 @@ declare
  v_new_line uuid;
  v_count integer:=0;
 begin
+ if p_organization_id is distinct from 'b97913cb-3b95-4247-8ced-ffdc0d392d2a'::uuid then raise exception 'Revision cloning enabled for Stark Packmate only' using errcode='42501'; end if;
  if not public.is_org_member(p_organization_id) then raise exception 'Not authorized for organization' using errcode='42501'; end if;
  if auth.uid() is distinct from p_actor_user_id then raise exception 'Actor mismatch' using errcode='42501'; end if;
  select * into v_source from public.quotes
