@@ -11,7 +11,7 @@ function money(value:any,currency='INR'){
 
 export default function PricingV5FrameSalesConfigurator({
   quoteId,leadId,options,savedLines=[],embedded=false,focusLineId='',duplicateLineId=''
-,requirementSeed=null}:{quoteId:string;leadId:string;options:any;savedLines?:any[];embedded?:boolean;focusLineId?:string;duplicateLineId?:string;requirementSeed?:any|null}){
+,requirementSeed=null}:{quoteId:string;leadId:string;options:any;savedLines?:any[];embedded?:boolean;focusLineId?:string;duplicateLineId?:string;requirementSeed?:any|null;onSaved?:(lineId:string)=>void}){
   const router=useRouter();
   const templates=options?.templates??[];
   const [templateId,setTemplateId]=useState(templates[0]?.id??'');
@@ -103,7 +103,7 @@ export default function PricingV5FrameSalesConfigurator({
           commercial_bucket:null,
         },
       });
-      if(response.ok){setEditingLineId(response.lineId);setSaved(editingLineId?'Quote line updated.':'Quote line added to the quote.');router.refresh();}
+      if(response.ok){setEditingLineId(response.lineId);setSaved(editingLineId?'Quote line updated.':'Quote line added to the quote.');router.refresh();onSaved?.(String(response.lineId??editingLineId??''));}
       else setError(response.error??'Quote line could not be saved.');
     });
   }
@@ -169,7 +169,7 @@ export default function PricingV5FrameSalesConfigurator({
       <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700">Approved pricing</span>
     </div> : <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-indigo-700">Frame Family</div><h2 className="mt-1 text-lg font-black text-slate-950">{template?.supply_label??'Packaging form'}</h2></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-700">Approved pricing</span></div>}
 
-    {savedLines.length?<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Saved quote lines</div><div className="mt-2 flex flex-wrap gap-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSaved(line)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">Edit {line.label} · {Number(line.quantity).toLocaleString()} pcs</button>)}</div></div>:null}
+    {!embedded&&savedLines.length?<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Saved quote lines</div><div className="mt-2 flex flex-wrap gap-2">{savedLines.map((line:any)=><button type="button" key={line.lineId} onClick={()=>editSaved(line)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700">Edit {line.label} · {Number(line.quantity).toLocaleString()} pcs</button>)}</div></div>:null}
 
     <div className="mt-4 grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50 p-3"><img src={String(template?.supply_form||'').includes('three_side')?'/packaging/quote-stock/stark-three-side-seal.png':'/packaging/quote-stock/stark-center-seal.png'} alt={template?.supply_label??'Packaging'} className="mx-auto h-52 w-auto object-contain"/></div>
