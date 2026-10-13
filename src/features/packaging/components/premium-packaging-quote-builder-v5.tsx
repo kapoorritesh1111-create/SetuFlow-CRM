@@ -214,7 +214,7 @@ export default function PremiumPackagingQuoteBuilderV5({
             {[...supSavedLines,...frameSavedLines].map((line:any)=>{
               const id=String(line.lineId??'');
               const family:FamilyKey=supSavedLines.some((l:any)=>String(l.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3')?'3ss':'center-seal';
-              const size=family==='sup'?String(supSizeById.get(String(line.sizeProfileId))?.name??'Saved size'):String(line.sizeLabel??line.sizeName??line.dimensions??'Saved size');
+              const size=family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??line.sizeName??line.dimensions??'Saved size');
               const isEditing=intent?.lineId===id;
               return <div key={id} className={'rounded-xl border p-3 '+(isEditing?'border-blue-500 bg-blue-50':'border-slate-200 bg-slate-50')}>
                 <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-xs font-black text-slate-900">{familyMeta(family).label}</p><p className="text-xs font-semibold text-slate-600">{size}</p></div>{isEditing?<span className="rounded-full bg-blue-700 px-2 py-1 text-[10px] font-bold text-white">{intent?.mode==='duplicate'?'Duplicating':'Editing'}</span>:null}</div>
