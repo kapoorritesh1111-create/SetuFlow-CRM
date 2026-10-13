@@ -221,6 +221,7 @@ export default function PremiumPackagingQuoteBuilderV5({
               <p className="text-xs text-slate-500">Keep track of every saved size while editing.</p></div>
             <button type="button" onClick={()=>goStep(1)} className="shrink-0 rounded-xl bg-blue-700 px-3 py-2 text-xs font-black text-white">+ Add line</button>
           </div>
+          {lineNotice?<p role="status" className="mt-2 rounded-lg bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">{lineNotice}</p>:null}
           {quoteLineCount>pricedLineCount?<p className="mt-3 rounded-lg bg-amber-50 p-2 text-xs font-semibold text-amber-800">{quoteLineCount-pricedLineCount} additional draft or unpriced line{quoteLineCount-pricedLineCount===1?'':'s'} not counted as priced items.</p>:null}
           <div className="mt-3 max-h-[48vh] space-y-2 overflow-y-auto pr-1 xl:max-h-[60vh]">
             {[...supSavedLines,...frameSavedLines].map((line:any)=>{
@@ -235,8 +236,30 @@ export default function PremiumPackagingQuoteBuilderV5({
                 <div className="mt-2 flex flex-wrap gap-2">
                   <button type="button" onClick={()=>manageLine(id,family,'edit')} className="rounded-lg border border-blue-200 bg-white px-2.5 py-2 text-[11px] font-bold text-blue-800">Edit</button>
                   <button type="button" onClick={()=>manageLine(id,family,'duplicate')} className="rounded-lg border border-blue-200 bg-white px-2.5 py-2 text-[11px] font-bold text-blue-800">+ Duplicate size</button>
-                  <button type="button" onClick={()=>openLinePriceEditor(line)} className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] font-bold text-amber-900">Price / discount</button>
+                  <button type="button" onClick={()=>beginAdjust(line)} aria-expanded={adjustingLineId===id} className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] font-bold text-amber-900">Price / discount</button>
                 </div>
+                {adjustingLineId===id?<div className="mt-3 space-y-2 rounded-xl border border-amber-200 bg-white p-3" aria-label="Inline customer pricing">
+                  <p className="text-xs font-black text-slate-950">Customer price for this line</p>
+                  <p className="text-xs text-slate-500">Published price: {money(Number(line.baseUnitPrice??line.unitPrice??0),currency)} / pc</p>
+                  <label className="block text-xs font-bold text-slate-700">Pricing method
+                    <select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2">
+                      <option value="percent">Discount (%)</option><option value="amount">Discount (₹ per piece)</option><option value="customer_price">Approved customer price / piece</option>
+                    </select>
+                  </label>
+                  <label className="block text-xs font-bold text-slate-700">{discountType==='customer_price'?'Customer price per piece':'Discount value'}
+                    <input type="number" min="0" inputMode="decimal" value={discountType==='customer_price'?existingCustomerPrice:discountValue} onChange={e=>discountType==='customer_price'?setExistingCustomerPrice(e.target.value):setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-2"/>
+                  </label>
+                  <label className="block text-xs font-bold text-slate-700">Reason / approval reference
+                    <input required value={discountReason} onChange={e=>setDiscountReason(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-2"/>
+                  </label>
+                  <p className="text-[11px] text-amber-800">More than 15% below published pricing requires approval before sending.</p>
+                  {lineError?<p role="alert" className="text-xs font-semibold text-red-700">{lineError}</p>:null}
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" disabled={pending} onClick={()=>saveAdjustment(line)} className="rounded-lg bg-blue-700 px-3 py-2 text-xs font-bold text-white">Save price</button>
+                    <button type="button" disabled={pending} onClick={()=>clearAdjustment(line)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700">Remove discount</button>
+                    <button type="button" onClick={()=>setAdjustingLineId('')} className="px-3 py-2 text-xs font-bold text-slate-600">Cancel</button>
+                  </div>
+                </div>:null}
               </div>;
             })}
             {!pricedLineCount?<p className="rounded-xl border border-dashed border-slate-300 p-3 text-xs font-semibold text-slate-500">No priced items yet. Save a line in the configurator, then it will appear here.</p>:null}
