@@ -240,48 +240,105 @@ function buildPdf(data: PdfData) {
   const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> ${xobjects} >> /Contents ${content} 0 R >>`);
   const pageRefs = [page];
   if (data.includeStarkPolicy) {
-    type PolicyLine = { content: string; header?: boolean };
-    const policyLines: PolicyLine[] = [{content:'STARK PACKMATE',header:true},{content:STARK_PACKMATE_POLICY_TITLE,header:true},{content:''}];
-    const wrap = (value:string, max:number):string[] => {
-      const words = value.replace(/[\u2013\u2014]/g,'-').replace(/\u00b1/g,'+/-').replace(/\u00d7/g,'x').split(/\s+/);
-      const out:string[]=[]; let current='';
-      for(const word of words){ if(current && (current+' '+word).length>max){out.push(current);current=word;}else current=current?current+' '+word:word;}
-      if(current)out.push(current);
-      return out;
+    // Standalone policy appendix: the first quotation page remains unchanged.
+    // Keep every policy point intact while paginating by paragraph, never by
+    // unmeasured character counts (which caused orphaned headings and overflow).
+    const paper = { left: 38, right: 574, bottom: 73 };
+    const policyPages: string[][] = [];
+    let policyOps: string[] = [];
+    let cursor = 0;
+    let pageIndex = 0;
+    const policyRect = (x:number,y:number,w:number,h:number,color:string) =>
+      policyOps.push(rgb(color)+' rg '+x+' '+y.toFixed(2)+' '+w+' '+h.toFixed(2)+' re f');
+    const policyRule = (x:number,y:number,w:number,color:string) =>
+      policyOps.push(rgb(color)+' RG 0.7 w '+x+' '+y.toFixed(2)+' m '+(x+w)+' '+y.toFixed(2)+' l S');
+    const policyText = (x:number,y:number,value:string,size:number,bold=false,color=INK) => {
+      const printable=value.replace(/[\u2013\u2014]/g,'-').replace(/\u00b1/g,'+/-').replace(/\u00d7/g,'x')
+        .replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').normalize('NFKD').replace(/[^\x20-\x7e]/g,'');
+      policyOps.push('BT '+rgb(color)+' rg /F'+(bold?'B':'R')+' '+size+
+        ' Tf 1 0 0 1 '+x+' '+y.toFixed(2)+' Tm ('+pdfText(printable)+') Tj ET');
     };
-    wrap(STARK_PACKMATE_POLICY_INTRO,105).forEach(content=>policyLines.push({content}));
-    policyLines.push({content:''});
-    for(const section of STARK_PACKMATE_POLICY){
-      policyLines.push({content:section.title,header:true});
-      for(const point of section.points) {
-        const wrapped=wrap('- '+point,110);
-        wrapped.forEach(content=>policyLines.push({content}));
-        policyLines.push({content:''});
+    const wrapPolicy = (value:string, maxWidth:number, fontSize:number, bold=false) => {
+      const words=value.split(/\s+/).filter(Boolean);
+      const wrapped:string[]=[]; let current='';
+      for(const word of words){
+        const candidate=current?current+' '+word:word;
+        if(current && width(candidate,fontSize,bold)>maxWidth){wrapped.push(current);current=word;}
+        else current=candidate;
       }
-    }
-    wrap(STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT,105).forEach(content=>policyLines.push({content}));
-    const pageChunks:PolicyLine[][]=[]; let chunk:PolicyLine[]=[];let used=0;
-    for(const entry of policyLines){
-      const height=entry.header?15:entry.content?10.5:5;
-      if(chunk.length && used+height>690){pageChunks.push(chunk);chunk=[];used=0;}
-      chunk.push(entry);used+=height;
-    }
-    if(chunk.length)pageChunks.push(chunk);
-    for(const [index,entries] of pageChunks.entries()){
-      const policyOps:string[]=['1 1 1 rg 0 0 612 792 re f'];
-      let py=746;
-      for(const entry of entries){
-        const bold=Boolean(entry.header);
-        if(entry.content){
-          const safe=entry.content.normalize('NFKD').replace(/[^\x20-\x7e]/g,'');
-          policyOps.push('BT '+rgb(bold?NAVY:INK)+' rg /F'+(bold?'B':'R')+' '+(bold?9:7.2)+' Tf 1 0 0 1 40 '+py.toFixed(2)+' Tm ('+pdfText(safe)+') Tj ET');
+      if(current) wrapped.push(current);
+      return wrapped;
+    };
+    const newPage=()=>{
+      if(pageIndex) policyPages.push(policyOps);
+      pageIndex++;
+      policyOps=[];
+      policyRect(0,0,612,792,'#ffffff');
+      policyRect(0,765,612,27,NAVY);
+      policyText(paper.left,775,'STARK PACKMATE',10,true,'#ffffff');
+      policyText(455,775,'QUOTATION APPENDIX',7,true,'#ffffff');
+      policyText(paper.left,736,'CLIENT ORDER, DELIVERY & REJECTION POLICY',13.3,true,NAVY);
+      policyText(paper.left,719,'Commercial terms and conditions  |  '+data.quoteNo,8,false,MUTED);
+      policyRule(paper.left,705,paper.right-paper.left,LINE);
+      cursor=686;
+      if(pageIndex===1){
+        const introLines=wrapPolicy(STARK_PACKMATE_POLICY_INTRO,490,8.6);
+        const height=19+introLines.length*13;
+        policyRect(paper.left,cursor-height,536,height,'#eff6ff');
+        policyRect(paper.left,cursor-height,3,height,BLUE);
+        introLines.forEach((v,i)=>policyText(52,cursor-18-i*13,v,8.6,false,NAVY));
+        cursor-=height+21;
+      }
+    };
+    newPage();
+    for(const [sectionIndex, section] of STARK_PACKMATE_POLICY.entries()){
+      const title=section.title.replace(/^\d+\.\s*/,'');
+      const pointLines=section.points.map(point=>wrapPolicy(point,480,8.25));
+      const needed=40+pointLines.reduce((total,lines)=>total+lines.length*12.5+10,0);
+      // Keep a section on the same page when possible; if too long,
+      // continue after a full paragraph with the section title repeated.
+      if(cursor-needed<paper.bottom && cursor<490) newPage();
+      let firstPart=true;
+      const heading=()=>{
+        const label=firstPart?title:title+' (continued)';
+        policyRect(paper.left,cursor-26,536,27,'#edf2f7');
+        policyRect(paper.left,cursor-26,3,27,BLUE);
+        policyText(51,cursor-18,String(sectionIndex+1).padStart(2,'0'),9,true,BLUE);
+        policyText(80,cursor-18,label,10.1,true,NAVY);
+        cursor-=39;firstPart=false;
+      };
+      heading();
+      for(const lines of pointLines){
+        const paragraphHeight=lines.length*12.5+10;
+        if(cursor-paragraphHeight<paper.bottom){
+          newPage();
+          heading();
         }
-        py-=bold?15:entry.content?10.5:5;
+        policyRect(53,cursor-6,3,3,BLUE);
+        lines.forEach((value,i)=>policyText(65,cursor-7-i*12.5,value,8.25,false,INK));
+        cursor-=paragraphHeight;
       }
-      policyOps.push('BT '+rgb(MUTED)+' rg /FR 7 Tf 1 0 0 1 40 32 Tm (Stark Packmate Pvt. Ltd. | Innovative Packaging Digital Solutions - Policy '+(index+1)+'/'+pageChunks.length+') Tj ET');
-      const policyStream=policyOps.join(NL);
-      const policyContent=add('<< /Length '+Buffer.byteLength(policyStream,'binary')+' >>'+NL+'stream'+NL+policyStream+NL+'endstream');
-      pageRefs.push(add('<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR '+font+' 0 R /FB '+fontBold+' 0 R >> >> /Contents '+policyContent+' 0 R >>'));
+      cursor-=13;
+    }
+    const acknowledgement=wrapPolicy(STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT,498,8.3);
+    const acknowledgeHeight=23+acknowledgement.length*13;
+    if(cursor-acknowledgeHeight<paper.bottom) newPage();
+    policyRect(paper.left,cursor-acknowledgeHeight,536,acknowledgeHeight,'#eaf6f3');
+    policyRect(paper.left,cursor-acknowledgeHeight,3,acknowledgeHeight,'#0f766e');
+    acknowledgement.forEach((value,i)=>policyText(53,cursor-20-i*13,value,8.3,i===0,NAVY));
+    policyPages.push(policyOps);
+    for(const [index,operations] of policyPages.entries()){
+      const footerY=41;
+      operations.push(rgb(LINE)+' RG 0.6 w 38 61 m 574 61 l S');
+      operations.push('BT '+rgb(MUTED)+' rg /FR 7 Tf 1 0 0 1 38 '+footerY+' Tm ('+
+        pdfText('Stark Packmate | '+data.quoteNo+' | Commercial terms')+') Tj ET');
+      operations.push('BT '+rgb(NAVY)+' rg /FB 7 Tf 1 0 0 1 519 '+footerY+' Tm ('+
+        pdfText((index+1)+' / '+policyPages.length)+') Tj ET');
+      const policyStream=operations.join(NL);
+      const policyContent=add('<< /Length '+Buffer.byteLength(policyStream,'binary')+' >>'+NL+
+        'stream'+NL+policyStream+NL+'endstream');
+      pageRefs.push(add('<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR '+
+        font+' 0 R /FB '+fontBold+' 0 R >> >> /Contents '+policyContent+' 0 R >>'));
     }
   }
   const pages = add(`<< /Type /Pages /Kids [${pageRefs.map(ref=>ref+' 0 R').join(' ')}] /Count ${pageRefs.length} >>`);
