@@ -76,8 +76,8 @@ export default function PremiumPackagingQuoteBuilderV5({
     if(supLine){setActive('sup');setIntent({lineId:id,mode:'edit'});setRequirementSeed(null);setStep(2);return;}
     const frameLine=frameSavedLines.find((line:any)=>String(line.lineId)===id);
     if(frameLine){
-      const familySlug=String(frameLine.familySlug??frameLine.family_slug??'').toLowerCase();
-      setActive(familySlug.includes('3')?'3ss':'center-seal');
+      const familySlug=String(frameLine.familySlug??frameLine.family_slug??frameLine.supplyForm??'').toLowerCase();
+      setActive(familySlug.includes('3')||familySlug.includes('three_side')?'3ss':'center-seal');
       setIntent({lineId:id,mode:'edit'});setRequirementSeed(null);setStep(2);
     }
   },[initialEditLine,supSavedLines.length,frameSavedLines.length]);
@@ -179,10 +179,10 @@ export default function PremiumPackagingQuoteBuilderV5({
         {pricedLineCount>0?<div className="mt-4 space-y-2">
           {[...supSavedLines,...frameSavedLines].map((line:any)=>{
             const id=String(line.lineId??'');
-            const family:FamilyKey=supSavedLines.some((saved:any)=>String(saved.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3')?'3ss':'center-seal';
+            const family:FamilyKey=supSavedLines.some((saved:any)=>String(saved.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal';
             return <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-white p-3">
-              <div><p className="text-sm font-black text-slate-900">{familyMeta(family).label}</p>
-                <p className="text-xs font-semibold text-slate-600">Qty {Number(line.quantity??0).toLocaleString()} · {money(Number(line.unitPrice??0),currency)} / pc</p></div>
+              <div><p className="text-sm font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p>
+                <p className="text-xs font-semibold text-slate-600">{family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??'Dimensions not specified')} · Qty {Number(line.quantity??0).toLocaleString()} · {money(Number(line.unitPrice??0),currency)} / pc</p></div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={()=>manageLine(id,family,'duplicate')} className="rounded-lg border border-blue-300 px-3 py-2 text-xs font-black text-blue-800">+ Another size (duplicate)</button>
                 <button type="button" onClick={()=>manageLine(id,family,'edit')} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700">Edit size / qty</button>
@@ -226,11 +226,11 @@ export default function PremiumPackagingQuoteBuilderV5({
           <div className="mt-3 max-h-[48vh] space-y-2 overflow-y-auto pr-1 xl:max-h-[60vh]">
             {[...supSavedLines,...frameSavedLines].map((line:any)=>{
               const id=String(line.lineId??'');
-              const family:FamilyKey=supSavedLines.some((l:any)=>String(l.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3')?'3ss':'center-seal';
-              const size=family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??line.sizeName??line.dimensions??'Saved size');
+              const family:FamilyKey=supSavedLines.some((l:any)=>String(l.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal';
+              const size=family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??(Number(line.widthMm)>0&&Number(line.heightMm)>0?`${line.widthMm} × ${line.heightMm} mm`:null)??line.sizeName??line.dimensions??'Dimensions not specified');
               const isEditing=intent?.lineId===id;
               return <div key={id} className={'rounded-xl border p-3 '+(isEditing?'border-blue-500 bg-blue-50':'border-slate-200 bg-slate-50')}>
-                <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-xs font-black text-slate-900">{familyMeta(family).label}</p><p className="text-xs font-semibold text-slate-600">{size}</p></div>{isEditing?<span className="rounded-full bg-blue-700 px-2 py-1 text-[10px] font-bold text-white">{intent?.mode==='duplicate'?'Duplicating':'Editing'}</span>:null}</div>
+                <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-xs font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p><p className="text-xs font-semibold text-slate-600">{size}</p></div>{isEditing?<span className="rounded-full bg-blue-700 px-2 py-1 text-[10px] font-bold text-white">{intent?.mode==='duplicate'?'Duplicating':'Editing'}</span>:null}</div>
                 <p className="mt-2 text-xs font-semibold text-slate-700">Qty {Number(line.quantity??0).toLocaleString()} · {money(Number(line.unitPrice??0),currency)} / pc</p>
                 <p className="text-sm font-black text-slate-900">{money(Number(line.quantity??0)*Number(line.unitPrice??0),currency)}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -286,10 +286,10 @@ export default function PremiumPackagingQuoteBuilderV5({
           const lineId=String(line.lineId??'');
           const basePrice=Number(line.baseUnitPrice??line.unitPrice??0);
           const quantity=Number(line.quantity??0);
-          const lineFamily:FamilyKey = supSavedLines.some((item:any)=>String(item.lineId)===lineId) ? 'sup' : (String(line.familySlug??line.family_slug??'').includes('3')?'3ss':'center-seal');
+          const lineFamily:FamilyKey = supSavedLines.some((item:any)=>String(item.lineId)===lineId) ? 'sup' : (String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal');
           return <div key={lineId} className="rounded-2xl border border-slate-200 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><p className="text-sm font-black text-slate-950">{familyMeta(lineFamily).label}</p><p className="mt-1 text-xs font-semibold text-slate-500">Qty {quantity>0?quantity.toLocaleString():'—'} · {basePrice>0?money(basePrice,currency)+' / pc':'Approved pricing'}</p></div>
+              <div><p className="text-sm font-black text-slate-950">{String(line.label??familyMeta(lineFamily).label)}</p><p className="mt-1 text-xs font-semibold text-slate-500">{lineFamily==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??'Dimensions not specified')} · Qty {quantity>0?quantity.toLocaleString():'—'} · {basePrice>0?money(basePrice,currency)+' / pc':'Approved pricing'}</p></div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={()=>manageLine(lineId,lineFamily,'edit')} className="min-h-11 rounded-xl border border-blue-200 px-3 text-xs font-bold text-blue-700">Edit qty / spec</button>
                 <button type="button" onClick={()=>manageLine(lineId,lineFamily,'duplicate')} className="min-h-11 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700">Duplicate</button>

@@ -5,6 +5,8 @@ export type PricingV5FrameSavedLineSummary = {
   supplyForm:string;
   widthMm:number;
   heightMm:number;
+  sizeLabel:string;
+  familySlug:'center-seal'|'3ss';
   print:'CMYK'|'CMYKW';
   quantity:number;
   label:string;
@@ -33,6 +35,10 @@ export function listPricingV5FrameSavedLineSummaries(lines:any[]):PricingV5Frame
       supplyForm:form,
       widthMm:Number(input.width_mm??0),
       heightMm:Number(input.height_mm??0),
+      sizeLabel:Number(input.width_mm)>0 && Number(input.height_mm)>0
+        ? `${Number(input.width_mm)} × ${Number(input.height_mm)} mm`
+        : 'Dimensions not specified',
+      familySlug:form.includes('three_side')?'3ss':'center-seal',
       print:input.print==='CMYK'?'CMYK':'CMYKW',
       quantity:Number(input.quantity??line.quantity??0),
       label:`${label} ${form.endsWith('pouch')?'Pouch':'Roll'}`,
