@@ -69,7 +69,8 @@ begin
  update public.quote_versions set total_line_count=v_count,
   internal_notes='Revision copied from quote '||coalesce(v_source.quote_number,p_source_quote_id::text)||'. Reprice and approve all lines.'
  where id=v_result.quote_version_id;
- update public.quotes set notes='Revision of '||coalesce(v_source.quote_number,p_source_quote_id::text)||'; reprice before sending.'
+ update public.quotes set notes='Revision of '||coalesce(v_source.quote_number,p_source_quote_id::text)||'; reprice before sending.',
+  industry_metadata=coalesce(industry_metadata,'{}'::jsonb)||jsonb_build_object('revision_source_quote_id',p_source_quote_id,'revision_source_version_id',coalesce(v_source.sent_version_id,v_source.accepted_version_id,v_source.current_version_id),'revision_reprice_required',true)
  where id=v_result.quote_id and organization_id=p_organization_id;
  insert into public.audit_logs(organization_id,actor_user_id,entity_type,entity_id,action,payload)
  values(p_organization_id,p_actor_user_id,'quote',v_result.quote_id,'quote_revision_created',
