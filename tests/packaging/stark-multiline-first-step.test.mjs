@@ -7,8 +7,8 @@ const commercial=fs.readFileSync('src/features/packaging/server/pricing-v5-line-
 
 test('Stark quote: first step exposes saved lines, duplication, different family, and pricing controls',()=>{
   assert.match(studio,/Add multiple sizes or service families/);
-  assert.match(studio,/pricedLineCount>0 \? renderSavedLineEditor\(\)/);
-  assert.match(studio,/function renderSavedLineEditor\(\)/);
+  assert.match(studio,/pricedLineCount>0 \? \(/);
+  assert.ok((studio.match(/Discount \/ Custom Price/g)??[]).length>=2);
   assert.match(studio,/manageLine\(lineId,lineFamily,'duplicate'\)/);
   assert.match(studio,/Choose the same family to add a different size/);
   assert.match(studio,/Customer price adjustment/);
