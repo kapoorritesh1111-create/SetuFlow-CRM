@@ -1427,19 +1427,14 @@ export async function saveLead(_: ActionState | undefined, formData: FormData): 
 
   if (!currentUser || !organization) return { error: 'Not authenticated.' };
 
-  // Coordinator can create a lead for a supervisor only after they were explicitly
-  // delegated at least one lead by that owner; owners/admins retain full override.
+  // Do not use another lead's delegation as standing permission to create on
+  // behalf of its owner. This must be an explicit manager-authorized workflow.
   const requestedOwner = String(formData.get('owner_user_id') ?? '').trim();
   const existingLeadId = String(formData.get('lead_id') ?? '').trim();
   const isCoordinator = workspace.currentRoles.includes('sales_coordinator');
   const isAssignmentManager = workspace.currentRoles.some(role => ['owner', 'admin', 'manager'].includes(role));
   if (isCoordinator && !isAssignmentManager && requestedOwner && requestedOwner !== currentUser.id) {
-    const scopedDb = createAdminSupabaseClient();
-    if (!scopedDb) return { error: 'Cannot validate delegation permissions.' };
-    const { data: authorized } = await (scopedDb as any).from('leads')
-      .select('id').eq('organization_id', organization.id)
-      .eq('owner_user_id', requestedOwner).eq('coordinator_user_id', currentUser.id).limit(1);
-    if (!authorized?.length) return { error: 'This owner has not authorized you to create leads on their behalf.' };
+    return { error: 'Creating a lead for another owner requires an authorized manager. Ask Akshay or Surbhi to transfer it after creation.' };
   }
   if (isCoordinator && !isAssignmentManager && existingLeadId) {
     const scopedDb = createAdminSupabaseClient();
