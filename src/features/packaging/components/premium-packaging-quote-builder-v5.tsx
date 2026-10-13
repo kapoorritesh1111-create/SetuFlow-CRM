@@ -47,6 +47,8 @@ export default function PremiumPackagingQuoteBuilderV5({
   const [pending,startTransition]=useTransition();
   const [adjustingLineId,setAdjustingLineId]=useState('');
   const [mobileBasketOpen,setMobileBasketOpen]=useState(false);
+  const [basketReview,setBasketReview]=useState(false);
+  const [lastSavedLineId,setLastSavedLineId]=useState('');
   const [discountType,setDiscountType]=useState<'percent'|'amount'|'customer_price'>('percent');
   const [discountValue,setDiscountValue]=useState('');
   const [existingCustomerPrice,setExistingCustomerPrice]=useState('');
@@ -98,12 +100,20 @@ export default function PremiumPackagingQuoteBuilderV5({
     ['4','Review & Send','Confirm customer offer and send'],
   ];
 
-  function chooseFamily(key:FamilyKey){setActive(key);setIntent(null);setRequirementSeed(null);goStep(2);}
-  function useRequirement(key:FamilyKey,requirement:any){setActive(key);setIntent(null);setRequirementSeed(requirement);goStep(2);}
-  function startWithoutRequirement(){setRequirementSeed(null);setIntent(null);goStep(1);}
-  function configure(){setIntent(null);goStep(step<2?2:step);}
+  function chooseFamily(key:FamilyKey){setBasketReview(false);setActive(key);setIntent(null);setRequirementSeed(null);goStep(2);}
+  function useRequirement(key:FamilyKey,requirement:any){setBasketReview(false);setActive(key);setIntent(null);setRequirementSeed(requirement);goStep(2);}
+  function startWithoutRequirement(){setBasketReview(false);setRequirementSeed(null);setIntent(null);goStep(1);}
+  function configure(){setBasketReview(false);setIntent(null);goStep(step<2?2:step);}
   function manageLine(lineId:string,family:FamilyKey,mode:'edit'|'duplicate'){
-    setActive(family);setIntent({lineId,mode});goStep(2);
+    setBasketReview(false);setActive(family);setIntent({lineId,mode});goStep(2);
+  }
+  function savedLineSuccessfully(lineId:string){
+    setLastSavedLineId(lineId);
+    setBasketReview(true);
+    setIntent(null);
+    setRequirementSeed(null);
+    setMobileBasketOpen(false);
+    goStep(1);
   }
   function openLinePriceEditor(line:any) {
     beginAdjust(line);
@@ -167,14 +177,18 @@ export default function PremiumPackagingQuoteBuilderV5({
     </div>
 
     {step===1?<div className="bg-white p-5 sm:p-6">
-      <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Product & Requirement</div><h2 className="mt-1 text-2xl font-black text-slate-950">Build your customer quotation</h2><p className="mt-1 text-sm font-semibold text-slate-500">Use what Sales already captured, edit it if needed, or add another packaging family.</p></div>
+      {basketReview?<div role="status" className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:p-5">
+        <div className="flex items-center gap-3"><span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 font-black text-white">✓</span>
+          <div><h2 className="text-lg font-black text-emerald-950">Product saved successfully</h2><p className="text-xs font-semibold text-emerald-800">The saved quotation is ready for your next decision. {lastSavedLineId?'Quote basket updated.':''}</p></div></div>
+      </div>:null}
+      <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Quote basket</div><h2 className="mt-1 text-2xl font-black text-slate-950">Build your customer quotation</h2><p className="mt-1 text-sm font-semibold text-slate-500">Use what Sales already captured, edit it if needed, or add another packaging family.</p></div>
       <div className="mt-5 rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><p className="text-xs font-black uppercase tracking-wide text-blue-700">Quote basket · {pricedLineCount} priced items</p>
-            <h3 className="mt-1 text-lg font-black text-slate-950">Add multiple sizes or service families</h3>
+            <h3 className="mt-1 text-lg font-black text-slate-950">{basketReview?"Review your saved products":"Add multiple sizes or service families"}</h3>
             <p className="mt-1 text-sm font-semibold text-slate-600">Each size is its own quote line. Use Duplicate to copy specifications for a new size, or select another service family below. Your existing lines remain saved.</p>
           </div>
-          <button type="button" onClick={()=>goStep(3)} className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Discount / custom pricing →</button>
+          {!basketReview?<button type="button" onClick={()=>goStep(3)} className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Discount / custom pricing →</button>:null}
         </div>
         {pricedLineCount>0?<div className="mt-4 space-y-2">
           {[...supSavedLines,...frameSavedLines].map((line:any)=>{
@@ -192,11 +206,17 @@ export default function PremiumPackagingQuoteBuilderV5({
           })}
         </div>:<p className="mt-4 rounded-xl bg-white p-3 text-sm font-semibold text-slate-600">Select a family below and save the first size. Then add more sizes or another family.</p>}
       </div>
+      {basketReview?<div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <button type="button" disabled={!pricedLineCount} onClick={()=>goStep(3)} className="min-h-14 rounded-2xl bg-blue-700 p-4 text-left text-sm font-black text-white disabled:opacity-50">Continue to Commercials →<span className="mt-1 block text-xs font-semibold text-blue-100">Review discounts, approvals and customer pricing</span></button>
+        <button type="button" onClick={()=>setBasketReview(false)} className="min-h-14 rounded-2xl border-2 border-blue-200 bg-white p-4 text-left text-sm font-black text-blue-800">+ Add Another Product / Size<span className="mt-1 block text-xs font-semibold text-slate-500">Choose a family or requirement below</span></button>
+      </div>:null}
+      {!basketReview?<>
       <QuoteRequirementPanel leadId={leadId} available={available} onUse={useRequirement} onStartFresh={startWithoutRequirement}/>
       <div className="mt-6 flex items-end justify-between gap-3"><div><div className="text-base font-black text-slate-950">+ Add another size or service family</div><div className="mt-1 text-[11px] font-semibold text-slate-500">Choose the same family for another size, or pick a different family. No need to go through commercial review first.</div></div></div>
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {available.map((key)=>{const m=familyMeta(key);return <button type="button" key={key} onClick={()=>chooseFamily(key)} className="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-lg"><Shape kind={key}/><div className="mt-3 flex items-end justify-between gap-2"><div><div className="text-sm font-black text-slate-950">{m.label}</div><div className="mt-1 text-[11px] font-semibold text-slate-500">{m.sub}</div></div><span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-black text-white">→</span></div></button>})}
       </div>
+      </>:null}
     </div>:null}
 
     {step===2?<div className="p-4 sm:p-5">
@@ -211,7 +231,7 @@ export default function PremiumPackagingQuoteBuilderV5({
       <div className="sticky top-2 z-30 mb-3 rounded-xl border border-blue-200 bg-white/95 p-2 shadow-lg backdrop-blur xl:hidden"><button type="button" aria-expanded={mobileBasketOpen} onClick={()=>setMobileBasketOpen(true)} className="flex w-full items-center justify-between rounded-lg bg-blue-700 px-4 py-3 text-sm font-black text-white"><span>View Quote Basket · {pricedLineCount} priced items</span><span>{money(quoteTotal,currency)} →</span></button></div>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 2 · Configure & Price</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Confirm the specification, size or dimensions, KLD and quantity. Pricing and higher-volume options stay in the same workspace.</p>{requirementSeed?<div className="mt-2 flex flex-wrap items-center gap-2"><div className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black text-cyan-800">Using lead requirement · {requirementSeed.dimensions||requirementSeed.quantity||'captured requirement'}</div><button type="button" onClick={()=>goStep(1)} className="text-[10px] font-black text-blue-700 underline">Change requirement</button><button type="button" onClick={()=>setRequirementSeed(null)} className="text-[10px] font-black text-slate-600 underline">Don't use requirement</button></div>:null}</div></div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0">{active==='sup'&&supOptions?<PricingV5SalesConfigurator quoteId={quoteId} leadId={leadId} options={supOptions} savedLines={supSavedLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}{(active==='center-seal'||active==='3ss')&&filteredFrame?.templates?.length?<PricingV5FrameSalesConfigurator quoteId={quoteId} leadId={leadId} options={filteredFrame} savedLines={filteredFrameLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}</div>
+        <div className="min-w-0">{active==='sup'&&supOptions?<PricingV5SalesConfigurator quoteId={quoteId} leadId={leadId} options={supOptions} savedLines={supSavedLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed} onSaved={savedLineSuccessfully}/>:null}{(active==='center-seal'||active==='3ss')&&filteredFrame?.templates?.length?<PricingV5FrameSalesConfigurator quoteId={quoteId} leadId={leadId} options={filteredFrame} savedLines={filteredFrameLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}</div>
         {mobileBasketOpen?<button type="button" aria-label="Close quote basket" onClick={()=>setMobileBasketOpen(false)} className="fixed inset-0 z-30 bg-slate-950/40 xl:hidden"/>:null}
         <aside aria-label="Live quote basket" className={'min-w-0 self-start rounded-2xl border border-blue-200 bg-white p-4 shadow-sm xl:sticky xl:top-4 '+(mobileBasketOpen?'fixed inset-x-3 bottom-3 z-40 max-h-[75vh] overflow-y-auto shadow-2xl':'hidden xl:block')}>
           <div className="mb-2 flex justify-end xl:hidden"><button type="button" onClick={()=>setMobileBasketOpen(false)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Close basket ✕</button></div>
