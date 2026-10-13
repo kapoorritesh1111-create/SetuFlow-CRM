@@ -1,8 +1,12 @@
+import {resolveFrameQuotePresentation} from './customer-quote-unit';
 export type PricingV5FrameSavedLineSummary = {
   lineId:string;
   templateId:string;
   constructionId:string;
   supplyForm:string;
+  customerQuoteUnit:'kg'|'pcs';
+  finishedWeightKg:number;
+  displayUnitPrice:number;
   widthMm:number;
   heightMm:number;
   sizeLabel:string;
@@ -29,6 +33,7 @@ export function listPricingV5FrameSavedLineSummaries(lines:any[]):PricingV5Frame
     const form=String(input.supply_form);
     const label=form.includes('three_side')?'3 Side Seal':'Center Seal';
     return {
+      ...(()=>{const view=resolveFrameQuotePresentation(line);return {customerQuoteUnit:view.unit,finishedWeightKg:view.weight,displayUnitPrice:view.displayPrice};})(),
       lineId:String(line.id),
       templateId:String(line.packaging_template_id??line.input_snapshot_json?.template_id??''),
       constructionId:String(input.construction_id),
