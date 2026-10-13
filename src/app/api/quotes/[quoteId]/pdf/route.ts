@@ -358,17 +358,23 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   const productIds = Array.from(new Set(lines.map((line) => line.product_id).filter(Boolean)));
   const packagingFamilyIds = Array.from(new Set(lines.map((line) => line.packaging_family_id).filter(Boolean)));
   const packagingVariationIds = Array.from(new Set(lines.map((line) => line.packaging_product_variation_id).filter(Boolean)));
-  const [{ data: products }, { data: variants }, { data: packagingFamilies }, { data: packagingVariations }] = await Promise.all([
+  const sizeProfileIds = Array.from(new Set(lines.map((line) => line.packaging_size_profile_v5_id ?? line.input_snapshot_json?.input?.size_profile_id).filter(Boolean)));
+  const constructionIds = Array.from(new Set(lines.map((line) => line.input_snapshot_json?.input?.construction_id ?? line.input_snapshot_json?.construction_id).filter(Boolean)));
+  const [{ data: products }, { data: variants }, { data: packagingFamilies }, { data: packagingVariations }, {data: sizeProfiles}, {data: constructions}] = await Promise.all([
     productIds.length ? db.from('products').select('id, name, sku, sku_code').eq('organization_id', resolvedOrganizationId).in('id', productIds) : Promise.resolve({ data: [] }),
     productIds.length ? db.from('product_variants').select('id, product_id, name, sku_code').in('product_id', productIds) : Promise.resolve({ data: [] }),
     packagingFamilyIds.length ? db.from('packaging_service_families').select('id,name').eq('organization_id',resolvedOrganizationId).in('id',packagingFamilyIds) : Promise.resolve({data:[]}),
     packagingVariationIds.length ? db.from('packaging_product_variations').select('id,name,dimension_label,width_mm,height_mm,bottom_gusset_each_mm').in('id',packagingVariationIds) : Promise.resolve({data:[]}),
+    sizeProfileIds.length ? db.from('packaging_size_profiles_v5').select('id,name,width_mm,height_mm,bottom_gusset_each_mm').eq('organization_id',resolvedOrganizationId).in('id',sizeProfileIds) : Promise.resolve({data:[]}),
+    constructionIds.length ? db.from('packaging_constructions_v5').select('id,name').eq('organization_id',resolvedOrganizationId).in('id',constructionIds) : Promise.resolve({data:[]}),
   ]);
 
   const productMap = new Map((products ?? []).map((product: any) => [product.id, product]));
   const variantMap = new Map((variants ?? []).map((variant: any) => [variant.id, variant]));
   const familyMap = new Map((packagingFamilies ?? []).map((entry: any) => [String(entry.id),entry]));
   const packagingVariationMap = new Map((packagingVariations ?? []).map((entry: any) => [String(entry.id),entry]));
+  const sizeProfileMap = new Map((sizeProfiles ?? []).map((entry:any)=>[String(entry.id),entry]));
+  const constructionMap = new Map((constructions ?? []).map((entry:any)=>[String(entry.id),entry]));
   const quoteBase = quoteBasis(quote.pricing_basis);
   const currency = String(quote.display_currency ?? quote.currency ?? org?.default_currency ?? 'USD').toUpperCase();
   const logoImage = await loadOrganizationLogo(db, resolvedOrganizationId, org);
@@ -387,9 +393,11 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       const family: any = familyMap.get(String(line.packaging_family_id ?? snapshot.family_id ?? '')) ?? {};
       const variation: any = packagingVariationMap.get(String(line.packaging_product_variation_id ?? '')) ?? {};
       const product: any = productMap.get(line.product_id) ?? {};
-      const size = text(variation.dimension_label ?? input.dimension_label ?? snapshot.dimension_label ??
+      const sizeProfile:any = sizeProfileMap.get(String(line.packaging_size_profile_v5_id ?? input.size_profile_id ?? '')) ?? {};
+      const construction:any = constructionMap.get(String(input.construction_id ?? snapshot.construction_id ?? '')) ?? {};
+      const size = text(sizeProfile.name ?? (sizeProfile.width_mm && sizeProfile.height_mm ? [sizeProfile.width_mm,sizeProfile.height_mm,sizeProfile.bottom_gusset_each_mm].filter(Boolean).join(' x ')+' mm':null) ?? variation.dimension_label ?? input.dimension_label ?? snapshot.dimension_label ??
         (input.width_mm && input.height_mm ? [input.width_mm,input.height_mm,input.bottom_gusset_each_mm].filter(Boolean).join(' x ') + ' mm' : null),'');
-      const substrate = text(input.substrate ?? input.construction ?? input.material_construction ?? snapshot.substrate ?? snapshot.construction ?? snapshot.spec_summary,'');
+      const substrate = text(construction.name ?? input.substrate ?? input.construction ?? input.material_construction ?? snapshot.substrate ?? snapshot.construction ?? snapshot.spec_summary,'');
       const productName = text(product.name ?? variation.name ?? snapshot.product_name ?? family.name,'Packaging item');
       const details = [
         family.name ? 'Family: ' + family.name : '',
