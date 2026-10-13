@@ -11,7 +11,7 @@ function money(value:any,currency='INR'){
 
 export default function PricingV5FrameSalesConfigurator({
   quoteId,leadId,options,savedLines=[],embedded=false,focusLineId='',duplicateLineId=''
-,requirementSeed=null}:{quoteId:string;leadId:string;options:any;savedLines?:any[];embedded?:boolean;focusLineId?:string;duplicateLineId?:string;requirementSeed?:any|null;onSaved?:(lineId:string)=>void}){
+,requirementSeed=null,onSaved}:{quoteId:string;leadId:string;options:any;savedLines?:any[];embedded?:boolean;focusLineId?:string;duplicateLineId?:string;requirementSeed?:any|null;onSaved?:(lineId:string)=>void}){
   const router=useRouter();
   const templates=options?.templates??[];
   const [templateId,setTemplateId]=useState(templates[0]?.id??'');
