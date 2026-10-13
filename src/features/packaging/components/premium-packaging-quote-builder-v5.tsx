@@ -104,6 +104,10 @@ export default function PremiumPackagingQuoteBuilderV5({
   function manageLine(lineId:string,family:FamilyKey,mode:'edit'|'duplicate'){
     setActive(family);setIntent({lineId,mode});goStep(2);
   }
+  function openLinePriceEditor(line:any) {
+    beginAdjust(line);
+    goStep(3);
+  }
   function beginAdjust(line:any){
     setAdjustingLineId(String(line.lineId));
     setDiscountType(line.discountType==='amount'?'amount':'percent');
@@ -119,9 +123,7 @@ export default function PremiumPackagingQuoteBuilderV5({
     const value=discountType==='customer_price'?basePrice-requestedPrice:Number(discountValue||0);
     setLineError('');setLineNotice('');
     if(discountType==='customer_price'&&(!Number.isFinite(requestedPrice)||requestedPrice<=0||requestedPrice>basePrice)){setLineError('Existing customer price must be greater than zero and cannot exceed the current approved price.');return;}
-    if(!discountReason.trim()){setLineError('Enter a reason for the discount or approved customer price.');return;}
-    if(discountType==='percent'&&(!Number.isFinite(value)||value>=100)){setLineError('Discount percentage must be below 100%.');return;}
-    if(!Number.isFinite(value)||value<0||value>=basePrice&&discountType!=='percent'){setLineError('Discount must be between zero and the original per-piece price.');return;}
+    if(!discountReason.trim()){setLineError('Enter a reason for this adjustment.');return;}
     startTransition(async()=>{
       const response:any=await adjustPackagingPricingV5QuoteLine({quoteId,leadId,lineId:String(line.lineId),discountType:effectiveType,discountValue:value,reason:discountReason});
       if(!response.ok){setLineError(response.error??'Price adjustment could not be saved.');return;}
@@ -165,73 +167,55 @@ export default function PremiumPackagingQuoteBuilderV5({
 
     {step===1?<div className="bg-white p-5 sm:p-6">
       <div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 1 · Product & Requirement</div><h2 className="mt-1 text-2xl font-black text-slate-950">Start from the customer requirement</h2><p className="mt-1 text-sm font-semibold text-slate-500">Use what Sales already captured, edit it if needed, or add another packaging family.</p></div>
-      <section aria-label="Quote items and price adjustments" className="mt-5 rounded-2xl border-2 border-blue-200 bg-blue-50/60 p-4 sm:p-5">
+      <div className="mt-5 rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-xs font-black uppercase tracking-wide text-blue-700">Your quote · {pricedLineCount} saved line{pricedLineCount===1?'':'s'}</p>
+          <div><p className="text-xs font-black uppercase tracking-wide text-blue-700">Quote basket · {pricedLineCount} saved items</p>
             <h3 className="mt-1 text-lg font-black text-slate-950">Add multiple sizes or service families</h3>
-            <p className="mt-1 text-sm text-slate-700">Every saved size is a separate line. Add another size from the same family, or select another service family below. You do not need to finish the quote first.</p>
+            <p className="mt-1 text-sm font-semibold text-slate-600">Each size is its own quote line. Use Duplicate to copy specifications for a new size, or select another service family below. Your existing lines remain saved.</p>
           </div>
-          <button type="button" onClick={()=>goStep(3)} className="rounded-xl border border-blue-300 bg-white px-4 py-3 text-sm font-black text-blue-800">Review all prices & discounts →</button>
+          <button type="button" onClick={()=>goStep(3)} className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Discount / custom pricing →</button>
         </div>
-        {pricedLineCount>0 ? (<div className="mt-4 space-y-3">
-        {[...supSavedLines,...frameSavedLines].length ? [...supSavedLines,...frameSavedLines].map((line:any)=>{
-          const lineId=String(line.lineId??'');
-          const basePrice=Number(line.baseUnitPrice??line.unitPrice??0);
-          const quantity=Number(line.quantity??0);
-          const lineFamily:FamilyKey = supSavedLines.some((item:any)=>String(item.lineId)===lineId) ? 'sup' : (String(line.familySlug??line.family_slug??'').includes('3')?'3ss':'center-seal');
-          return <div key={lineId} className="rounded-2xl border border-slate-200 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><p className="text-sm font-black text-slate-950">{familyMeta(lineFamily).label}</p><p className="mt-1 text-xs font-semibold text-slate-500">{lineFamily==='sup' ? (supSizeById.get(String(line.sizeProfileId))?.name ?? supSizeById.get(String(line.sizeProfileId))?.size_key ?? 'Saved size') : (line.sizeLabel ?? line.sizeName ?? line.dimensions ?? 'Saved size')} · Qty {quantity>0?quantity.toLocaleString():'—'} · {basePrice>0?money(basePrice,currency)+' / pc':'Approved pricing'}</p>{line.discountType&&line.discountType!=='none'?<p className="mt-1 text-xs font-bold text-emerald-700">Adjusted customer price: {money(Number(line.unitPrice??0),currency)} / pc · {Number(line.discountPercent??0).toFixed(2)}% discount {line.approvalRequired?'· Approval required':''}</p>:null}</div>
+        {pricedLineCount>0?<div className="mt-4 space-y-2">
+          {[...supSavedLines,...frameSavedLines].map((line:any)=>{
+            const id=String(line.lineId??'');
+            const family:FamilyKey=supSavedLines.some((saved:any)=>String(saved.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3')?'3ss':'center-seal';
+            return <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-white p-3">
+              <div><p className="text-sm font-black text-slate-900">{familyMeta(family).label}</p>
+                <p className="text-xs font-semibold text-slate-600">Qty {Number(line.quantity??0).toLocaleString()} · {money(Number(line.unitPrice??0),currency)} / pc</p></div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={()=>manageLine(lineId,lineFamily,'edit')} className="min-h-11 rounded-xl border border-blue-200 px-3 text-xs font-bold text-blue-700">Edit qty / spec</button>
-                <button type="button" onClick={()=>manageLine(lineId,lineFamily,'duplicate')} className="min-h-11 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700">Duplicate</button>
-                <button type="button" disabled={pending} onClick={()=>removeLine(line)} className="min-h-11 rounded-xl border border-rose-200 px-3 text-xs font-bold text-rose-700 disabled:opacity-50">Remove</button>
+                <button type="button" onClick={()=>manageLine(id,family,'duplicate')} className="rounded-lg border border-blue-300 px-3 py-2 text-xs font-black text-blue-800">+ Another size (duplicate)</button>
+                <button type="button" onClick={()=>manageLine(id,family,'edit')} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-black text-slate-700">Edit size / qty</button>
+                <button type="button" onClick={()=>openLinePriceEditor(line)} className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-black text-amber-900">₹ / % / Custom price</button>
               </div>
-            </div>
-            {adjustingLineId===lineId?<div className="mt-4 rounded-xl bg-slate-50 p-3">
-              <label className="block text-xs font-bold text-slate-700">Customer price adjustment<select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"><option value="percent">Discount (%)</option><option value="amount">Discount (₹ per piece)</option><option value="customer_price">Approved customer price (₹ per piece)</option></select></label>
-              <label className="mt-3 block text-xs font-bold text-slate-700">{discountType==='customer_price'?'Customer price / pc':'Discount value'}<input type="number" inputMode="decimal" min="0" value={discountType==='customer_price'?existingCustomerPrice:discountValue} onChange={e=>discountType==='customer_price'?setExistingCustomerPrice(e.target.value):setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
-              <label className="mt-3 block text-xs font-bold text-slate-700">Reason for price adjustment (required)<input required value={discountReason} onChange={e=>setDiscountReason(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
-              <p className="mt-2 text-xs text-amber-700">More than 15% below approved pricing requires approval before send.</p>
-              <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={pending} onClick={()=>saveAdjustment(line)} className="min-h-11 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white disabled:opacity-50">Save adjustment</button><button type="button" disabled={pending} onClick={()=>clearAdjustment(line)} className="min-h-11 rounded-xl border border-slate-300 px-4 text-xs font-bold text-slate-700">Remove discount</button><button type="button" onClick={()=>setAdjustingLineId('')} className="min-h-11 px-3 text-xs font-bold text-slate-600">Cancel</button></div>
-            </div>:<button type="button" onClick={()=>beginAdjust(line)} className="mt-3 min-h-11 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900">Discount / Custom Price</button>}
-          </div>;
-        }):<p className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm font-semibold text-slate-500">No saved packaging lines yet. Add a product before reviewing commercial terms.</p>}
-      </div>) : <p className="mt-4 rounded-xl border border-dashed border-blue-200 bg-white p-4 text-sm font-semibold text-slate-600">No products priced yet. Select a family below, calculate the first size and save it. Return here to add more sizes, duplicate a line, or set an approved customer price.</p>}
-      </section>
+            </div>;
+          })}
+        </div>:<p className="mt-4 rounded-xl bg-white p-3 text-sm font-semibold text-slate-600">Select a family below and save the first size. Then add more sizes or another family.</p>}
+      </div>
       <QuoteRequirementPanel leadId={leadId} available={available} onUse={useRequirement} onStartFresh={startWithoutRequirement}/>
-      <div className="mt-6 flex items-end justify-between gap-3"><div><div className="text-base font-black text-slate-950">+ Add a quote line — choose service family</div><div className="mt-1 text-[11px] font-semibold text-slate-500">Choose the same family to add a different size, or a different family for another product. Existing quote lines are preserved.</div></div></div>
+      <div className="mt-6 flex items-end justify-between gap-3"><div><div className="text-base font-black text-slate-950">+ Add another size or service family</div><div className="mt-1 text-[11px] font-semibold text-slate-500">Choose the same family for another size, or pick a different family. No need to go through commercial review first.</div></div></div>
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         {available.map((key)=>{const m=familyMeta(key);return <button type="button" key={key} onClick={()=>chooseFamily(key)} className="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-lg"><Shape kind={key}/><div className="mt-3 flex items-end justify-between gap-2"><div><div className="text-sm font-black text-slate-950">{m.label}</div><div className="mt-1 text-[11px] font-semibold text-slate-500">{m.sub}</div></div><span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-black text-white">→</span></div></button>})}
       </div>
     </div>:null}
 
     {step===2?<div className="p-4 sm:p-5">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 2 · Configure & Price</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Confirm the specification, size or dimensions, KLD and quantity. Pricing and higher-volume options stay in the same workspace.</p>{requirementSeed?<div className="mt-2 flex flex-wrap items-center gap-2"><div className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black text-cyan-800">Using lead requirement · {requirementSeed.dimensions||requirementSeed.quantity||'captured requirement'}</div><button type="button" onClick={()=>goStep(1)} className="text-[10px] font-black text-blue-700 underline">Change requirement</button><button type="button" onClick={()=>setRequirementSeed(null)} className="text-[10px] font-black text-slate-600 underline">D      <div className="mt-4 space-y-3">
-        {[...supSavedLines,...frameSavedLines].length ? [...supSavedLines,...frameSavedLines].map((line:any)=>{
-          const lineId=String(line.lineId??'');
-          const basePrice=Number(line.baseUnitPrice??line.unitPrice??0);
-          const quantity=Number(line.quantity??0);
-          const lineFamily:FamilyKey = supSavedLines.some((item:any)=>String(item.lineId)===lineId) ? 'sup' : (String(line.familySlug??line.family_slug??'').includes('3')?'3ss':'center-seal');
-          return <div key={lineId} className="rounded-2xl border border-slate-200 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><p className="text-sm font-black text-slate-950">{familyMeta(lineFamily).label}</p><p className="mt-1 text-xs font-semibold text-slate-500">{lineFamily==='sup' ? (supSizeById.get(String(line.sizeProfileId))?.name ?? supSizeById.get(String(line.sizeProfileId))?.size_key ?? 'Saved size') : (line.sizeLabel ?? line.sizeName ?? line.dimensions ?? 'Saved size')} · Qty {quantity>0?quantity.toLocaleString():'—'} · {basePrice>0?money(basePrice,currency)+' / pc':'Approved pricing'}</p>{line.discountType&&line.discountType!=='none'?<p className="mt-1 text-xs font-bold text-emerald-700">Adjusted customer price: {money(Number(line.unitPrice??0),currency)} / pc · {Number(line.discountPercent??0).toFixed(2)}% discount {line.approvalRequired?'· Approval required':''}</p>:null}</div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={()=>manageLine(lineId,lineFamily,'edit')} className="min-h-11 rounded-xl border border-blue-200 px-3 text-xs font-bold text-blue-700">Edit qty / spec</button>
-                <button type="button" onClick={()=>manageLine(lineId,lineFamily,'duplicate')} className="min-h-11 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700">Duplicate</button>
-                <button type="button" disabled={pending} onClick={()=>removeLine(line)} className="min-h-11 rounded-xl border border-rose-200 px-3 text-xs font-bold text-rose-700 disabled:opacity-50">Remove</button>
-              </div>
-            </div>
-            {adjustingLineId===lineId?<div className="mt-4 rounded-xl bg-slate-50 p-3">
-              <label className="block text-xs font-bold text-slate-700">Customer price adjustment<select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"><option value="percent">Discount (%)</option><option value="amount">Discount (₹ per piece)</option><option value="customer_price">Approved customer price (₹ per piece)</option></select></label>
-              <label className="mt-3 block text-xs font-bold text-slate-700">{discountType==='customer_price'?'Customer price / pc':'Discount value'}<input type="number" inputMode="decimal" min="0" value={discountType==='customer_price'?existingCustomerPrice:discountValue} onChange={e=>discountType==='customer_price'?setExistingCustomerPrice(e.target.value):setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
-              <label className="mt-3 block text-xs font-bold text-slate-700">Reason for price adjustment (required)<input required value={discountReason} onChange={e=>setDiscountReason(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
-              <p className="mt-2 text-xs text-amber-700">More than 15% below approved pricing requires approval before send.</p>
-              <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={pending} onClick={()=>saveAdjustment(line)} className="min-h-11 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white disabled:opacity-50">Save adjustment</button><button type="button" disabled={pending} onClick={()=>clearAdjustment(line)} className="min-h-11 rounded-xl border border-slate-300 px-4 text-xs font-bold text-slate-700">Remove discount</button><button type="button" onClick={()=>setAdjustingLineId('')} className="min-h-11 px-3 text-xs font-bold text-slate-600">Cancel</button></div>
-            </div>:<button type="button" onClick={()=>beginAdjust(line)} className="mt-3 min-h-11 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900">Discount / Custom Price</button>}
-          </div>;
-        }):<p className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm font-semibold text-slate-500">No saved packaging lines yet. Add a product before reviewing commercial terms.</p>}
-      </div>d-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{lineError}</p>:null}
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 2 · Configure & Price</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Confirm the specification, size or dimensions, KLD and quantity. Pricing and higher-volume options stay in the same workspace.</p>{requirementSeed?<div className="mt-2 flex flex-wrap items-center gap-2"><div className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black text-cyan-800">Using lead requirement · {requirementSeed.dimensions||requirementSeed.quantity||'captured requirement'}</div><button type="button" onClick={()=>goStep(1)} className="text-[10px] font-black text-blue-700 underline">Change requirement</button><button type="button" onClick={()=>setRequirementSeed(null)} className="text-[10px] font-black text-slate-600 underline">Don't use requirement</button></div>:null}</div></div>
+      <div className="grid gap-4">
+        <div className="min-w-0">{active==='sup'&&supOptions?<PricingV5SalesConfigurator quoteId={quoteId} leadId={leadId} options={supOptions} savedLines={supSavedLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}{(active==='center-seal'||active==='3ss')&&filteredFrame?.templates?.length?<PricingV5FrameSalesConfigurator quoteId={quoteId} leadId={leadId} options={filteredFrame} savedLines={filteredFrameLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed}/>:null}</div>
+        <div className="sticky bottom-3 z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.18)] backdrop-blur">
+          <div className="flex items-center gap-3"><button type="button" onClick={()=>goStep(1)} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-black text-slate-700">← Product & Requirement</button><div className="text-xs font-bold text-slate-500">{lineCount>0?`${lineCount} quote item${lineCount===1?'':'s'} saved`:'Save a quote line before review.'}</div></div>
+          <button type="button" onClick={()=>goStep(3)} className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-sm">Continue to Commercials →</button>
+        </div>
+        <aside className="hidden"><div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Selected Family</div><div className="mt-3 flex items-center gap-3"><div className={'flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br text-[11px] font-black text-white '+familyMeta(active).tone}>{familyMeta(active).badge}</div><div><div className="text-sm font-black text-slate-950">{familyMeta(active).label}</div><button type="button" onClick={()=>goStep(1)} className="mt-1 text-[10px] font-black text-blue-600">Change family</button></div></div></div><div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Quote confidence</div><div className="mt-3 space-y-2">{[['Approved price','Current published selling price'],['Construction','Approved structures only'],['Production rules','Applied automatically'],['Customer savings','Higher valid quantities only']].map(([a,b])=><div key={a} className="flex gap-3 rounded-xl bg-slate-50 p-3"><span className="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"/><div><div className="text-xs font-black text-slate-900">{a}</div><div className="text-[10px] font-semibold text-slate-500">{b}</div></div></div>)}</div></div><div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50 p-4"><div className="text-[10px] font-black uppercase tracking-[0.16em] text-teal-700">Ready to quote</div><p className="mt-2 text-xs font-semibold leading-5 text-slate-600">Choose the customer specification and quantity. Production and pricing rules are applied automatically.</p></div></aside>
+      </div>
+    </div>:null}
+
+    {step===3?<div className="bg-white p-4 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 3 · Commercials</p><h2 className="mt-1 text-xl font-black text-slate-950">Quote lines and customer pricing</h2><p className="mt-1 text-sm font-semibold text-slate-500">Review quantities and customer discounts. Approval rules remain enforced before sending.</p></div>
+        <button type="button" onClick={()=>goStep(1)} className="min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-bold text-slate-700">+ Add product</button>
+      </div>
+      {lineError?<p role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{lineError}</p>:null}
       {lineNotice?<p role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{lineNotice}</p>:null}
       <div className="mt-5 space-y-3">
         {[...supSavedLines,...frameSavedLines].length ? [...supSavedLines,...frameSavedLines].map((line:any)=>{
@@ -249,9 +233,9 @@ export default function PremiumPackagingQuoteBuilderV5({
               </div>
             </div>
             {adjustingLineId===lineId?<div className="mt-4 rounded-xl bg-slate-50 p-3">
-              <label className="block text-xs font-bold text-slate-700">Customer price adjustment<select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"><option value="percent">% discount</option><option value="amount">/ pc discount</option><option value="customer_price">Existing customer price / pc</option></select></label>
+              <label className="block text-xs font-bold text-slate-700">Customer price adjustment<select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"><option value="percent">% discount</option><option value="amount">₹ per-piece discount</option><option value="customer_price">Existing customer price / pc</option></select></label>
               <label className="mt-3 block text-xs font-bold text-slate-700">{discountType==='customer_price'?'Customer price / pc':'Discount value'}<input type="number" inputMode="decimal" min="0" value={discountType==='customer_price'?existingCustomerPrice:discountValue} onChange={e=>discountType==='customer_price'?setExistingCustomerPrice(e.target.value):setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
-              <label className="mt-3 block text-xs font-bold text-slate-700">Reason for discount<input value={discountReason} onChange={e=>setDiscountReason(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
+              <label className="mt-3 block text-xs font-bold text-slate-700">Reason for discount / custom price (required)<input required value={discountReason} onChange={e=>setDiscountReason(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
               <p className="mt-2 text-xs text-amber-700">More than 15% below approved pricing requires approval before send.</p>
               <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={pending} onClick={()=>saveAdjustment(line)} className="min-h-11 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white disabled:opacity-50">Save adjustment</button><button type="button" disabled={pending} onClick={()=>clearAdjustment(line)} className="min-h-11 rounded-xl border border-slate-300 px-4 text-xs font-bold text-slate-700">Remove discount</button><button type="button" onClick={()=>setAdjustingLineId('')} className="min-h-11 px-3 text-xs font-bold text-slate-600">Cancel</button></div>
             </div>:<button type="button" onClick={()=>beginAdjust(line)} className="mt-3 min-h-11 rounded-xl border border-amber-200 bg-amber-50 px-4 text-xs font-bold text-amber-900">Adjust Price</button>}
