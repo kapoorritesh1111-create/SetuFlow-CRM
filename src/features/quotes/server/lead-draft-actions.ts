@@ -121,12 +121,29 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
     forceNew,
   });
 
-  const { data: draftResult, error: rpcError } = await db.rpc('app_create_lead_quote_draft_tx', {
+  // Source duplication must occur in one database transaction. If the migration
+  // is not applied, fail clearly instead of creating a misleading empty quote.
+  const draftRpc = sourceQuoteId ? 'app_create_stark_quote_revision_tx' : 'app_create_lead_quote_draft_tx';
+  const draftArgs = sourceQuoteId ? {
+    p_organization_id: workspace.organization.id,
+    p_lead_id: leadId,
+    p_source_quote_id: sourceQuoteId,
+    p_actor_user_id: workspace.user.id,
+    p_request_key: idempotencyKey,
+  } : {
     p_organization_id: workspace.organization.id,
     p_lead_id: leadId,
     p_actor_user_id: workspace.user.id,
     p_idempotency_key: idempotencyKey,
-  });
+  };
+  const { data: draftResult, error: rpcError } = await db.rpc(draftRpc, draftArgs);
+  /* original call retained for audit of unchanged arguments
+
+    p_organization_id: workspace.organization.id,
+    p_lead_id: leadId,
+    p_actor_user_id: workspace.user.id,
+    p_idempotency_key: idempotencyKey,
+  }); */
 
   if (rpcError) {
     logServerError('createLeadQuoteDraftFromLead.rpc', rpcError);
@@ -134,9 +151,10 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
   }
 
   const draft: LeadQuoteDraftResult = Array.isArray(draftResult) ? draftResult[0] : draftResult;
+  if(sourceQuoteId && draft?.quote_id) draft.created = false;
   if (!draft?.quote_id) redirect(`/leads/${leadId}/quote?quoteDraftError=empty-rpc-result`);
 
-  if (draft.created && draft.quote_version_id) {
+  if (!sourceQuoteId && draft.created && draft.quote_version_id) {
     const [{ data: quoteRow }, { data: requirements }] = await Promise.all([
       db.from('quotes').select('currency,display_currency').eq('organization_id',workspace.organization.id).eq('id',draft.quote_id).maybeSingle(),
       db.from('lead_product_interests').select('id,label,product_id,source_context,created_at').eq('organization_id',workspace.organization.id).eq('lead_id',leadId).in('interest_type',['captured_requirement','manual_requirement']).is('product_id',null).order('created_at',{ascending:true})
@@ -179,5 +197,5 @@ export async function createLeadQuoteDraftFromLead(formData: FormData): Promise<
   });
 
   await revalidateLeadQuotePaths(leadId);
-  redirect(`/leads/${leadId}/quote?quoteId=${draft.quote_id}&step=1`);
+  redirect(`/leads/${leadId}/quote?quoteId=${draft.quote_id}&step=1${sourceQuoteId?'&saved=revision':''}`);
 }
