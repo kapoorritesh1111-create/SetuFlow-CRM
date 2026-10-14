@@ -84,6 +84,7 @@ function createContentSecurityPolicy(nonce: string) {
 const PUBLIC_EXACT_PATHS = new Set([
   '/',
   '/academy',
+  '/install',
   '/core-academy',
   '/packaging-academy',
   '/platform',
