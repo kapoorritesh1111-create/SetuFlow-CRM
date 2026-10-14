@@ -549,13 +549,13 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
 
-  const { data: leadRow } = await db.from('leads').select('id, company_name, contact_name, email, phone, country').eq('organization_id', resolvedOrganizationId).eq('id', quote.lead_id).maybeSingle();
+  const { data: leadRow } = await db.from('leads').select('id, company_name, contact_name, email, phone, country, owner_user_id').eq('organization_id', resolvedOrganizationId).eq('id', quote.lead_id).maybeSingle();
   const { data: quoteVersion } = quote.current_version_id
     ? await db.from('quote_versions').select('id,valid_until,pricing_basis,customer_message,sent_by,created_by').eq('quote_id',quote.id).eq('id',quote.current_version_id).maybeSingle()
     : { data: null };
-  const senderUserId = quoteVersion?.sent_by ?? quoteVersion?.created_by ?? quote.created_by ?? null;
-  const { data: senderProfile } = senderUserId
-    ? await db.from('profiles').select('id,full_name,email').eq('id', senderUserId).maybeSingle()
+  const leadOwnerUserId = leadRow?.owner_user_id ?? null;
+  const { data: leadOwnerProfile } = leadOwnerUserId
+    ? await db.from('profiles').select('id,full_name,email').eq('id', leadOwnerUserId).maybeSingle()
     : { data: null };
 
   const countryPromise = quote.country_id
@@ -683,7 +683,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
 
   const bytes = buildPdf({
     quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
-    org: { ...(org ?? { name: workspace?.organization?.name ?? 'Seller' }), contact_email: text(senderProfile?.email, org?.contact_email ?? '') },
+    org: { ...(org ?? { name: workspace?.organization?.name ?? 'Seller' }), contact_email: text(leadOwnerProfile?.email, org?.contact_email ?? '') },
     buyer: leadRow ?? {},
     market: text(market?.name),
     destination: text(country?.name ?? leadRow?.country),
