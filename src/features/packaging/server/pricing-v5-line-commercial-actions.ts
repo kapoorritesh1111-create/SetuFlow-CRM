@@ -54,16 +54,17 @@ export async function adjustPackagingPricingV5QuoteLine(params:{
   quoteId:string;
   leadId:string;
   lineId:string;
-  discountType:'none'|'percent'|'amount';
+  discountType:'none'|'percent'|'amount'|'customer_price';
   discountValue:number;
   reason?:string;
 }){
   try{
     const {workspace,quote}=await context(params.quoteId,params.leadId);
-    const type=params.discountType==='percent'||params.discountType==='amount'?params.discountType:'none';
+    const type=params.discountType==='percent'||params.discountType==='amount'||params.discountType==='customer_price'?params.discountType:'none';
     const value=type==='none'?0:Number(params.discountValue??0);
     if(!Number.isFinite(value)||value<0) return {ok:false,error:'Discount must be zero or greater.'};
     if(type==='percent'&&value>=100) return {ok:false,error:'Percentage discount must be less than 100%.'};
+    if(type==='customer_price'&&value<=0) return {ok:false,error:'Customer price must be greater than zero.'};
     const service:any=createServiceRoleClient();
     if(!service) return {ok:false,error:'Pricing persistence service is unavailable.'};
     const {data,error}=await service.rpc('app_adjust_packaging_v5_quote_line_tx',{
