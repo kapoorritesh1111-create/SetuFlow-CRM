@@ -20,7 +20,7 @@ const NL = String.fromCharCode(10);
 const BS = String.fromCharCode(92);
 
 type PdfText = { x: number; y: number; text: string; size: number; bold: boolean; color: string; right: boolean };
-type PdfRow = { sku: string; product: string; specification?: string; specification2?: string; qty: number; basis: string; casePrice: number; total: number };
+type PdfRow = { sku: string; product: string; family?: string; size?: string; construction?: string; detailLine?: string; specification?: string; specification2?: string; qty: number; basis: string; casePrice: number; total: number };
 type PdfData = {
   quoteNo: string;
   volumeSuggestions?: string[];
@@ -103,6 +103,26 @@ function width(value: string, size: number, bold = false) {
   return value.length * size * (bold ? 0.56 : 0.52);
 }
 
+function wrapPdf(value: unknown, maxWidth: number, fontSize: number, bold = false, maxLines = 2) {
+  const words = text(value, '').split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (current && width(candidate, fontSize, bold) > maxWidth) {
+      lines.push(current);
+      current = word;
+      if (lines.length >= maxLines) break;
+    } else current = candidate;
+  }
+  if (lines.length < maxLines && current) lines.push(current);
+  if (words.length && lines.length === maxLines) {
+    const consumed = lines.join(' ').split(/\s+/).length;
+    if (consumed < words.length) lines[maxLines - 1] = clip(lines[maxLines - 1] + '...', Math.max(10, lines[maxLines - 1].length + 1));
+  }
+  return lines.slice(0, maxLines);
+}
+
 function orgLogoMark(org: any) {
   const name = text(org?.legal_name ?? org?.name, 'ORG').replace(/[^A-Za-z0-9 ]/g, ' ').trim();
   const words = name.split(/\s+/).filter(Boolean).filter((word) => !['demo', 'llc', 'llp', 'inc', 'ltd', 'private', 'limited', 'exports', 'exporter'].includes(word.toLowerCase()));
@@ -111,7 +131,7 @@ function orgLogoMark(org: any) {
 }
 
 function buildPdf(data: PdfData) {
-  const FIRST_PAGE_ROWS = 5;
+  const FIRST_PAGE_ROWS = 2;
   const CONTINUATION_ROWS = 16;
   const objects: string[] = [];
   const add = (body: string) => { objects.push(body); return objects.length; };
@@ -135,122 +155,168 @@ function buildPdf(data: PdfData) {
   const logo = orgLogoMark(data.org);
 
   box(0, 0, 612, 792, '#ffffff');
-  box(left, 724, 564, 44, '#ffffff', LINE);
-  box(left, 724, 54, 44, '#ffffff', LINE);
+
+  // Premium first-page commercial layout.
+  box(left, 724, 564, 50, '#ffffff', LINE);
+  box(left, 724, 60, 50, '#ffffff', LINE);
   if (logoObj && data.logoImage) {
-    const scale = Math.min(46 / data.logoImage.width, 36 / data.logoImage.height);
+    const scale = Math.min(50 / data.logoImage.width, 38 / data.logoImage.height);
     const renderedWidth = data.logoImage.width * scale;
     const renderedHeight = data.logoImage.height * scale;
-    ops.push(`q ${renderedWidth.toFixed(2)} 0 0 ${renderedHeight.toFixed(2)} ${(left + 27 - renderedWidth / 2).toFixed(2)} ${(746 - renderedHeight / 2).toFixed(2)} cm /Logo Do Q`);
+    ops.push(`q ${renderedWidth.toFixed(2)} 0 0 ${renderedHeight.toFixed(2)} ${(left + 30 - renderedWidth / 2).toFixed(2)} ${(749 - renderedHeight / 2).toFixed(2)} cm /Logo Do Q`);
   } else {
-    box(left, 724, 54, 44, NAVY);
-    put(54, 746, logo, logo.length > 2 ? 6.8 : 8.5, true, '#ffffff', true);
+    box(left, 724, 60, 50, NAVY);
+    put(54, 748, logo, logo.length > 2 ? 7 : 9, true, '#ffffff', true);
   }
-  put(92, 750, 'COMMERCIAL QUOTATION', 15.5, true, NAVY);
-  put(92, 736, 'Buyer-facing offer and commercial terms', 7, false, MUTED);
-  box(456, 732, 122, 28, PANEL, LINE);
-  put(574, 750, data.quoteNo, 8.4, true, NAVY, true);
-  put(574, 739, `${data.quoteDate} | Valid ${data.validUntil}`, 5.7, false, MUTED, true);
+  put(96, 754, 'COMMERCIAL QUOTATION', 16.5, true, NAVY);
+  put(96, 738, 'Buyer-facing offer and commercial terms', 7.4, false, MUTED);
+  box(447, 733, 131, 32, '#f8fbff', LINE);
+  put(570, 753, data.quoteNo, 8.8, true, NAVY, true);
+  put(570, 741, `${data.quoteDate} | Valid ${data.validUntil}`, 5.8, false, MUTED, true);
 
-  box(24, 612, 176, 92, PANEL, LINE);
-  put(36, 686, data.domesticQuote ? 'SELLER' : 'SELLER / EXPORTER', 6.5, true, BLUE);
-  put(36, 672, clip(data.org?.legal_name ?? data.org?.name, 34, 'Seller'), 8, true);
-  put(36, 658, clip(data.org?.registered_address, 38), 6.2, false, MUTED);
-  put(36, 648, clip([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '), 38), 6.2, false, MUTED);
-  put(36, 632, clip(data.org?.contact_email ?? data.org?.website, 36), 6.2, false, MUTED);
-  put(36, 622, `Tax ID: ${clip(data.org?.tax_id, 28)}`, 6.2, false, MUTED);
+  const cardY=624, cardH=80;
+  box(24, cardY, 174, cardH, PANEL, LINE);
+  put(36, cardY+64, data.domesticQuote ? 'SELLER' : 'SELLER / EXPORTER', 6.4, true, BLUE);
+  put(36, cardY+49, clip(data.org?.legal_name ?? data.org?.name, 32, 'Seller'), 8.2, true);
+  put(36, cardY+34, clip(data.org?.registered_address, 36), 6.1, false, MUTED);
+  put(36, cardY+24, clip([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '), 36), 6.1, false, MUTED);
+  put(36, cardY+10, clip(data.org?.contact_email ?? data.org?.website, 35), 5.9, false, MUTED);
 
-  box(216, 612, 176, 92, PANEL, LINE);
-  put(228, 686, data.domesticQuote ? 'CUSTOMER' : 'BUYER / IMPORTER', 6.5, true, BLUE);
-  put(228, 672, clip(data.buyer?.company_name, 34, 'Buyer pending'), 8, true);
-  put(228, 658, clip(data.buyer?.contact_name, 35, ''), 6.2, false, MUTED);
-  put(228, 648, clip(data.buyer?.country, 35, data.destination), 6.2, false, MUTED);
-  put(228, 632, clip(data.buyer?.email, 36), 6.2, false, MUTED);
-  put(228, 622, clip(data.buyer?.phone, 36), 6.2, false, MUTED);
+  box(219, cardY, 174, cardH, PANEL, LINE);
+  put(231, cardY+64, data.domesticQuote ? 'CUSTOMER' : 'BUYER / IMPORTER', 6.4, true, BLUE);
+  put(231, cardY+49, clip(data.buyer?.company_name, 32, 'Buyer pending'), 8.2, true);
+  put(231, cardY+34, clip(data.buyer?.contact_name, 32, ''), 6.1, false, MUTED);
+  put(231, cardY+24, clip(data.buyer?.country, 32, data.destination), 6.1, false, MUTED);
+  put(231, cardY+10, clip(data.buyer?.email, 35), 5.9, false, MUTED);
 
-  box(408, 612, 180, 92, PANEL, LINE);
-  (data.domesticQuote ? [['Quote type','Domestic supply'],['Price basis','Ex Delhi'],['Pricing','Direct / per unit'],['Tax','GST extra @ 18%'],['Validity',data.validUntil],['Currency',data.currency]] : [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} Incoterms 2020`], ['Named place', data.place], ['Currency', data.currency], ['Lines', String(data.rows.length)]]).forEach(([label, value], index) => {
-    const y = 688 - index * 12;
-    put(420, y, label, 5.3, true, MUTED);
-    put(580, y, clip(value, 24), 5.7, false, INK, true);
+  box(414, cardY, 174, cardH, PANEL, LINE);
+  const summaryRows = data.domesticQuote
+    ? [['Quote type','Domestic supply'],['Price basis','Ex Delhi'],['Tax','GST extra @ 18%'],['Validity',data.validUntil],['Currency',data.currency]]
+    : [['Destination',data.destination],['Basis',data.basis],['Named place',data.place],['Validity',data.validUntil],['Currency',data.currency]];
+  summaryRows.forEach(([labelText,value],index)=>{
+    const sy=cardY+63-index*12.2;
+    put(426,sy,labelText,5.35,true,MUTED);
+    put(578,sy,clip(value,23),5.7,false,INK,true);
   });
 
-  box(left, 590, 564, 14, '#eef6ff', '#bfdbfe');
-  put(36, 594, data.domesticQuote ? 'Domestic supply quotation. GST is shown in the financial summary; delivery arrangements are subject to order confirmation.' : 'Taxes, duties and destination charges follow the agreed Incoterm. Unless included, buyer pays import duty, VAT/GST, clearance and destination handling.', 5.45, false, '#1e3a8a');
+  put(24, 603, 'PRODUCTS & PRICING', 7.2, true, BLUE);
+  line(24, 596, 588, 596, '#dbe7f3', 0.8);
 
-  let y = 560;
-  box(18, y - 17, 576, 20, '#e2e8f0', LINE);
-  put(24, y - 10, '#', 5, true, NAVY);
-  put(62, y - 10, 'SKU', 5, true, NAVY);
-  put(142, y - 10, 'Product / Service', 5, true, NAVY);
-  put(318, y - 10, 'Qty', 5, true, NAVY, true);
-  put(372, y - 10, data.domesticQuote ? 'Pricing' : 'Basis', 5, true, NAVY);
-  put(458, y - 10, `${data.currency}/Rate`, 5, true, NAVY, true);
-  put(582, y - 10, `Total ${data.currency}`, 5, true, NAVY, true);
-  y -= 23;
+  let y = 575;
+  const tableX=18;
+  box(tableX, y-19, 576, 22, '#eaf1f8', LINE);
+  put(24, y-11, '#', 5.2, true, NAVY);
+  put(48, y-11, 'Product / Service', 5.2, true, NAVY);
+  put(166, y-11, 'Size', 5.2, true, NAVY);
+  put(236, y-11, 'Construction / Specification', 5.2, true, NAVY);
+  put(424, y-11, 'Qty', 5.2, true, NAVY, true);
+  put(458, y-11, 'Unit', 5.2, true, NAVY);
+  put(526, y-11, 'Rate', 5.2, true, NAVY, true);
+  put(588, y-11, 'Total', 5.2, true, NAVY, true);
+  y -= 24;
 
   data.rows.slice(0, FIRST_PAGE_ROWS).forEach((row, index) => {
-    const rowHeight = row.specification2 ? 29 : 23;
-    box(18, y - rowHeight + 6, 576, rowHeight, index % 2 ? '#ffffff' : '#f8fafc', LINE);
-    put(24, y - 6, String(index + 1), 5.2);
-    put(62, y - 6, clip(row.sku, 16), 5.2);
-    put(142, y - 3, clip(row.product, 40), 5.2, index === 0);
-    if (row.specification) put(142, y - 11, clip(row.specification, 78), 4.35, false, MUTED);
-    if (row.specification2) put(142, y - 18, clip(row.specification2, 78), 4.25, false, MUTED);
-    put(318, y - 6, String(row.qty || '-'), 5.2, false, INK, true);
-    put(372, y - 6, row.basis, 5.2);
-    put(458, y - 6, money(row.casePrice, data.currency), 5.2, index === 0, INK, true);
-    put(582, y - 6, money(row.total, data.currency), 5.2, index === 0, INK, true);
+    const rowHeight = 48;
+    box(tableX, y-rowHeight+7, 576, rowHeight, index % 2 ? '#ffffff' : '#f9fbfd', LINE);
+    put(24, y-8, String(index+1), 5.4, true, MUTED);
+    put(48, y-5, clip(row.product, 34), 5.7, true, NAVY);
+    const familyText = row.family && row.family !== row.product ? row.family : '';
+    if(familyText) put(48, y-17, clip(`Family: ${familyText}`,34),4.55,false,MUTED);
+    put(166, y-8, clip(row.size || '-', 18), 5.15, true, INK);
+    const constructionLines=wrapPdf(row.construction || row.specification2 || '-', 174, 4.65, false, 2);
+    constructionLines.forEach((value,lineIndex)=>put(236,y-5-lineIndex*9,value,4.65,lineIndex===0, lineIndex===0?INK:MUTED));
+    if(row.detailLine) put(236,y-27,clip(row.detailLine,70),4.2,false,MUTED);
+    put(424, y-8, Number(row.qty||0).toLocaleString('en-IN',{maximumFractionDigits:2}),5.25,true,INK,true);
+    put(458, y-8, row.basis,5.1,false,MUTED);
+    put(526, y-8, money(row.casePrice,data.currency),5.25,true,INK,true);
+    put(588, y-8, money(row.total,data.currency),5.25,true,INK,true);
     y -= rowHeight;
   });
 
-  line(18, y + 5, 594, y + 5, NAVY, 1.1);
-  put(450, y - 7, 'Grand Total', 8.5, true, NAVY, true);
-  put(582, y - 7, money(total, data.currency), 9, true, NAVY, true);
+  line(tableX, y+6, 594, y+6, NAVY, 1.15);
+  put(466, y-9, 'GRAND TOTAL', 7.6, true, NAVY, true);
+  put(588, y-9, money(total,data.currency),9.2,true,NAVY,true);
 
-  y -= 44;
-  box(24, y - 82, 274, 82, PANEL, LINE);
-  put(36, y - 15, 'COMMERCIAL DETAILS', 7, true, NAVY);
-  const commercialLines = data.domesticQuote
-    ? [`Price basis: Ex Delhi`, `GST: ${data.taxNote || 'Extra @ 18%'}`, `Lead time: ${data.leadTime || '15 working days after artwork approval'}`, `Payment: ${data.paymentTerms || '50% Advance against Proforma Invoice; 50% before delivery'}`, `Freight: Additional, as per actual`, `Validity: ${data.validUntil}`]
-    : [`Payment: ${data.paymentTerms || 'As agreed'}`, `Lead time: ${data.leadTime || 'As agreed'}`, `Validity: ${data.validUntil}`, `Basis: ${data.basis} - ${data.place}`, `Delivery: ${data.deliveryTerms || data.destination}`];
-  commercialLines.forEach((lineText, index) => put(36, y - 30 - index * 9.2, `- ${clip(lineText, 76)}`, 5.35, false, MUTED));
-
-  box(314, y - 82, 274, 82, PANEL, LINE);
-  put(326, y - 15, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY);
-  [['Subtotal', money(subtotal, data.currency)], [data.domesticQuote ? 'Freight charges' : 'Freight / insurance', data.domesticQuote ? 'Additional, as per actual' : 'Not included'], [taxTotal > 0 ? (data.taxLabel || 'GST') : (data.domesticQuote ? 'GST' : 'Taxes / duties'), taxTotal > 0 ? money(taxTotal, data.currency) : (data.domesticQuote ? 'As applicable' : 'Per Incoterm')], ['Amount payable', money(total, data.currency)]].forEach(([label, value], index) => {
-    put(326, y - 31 - index * 10, label, 5.8, false, MUTED);
-    put(580, y - 31 - index * 10, value, 5.8, index === 3, INK, true);
+  y -= 40;
+  const panelTop=y;
+  box(24,panelTop-92,262,92,'#ffffff',LINE);
+  put(36,panelTop-16,`FINANCIAL SUMMARY (${data.currency})`,7.2,true,BLUE);
+  const financialRows=[
+    ['Subtotal',money(subtotal,data.currency)],
+    [data.domesticQuote?'Freight charges':'Freight / insurance',data.domesticQuote?'Additional, as per actual':'Not included'],
+    [taxTotal>0?(data.taxLabel||'GST'):(data.domesticQuote?'GST':'Taxes / duties'),taxTotal>0?money(taxTotal,data.currency):(data.domesticQuote?'As applicable':'Per Incoterm')],
+    ['Amount payable',money(total,data.currency)],
+  ];
+  financialRows.forEach(([labelText,value],index)=>{
+    const fy=panelTop-35-index*13;
+    put(36,fy,labelText,5.9,index===3,index===3?NAVY:MUTED);
+    put(274,fy,value,5.9,index===3,INK,true);
   });
 
-  y -= 104;
-  box(left, y - 76, right - left, 76, '#ffffff', LINE);
-  const suggestionLines=(data.volumeSuggestions ?? []).slice(0,2);
-  put(36, y - 15, suggestionLines.length ? 'VOLUME SAVINGS & TERMS' : 'TERMS & CONDITIONS', 7, true, NAVY);
-  const termLines = data.domesticQuote ? [
-    ...suggestionLines.map((item)=>`More quantity: ${item}`),
-    `Quote valid until ${data.validUntil}.`,
-    'Prices are Ex Delhi; GST is extra @ 18% as detailed above.',
-    'Production lead time is 15 working days after artwork approval and required inputs.',
-    'Freight is additional, as per actual. Higher quantities may qualify for revised pricing.',
-    'See the attached Stark Packmate order, delivery and rejection policy.',
-  ] : suggestionLines.length
-    ? [
-        ...suggestionLines.map((item)=>`More quantity: ${item}`),
-        `Quote valid until ${data.validUntil}.`,
-        `Prices quoted on ${data.basis} basis from ${data.place}.`,
-        'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.',
-      ]
-    : [
-        `Quote valid until ${data.validUntil}.`,
-        `Prices quoted on ${data.basis} basis from ${data.place}.`,
-        'Import duties, VAT/GST, customs clearance and destination handling are buyer account unless included.',
-        'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.',
-        clip(data.terms, 118),
-      ];
-  termLines.slice(0,5).forEach((lineText, index) => put(36, y - 31 - index * 9.5, clip(lineText, 135), 5.2, index < suggestionLines.length, index < suggestionLines.length ? BLUE : MUTED));
+  box(302,panelTop-92,286,92,'#ffffff',LINE);
+  put(314,panelTop-16,'VOLUME PRICING (SUGGESTED)',7.2,true,BLUE);
+  const suggestions=(data.volumeSuggestions??[]).slice(0,2);
+  if(suggestions.length){
+    suggestions.forEach((item,index)=>{
+      wrapPdf(item,250,5.0,index===0,3).forEach((value,lineIndex)=>put(314,panelTop-35-index*32-lineIndex*9,value,5.0,index===0&&lineIndex===0,index===0?BLUE:MUTED));
+    });
+    put(314,panelTop-82,'Quoted price is based on the first MOQ; higher quantities may qualify for revised pricing.',4.55,false,MUTED);
+  } else {
+    put(314,panelTop-39,'Quoted price is based on the selected quantity and approved specification.',5.25,false,MUTED);
+  }
 
-  put(36, 54, 'Generated from the seller workspace. This quotation is intended for the named buyer.', 5.4, false, MUTED);
+  y = panelTop - 108;
+  put(24,y,'COMMERCIAL TERMS',7.2,true,BLUE);
+  const termsTop=y-10;
+  const termCards = data.domesticQuote ? [
+    ['PRICE BASIS','Ex Delhi'],
+    ['GST',data.taxNote || 'Extra @ 18%'],
+    ['QUOTE VALIDITY',data.validUntil],
+    ['PRODUCTION LEAD TIME',data.leadTime || '15 working days after artwork approval'],
+    ['PAYMENT TERMS',data.paymentTerms || '50% Advance against Proforma Invoice; 50% before delivery'],
+    ['FREIGHT','Additional, as per actual'],
+  ] : [
+    ['BASIS',`${data.basis} - ${data.place}`],['TAX','Per Incoterm'],['QUOTE VALIDITY',data.validUntil],
+    ['LEAD TIME',data.leadTime || 'As agreed'],['PAYMENT TERMS',data.paymentTerms || 'As agreed'],['DELIVERY',data.deliveryTerms || data.destination],
+  ];
+  const cardW=178, cardH=48, gap=10;
+  termCards.forEach(([labelText,value],index)=>{
+    const col=index%3,row=Math.floor(index/3);
+    const x=24+col*(cardW+gap);
+    const top=termsTop-row*(cardH+8);
+    box(x,top-cardH,cardW,cardH,'#f8fbff','#d5e2ef');
+    box(x,top-cardH,3,cardH,BLUE);
+    put(x+12,top-14,labelText,5.15,true,BLUE);
+    const wrapped=wrapPdf(value,cardW-22,5.15,false,2);
+    wrapped.forEach((lineText,lineIndex)=>put(x+12,top-28-lineIndex*9,lineText,5.15,lineIndex===0,INK));
+  });
+
+  y = termsTop - 2*(cardH+8) - 12;
+  box(24,y-72,262,72,'#ffffff',LINE);
+  put(36,y-16,'IMPORTANT NOTES',7,true,BLUE);
+  const notes = data.domesticQuote ? [
+    'Prices are Ex Delhi; GST is extra @ 18%.',
+    'Production starts after artwork approval and required inputs.',
+    'Freight is additional, as per actual.',
+    'Order confirmation is subject to agreed quantities, MOQs and specifications.',
+  ] : [
+    `Prices quoted on ${data.basis} basis from ${data.place}.`,
+    'Destination taxes and duties apply per Incoterm.',
+    'Order confirmation is subject to agreed quantities and specifications.',
+  ];
+  notes.forEach((note,index)=>put(40,y-32-index*10,`- ${clip(note,78)}`,4.9,false,MUTED));
+
+  box(302,y-72,286,72,'#ffffff',LINE);
+  put(314,y-16,'NEXT STEP',7,true,BLUE);
+  put(314,y-33,'Please share final artwork and confirm specifications so we can proceed',5.05,true,NAVY);
+  put(314,y-44,'with artwork approval and production planning.',5.05,true,NAVY);
+  put(314,y-59,'The complete Stark Packmate Client Order, Delivery & Rejection Policy',4.8,false,MUTED);
+  put(314,y-68,'follows this quotation as the attached appendix.',4.8,false,MUTED);
+
+  put(36, 45, 'STARK PACKMATE PRIVATE LIMITED', 5.8, true, NAVY);
+  put(36, 35, 'Flexible Packaging for a Better Tomorrow', 4.8, false, MUTED);
+  put(576, 45, 'Generated from Setu Flow CRM', 4.8, false, MUTED, true);
+  put(576, 35, 'This quotation is intended for the named buyer only.', 4.8, false, MUTED, true);
 
   const textOps = copy.flatMap((entry) => {
     const x = entry.right ? Math.max(left, entry.x - width(entry.text, entry.size, entry.bold)) : entry.x;
@@ -562,7 +628,12 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
         input.supply_form ? 'Form: ' + humanize(input.supply_form) : '',
         (input.print ?? input.print_colors) ? 'Print: ' + text(input.print ?? input.print_colors, '') : '',
       ].filter(Boolean).join(' | ');
-      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, specification2: technical, qty: view.isFrame?view.displayQuantity:qty, basis:view.isFrame?(view.unit==='kg'?'kg':'pcs'):displayBasis, casePrice:view.isFrame?view.displayPrice:unitPrice, total:qty*unitPrice };
+      const detailLine = [
+        (construction.finish_type ?? pricedConstruction.finish_type) ? 'Finish: ' + humanize(construction.finish_type ?? pricedConstruction.finish_type) : '',
+        input.supply_form ? 'Form: ' + humanize(input.supply_form) : '',
+        (input.print ?? input.print_colors) ? 'Print: ' + text(input.print ?? input.print_colors, '') : '',
+      ].filter(Boolean).join(' | ');
+      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, family: text(family.name,''), size, construction: constructionName || structureLabel, detailLine, specification: details, specification2: technical, qty: view.isFrame?view.displayQuantity:qty, basis:view.isFrame?(view.unit==='kg'?'kg':'pcs'):displayBasis, casePrice:view.isFrame?view.displayPrice:unitPrice, total:qty*unitPrice };
     }
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
