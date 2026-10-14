@@ -22,6 +22,7 @@ export default function PricingV5FrameSalesConfigurator({
   const [quantity,setQuantity]=useState(5000);
   const [print,setPrint]=useState<'CMYK'|'CMYKW'>('CMYKW');
   const [preview,setPreview]=useState<any>(null);
+  const [previewInputKey,setPreviewInputKey]=useState('');
   const [editingLineId,setEditingLineId]=useState<string|null>(null);
   const [error,setError]=useState('');
   const [saved,setSaved]=useState('');
@@ -53,11 +54,14 @@ export default function PricingV5FrameSalesConfigurator({
         },
       });
       setPreview(response.result??null);
+      setPreviewInputKey(response.ok?JSON.stringify([template.id,template.supply_form,constructionId,Number(width),Number(height),Number(quantity),print]):'');
       if(!response.ok&&!response.result?.smart_moq) setError(response.error??'Price could not be calculated.');
     });
   }
 
   const canAutoPrice=Boolean(template?.id&&constructionId&&Number(width)>0&&Number(height)>0&&Number(quantity)>0);
+  const currentInputKey=JSON.stringify([template?.id,template?.supply_form,constructionId,Number(width),Number(height),Number(quantity),print]);
+  const previewIsCurrent=Boolean(preview?.ok&&previewInputKey===currentInputKey);
   useEffect(()=>{
     if(!canAutoPrice){
       setPreview(null);
@@ -81,6 +85,7 @@ export default function PricingV5FrameSalesConfigurator({
         });
         if(cancelled) return;
         setPreview(response.result??null);
+        setPreviewInputKey(response.ok?JSON.stringify([template.id,template.supply_form,constructionId,Number(width),Number(height),Number(quantity),print]):'');
         if(!response.ok&&!response.result?.smart_moq) setError(response.error??'Price could not be calculated.');
       });
     },250);
@@ -88,7 +93,7 @@ export default function PricingV5FrameSalesConfigurator({
   },[template?.id,template?.supply_form,constructionId,width,height,quantity,print,canAutoPrice]);
 
   function saveLine(){
-    if(!preview?.ok||!template?.id) return;
+    if(!previewIsCurrent||!template?.id){setError('Price is updating for these dimensions. Wait for the current calculated price before saving.');return;}
     setError('');setSaved('');
     startTransition(async()=>{
       const response:any=await savePackagingFramePricingV5QuoteLine({
@@ -203,7 +208,7 @@ export default function PricingV5FrameSalesConfigurator({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><div><div className="text-[10px] font-black uppercase text-slate-400">Your price</div><div className="mt-1 text-2xl font-black text-slate-950">{money(preview.selling_price?.unit_price,preview.selling_price?.currency)}</div></div><div><div className="text-[10px] font-black uppercase text-slate-400">Quantity</div><div className="mt-1 text-lg font-black">{Number(quantity).toLocaleString()} pcs</div></div><div><div className="text-[10px] font-black uppercase text-slate-400">Dimensions</div><div className="mt-1 text-lg font-black">{width} × {height} mm</div></div><div><div className="text-[10px] font-black uppercase text-slate-400">Construction</div><div className="mt-1 text-sm font-black">{preview.construction?.name}</div></div></div>
       {preview.roll_weight?<div className="mt-4 grid gap-3 rounded-xl border border-blue-200 bg-white p-3 sm:grid-cols-3"><div><div className="text-[10px] font-black uppercase text-slate-400">Total GSM</div><div className="mt-1 text-base font-black">{Number(preview.roll_weight.total_gsm).toFixed(2)}</div></div><div><div className="text-[10px] font-black uppercase text-slate-400">Finished weight</div><div className="mt-1 text-base font-black">{Number(preview.roll_weight.finished_weight_kg).toFixed(2)} kg</div></div><div><div className="text-[10px] font-black uppercase text-slate-400">Price / kg</div><div className="mt-1 text-base font-black">{money(preview.roll_weight.price_per_kg,preview.selling_price?.currency)}/kg</div></div></div>:null}
       <p className="mt-3 text-[11px] font-semibold text-slate-500">Higher-volume options are prepared automatically for the customer quotation.</p>
-      <div className="mt-4 flex justify-end"><button type="button" disabled={pending} onClick={saveLine} className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{editingLineId?'Update quote line':'Add to quote'}</button></div>
+      <div className="mt-4 flex justify-end"><button type="button" disabled={pending||!previewIsCurrent} onClick={saveLine} className="rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{editingLineId?'Update quote line':'Add to quote'}</button></div>
     </div>:null}
   </section>;
 }
