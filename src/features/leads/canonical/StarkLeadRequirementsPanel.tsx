@@ -10,7 +10,8 @@ type Note={id:string;message:string;occurred_at:string};
 const QTY=['1,000','2,000','3,000','5,000','10,000','20,000','30,000','50,000'];
 function RequirementRow({item,index,onChange,onRemove,families,dimensionOptions}:{item:Requirement;index:number;onChange:(r:Requirement)=>void;onRemove:()=>void;families:Family[];dimensionOptions:DimensionOption[]}){
   const inferredMode=item.quantityMode|| (QTY.includes(item.quantity)?'preset':item.quantity?'custom':'');
-  const familyDimensions=dimensionOptions.filter(s=>s.family_id===item.familyId);
+  // Prefer the already saved profile when several pricing rows describe the same size.
+  const familyDimensions=dimensionOptions.filter(s=>s.family_id===item.familyId).sort((a,b)=>Number(b.id===item.dimensionOptionId)-Number(a.id===item.dimensionOptionId)).filter((s,i,all)=>all.findIndex(x=>x.name.trim().replace(/\\s+/g,' ').toLowerCase()===s.name.trim().replace(/\\s+/g,' ').toLowerCase())===i);
   const selectedDimension=familyDimensions.find(s=>s.id===item.dimensionOptionId);
   const customDimensions=item.dimensionOptionId==='custom';
   return <div className="rounded-xl border border-slate-200 bg-white p-4">
