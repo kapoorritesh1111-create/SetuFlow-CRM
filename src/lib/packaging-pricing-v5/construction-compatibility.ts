@@ -46,6 +46,9 @@ export function constructionAllowedForSizeV5(
   size: Pick<SizeProfileV5,'size_key'|'metadata'>,
   construction: Pick<ConstructionV5,'sealant_code'|'construction_key'|'name'|'metadata'>,
 ): boolean {
+  // Custom SUP sizes intentionally expose all active/quoteable constructions.
+  // Standard approved sizes remain restricted to their approved PE thickness map.
+  if(Boolean(size.metadata?.custom_size)) return true;
   const allowed=allowedPeMicronsForSupSizeV5(size);
   const micron=constructionPeMicronV5(construction);
   return Boolean(allowed.length&&micron!=null&&allowed.includes(micron));
