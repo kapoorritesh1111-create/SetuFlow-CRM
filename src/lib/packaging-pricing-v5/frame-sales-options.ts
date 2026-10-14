@@ -33,13 +33,21 @@ export async function listSalesPackagingFramePricingV5Options(organizationId:str
     .eq('is_quoteable',true);
 
   const familyById=new Map((families??[]).map((item:any)=>[String(item.id),item]));
+  function constructionMatchesSupplyForm(item:any,supplyForm:string){
+    const source=[item?.name,item?.construction_key,item?.metadata?.source_construction_key].filter(Boolean).join(' ').toLowerCase();
+    if(supplyForm.endsWith('_roll')) return source.includes('roll form');
+    if(supplyForm.endsWith('_pouch')) return source.includes('pouch form');
+    return true;
+  }
+
   const resultTemplates:any[]=[];
   for(const template of templates??[]){
     const family:any=familyById.get(String(template.family_id));
     if(!family) continue;
     const context=await loadPricingContextV5(organizationId,template.id,{publishedOnly:true});
+    const supplyForm=String(template.production_rules_json?.supply_form??'');
     const constructions=context.constructions
-      .filter((item)=>item.is_active&&item.is_quoteable)
+      .filter((item)=>item.is_active&&item.is_quoteable&&constructionMatchesSupplyForm(item,supplyForm))
       .map((item)=>{
         const resolved=resolveConstructionV5(item.id,context.constructions,context.constructionLayers,context.masters);
         if(!resolved||resolved.validation_errors.length) return null;
@@ -57,7 +65,6 @@ export async function listSalesPackagingFramePricingV5Options(organizationId:str
       .filter(Boolean);
     if(!constructions.length) continue;
 
-    const supplyForm=String(template.production_rules_json?.supply_form??'');
     const suggestedBucket=Number(template.production_rules_json?.default_commercial_bucket??0);
     resultTemplates.push({
       id:template.id,
