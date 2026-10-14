@@ -236,91 +236,70 @@ function buildPdf(data: PdfData) {
   const hasContinuation = data.rows.length > FIRST_PAGE_ROWS;
   if (!hasContinuation) {
     line(tableX, y+6, 594, y+6, NAVY, 1.15);
-  put(466, y-9, 'GRAND TOTAL', 7.6, true, NAVY, true);
-  put(588, y-9, money(total,data.currency),9.2,true,NAVY,true);
+  put(466, y-9, 'GRAND TOTAL', 7.2, true, NAVY, true);
+  put(588, y-9, money(total,data.currency), 9.0, true, NAVY, true);
 
-  y -= 40;
-  const panelTop=y;
-  box(24,panelTop-92,262,92,'#ffffff',LINE);
-  put(36,panelTop-16,`FINANCIAL SUMMARY (${data.currency})`,7.2,true,BLUE);
-  const financialRows=[
-    ['Subtotal',money(subtotal,data.currency)],
-    [data.domesticQuote?'Freight charges':'Freight / insurance',data.domesticQuote?'Additional, as per actual':'Not included'],
-    [taxTotal>0?(data.taxLabel||'GST'):(data.domesticQuote?'GST':'Taxes / duties'),taxTotal>0?money(taxTotal,data.currency):(data.domesticQuote?'As applicable':'Per Incoterm')],
-    ['Amount payable',money(total,data.currency)],
+  // Compact customer summary: avoid repeating Ex Delhi, GST and validity,
+  // which are already visible in the quote summary at the top of the page.
+  y -= 30;
+  const financeTop = y;
+  box(24, financeTop-52, 564, 52, '#ffffff', LINE);
+  put(36, financeTop-14, `FINANCIAL SUMMARY (${data.currency})`, 6.8, true, BLUE);
+  const financeCols = [
+    ['Subtotal', money(subtotal,data.currency)],
+    [taxTotal>0 ? (data.taxLabel || 'GST') : (data.domesticQuote ? 'GST' : 'Taxes / duties'), taxTotal>0 ? money(taxTotal,data.currency) : (data.domesticQuote ? 'As applicable' : 'Per Incoterm')],
+    [data.domesticQuote ? 'Freight' : 'Freight / insurance', data.domesticQuote ? 'As per actual' : 'Not included'],
+    ['Amount payable', money(total,data.currency)],
   ];
-  financialRows.forEach(([labelText,value],index)=>{
-    const fy=panelTop-35-index*13;
-    put(36,fy,labelText,5.9,index===3,index===3?NAVY:MUTED);
-    put(274,fy,value,5.9,index===3,INK,true);
+  financeCols.forEach(([labelText,value],index)=>{
+    const x=36+index*138;
+    put(x, financeTop-30, labelText, 4.9, true, MUTED);
+    put(x, financeTop-42, clip(value,24), 5.8, index===3, index===3 ? NAVY : INK);
   });
 
-  box(302,panelTop-92,286,92,'#ffffff',LINE);
-  put(314,panelTop-16,'VOLUME PRICING (SUGGESTED)',7.2,true,BLUE);
-  const suggestions=(data.volumeSuggestions??[]).slice(0,2);
-  if(suggestions.length){
-    suggestions.forEach((item,index)=>{
-      wrapPdf(item,250,5.0,index===0,3).forEach((value,lineIndex)=>put(314,panelTop-35-index*32-lineIndex*9,value,5.0,index===0&&lineIndex===0,index===0?BLUE:MUTED));
+  y = financeTop - 64;
+  const rawSuggestions=(data.volumeSuggestions??[]).slice(0,2);
+  const suggestionGroups=rawSuggestions.map((item,index)=>{
+    const normalized=String(item).replace(/^Item\s+\d+:\s*/i,'');
+    return { label: rawSuggestions.length>1 ? `Item ${index+1}` : 'Suggested options', options: normalized.split(' | ').map((part)=>part.trim()).filter(Boolean) };
+  });
+  const suggestionLines=Math.max(1,suggestionGroups.reduce((sum,group)=>sum+Math.max(1,group.options.length),0));
+  const volumeHeight=Math.min(104, 32 + suggestionLines*9 + 12);
+  box(24, y-volumeHeight, 564, volumeHeight, '#ffffff', LINE);
+  put(36, y-14, 'VOLUME PRICING (SUGGESTED)', 6.8, true, BLUE);
+  if(suggestionGroups.length){
+    let sy=y-29;
+    suggestionGroups.forEach((group)=>{
+      put(36, sy, group.label, 5.1, true, BLUE);
+      group.options.forEach((option)=>{
+        put(92, sy, clip(option, 108), 4.7, false, INK);
+        sy-=9;
+      });
+      sy-=2;
     });
-    put(314,panelTop-82,'Quoted price is based on the first MOQ; higher quantities may qualify for revised pricing.',4.55,false,MUTED);
+    put(36, y-volumeHeight+9, 'Quoted price is based on the selected quantity; higher quantities may qualify for revised pricing.', 4.35, false, MUTED);
   } else {
-    put(314,panelTop-39,'Quoted price is based on the selected quantity and approved specification.',5.25,false,MUTED);
+    put(36, y-31, 'Quoted price is based on the selected quantity and approved specification.', 5.0, false, MUTED);
   }
 
-  y = panelTop - 108;
-  put(24,y,'COMMERCIAL TERMS',7.2,true,BLUE);
-  const termsTop=y-10;
-  const termCards = data.domesticQuote ? [
-    ['PRICE BASIS','Ex Delhi'],
-    ['GST',data.taxNote || 'Extra @ 18%'],
-    ['QUOTE VALIDITY',data.validUntil],
-    ['PRODUCTION LEAD TIME',data.leadTime || '15 working days after artwork approval'],
-    ['PAYMENT TERMS',data.paymentTerms || '50% Advance against Proforma Invoice; 50% before delivery'],
-    ['FREIGHT','Additional, as per actual'],
+  y -= volumeHeight + 12;
+  put(24, y, 'COMMERCIAL TERMS', 6.8, true, BLUE);
+  const compactTerms = data.domesticQuote ? [
+    ['PRODUCTION LEAD TIME', data.leadTime || '15 working days after artwork approval'],
+    ['PAYMENT TERMS', data.paymentTerms || '50% Advance against Proforma Invoice; 50% before delivery'],
+    ['FREIGHT', 'Additional, as per actual'],
   ] : [
-    ['BASIS',`${data.basis} - ${data.place}`],['TAX','Per Incoterm'],['QUOTE VALIDITY',data.validUntil],
-    ['LEAD TIME',data.leadTime || 'As agreed'],['PAYMENT TERMS',data.paymentTerms || 'As agreed'],['DELIVERY',data.deliveryTerms || data.destination],
+    ['LEAD TIME', data.leadTime || 'As agreed'],
+    ['PAYMENT TERMS', data.paymentTerms || 'As agreed'],
+    ['DELIVERY', data.deliveryTerms || data.destination],
   ];
-  const termCardW=178, termCardH=48, termGap=10;
-  termCards.forEach(([labelText,value],index)=>{
-    const col=index%3,row=Math.floor(index/3);
-    const x=24+col*(termCardW+termGap);
-    const top=termsTop-row*(termCardH+8);
-    box(x,top-termCardH,termCardW,termCardH,'#f8fbff','#d5e2ef');
-    box(x,top-termCardH,3,termCardH,BLUE);
-    put(x+12,top-14,labelText,5.15,true,BLUE);
-    const wrapped=wrapPdf(value,termCardW-22,5.15,false,2);
-    wrapped.forEach((lineText,lineIndex)=>put(x+12,top-28-lineIndex*9,lineText,5.15,lineIndex===0,INK));
+  compactTerms.forEach(([labelText,value],index)=>{
+    const x=24+index*188;
+    box(x, y-50, 178, 42, '#f8fbff', '#d5e2ef');
+    box(x, y-50, 3, 42, BLUE);
+    put(x+12, y-20, labelText, 4.9, true, BLUE);
+    wrapPdf(value,156,4.8,false,2).forEach((lineText,lineIndex)=>put(x+12,y-32-lineIndex*8,lineText,4.8,lineIndex===0,INK));
   });
-
-  y = termsTop - 2*(termCardH+8) - 12;
-  // Keep all products together for normal multi-line quotes. On 3-4 line quotes,
-  // preserve the product table, financial summary and commercial terms on page 1
-  // and omit the optional notes cards rather than splitting products onto page 2.
-  if (data.rows.length <= 2) {
-    box(24,y-72,262,72,'#ffffff',LINE);
-    put(36,y-16,'IMPORTANT NOTES',7,true,BLUE);
-    const notes = data.domesticQuote ? [
-      'Prices are Ex Delhi; GST is extra @ 18%.',
-      'Production starts after artwork approval and required inputs.',
-      'Freight is additional, as per actual.',
-      'Order confirmation is subject to agreed quantities, MOQs and specifications.',
-    ] : [
-      `Prices quoted on ${data.basis} basis from ${data.place}.`,
-      'Destination taxes and duties apply per Incoterm.',
-      'Order confirmation is subject to agreed quantities and specifications.',
-    ];
-    notes.forEach((note,index)=>put(40,y-32-index*10,`- ${clip(note,78)}`,4.9,false,MUTED));
-
-    box(302,y-72,286,72,'#ffffff',LINE);
-    put(314,y-16,'NEXT STEP',7,true,BLUE);
-    put(314,y-33,'Please share final artwork and confirm specifications so we can proceed',5.05,true,NAVY);
-    put(314,y-44,'with artwork approval and production planning.',5.05,true,NAVY);
-    put(314,y-59,'The complete Stark Packmate Client Order, Delivery & Rejection Policy',4.8,false,MUTED);
-    put(314,y-68,'follows this quotation as the attached appendix.',4.8,false,MUTED);
-  } else {
-    put(36, 61, 'Please share final artwork and confirm specifications to proceed with artwork approval and production planning.', 4.8, false, MUTED);
-  }
 
   } else {
     put(36, y-8, 'Products continue on the next quotation page.', 5.1, true, BLUE);
