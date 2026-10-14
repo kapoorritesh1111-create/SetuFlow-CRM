@@ -131,7 +131,7 @@ function orgLogoMark(org: any) {
 }
 
 function buildPdf(data: PdfData) {
-  const FIRST_PAGE_ROWS = 2;
+  const FIRST_PAGE_ROWS = Math.min(data.rows.length, 4);
   const CONTINUATION_ROWS = 16;
   const objects: string[] = [];
   const add = (body: string) => { objects.push(body); return objects.length; };
@@ -292,26 +292,33 @@ function buildPdf(data: PdfData) {
   });
 
   y = termsTop - 2*(termCardH+8) - 12;
-  box(24,y-72,262,72,'#ffffff',LINE);
-  put(36,y-16,'IMPORTANT NOTES',7,true,BLUE);
-  const notes = data.domesticQuote ? [
-    'Prices are Ex Delhi; GST is extra @ 18%.',
-    'Production starts after artwork approval and required inputs.',
-    'Freight is additional, as per actual.',
-    'Order confirmation is subject to agreed quantities, MOQs and specifications.',
-  ] : [
-    `Prices quoted on ${data.basis} basis from ${data.place}.`,
-    'Destination taxes and duties apply per Incoterm.',
-    'Order confirmation is subject to agreed quantities and specifications.',
-  ];
-  notes.forEach((note,index)=>put(40,y-32-index*10,`- ${clip(note,78)}`,4.9,false,MUTED));
+  // Keep all products together for normal multi-line quotes. On 3-4 line quotes,
+  // preserve the product table, financial summary and commercial terms on page 1
+  // and omit the optional notes cards rather than splitting products onto page 2.
+  if (data.rows.length <= 2) {
+    box(24,y-72,262,72,'#ffffff',LINE);
+    put(36,y-16,'IMPORTANT NOTES',7,true,BLUE);
+    const notes = data.domesticQuote ? [
+      'Prices are Ex Delhi; GST is extra @ 18%.',
+      'Production starts after artwork approval and required inputs.',
+      'Freight is additional, as per actual.',
+      'Order confirmation is subject to agreed quantities, MOQs and specifications.',
+    ] : [
+      `Prices quoted on ${data.basis} basis from ${data.place}.`,
+      'Destination taxes and duties apply per Incoterm.',
+      'Order confirmation is subject to agreed quantities and specifications.',
+    ];
+    notes.forEach((note,index)=>put(40,y-32-index*10,`- ${clip(note,78)}`,4.9,false,MUTED));
 
-  box(302,y-72,286,72,'#ffffff',LINE);
-  put(314,y-16,'NEXT STEP',7,true,BLUE);
-  put(314,y-33,'Please share final artwork and confirm specifications so we can proceed',5.05,true,NAVY);
-  put(314,y-44,'with artwork approval and production planning.',5.05,true,NAVY);
-  put(314,y-59,'The complete Stark Packmate Client Order, Delivery & Rejection Policy',4.8,false,MUTED);
-  put(314,y-68,'follows this quotation as the attached appendix.',4.8,false,MUTED);
+    box(302,y-72,286,72,'#ffffff',LINE);
+    put(314,y-16,'NEXT STEP',7,true,BLUE);
+    put(314,y-33,'Please share final artwork and confirm specifications so we can proceed',5.05,true,NAVY);
+    put(314,y-44,'with artwork approval and production planning.',5.05,true,NAVY);
+    put(314,y-59,'The complete Stark Packmate Client Order, Delivery & Rejection Policy',4.8,false,MUTED);
+    put(314,y-68,'follows this quotation as the attached appendix.',4.8,false,MUTED);
+  } else {
+    put(36, 61, 'Please share final artwork and confirm specifications to proceed with artwork approval and production planning.', 4.8, false, MUTED);
+  }
 
   put(36, 45, 'STARK PACKMATE PRIVATE LIMITED', 5.8, true, NAVY);
   put(36, 35, 'Flexible Packaging for a Better Tomorrow', 4.8, false, MUTED);
@@ -633,7 +640,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
         input.supply_form ? 'Form: ' + humanize(input.supply_form) : '',
         (input.print ?? input.print_colors) ? 'Print: ' + text(input.print ?? input.print_colors, '') : '',
       ].filter(Boolean).join(' | ');
-      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, family: text(family.name,''), size, construction: constructionName || structureLabel, detailLine, specification: details, specification2: technical, qty: view.isFrame?view.displayQuantity:qty, basis:view.isFrame?(view.unit==='kg'?'kg':'pcs'):displayBasis, casePrice:view.isFrame?view.displayPrice:unitPrice, total:qty*unitPrice };
+      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, family: text(family.name,''), size, construction: constructionName || structureLabel, detailLine, specification: details, specification2: technical, qty: view.isFrame?view.displayQuantity:qty, basis:view.isFrame?(view.unit==='kg'?'kg':'pcs'):'pcs', casePrice:view.isFrame?view.displayPrice:unitPrice, total:qty*unitPrice };
     }
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
