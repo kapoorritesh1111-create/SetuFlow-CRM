@@ -111,6 +111,8 @@ function orgLogoMark(org: any) {
 }
 
 function buildPdf(data: PdfData) {
+  const FIRST_PAGE_ROWS = 5;
+  const CONTINUATION_ROWS = 16;
   const objects: string[] = [];
   const add = (body: string) => { objects.push(body); return objects.length; };
   const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
@@ -167,7 +169,7 @@ function buildPdf(data: PdfData) {
   put(228, 622, clip(data.buyer?.phone, 36), 6.2, false, MUTED);
 
   box(408, 612, 180, 92, PANEL, LINE);
-  (data.domesticQuote ? [['Quote type','Domestic supply'],['Pricing','Direct / per unit'],['Tax','GST as shown'],['Validity',data.validUntil],['Currency',data.currency],['Lines',String(data.rows.length)]] : [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} Incoterms 2020`], ['Named place', data.place], ['Currency', data.currency], ['Lines', String(data.rows.length)]]).forEach(([label, value], index) => {
+  (data.domesticQuote ? [['Quote type','Domestic supply'],['Price basis','Ex Delhi'],['Pricing','Direct / per unit'],['Tax','GST extra @ 18%'],['Validity',data.validUntil],['Currency',data.currency]] : [['Destination', data.destination], ['Market', data.market], ['Basis', `${data.basis} Incoterms 2020`], ['Named place', data.place], ['Currency', data.currency], ['Lines', String(data.rows.length)]]).forEach(([label, value], index) => {
     const y = 688 - index * 12;
     put(420, y, label, 5.3, true, MUTED);
     put(580, y, clip(value, 24), 5.7, false, INK, true);
@@ -187,7 +189,7 @@ function buildPdf(data: PdfData) {
   put(582, y - 10, `Total ${data.currency}`, 5, true, NAVY, true);
   y -= 23;
 
-  data.rows.slice(0, 10).forEach((row, index) => {
+  data.rows.slice(0, FIRST_PAGE_ROWS).forEach((row, index) => {
     const rowHeight = row.specification2 ? 29 : 23;
     box(18, y - rowHeight + 6, 576, rowHeight, index % 2 ? '#ffffff' : '#f8fafc', LINE);
     put(24, y - 6, String(index + 1), 5.2);
@@ -210,13 +212,13 @@ function buildPdf(data: PdfData) {
   box(24, y - 82, 274, 82, PANEL, LINE);
   put(36, y - 15, 'COMMERCIAL DETAILS', 7, true, NAVY);
   const commercialLines = data.domesticQuote
-    ? [`Payment: ${data.paymentTerms || '50% Advance, 50% Before Dispatch'}`, `Lead time: ${data.leadTime || '15 working days after advance + artwork approval'}`, `Validity: ${data.validUntil}`, `Delivery: ${data.deliveryTerms || 'Domestic India - as agreed'}`, `Tax: ${data.taxNote || 'GST as shown'}`]
+    ? [`Price basis: Ex Delhi`, `GST: ${data.taxNote || 'Extra @ 18%'}`, `Lead time: ${data.leadTime || '15 working days after artwork approval'}`, `Payment: ${data.paymentTerms || '50% Advance against Proforma Invoice; 50% before delivery'}`, `Freight: Additional, as per actual`, `Validity: ${data.validUntil}`]
     : [`Payment: ${data.paymentTerms || 'As agreed'}`, `Lead time: ${data.leadTime || 'As agreed'}`, `Validity: ${data.validUntil}`, `Basis: ${data.basis} - ${data.place}`, `Delivery: ${data.deliveryTerms || data.destination}`];
-  commercialLines.forEach((lineText, index) => put(36, y - 31 - index * 10.5, `- ${clip(lineText, 74)}`, 5.55, false, MUTED));
+  commercialLines.forEach((lineText, index) => put(36, y - 30 - index * 9.2, `- ${clip(lineText, 76)}`, 5.35, false, MUTED));
 
   box(314, y - 82, 274, 82, PANEL, LINE);
   put(326, y - 15, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY);
-  [['Subtotal', money(subtotal, data.currency)], [data.domesticQuote ? 'Delivery charges' : 'Freight / insurance', data.domesticQuote ? 'As agreed' : 'Not included'], [taxTotal > 0 ? (data.taxLabel || 'GST') : (data.domesticQuote ? 'GST' : 'Taxes / duties'), taxTotal > 0 ? money(taxTotal, data.currency) : (data.domesticQuote ? 'As applicable' : 'Per Incoterm')], ['Amount payable', money(total, data.currency)]].forEach(([label, value], index) => {
+  [['Subtotal', money(subtotal, data.currency)], [data.domesticQuote ? 'Freight charges' : 'Freight / insurance', data.domesticQuote ? 'Additional, as per actual' : 'Not included'], [taxTotal > 0 ? (data.taxLabel || 'GST') : (data.domesticQuote ? 'GST' : 'Taxes / duties'), taxTotal > 0 ? money(taxTotal, data.currency) : (data.domesticQuote ? 'As applicable' : 'Per Incoterm')], ['Amount payable', money(total, data.currency)]].forEach(([label, value], index) => {
     put(326, y - 31 - index * 10, label, 5.8, false, MUTED);
     put(580, y - 31 - index * 10, value, 5.8, index === 3, INK, true);
   });
@@ -228,8 +230,9 @@ function buildPdf(data: PdfData) {
   const termLines = data.domesticQuote ? [
     ...suggestionLines.map((item)=>`More quantity: ${item}`),
     `Quote valid until ${data.validUntil}.`,
-    'Direct unit prices in INR; GST as detailed above.',
-    'Order confirmation is subject to agreed quantities, pack sizes, MOQs and specifications.',
+    'Prices are Ex Delhi; GST is extra @ 18% as detailed above.',
+    'Production lead time is 15 working days after artwork approval and required inputs.',
+    'Freight is additional, as per actual. Higher quantities may qualify for revised pricing.',
     'See the attached Stark Packmate order, delivery and rejection policy.',
   ] : suggestionLines.length
     ? [
@@ -258,6 +261,70 @@ function buildPdf(data: PdfData) {
   const xobjects = logoObj ? `/XObject << /Logo ${logoObj} 0 R >>` : '';
   const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> ${xobjects} >> /Contents ${content} 0 R >>`);
   const pageRefs = [page];
+
+  // Multi-line quote continuation pages. The previous implementation rendered
+  // only the first 10 rows. Keep page one commercially readable and carry every
+  // remaining quoted line onto compact continuation pages before the T&C appendix.
+  const remainingRows = data.rows.slice(FIRST_PAGE_ROWS);
+  for (let offset = 0; offset < remainingRows.length; offset += CONTINUATION_ROWS) {
+    const chunk = remainingRows.slice(offset, offset + CONTINUATION_ROWS);
+    const cOps: string[] = [];
+    const cCopy: PdfText[] = [];
+    const cBox = (x:number,y:number,w:number,h:number,fill?:string,stroke?:string) => { if(fill)cOps.push(`${rgb(fill)} rg ${x} ${y} ${w} ${h} re f`); if(stroke)cOps.push(`${rgb(stroke)} RG ${x} ${y} ${w} ${h} re S`); };
+    const cPut = (x:number,y:number,value:string,size=7,bold=false,color=INK,alignRight=false) => cCopy.push({x,y,text:value,size,bold,color,right:alignRight});
+    cBox(0,0,612,792,'#ffffff');
+    cBox(left,724,564,44,'#ffffff',LINE);
+    if (logoObj && data.logoImage) {
+      const scale = Math.min(46 / data.logoImage.width, 36 / data.logoImage.height);
+      const renderedWidth = data.logoImage.width * scale;
+      const renderedHeight = data.logoImage.height * scale;
+      cOps.push(`q ${renderedWidth.toFixed(2)} 0 0 ${renderedHeight.toFixed(2)} ${(left + 27 - renderedWidth / 2).toFixed(2)} ${(746 - renderedHeight / 2).toFixed(2)} cm /Logo Do Q`);
+    } else {
+      cBox(left,724,54,44,NAVY);
+      cPut(54,746,logo,logo.length > 2 ? 6.8 : 8.5,true,'#ffffff',true);
+    }
+    cPut(92,750,'COMMERCIAL QUOTATION - ITEMS CONTINUED',13,true,NAVY);
+    cPut(92,736,`${data.quoteNo} | ${data.buyer?.company_name || 'Customer'}`,7,false,MUTED);
+    cPut(574,746,`Lines ${FIRST_PAGE_ROWS + offset + 1}-${FIRST_PAGE_ROWS + offset + chunk.length} of ${data.rows.length}`,6.2,true,NAVY,true);
+
+    let cy = 690;
+    cBox(18,cy-17,576,20,'#e2e8f0',LINE);
+    cPut(24,cy-10,'#',5,true,NAVY);
+    cPut(58,cy-10,'Product / Service & Specification',5,true,NAVY);
+    cPut(362,cy-10,'Qty',5,true,NAVY,true);
+    cPut(404,cy-10,'Unit',5,true,NAVY);
+    cPut(478,cy-10,`${data.currency}/Rate`,5,true,NAVY,true);
+    cPut(582,cy-10,`Total ${data.currency}`,5,true,NAVY,true);
+    cy -= 23;
+
+    chunk.forEach((row, chunkIndex) => {
+      const globalIndex = FIRST_PAGE_ROWS + offset + chunkIndex;
+      const rowHeight = row.specification2 ? 31 : 24;
+      cBox(18,cy-rowHeight+6,576,rowHeight,globalIndex % 2 ? '#ffffff' : '#f8fafc',LINE);
+      cPut(24,cy-6,String(globalIndex+1),5.2);
+      cPut(58,cy-3,clip(row.product,54),5.3,true);
+      if(row.specification)cPut(58,cy-11,clip(row.specification,112),4.35,false,MUTED);
+      if(row.specification2)cPut(58,cy-19,clip(row.specification2,112),4.15,false,MUTED);
+      cPut(362,cy-6,Number(row.qty || 0).toLocaleString('en-IN',{maximumFractionDigits:2}),5.2,false,INK,true);
+      cPut(404,cy-6,row.basis,5.2);
+      cPut(478,cy-6,money(row.casePrice,data.currency),5.2,false,INK,true);
+      cPut(582,cy-6,money(row.total,data.currency),5.2,false,INK,true);
+      cy -= rowHeight;
+    });
+
+    cPut(36,70,'All quoted lines form part of the same commercial quotation. Financial summary and commercial terms are shown on page 1.',5.5,false,MUTED);
+    cPut(36,54,'The Stark Packmate Client Order, Delivery & Rejection Policy follows the quotation pages.',5.4,false,MUTED);
+
+    const cTextOps = cCopy.flatMap((entry) => {
+      const x = entry.right ? Math.max(left, entry.x - width(entry.text, entry.size, entry.bold)) : entry.x;
+      return ['BT', `${rgb(entry.color)} rg /F${entry.bold ? 'B' : 'R'} ${entry.size} Tf`, `1 0 0 1 ${x.toFixed(2)} ${entry.y.toFixed(2)} Tm (${pdfText(entry.text)}) Tj`, 'ET'];
+    });
+    const cStream=[...cOps,...cTextOps].join(NL);
+    const cContent=add(`<< /Length ${Buffer.byteLength(cStream,'binary')} >>${NL}stream${NL}${cStream}${NL}endstream`);
+    const cXobjects=logoObj ? `/XObject << /Logo ${logoObj} 0 R >>` : '';
+    pageRefs.push(add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> ${cXobjects} >> /Contents ${cContent} 0 R >>`));
+  }
+
   if (data.includeStarkPolicy) {
     // Standalone policy appendix: the first quotation page remains unchanged.
     // Keep every policy point intact while paginating by paragraph, never by
