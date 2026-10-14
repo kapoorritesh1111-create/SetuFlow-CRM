@@ -233,7 +233,9 @@ function buildPdf(data: PdfData) {
     y -= rowHeight;
   });
 
-  line(tableX, y+6, 594, y+6, NAVY, 1.15);
+  const hasContinuation = data.rows.length > FIRST_PAGE_ROWS;
+  if (!hasContinuation) {
+    line(tableX, y+6, 594, y+6, NAVY, 1.15);
   put(466, y-9, 'GRAND TOTAL', 7.6, true, NAVY, true);
   put(588, y-9, money(total,data.currency),9.2,true,NAVY,true);
 
@@ -320,6 +322,11 @@ function buildPdf(data: PdfData) {
     put(36, 61, 'Please share final artwork and confirm specifications to proceed with artwork approval and production planning.', 4.8, false, MUTED);
   }
 
+  } else {
+    put(36, y-8, 'Products continue on the next quotation page.', 5.1, true, BLUE);
+    put(36, y-19, 'Financial summary and commercial terms follow after the final product line.', 4.8, false, MUTED);
+  }
+
   put(36, 45, 'STARK PACKMATE PRIVATE LIMITED', 5.8, true, NAVY);
   put(36, 35, 'Flexible Packaging for a Better Tomorrow', 4.8, false, MUTED);
   put(576, 45, 'Generated from Setu Flow CRM', 4.8, false, MUTED, true);
@@ -385,7 +392,7 @@ function buildPdf(data: PdfData) {
       cy -= rowHeight;
     });
 
-    cPut(36,70,'All quoted lines form part of the same commercial quotation. Financial summary and commercial terms are shown on page 1.',5.5,false,MUTED);
+    cPut(36,70,'All quoted lines form part of the same commercial quotation. Financial summary and commercial terms follow after the final product line.',5.5,false,MUTED);
     cPut(36,54,'The Stark Packmate Client Order, Delivery & Rejection Policy follows the quotation pages.',5.4,false,MUTED);
 
     const cTextOps = cCopy.flatMap((entry) => {
@@ -396,6 +403,36 @@ function buildPdf(data: PdfData) {
     const cContent=add(`<< /Length ${Buffer.byteLength(cStream,'binary')} >>${NL}stream${NL}${cStream}${NL}endstream`);
     const cXobjects=logoObj ? `/XObject << /Logo ${logoObj} 0 R >>` : '';
     pageRefs.push(add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> ${cXobjects} >> /Contents ${cContent} 0 R >>`));
+  }
+
+  if (hasContinuation) {
+    const sOps:string[]=[];
+    const sCopy:PdfText[]=[];
+    const sBox=(x:number,y:number,w:number,h:number,fill?:string,stroke?:string)=>{if(fill)sOps.push(`${rgb(fill)} rg ${x} ${y} ${w} ${h} re f`);if(stroke)sOps.push(`${rgb(stroke)} RG ${x} ${y} ${w} ${h} re S`);};
+    const sPut=(x:number,y:number,value:string,size=7,bold=false,color=INK,alignRight=false)=>sCopy.push({x,y,text:value,size,bold,color,right:alignRight});
+    sBox(0,0,612,792,'#ffffff');
+    sPut(36,742,'COMMERCIAL SUMMARY',16,true,NAVY);
+    sPut(36,726,`${data.quoteNo} | follows all quoted products`,7,false,MUTED);
+    sPut(36,690,'GRAND TOTAL',8,true,NAVY);
+    sPut(576,690,money(total,data.currency),11,true,NAVY,true);
+    sBox(24,564,262,96,'#ffffff',LINE);
+    sPut(36,642,`FINANCIAL SUMMARY (${data.currency})`,7.2,true,BLUE);
+    const sr=[['Subtotal',money(subtotal,data.currency)],[data.domesticQuote?'Freight charges':'Freight / insurance',data.domesticQuote?'Additional, as per actual':'Not included'],[taxTotal>0?(data.taxLabel||'GST'):(data.domesticQuote?'GST':'Taxes / duties'),taxTotal>0?money(taxTotal,data.currency):(data.domesticQuote?'As applicable':'Per Incoterm')],['Amount payable',money(total,data.currency)]];
+    sr.forEach(([a,b],i)=>{const yy=621-i*15;sPut(36,yy,a,6,i===3,i===3?NAVY:MUTED);sPut(274,yy,b,6,i===3,INK,true);});
+    sBox(302,564,286,96,'#ffffff',LINE);
+    sPut(314,642,'VOLUME PRICING (SUGGESTED)',7.2,true,BLUE);
+    const ss=(data.volumeSuggestions??[]).slice(0,2);
+    if(ss.length)ss.forEach((item,i)=>wrapPdf(item,250,5,false,3).forEach((v,j)=>sPut(314,620-i*34-j*9,v,5,i===0&&j===0,i===0?BLUE:MUTED)));
+    else sPut(314,620,'Quoted price is based on the selected quantity and approved specification.',5.1,false,MUTED);
+    sPut(24,532,'COMMERCIAL TERMS',7.2,true,BLUE);
+    const cards=data.domesticQuote?[['PRICE BASIS','Ex Delhi'],['GST',data.taxNote||'Extra @ 18%'],['QUOTE VALIDITY',data.validUntil],['PRODUCTION LEAD TIME',data.leadTime||'15 working days after artwork approval'],['PAYMENT TERMS',data.paymentTerms||'50% Advance against Proforma Invoice; 50% before delivery'],['FREIGHT','Additional, as per actual']]:[['BASIS',`${data.basis} - ${data.place}`],['TAX','Per Incoterm'],['QUOTE VALIDITY',data.validUntil],['LEAD TIME',data.leadTime||'As agreed'],['PAYMENT TERMS',data.paymentTerms||'As agreed'],['DELIVERY',data.deliveryTerms||data.destination]];
+    cards.forEach(([a,b],i)=>{const col=i%3,row=Math.floor(i/3),x=24+col*188,top=514-row*58;sBox(x,top-48,178,48,'#f8fbff','#d5e2ef');sBox(x,top-48,3,48,BLUE);sPut(x+12,top-14,a,5.15,true,BLUE);wrapPdf(b,156,5.15,false,2).forEach((v,j)=>sPut(x+12,top-28-j*9,v,5.15,j===0,INK));});
+    sPut(36,350,'Please share final artwork and confirm specifications to proceed with artwork approval and production planning.',5.1,true,NAVY);
+    sPut(36,334,'The Stark Packmate Client Order, Delivery & Rejection Policy follows this summary.',4.9,false,MUTED);
+    const sText=sCopy.flatMap((entry)=>{const x=entry.right?Math.max(left,entry.x-width(entry.text,entry.size,entry.bold)):entry.x;return ['BT',`${rgb(entry.color)} rg /F${entry.bold?'B':'R'} ${entry.size} Tf`,`1 0 0 1 ${x.toFixed(2)} ${entry.y.toFixed(2)} Tm (${pdfText(entry.text)}) Tj`,'ET'];});
+    const sStream=[...sOps,...sText].join(NL);
+    const sContent=add(`<< /Length ${Buffer.byteLength(sStream,'binary')} >>${NL}stream${NL}${sStream}${NL}endstream`);
+    pageRefs.push(add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> >> /Contents ${sContent} 0 R >>`));
   }
 
   if (data.includeStarkPolicy) {
