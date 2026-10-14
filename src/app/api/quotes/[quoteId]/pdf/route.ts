@@ -174,27 +174,27 @@ function buildPdf(data: PdfData) {
   put(570, 753, data.quoteNo, 8.8, true, NAVY, true);
   put(570, 741, `${data.quoteDate} | Valid ${data.validUntil}`, 5.8, false, MUTED, true);
 
-  const cardY=624, cardH=80;
-  box(24, cardY, 174, cardH, PANEL, LINE);
-  put(36, cardY+64, data.domesticQuote ? 'SELLER' : 'SELLER / EXPORTER', 6.4, true, BLUE);
-  put(36, cardY+49, clip(data.org?.legal_name ?? data.org?.name, 32, 'Seller'), 8.2, true);
-  put(36, cardY+34, clip(data.org?.registered_address, 36), 6.1, false, MUTED);
-  put(36, cardY+24, clip([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '), 36), 6.1, false, MUTED);
-  put(36, cardY+10, clip(data.org?.contact_email ?? data.org?.website, 35), 5.9, false, MUTED);
+  const identityCardY=624, identityCardH=80;
+  box(24, identityCardY, 174, identityCardH, PANEL, LINE);
+  put(36, identityCardY+64, data.domesticQuote ? 'SELLER' : 'SELLER / EXPORTER', 6.4, true, BLUE);
+  put(36, identityCardY+49, clip(data.org?.legal_name ?? data.org?.name, 32, 'Seller'), 8.2, true);
+  put(36, identityCardY+34, clip(data.org?.registered_address, 36), 6.1, false, MUTED);
+  put(36, identityCardY+24, clip([data.org?.city, data.org?.postal_code, data.org?.headquarters_country].filter(Boolean).join(', '), 36), 6.1, false, MUTED);
+  put(36, identityCardY+10, clip(data.org?.contact_email ?? data.org?.website, 35), 5.9, false, MUTED);
 
-  box(219, cardY, 174, cardH, PANEL, LINE);
-  put(231, cardY+64, data.domesticQuote ? 'CUSTOMER' : 'BUYER / IMPORTER', 6.4, true, BLUE);
-  put(231, cardY+49, clip(data.buyer?.company_name, 32, 'Buyer pending'), 8.2, true);
-  put(231, cardY+34, clip(data.buyer?.contact_name, 32, ''), 6.1, false, MUTED);
-  put(231, cardY+24, clip(data.buyer?.country, 32, data.destination), 6.1, false, MUTED);
-  put(231, cardY+10, clip(data.buyer?.email, 35), 5.9, false, MUTED);
+  box(219, identityCardY, 174, identityCardH, PANEL, LINE);
+  put(231, identityCardY+64, data.domesticQuote ? 'CUSTOMER' : 'BUYER / IMPORTER', 6.4, true, BLUE);
+  put(231, identityCardY+49, clip(data.buyer?.company_name, 32, 'Buyer pending'), 8.2, true);
+  put(231, identityCardY+34, clip(data.buyer?.contact_name, 32, ''), 6.1, false, MUTED);
+  put(231, identityCardY+24, clip(data.buyer?.country, 32, data.destination), 6.1, false, MUTED);
+  put(231, identityCardY+10, clip(data.buyer?.email, 35), 5.9, false, MUTED);
 
-  box(414, cardY, 174, cardH, PANEL, LINE);
+  box(414, identityCardY, 174, identityCardH, PANEL, LINE);
   const summaryRows = data.domesticQuote
     ? [['Quote type','Domestic supply'],['Price basis','Ex Delhi'],['Tax','GST extra @ 18%'],['Validity',data.validUntil],['Currency',data.currency]]
     : [['Destination',data.destination],['Basis',data.basis],['Named place',data.place],['Validity',data.validUntil],['Currency',data.currency]];
   summaryRows.forEach(([labelText,value],index)=>{
-    const sy=cardY+63-index*12.2;
+    const sy=identityCardY+63-index*12.2;
     put(426,sy,labelText,5.35,true,MUTED);
     put(578,sy,clip(value,23),5.7,false,INK,true);
   });
@@ -279,19 +279,19 @@ function buildPdf(data: PdfData) {
     ['BASIS',`${data.basis} - ${data.place}`],['TAX','Per Incoterm'],['QUOTE VALIDITY',data.validUntil],
     ['LEAD TIME',data.leadTime || 'As agreed'],['PAYMENT TERMS',data.paymentTerms || 'As agreed'],['DELIVERY',data.deliveryTerms || data.destination],
   ];
-  const cardW=178, cardH=48, gap=10;
+  const termCardW=178, termCardH=48, termGap=10;
   termCards.forEach(([labelText,value],index)=>{
     const col=index%3,row=Math.floor(index/3);
-    const x=24+col*(cardW+gap);
-    const top=termsTop-row*(cardH+8);
-    box(x,top-cardH,cardW,cardH,'#f8fbff','#d5e2ef');
-    box(x,top-cardH,3,cardH,BLUE);
+    const x=24+col*(termCardW+termGap);
+    const top=termsTop-row*(termCardH+8);
+    box(x,top-termCardH,termCardW,termCardH,'#f8fbff','#d5e2ef');
+    box(x,top-termCardH,3,termCardH,BLUE);
     put(x+12,top-14,labelText,5.15,true,BLUE);
-    const wrapped=wrapPdf(value,cardW-22,5.15,false,2);
+    const wrapped=wrapPdf(value,termCardW-22,5.15,false,2);
     wrapped.forEach((lineText,lineIndex)=>put(x+12,top-28-lineIndex*9,lineText,5.15,lineIndex===0,INK));
   });
 
-  y = termsTop - 2*(cardH+8) - 12;
+  y = termsTop - 2*(termCardH+8) - 12;
   box(24,y-72,262,72,'#ffffff',LINE);
   put(36,y-16,'IMPORTANT NOTES',7,true,BLUE);
   const notes = data.domesticQuote ? [
