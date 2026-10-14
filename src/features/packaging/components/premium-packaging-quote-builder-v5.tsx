@@ -130,11 +130,20 @@ export default function PremiumPackagingQuoteBuilderV5({
     beginAdjust(line);
     goStep(3);
   }
+  // Customer quote unit is a presentation choice; the Pricing V5 engine persists per-piece amounts.
+  function priceFactor(line:any){
+    const qty=Number(line.quantity??0);
+    const totalKg=Number(line.finishedWeightKg??0);
+    return line.customerQuoteUnit==='kg'&&qty>0&&totalKg>0?totalKg/qty:1;
+  }
+  function quotePriceUnit(line:any){return priceFactor(line)!==1&&line.customerQuoteUnit==='kg'?'kg':'pc';}
+  function priceOnQuote(line:any,perPiece:number){return perPiece/priceFactor(line);}
+  function pricePerPiece(line:any,quoted:number){return quoted*priceFactor(line);}
   function beginAdjust(line:any){
     setAdjustingLineId(String(line.lineId));
-    setDiscountType(line.discountType==='amount'?'amount':'percent');
-    setDiscountValue(line.discountType==='none'?'':String(line.discountValue??''));
-    setExistingCustomerPrice(String(line.unitPrice??''));
+    setDiscountType(line.discountType==='amount'?'amount':line.discountType==='customer_price'?'customer_price':'percent');
+    setDiscountValue(line.discountType==='none'?'':String(line.discountType==='amount'?priceOnQuote(line,Number(line.discountValue??0)):line.discountValue??''));
+    setExistingCustomerPrice(String(Number(priceOnQuote(line,Number(line.unitPrice??0)).toFixed(6))));
     setDiscountReason(String(line.discountReason??''));
     setLineNotice('');setLineError('');
   }
@@ -142,9 +151,10 @@ export default function PremiumPackagingQuoteBuilderV5({
     const basePrice=Number(line.baseUnitPrice??line.unitPrice??0);
     const requestedPrice=Number(existingCustomerPrice||0);
     const effectiveType=discountType;
-    const value=discountType==='customer_price'?requestedPrice:Number(discountValue||0);
+    const value=discountType==='customer_price'?pricePerPiece(line,requestedPrice):discountType==='amount'?pricePerPiece(line,Number(discountValue||0)):Number(discountValue||0);
     setLineError('');setLineNotice('');
     if(discountType==='customer_price'&&(!Number.isFinite(requestedPrice)||requestedPrice<=0)){setLineError('Customer price must be greater than zero.');return;}
+    if((discountType==='amount'||discountType==='customer_price')&&(!Number.isFinite(value)||value<=0)&&discountType==='customer_price'){setLineError('Invalid customer price or weight conversion.');return;}
     if(!discountReason.trim()){setLineError('Enter a reason for this adjustment.');return;}
     startTransition(async()=>{
       const response:any=await adjustPackagingPricingV5QuoteLine({quoteId,leadId,lineId:String(line.lineId),discountType:effectiveType,discountValue:value,reason:discountReason});
@@ -281,13 +291,13 @@ export default function PremiumPackagingQuoteBuilderV5({
                 </div>
                 {adjustingLineId===id?<div className="mt-3 space-y-2 rounded-xl border border-amber-200 bg-white p-3" aria-label="Inline customer pricing">
                   <p className="text-xs font-black text-slate-950">Customer price for this line</p>
-                  <p className="text-xs text-slate-500">Published price: {money(Number(line.baseUnitPrice??line.unitPrice??0),currency)} / pc</p>
+                  <p className="text-xs text-slate-500">Published price: {money(priceOnQuote(line,Number(line.baseUnitPrice??line.unitPrice??0)),currency)} / {quotePriceUnit(line)}</p>
                   <label className="block text-xs font-bold text-slate-700">Pricing method
                     <select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2">
-                      <option value="percent">Discount (%)</option><option value="amount">Discount (₹ per piece)</option><option value="customer_price">Approved customer price / piece</option>
+                      <option value="percent">Discount (%)</option><option value="amount">Discount ({currency} per {quotePriceUnit(line)})</option><option value="customer_price">Customer price / {quotePriceUnit(line)}</option>
                     </select>
                   </label>
-                  <label className="block text-xs font-bold text-slate-700">{discountType==='customer_price'?'Customer price per piece':'Discount value'}
+                  <label className="block text-xs font-bold text-slate-700">{discountType==='customer_price'?`Customer price / ${quotePriceUnit(line)}`:discountType==='amount'?`Discount / ${quotePriceUnit(line)}`:'Discount (%)'}
                     <input type="number" min="0" inputMode="decimal" value={discountType==='customer_price'?existingCustomerPrice:discountValue} onChange={e=>discountType==='customer_price'?setExistingCustomerPrice(e.target.value):setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-2"/>
                   </label>
                   <label className="block text-xs font-bold text-slate-700">Reason / approval reference
@@ -338,8 +348,8 @@ export default function PremiumPackagingQuoteBuilderV5({
               </div>
             </div>
             {adjustingLineId===lineId?<div className="mt-4 rounded-xl bg-slate-50 p-3">
-              <label className="block text-xs font-bold text-slate-700">Customer price adjustment<select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"><option value="percent">% discount</option><option value="amount">₹ per-piece discount</option><option value="customer_price">Existing customer price / pc</option></select></label>
-              <label className="mt-3 block text-xs font-bold text-slate-700">{discountType==='customer_price'?'Customer price / pc':'Discount value'}<input type="number" inputMode="decimal" min="0" value={discountType==='customer_price'?existingCustomerPrice:discountValue} onChange={e=>discountType==='customer_price'?setExistingCustomerPrice(e.target.value):setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
+              <label className="block text-xs font-bold text-slate-700">Customer price adjustment<select value={discountType} onChange={e=>setDiscountType(e.target.value as 'percent'|'amount'|'customer_price')} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"><option value="percent">% discount</option><option value="amount">{currency} discount / {quotePriceUnit(line)}</option><option value="customer_price">Customer price / {quotePriceUnit(line)}</option></select></label>
+              <label className="mt-3 block text-xs font-bold text-slate-700">{discountType==='customer_price'?`Customer price / ${quotePriceUnit(line)}`:discountType==='amount'?`Discount / ${quotePriceUnit(line)}`:'Discount (%)'}<input type="number" inputMode="decimal" min="0" value={discountType==='customer_price'?existingCustomerPrice:discountValue} onChange={e=>discountType==='customer_price'?setExistingCustomerPrice(e.target.value):setDiscountValue(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
               <label className="mt-3 block text-xs font-bold text-slate-700">Reason for discount / custom price (required)<input required value={discountReason} onChange={e=>setDiscountReason(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3"/></label>
               <p className="mt-2 text-xs text-amber-700">More than 15% below approved pricing requires approval before send.</p>
               <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={pending} onClick={()=>saveAdjustment(line)} className="min-h-11 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white disabled:opacity-50">Save adjustment</button><button type="button" disabled={pending} onClick={()=>clearAdjustment(line)} className="min-h-11 rounded-xl border border-slate-300 px-4 text-xs font-bold text-slate-700">Remove discount</button><button type="button" onClick={()=>setAdjustingLineId('')} className="min-h-11 px-3 text-xs font-bold text-slate-600">Cancel</button></div>
