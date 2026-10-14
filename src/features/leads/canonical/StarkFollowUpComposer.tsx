@@ -73,7 +73,7 @@ export default function StarkFollowUpComposer({leadId,contactName,companyName,cu
         </div>
         <div className="flex items-center gap-2"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">{active.length} scheduled</span><button type="button" onClick={()=>setOpen(true)} className="rounded-xl bg-[#0B2440] px-4 py-2.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(11,36,64,.18)]">＋ Schedule follow-up</button></div>
       </div>
-      {active.length?<div className="mt-3 space-y-2">{active.slice(0,2).map(item=><div key={item.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2"><p className="truncate text-[10px] font-semibold text-slate-700">{item.notes||'Follow-up scheduled'}</p><span className="shrink-0 pl-3 text-[9px] font-bold text-slate-400">{item.scheduled_at?new Date(item.scheduled_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}):''}</span></div>)}</div>:null}
+      {active.length?<div className="mt-3 space-y-2">{active.slice(0,2).map(item=><div key={item.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2"><p className="truncate text-[10px] font-semibold text-slate-700">{item.notes||'Follow-up scheduled'}</p><span className="shrink-0 pl-3 text-[9px] font-bold text-slate-400">{item.scheduled_at?new Date(item.scheduled_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'}):''}</span></div>)}</div>:null}
     </section>
 
     {open && typeof document!=='undefined' ? createPortal(
