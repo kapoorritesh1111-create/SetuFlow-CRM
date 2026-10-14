@@ -545,14 +545,19 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
 
   if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
   const resolvedOrganizationId=organizationId;
-  const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, current_version_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer').eq('organization_id', resolvedOrganizationId).eq('id', quoteId).maybeSingle();
+  const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, created_by, current_version_id, sent_version_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer').eq('organization_id', resolvedOrganizationId).eq('id', quoteId).maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
 
   const { data: leadRow } = await db.from('leads').select('id, company_name, contact_name, email, phone, country').eq('organization_id', resolvedOrganizationId).eq('id', quote.lead_id).maybeSingle();
   const { data: quoteVersion } = quote.current_version_id
-    ? await db.from('quote_versions').select('id,valid_until,pricing_basis,customer_message').eq('quote_id',quote.id).eq('id',quote.current_version_id).maybeSingle()
+    ? await db.from('quote_versions').select('id,valid_until,pricing_basis,customer_message,sent_by,created_by').eq('quote_id',quote.id).eq('id',quote.current_version_id).maybeSingle()
     : { data: null };
+  const senderUserId = quoteVersion?.sent_by ?? quoteVersion?.created_by ?? quote.created_by ?? null;
+  const { data: senderProfile } = senderUserId
+    ? await db.from('profiles').select('id,full_name,email').eq('id', senderUserId).maybeSingle()
+    : { data: null };
+
   const countryPromise = quote.country_id
     ? db.from('countries').select('id, name, market_id, default_port_of_loading').eq('organization_id', resolvedOrganizationId).eq('id', quote.country_id).maybeSingle()
     : leadRow?.country
@@ -678,7 +683,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
 
   const bytes = buildPdf({
     quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
-    org: org ?? { name: workspace?.organization?.name ?? 'Seller' },
+    org: { ...(org ?? { name: workspace?.organization?.name ?? 'Seller' }), contact_email: text(senderProfile?.email, org?.contact_email ?? '') },
     buyer: leadRow ?? {},
     market: text(market?.name),
     destination: text(country?.name ?? leadRow?.country),
