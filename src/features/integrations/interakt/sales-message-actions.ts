@@ -1,5 +1,6 @@
 'use server';
 
+import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
 
 import { createCatalogBrochureShare } from '@/features/catalog-brochures/server';
@@ -17,6 +18,7 @@ const INBOUND_PATH = '/leads/inbound';
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager', 'sales', 'field_sales']);
 const ASSIGNMENT_OVERRIDE_ROLES = new Set(['owner', 'admin']);
 const WHATSAPP_REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DUPLICATE_SEND_WINDOW_MS = 5 * 60 * 1000;
 
 type SalesMessageActionResult = { ok: true; message: string } | { ok: false; message: string };
 type AttachmentShare = { id: string; token: string; fileName: string; mimeType: string | null; fileSize: number | null; url: string };
@@ -176,6 +178,27 @@ function attachmentUrl(token: string) {
   return `${env.appUrl.replace(/\/$/, '')}/api/public/whatsapp-attachments/${token}`;
 }
 
+function outboundDedupeKey(input: { intakeId: string; actorUserId: string; message: string; brochureId?: string; attachmentId?: string; mode?: string }) {
+  const normalized = [input.intakeId, input.actorUserId, input.mode ?? 'text', input.message.replace(/\s+/g, ' ').trim(), input.brochureId ?? '', input.attachmentId ?? ''].join('|');
+  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
+}
+
+async function assertNotRecentDuplicate(db: any, organizationId: string, intakeId: string, dedupeKey: string) {
+  const cutoff = new Date(Date.now() - DUPLICATE_SEND_WINDOW_MS).toISOString();
+  const { data, error } = await db.from('lead_intake_messages')
+    .select('id,sent_at')
+    .eq('organization_id', organizationId)
+    .eq('intake_id', intakeId)
+    .eq('direction', 'outbound')
+    .eq('message_payload->>dedupe_key', dedupeKey)
+    .gte('sent_at', cutoff)
+    .order('sent_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Unable to validate duplicate WhatsApp send: ${String(error.message ?? 'unknown database error')}`);
+  if (data?.id) throw new Error('This same WhatsApp message was already sent in the last 5 minutes. Refresh the conversation before sending it again.');
+}
+
 async function loadAttachmentShare(db: any, organizationId: string, attachmentId: string, context: { intakeId?: string; leadId?: string }): Promise<AttachmentShare | null> {
   if (!attachmentId) return null;
   const { data: row, error } = await db.from('whatsapp_attachment_shares')
@@ -273,6 +296,8 @@ async function performStarkInteraktSalesText(formData: FormData) {
 
   const attachment = await loadAttachmentShare(db, organizationId, attachmentId, { intakeId: row.id });
   const senderSignature = await loadSenderSignature(db, workspace);
+  const dedupeKey = outboundDedupeKey({ intakeId: row.id, actorUserId: workspace.user!.id, message: originalMessage, brochureId, attachmentId, mode: 'inbound_free_text' });
+  await assertNotRecentDuplicate(db, organizationId, row.id, dedupeKey);
   let brochureShare: { id: string; url: string; brochureName: string } | null = null;
   const parts = [originalMessage].filter(Boolean);
   if (brochureId) {
@@ -296,7 +321,7 @@ async function performStarkInteraktSalesText(formData: FormData) {
     throw error;
   }
 
-  await recordOutboundMessage({ db, workspace, row, result, messageType: 'Text', messageText: message, callbackData, attachment, payload: { mode, message, brochure_id: brochureId || null, brochure_share_id: brochureShare?.id ?? null, brochure_url: brochureShare?.url ?? null, attachment_id: attachment?.id ?? null, attachment_name: attachment?.fileName ?? null, attachment_url: attachment?.url ?? null, attachment_mime_type: attachment?.mimeType ?? null } });
+  await recordOutboundMessage({ db, workspace, row, result, messageType: 'Text', messageText: message, callbackData, attachment, payload: { mode, message, dedupe_key: dedupeKey, brochure_id: brochureId || null, brochure_share_id: brochureShare?.id ?? null, brochure_url: brochureShare?.url ?? null, attachment_id: attachment?.id ?? null, attachment_name: attachment?.fileName ?? null, attachment_url: attachment?.url ?? null, attachment_mime_type: attachment?.mimeType ?? null } });
   await markAttachmentSent(db, organizationId, attachment, result.id);
   revalidatePath(INBOUND_PATH);
 }
@@ -332,6 +357,8 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
 
     const attachment = await loadAttachmentShare(db, workspace.organization!.id, attachmentId, { leadId });
     const senderSignature = await loadSenderSignature(db, workspace);
+    const dedupeKey = outboundDedupeKey({ intakeId: row.id, actorUserId: workspace.user!.id, message: originalMessage, brochureId, attachmentId, mode: 'lead_free_text' });
+    await assertNotRecentDuplicate(db, workspace.organization!.id, row.id, dedupeKey);
     let brochureShare: { id: string; url: string; brochureName: string } | null = null;
     const parts = [originalMessage].filter(Boolean);
     if (brochureId) {
@@ -355,7 +382,7 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
       throw error;
     }
 
-    await recordOutboundMessage({ db, workspace, row, result, messageType: 'Text', messageText: message, callbackData, attachment, payload: { mode, message, lead_id: leadId, brochure_id: brochureId || null, brochure_share_id: brochureShare?.id ?? null, brochure_url: brochureShare?.url ?? null, attachment_id: attachment?.id ?? null, attachment_name: attachment?.fileName ?? null, attachment_url: attachment?.url ?? null, attachment_mime_type: attachment?.mimeType ?? null } });
+    await recordOutboundMessage({ db, workspace, row, result, messageType: 'Text', messageText: message, callbackData, attachment, payload: { mode, message, dedupe_key: dedupeKey, lead_id: leadId, brochure_id: brochureId || null, brochure_share_id: brochureShare?.id ?? null, brochure_url: brochureShare?.url ?? null, attachment_id: attachment?.id ?? null, attachment_name: attachment?.fileName ?? null, attachment_url: attachment?.url ?? null, attachment_mime_type: attachment?.mimeType ?? null } });
     await markAttachmentSent(db, workspace.organization!.id, attachment, result.id);
     revalidatePath(`/leads/${leadId}`);
     return { ok: true, message: attachment && brochureShare ? 'WhatsApp message, brochure, attachment and profile signature sent and added to the customer timeline.' : attachment ? 'WhatsApp message, attachment and profile signature sent and added to the customer timeline.' : brochureShare ? 'WhatsApp message, brochure and profile signature sent and added to the customer timeline.' : 'WhatsApp message and profile signature sent and added to the customer timeline.' };
