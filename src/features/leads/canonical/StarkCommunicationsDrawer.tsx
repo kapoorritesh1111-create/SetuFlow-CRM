@@ -11,8 +11,8 @@ type Brochure = { id: string; name: string; recommended?: boolean };
 type Attachment = { id: string; fileName: string; mimeType: string; fileSize: number; url: string };
 
 const EMOJIS = ['😊','👍','🙏','✨','✅','📎','📦','🎨','💬','❤️','👏','🙂','🤝','🚀','📞','📩'];
-const fmt = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-const day = (value: string) => new Date(value).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+const fmt = (value: string) => new Date(value).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true });
+const day = (value: string) => new Date(value).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', month: 'short', day: 'numeric' });
 
 function body(item: TimelineItem) {
   const raw = String(item.body || '').trim();
