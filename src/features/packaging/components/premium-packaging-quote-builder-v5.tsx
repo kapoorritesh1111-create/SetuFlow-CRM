@@ -141,10 +141,10 @@ export default function PremiumPackagingQuoteBuilderV5({
   function saveAdjustment(line:any){
     const basePrice=Number(line.baseUnitPrice??line.unitPrice??0);
     const requestedPrice=Number(existingCustomerPrice||0);
-    const effectiveType=discountType==='customer_price'?'amount':discountType;
-    const value=discountType==='customer_price'?basePrice-requestedPrice:Number(discountValue||0);
+    const effectiveType=discountType;
+    const value=discountType==='customer_price'?requestedPrice:Number(discountValue||0);
     setLineError('');setLineNotice('');
-    if(discountType==='customer_price'&&(!Number.isFinite(requestedPrice)||requestedPrice<=0||requestedPrice>basePrice)){setLineError('Existing customer price must be greater than zero and cannot exceed the current approved price.');return;}
+    if(discountType==='customer_price'&&(!Number.isFinite(requestedPrice)||requestedPrice<=0)){setLineError('Customer price must be greater than zero.');return;}
     if(!discountReason.trim()){setLineError('Enter a reason for this adjustment.');return;}
     startTransition(async()=>{
       const response:any=await adjustPackagingPricingV5QuoteLine({quoteId,leadId,lineId:String(line.lineId),discountType:effectiveType,discountValue:value,reason:discountReason});
