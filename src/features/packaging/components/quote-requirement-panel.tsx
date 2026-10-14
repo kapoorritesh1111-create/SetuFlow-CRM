@@ -63,7 +63,7 @@ export default function QuoteRequirementPanel({leadId,available,onUse,onStartFre
     const rows=dimensionOptions.filter((item)=>String(item.family_id)===String(draft.familyId));
     // Keep the saved size as the representative when pricing contains duplicate display names.
     rows.sort((a,b)=>Number(b.id===draft.dimensionOptionId)-Number(a.id===draft.dimensionOptionId));
-    return rows.filter((item,index)=>rows.findIndex((row)=>row.name.trim().replace(/\\s+/g,' ').toLowerCase()===item.name.trim().replace(/\\s+/g,' ').toLowerCase())===index);
+    return rows.filter((item,index)=>rows.findIndex((row)=>row.name.trim().replace(/\s+/g,' ').toLowerCase()===item.name.trim().replace(/\s+/g,' ').toLowerCase())===index);
   },[draft,dimensionOptions]);
 
   function beginEdit(item:Requirement){
