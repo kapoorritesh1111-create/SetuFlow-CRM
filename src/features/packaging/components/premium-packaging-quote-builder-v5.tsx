@@ -136,7 +136,7 @@ export default function PremiumPackagingQuoteBuilderV5({
     const totalKg=Number(line.finishedWeightKg??0);
     return line.customerQuoteUnit==='kg'&&qty>0&&totalKg>0?totalKg/qty:1;
   }
-  function quotePriceUnit(line:any){return priceFactor(line)!==1&&line.customerQuoteUnit==='kg'?'kg':'pc';}
+  function quotePriceUnit(line:any){return line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0&&Number(line.quantity)>0?'kg':'pc';}
   function priceOnQuote(line:any,perPiece:number){return perPiece/priceFactor(line);}
   function pricePerPiece(line:any,quoted:number){return quoted*priceFactor(line);}
   function beginAdjust(line:any){
@@ -154,7 +154,7 @@ export default function PremiumPackagingQuoteBuilderV5({
     const value=discountType==='customer_price'?pricePerPiece(line,requestedPrice):discountType==='amount'?pricePerPiece(line,Number(discountValue||0)):Number(discountValue||0);
     setLineError('');setLineNotice('');
     if(discountType==='customer_price'&&(!Number.isFinite(requestedPrice)||requestedPrice<=0)){setLineError('Customer price must be greater than zero.');return;}
-    if((discountType==='amount'||discountType==='customer_price')&&(!Number.isFinite(value)||value<=0)&&discountType==='customer_price'){setLineError('Invalid customer price or weight conversion.');return;}
+    if(!Number.isFinite(value)||value<0){setLineError('Invalid customer price or discount.');return;}
     if(!discountReason.trim()){setLineError('Enter a reason for this adjustment.');return;}
     startTransition(async()=>{
       const response:any=await adjustPackagingPricingV5QuoteLine({quoteId,leadId,lineId:String(line.lineId),discountType:effectiveType,discountValue:value,reason:discountReason});
