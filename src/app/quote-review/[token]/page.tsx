@@ -18,6 +18,18 @@ function label(value: unknown) {
   return String(value ?? '').replaceAll('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
+function commercialValue(message: unknown, field: string) {
+  const prefix = `${field}:`;
+  return String(message ?? '').split(/\r?\n/).map((line) => line.trim()).find((line) => line.toLowerCase().startsWith(prefix.toLowerCase()))?.slice(prefix.length).trim() || '';
+}
+
+function formatDate(value: unknown) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return 'As stated in quote';
+  const date = new Date(raw.includes('T') ? raw : `${raw}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? raw : date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 export default async function PublicQuoteReviewPage({ params }: { params: { token: string } }) {
   const token = String(params.token || '').trim();
   if (!token || token.length < 32) notFound();
@@ -26,17 +38,18 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
 
   const { data: quotes, error: quoteError } = await admin
     .from('quotes')
-    .select('id,organization_id,lead_id,quote_number,status,currency,display_currency,valid_until,notes_customer,industry_metadata')
+    .select('id,organization_id,lead_id,current_version_id,quote_number,status,currency,display_currency,valid_until,notes_customer,industry_metadata')
     .contains('industry_metadata', { customer_review_token: token })
     .limit(1);
   if (quoteError || !quotes?.[0]) notFound();
   const quote = quotes[0];
 
-  const [{ data: lead }, { data: lines }, { data: attachments }, { data: org }] = await Promise.all([
+  const [{ data: lead }, { data: lines }, { data: attachments }, { data: org }, { data: quoteVersion }] = await Promise.all([
     admin.from('leads').select('company_name,contact_name').eq('id', quote.lead_id).eq('organization_id', quote.organization_id).maybeSingle(),
     admin.from('quote_line_items').select('id,line_type,product_id,quantity,unit_price,currency,notes,input_snapshot_json,pricing_breakdown_json,calculation_version,packaging_family_id,packaging_product_variation_id,packaging_kld_file_id,packaging_size_profile_v5_id').eq('quote_id', quote.id).order('created_at'),
     admin.from('lead_attachments').select('id,file_name,mime_type,attachment_type,created_at').eq('lead_id', quote.lead_id).eq('organization_id', quote.organization_id).order('created_at', { ascending: true }),
-    admin.from('organizations').select('name,legal_name,logo_url').eq('id', quote.organization_id).maybeSingle(),
+    admin.from('organizations').select('id,name,legal_name,logo_url').eq('id', quote.organization_id).maybeSingle(),
+    quote.current_version_id ? admin.from('quote_versions').select('id,valid_until,pricing_basis,customer_message').eq('quote_id',quote.id).eq('id',quote.current_version_id).maybeSingle() : Promise.resolve({data:null}),
   ]);
 
   const lineIds = (lines ?? []).map((l:any)=>l.id).filter(Boolean);
@@ -54,12 +67,14 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   const familyIds = (lines ?? []).map((l: any) => l.packaging_family_id).filter(Boolean);
   const variationIds = (lines ?? []).map((l: any) => l.packaging_product_variation_id).filter(Boolean);
   const kldIds = (lines ?? []).map((l: any) => l.packaging_kld_file_id).filter(Boolean);
+  const constructionIds = [...new Set((lines ?? []).map((l:any)=>l.input_snapshot_json?.input?.construction_id ?? l.input_snapshot_json?.construction_id).filter(Boolean).map(String))];
 
-  const [{ data: products }, { data: families }, { data: variations }, { data: klds }] = await Promise.all([
+  const [{ data: products }, { data: families }, { data: variations }, { data: klds }, { data: constructions }] = await Promise.all([
     productIds.length ? admin.from('products').select('id,name,description,image_url,brand_name,pack_size').in('id', productIds) : Promise.resolve({ data: [] }),
     familyIds.length ? admin.from('packaging_service_families').select('id,name,description').in('id', familyIds) : Promise.resolve({ data: [] }),
     variationIds.length ? admin.from('packaging_product_variations').select('id,name,capacity_label,dimension_label,width_mm,height_mm,bottom_gusset_each_mm').in('id', variationIds) : Promise.resolve({ data: [] }),
     kldIds.length ? admin.from('packaging_kld_files').select('id,file_name,public_token,spec_key').in('id', kldIds) : Promise.resolve({ data: [] }),
+    constructionIds.length ? admin.from('packaging_constructions_v5').select('id,name,finish_type,barrier_type,sealant_code,layer_count').eq('organization_id',quote.organization_id).in('id',constructionIds) : Promise.resolve({data:[]}),
   ]);
 
   // Customer brochures are served by the existing token-validated brochure route, never by raw storage paths.
@@ -78,6 +93,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   const byFamily = new Map<string, any>((families ?? []).map((r: any) => [String(r.id), r]));
   const byVariation = new Map<string, any>((variations ?? []).map((r: any) => [String(r.id), r]));
   const byKld = new Map<string, any>((klds ?? []).map((r: any) => [String(r.id), r]));
+  const byConstruction = new Map<string, any>((constructions ?? []).map((r:any)=>[String(r.id),r]));
   const currency = quote.display_currency || quote.currency || 'INR';
   // Legacy inquiry placeholders remain lead context and cannot appear in the shared offer.
   const displayLines=(lines ?? []).filter((line:any)=>
@@ -90,6 +106,13 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   const artworkAttachments = (attachments ?? []).filter((a: any) => ['artwork', 'customer_artwork', 'design_in_progress', 'design', 'proof'].includes(String(a.attachment_type || '').toLowerCase()));
   const imageArtwork = artworkAttachments.find((a:any)=>String(a.mime_type||'').startsWith('image/')) ?? null;
   const sellerName = org?.legal_name || org?.name || 'Stark Packmate';
+  const starkQuote = isStarkPackmateOrganization(org);
+  const customerMessage = quoteVersion?.customer_message ?? '';
+  const paymentTerms = commercialValue(customerMessage, 'Payment terms') || (starkQuote ? '50% Advance, 50% Before Dispatch' : 'As agreed');
+  const leadTime = commercialValue(customerMessage, 'Lead time') || (starkQuote ? '15 working days after advance payment, final artwork approval and technical inputs' : 'As agreed');
+  const deliveryTerms = [commercialValue(customerMessage, 'Delivery'), commercialValue(customerMessage, 'Dispatch')].filter(Boolean).join(' · ') || (starkQuote ? 'Domestic India · delivery/dispatch as agreed' : 'As agreed');
+  const taxTerms = commercialValue(customerMessage, 'Tax') || commercialValue(customerMessage, 'GST') || (starkQuote ? 'GST as shown in quotation' : 'As applicable');
+  const validUntil = quoteVersion?.valid_until ?? quote.valid_until;
 
   return (
     <main className="min-h-screen bg-[#f5f8fb] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
@@ -108,7 +131,15 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
         <section className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-xs font-black uppercase tracking-wide text-slate-400">Customer</div><div className="mt-1 font-black">{lead?.company_name || 'Customer'}</div><div className="text-sm text-slate-500">{lead?.contact_name || ''}</div></div>
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-xs font-black uppercase tracking-wide text-slate-400">Quote total</div><div className="mt-1 text-xl font-black text-emerald-700">{money(total, currency)}</div></div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-xs font-black uppercase tracking-wide text-slate-400">Valid until</div><div className="mt-1 font-black">{quote.valid_until ? new Date(`${quote.valid_until}T00:00:00`).toLocaleDateString() : 'As stated in quote'}</div><div className="text-sm text-slate-500">Status: {label(quote.status)}</div></div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="text-xs font-black uppercase tracking-wide text-slate-400">Valid until</div><div className="mt-1 font-black">{formatDate(validUntil)}</div><div className="text-sm text-slate-500">Status: {label(quote.status)}</div></div>
+        </section>
+
+        <section className="rounded-3xl border border-blue-200 bg-white p-5 shadow-sm sm:p-6">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Commercial Terms</p>
+          <h2 className="mt-1 text-xl font-black">Terms applying to this quotation</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[['Payment terms',paymentTerms],['Lead time',leadTime],['Quote validity',formatDate(validUntil)],['Delivery',deliveryTerms],['Tax',taxTerms]].map(([term,value])=><div key={term} className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">{term}</div><div className="mt-1 text-sm font-black leading-5 text-slate-800">{value}</div></div>)}
+          </div>
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -127,6 +158,17 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               const leadArtworkUrl = imageArtwork ? `/api/public/quote-attachment/${token}/${imageArtwork.id}` : null;
               const artworkUrl = proofUrl || leadArtworkUrl;
               const artworkIsImage = proofIsImage || Boolean(!proofUrl && imageArtwork);
+              const constructionId = input.construction_id ?? snapshot.construction_id ?? line.pricing_breakdown_json?.construction?.id;
+              const construction = constructionId ? byConstruction.get(String(constructionId)) : null;
+              const pricedConstruction = line.pricing_breakdown_json?.construction ?? {};
+              const constructionName = pricedConstruction.name || construction?.name || input.construction || input.substrate || snapshot.construction || '';
+              const width = Number(input.width_mm ?? variation?.width_mm ?? 0);
+              const height = Number(input.height_mm ?? variation?.height_mm ?? 0);
+              const gusset = Number(input.bottom_gusset_each_mm ?? variation?.bottom_gusset_each_mm ?? 0);
+              const dimensionText = variation?.dimension_label || (width>0&&height>0 ? [width,height,gusset>0?gusset:null].filter(Boolean).join(' × ')+' mm' : '');
+              const supplyForm = input.supply_form ? label(input.supply_form) : '';
+              const printSpec = input.print ?? input.print_colors ?? '';
+              const finishSpec = construction?.finish_type ?? pricedConstruction.finish_type ?? input.finish ?? '';
               const name = product?.name || variation?.name || family?.name || line.notes || `Packaging item ${index + 1}`;
               const lineTotal = Number(line.quantity || 0) * Number(line.unit_price || 0);
               const view=resolveFrameQuotePresentation(line);
@@ -148,7 +190,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
                     </div>
                     <div className="p-5 sm:p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1"><h3 className="text-lg font-black">{name}</h3><p className="mt-1 text-sm font-semibold text-slate-500">{snapshot.spec_summary || line.notes || family?.description || product?.description || 'Packaging specification as quoted.'}</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">{variation?.capacity_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.capacity_label}</span> : null}{variation?.dimension_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.dimension_label}</span> : null}{input.finish ? <span className="rounded-full bg-slate-100 px-3 py-1">Finish: {label(input.finish)}</span> : null}{input.zipper ? <span className="rounded-full bg-slate-100 px-3 py-1">Zipper</span> : null}{input.print_colors ? <span className="rounded-full bg-slate-100 px-3 py-1">{input.print_colors}-color print</span> : null}</div></div>
+                    <div className="min-w-0 flex-1"><h3 className="text-lg font-black">{name}</h3><p className="mt-1 text-sm font-semibold text-slate-500">{snapshot.spec_summary || line.notes || family?.description || product?.description || 'Packaging specification as quoted.'}</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">{variation?.capacity_label ? <span className="rounded-full bg-slate-100 px-3 py-1">{variation.capacity_label}</span> : null}{dimensionText ? <span className="rounded-full bg-slate-100 px-3 py-1">Size: {dimensionText}</span> : null}{constructionName ? <span className="rounded-full bg-slate-100 px-3 py-1">Construction: {constructionName}</span> : null}{finishSpec ? <span className="rounded-full bg-slate-100 px-3 py-1">Finish: {label(finishSpec)}</span> : null}{supplyForm ? <span className="rounded-full bg-slate-100 px-3 py-1">Form: {supplyForm}</span> : null}{printSpec ? <span className="rounded-full bg-slate-100 px-3 py-1">Print: {String(printSpec)}</span> : null}{input.zipper ? <span className="rounded-full bg-slate-100 px-3 py-1">Zipper</span> : null}</div></div>
                     <div className="text-right"><div className="text-sm font-bold text-slate-500">{view.isFrame?view.displayQuantity.toLocaleString('en-IN',{maximumFractionDigits:2}):Number(line.quantity||0).toLocaleString()} {view.isFrame?view.unit:'pcs'} × {money(view.isFrame?view.displayPrice:line.unit_price, line.currency || currency)} / {view.isFrame?view.unit:'pc'}</div><div className="mt-1 text-lg font-black">{money(lineTotal, line.currency || currency)}</div></div>
                   </div>
 
