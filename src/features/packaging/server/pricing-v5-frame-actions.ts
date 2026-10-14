@@ -104,10 +104,22 @@ function sourceHash(payload:unknown){
   return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
 }
 
+function constructionMatchesFrameForm(construction:any,supplyForm:string){
+  const source=[construction?.name,construction?.construction_key,construction?.metadata?.source_construction_key].filter(Boolean).join(' ').toLowerCase();
+  if(supplyForm.endsWith('_roll')) return source.includes('roll form');
+  if(supplyForm.endsWith('_pouch')) return source.includes('pouch form');
+  return true;
+}
+
 async function calculate(params:{templateId:string;input:FrameFamilyPricingInputV5}){
   const workspace=await workspaceContext();
   const context=await loadPricingContextV5(workspace.organization!.id,params.templateId,{publishedOnly:!workspace.canAccessAdmin});
   if(context.template.calculation_engine_key!=='frame_formula_v5') throw new Error('Selected template is not a frame-family Pricing v5 model.');
+  const templateSupplyForm=String(context.template.production_rules_json?.supply_form??'');
+  if(templateSupplyForm&&String(params.input.supply_form)!==templateSupplyForm) throw new Error('Selected pouch/roll form does not match the pricing template.');
+  const selectedConstruction=context.constructions.find((item:any)=>String(item.id)===String(params.input.construction_id));
+  if(!selectedConstruction||!selectedConstruction.is_active||!selectedConstruction.is_quoteable) throw new Error('Selected construction is not available for this pricing template.');
+  if(!constructionMatchesFrameForm(selectedConstruction,templateSupplyForm)) throw new Error('Selected construction does not match the selected pouch/roll form.');
   const result=calculateFrameFamilyPriceReviewV5(context,params.input);
   const smartMoq=smartMoqRecommendation(context,result,params.input);
   const next=QTY_LADDER.filter((qty)=>qty>Number(params.input.quantity));
