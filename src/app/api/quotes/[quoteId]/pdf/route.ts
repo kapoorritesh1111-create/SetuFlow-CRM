@@ -20,7 +20,7 @@ const NL = String.fromCharCode(10);
 const BS = String.fromCharCode(92);
 
 type PdfText = { x: number; y: number; text: string; size: number; bold: boolean; color: string; right: boolean };
-type PdfRow = { sku: string; product: string; specification?: string; qty: number; basis: string; casePrice: number; total: number };
+type PdfRow = { sku: string; product: string; specification?: string; specification2?: string; qty: number; basis: string; casePrice: number; total: number };
 type PdfData = {
   quoteNo: string;
   volumeSuggestions?: string[];
@@ -34,6 +34,10 @@ type PdfData = {
   quoteDate: string;
   validUntil: string;
   terms: string;
+  paymentTerms?: string;
+  leadTime?: string;
+  deliveryTerms?: string;
+  taxNote?: string;
   rows: PdfRow[];
   taxTotal?: number;
   taxLabel?: string;
@@ -55,6 +59,15 @@ function text(value: unknown, fallback = '-') {
 function clip(value: unknown, max = 36, fallback = '-') {
   const out = text(value, fallback);
   return out.length > max ? `${out.slice(0, Math.max(1, max - 3))}...` : out;
+}
+
+function commercialValue(message: unknown, label: string) {
+  const prefix = `${label}:`;
+  return String(message ?? '').split(/\r?\n/).map((line) => line.trim()).find((line) => line.toLowerCase().startsWith(prefix.toLowerCase()))?.slice(prefix.length).trim() || '';
+}
+
+function humanize(value: unknown) {
+  return String(value ?? '').trim().replaceAll('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
 function dateText(value: unknown) {
@@ -174,17 +187,19 @@ function buildPdf(data: PdfData) {
   put(582, y - 10, `Total ${data.currency}`, 5, true, NAVY, true);
   y -= 23;
 
-  data.rows.slice(0, 12).forEach((row, index) => {
-    box(18, y - 15, 576, 21, index % 2 ? '#ffffff' : '#f8fafc', LINE);
+  data.rows.slice(0, 10).forEach((row, index) => {
+    const rowHeight = row.specification2 ? 29 : 23;
+    box(18, y - rowHeight + 6, 576, rowHeight, index % 2 ? '#ffffff' : '#f8fafc', LINE);
     put(24, y - 6, String(index + 1), 5.2);
     put(62, y - 6, clip(row.sku, 16), 5.2);
-    put(142, y - 4, clip(row.product, 40), 5.2, index === 0);
-    if (row.specification) put(142, y - 12, clip(row.specification, 76), 4.4, false, MUTED);
+    put(142, y - 3, clip(row.product, 40), 5.2, index === 0);
+    if (row.specification) put(142, y - 11, clip(row.specification, 78), 4.35, false, MUTED);
+    if (row.specification2) put(142, y - 18, clip(row.specification2, 78), 4.25, false, MUTED);
     put(318, y - 6, String(row.qty || '-'), 5.2, false, INK, true);
     put(372, y - 6, row.basis, 5.2);
     put(458, y - 6, money(row.casePrice, data.currency), 5.2, index === 0, INK, true);
     put(582, y - 6, money(row.total, data.currency), 5.2, index === 0, INK, true);
-    y -= 21;
+    y -= rowHeight;
   });
 
   line(18, y + 5, 594, y + 5, NAVY, 1.1);
@@ -192,18 +207,21 @@ function buildPdf(data: PdfData) {
   put(582, y - 7, money(total, data.currency), 9, true, NAVY, true);
 
   y -= 44;
-  box(24, y - 68, 274, 68, PANEL, LINE);
+  box(24, y - 82, 274, 82, PANEL, LINE);
   put(36, y - 15, 'COMMERCIAL DETAILS', 7, true, NAVY);
-  (data.domesticQuote ? ['Sale type: Domestic', 'Pricing: Direct unit price', 'Tax: GST as shown', `Validity: ${data.validUntil}`] : [`Destination: ${data.destination}`, `Pricing basis: ${data.basis}`, `Named place: ${data.place}`, `Validity: ${data.validUntil}`]).forEach((lineText, index) => put(36, y - 31 - index * 10, `- ${clip(lineText, 72)}`, 5.7, false, MUTED));
+  const commercialLines = data.domesticQuote
+    ? [`Payment: ${data.paymentTerms || '50% Advance, 50% Before Dispatch'}`, `Lead time: ${data.leadTime || '15 working days after advance + artwork approval'}`, `Validity: ${data.validUntil}`, `Delivery: ${data.deliveryTerms || 'Domestic India - as agreed'}`, `Tax: ${data.taxNote || 'GST as shown'}`]
+    : [`Payment: ${data.paymentTerms || 'As agreed'}`, `Lead time: ${data.leadTime || 'As agreed'}`, `Validity: ${data.validUntil}`, `Basis: ${data.basis} - ${data.place}`, `Delivery: ${data.deliveryTerms || data.destination}`];
+  commercialLines.forEach((lineText, index) => put(36, y - 31 - index * 10.5, `- ${clip(lineText, 74)}`, 5.55, false, MUTED));
 
-  box(314, y - 68, 274, 68, PANEL, LINE);
+  box(314, y - 82, 274, 82, PANEL, LINE);
   put(326, y - 15, `FINANCIAL SUMMARY (${data.currency})`, 7, true, NAVY);
   [['Subtotal', money(subtotal, data.currency)], [data.domesticQuote ? 'Delivery charges' : 'Freight / insurance', data.domesticQuote ? 'As agreed' : 'Not included'], [taxTotal > 0 ? (data.taxLabel || 'GST') : (data.domesticQuote ? 'GST' : 'Taxes / duties'), taxTotal > 0 ? money(taxTotal, data.currency) : (data.domesticQuote ? 'As applicable' : 'Per Incoterm')], ['Amount payable', money(total, data.currency)]].forEach(([label, value], index) => {
     put(326, y - 31 - index * 10, label, 5.8, false, MUTED);
     put(580, y - 31 - index * 10, value, 5.8, index === 3, INK, true);
   });
 
-  y -= 90;
+  y -= 104;
   box(left, y - 76, right - left, 76, '#ffffff', LINE);
   const suggestionLines=(data.volumeSuggestions ?? []).slice(0,2);
   put(36, y - 15, suggestionLines.length ? 'VOLUME SAVINGS & TERMS' : 'TERMS & CONDITIONS', 7, true, NAVY);
@@ -387,11 +405,14 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
 
   if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
   const resolvedOrganizationId=organizationId;
-  const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer').eq('organization_id', resolvedOrganizationId).eq('id', quoteId).maybeSingle();
+  const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, current_version_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer').eq('organization_id', resolvedOrganizationId).eq('id', quoteId).maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
 
   const { data: leadRow } = await db.from('leads').select('id, company_name, contact_name, email, phone, country').eq('organization_id', resolvedOrganizationId).eq('id', quote.lead_id).maybeSingle();
+  const { data: quoteVersion } = quote.current_version_id
+    ? await db.from('quote_versions').select('id,valid_until,pricing_basis,customer_message').eq('quote_id',quote.id).eq('id',quote.current_version_id).maybeSingle()
+    : { data: null };
   const countryPromise = quote.country_id
     ? db.from('countries').select('id, name, market_id, default_port_of_loading').eq('organization_id', resolvedOrganizationId).eq('id', quote.country_id).maybeSingle()
     : leadRow?.country
@@ -399,7 +420,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       : Promise.resolve({ data: null });
 
   const [{ data: items }, { data: org }, { data: country }, { data: freight }] = await Promise.all([
-    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes, line_type, input_snapshot_json, pricing_breakdown_json, calculation_version, packaging_family_id, packaging_size_profile_v5_id').eq('quote_id', quote.id).order('created_at', { ascending: true }),
+    db.from('quote_line_items').select('id, product_id, product_variant_id, quantity, unit_price, catalog_price_amount, is_price_overridden, override_reason, notes, line_type, input_snapshot_json, pricing_breakdown_json, calculation_version, packaging_family_id, packaging_product_variation_id, packaging_size_profile_v5_id').eq('quote_id', quote.id).order('created_at', { ascending: true }),
     db.from('organizations').select('id, name, legal_name, logo_storage_path, registered_address, city, postal_code, headquarters_country, website, contact_email, tax_id, quote_terms_conditions, default_currency').eq('id', organizationId).maybeSingle(),
     countryPromise,
     quote.freight_profile_id ? db.from('freight_profiles').select('id, destination_port, notes').eq('organization_id', resolvedOrganizationId).eq('id', quote.freight_profile_id).maybeSingle() : Promise.resolve({ data: null }),
@@ -423,7 +444,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     packagingFamilyIds.length ? db.from('packaging_service_families').select('id,name').eq('organization_id',resolvedOrganizationId).in('id',packagingFamilyIds) : Promise.resolve({data:[]}),
     packagingVariationIds.length ? db.from('packaging_product_variations').select('id,name,dimension_label,width_mm,height_mm,bottom_gusset_each_mm').in('id',packagingVariationIds) : Promise.resolve({data:[]}),
     sizeProfileIds.length ? db.from('packaging_size_profiles_v5').select('id,name,width_mm,height_mm,bottom_gusset_each_mm').eq('organization_id',resolvedOrganizationId).in('id',sizeProfileIds) : Promise.resolve({data:[]}),
-    constructionIds.length ? db.from('packaging_constructions_v5').select('id,name').eq('organization_id',resolvedOrganizationId).in('id',constructionIds) : Promise.resolve({data:[]}),
+    constructionIds.length ? db.from('packaging_constructions_v5').select('id,name,finish_type,barrier_type,sealant_code,layer_count').eq('organization_id',resolvedOrganizationId).in('id',constructionIds) : Promise.resolve({data:[]}),
   ]);
 
   const productMap = new Map((products ?? []).map((product: any) => [product.id, product]));
@@ -463,14 +484,18 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       const construction:any = constructionMap.get(String(input.construction_id ?? snapshot.construction_id ?? '')) ?? {};
       const size = text(sizeProfile.name ?? (sizeProfile.width_mm && sizeProfile.height_mm ? [sizeProfile.width_mm,sizeProfile.height_mm,sizeProfile.bottom_gusset_each_mm].filter(Boolean).join(' x ')+' mm':null) ?? variation.dimension_label ?? input.dimension_label ?? snapshot.dimension_label ??
         (input.width_mm && input.height_mm ? [input.width_mm,input.height_mm,input.bottom_gusset_each_mm].filter(Boolean).join(' x ') + ' mm' : null),'');
-      const substrate = text(construction.name ?? input.substrate ?? input.construction ?? input.material_construction ?? snapshot.substrate ?? snapshot.construction ?? snapshot.spec_summary,'');
+      const pricedConstruction = line.pricing_breakdown_json?.construction ?? {};
+      const constructionName = text(pricedConstruction.name ?? construction.name ?? input.substrate ?? input.construction ?? input.material_construction ?? snapshot.substrate ?? snapshot.construction ?? snapshot.spec_summary,'');
+      const structureLabel = text(pricedConstruction.structure_label ?? '', '');
       const productName = text(product.name ?? variation.name ?? snapshot.product_name ?? family.name,'Packaging item');
-      const details = [
-        family.name ? 'Family: ' + family.name : '',
-        size ? 'Size: ' + size : '',
-        substrate ? 'Substrate: ' + substrate : '',
+      const details = [family.name ? 'Family: ' + family.name : '', size ? 'Size: ' + size : ''].filter(Boolean).join(' | ');
+      const technical = [
+        constructionName ? 'Construction: ' + constructionName : (structureLabel ? 'Structure: ' + structureLabel : ''),
+        (construction.finish_type ?? pricedConstruction.finish_type) ? 'Finish: ' + humanize(construction.finish_type ?? pricedConstruction.finish_type) : '',
+        input.supply_form ? 'Form: ' + humanize(input.supply_form) : '',
+        (input.print ?? input.print_colors) ? 'Print: ' + text(input.print ?? input.print_colors, '') : '',
       ].filter(Boolean).join(' | ');
-      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, qty: view.isFrame?view.displayQuantity:qty, basis:view.isFrame?(view.unit==='kg'?'kg':'pcs'):displayBasis, casePrice:view.isFrame?view.displayPrice:unitPrice, total:qty*unitPrice };
+      return { sku: text(product.sku_code ?? product.sku,'PKG'), product: productName, specification: details, specification2: technical, qty: view.isFrame?view.displayQuantity:qty, basis:view.isFrame?(view.unit==='kg'?'kg':'pcs'):displayBasis, casePrice:view.isFrame?view.displayPrice:unitPrice, total:qty*unitPrice };
     }
     const product: any = productMap.get(line.product_id) ?? {};
     const variant: any = variantMap.get(line.product_variant_id) ?? {};
@@ -499,6 +524,13 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       return [`${prefix}${summary}`];
     });
 
+  const currentCustomerMessage = text(quoteVersion?.customer_message, '');
+  const isStark = isStarkPackmateOrganization(org);
+  const paymentTerms = commercialValue(currentCustomerMessage, 'Payment terms') || (isStark && domesticQuote ? '50% Advance, 50% Before Dispatch' : '');
+  const leadTime = commercialValue(currentCustomerMessage, 'Lead time') || (isStark && domesticQuote ? '15 working days after advance payment, final artwork approval and technical inputs' : '');
+  const deliveryTerms = [commercialValue(currentCustomerMessage, 'Delivery'), commercialValue(currentCustomerMessage, 'Dispatch')].filter(Boolean).join(' - ');
+  const taxNote = commercialValue(currentCustomerMessage, 'Tax') || commercialValue(currentCustomerMessage, 'GST') || (domesticQuote ? 'GST as shown' : '');
+
   const bytes = buildPdf({
     quoteNo: `Quote ${quote.quote_number ?? quote.id.slice(0, 8)}`,
     org: org ?? { name: workspace?.organization?.name ?? 'Seller' },
@@ -510,14 +542,18 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     domesticQuote,
     currency,
     quoteDate: dateText(quote.updated_at ?? quote.created_at),
-    validUntil: dateText(quote.valid_until),
+    validUntil: dateText(quoteVersion?.valid_until ?? quote.valid_until),
+    paymentTerms,
+    leadTime,
+    deliveryTerms,
+    taxNote,
     terms: text(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'),
     rows,
     volumeSuggestions,
     taxTotal: v5TaxTotal,
     taxLabel: v5TaxTotal > 0 ? 'GST' : undefined,
     logoImage,
-    includeStarkPolicy: isStarkPackmateOrganization(org),
+    includeStarkPolicy: isStark,
   });
 
   if(!token){
