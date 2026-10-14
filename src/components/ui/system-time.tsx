@@ -7,9 +7,10 @@ type SystemTimeProps = {
   fallback?: string;
   includeZone?: boolean;
   compact?: boolean;
+  timeZone?: string;
 };
 
-export function SystemTime({ timestamp, fallback = '—', includeZone = false, compact = false }: SystemTimeProps) {
+export function SystemTime({ timestamp, fallback = '—', includeZone = false, compact = false, timeZone: requestedTimeZone }: SystemTimeProps) {
   const [text, setText] = useState(fallback);
 
   useEffect(() => {
@@ -24,14 +25,14 @@ export function SystemTime({ timestamp, fallback = '—', includeZone = false, c
       return;
     }
 
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const timeZone = requestedTimeZone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const formatted = new Intl.DateTimeFormat(undefined, compact
       ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone }
       : { dateStyle: 'medium', timeStyle: 'short', timeZone }
     ).format(date);
 
     setText(includeZone ? `${formatted} · ${timeZone}` : formatted);
-  }, [compact, fallback, includeZone, timestamp]);
+  }, [compact, fallback, includeZone, requestedTimeZone, timestamp]);
 
   return <span suppressHydrationWarning>{text}</span>;
 }
