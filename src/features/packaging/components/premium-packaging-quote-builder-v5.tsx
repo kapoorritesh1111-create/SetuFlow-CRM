@@ -50,7 +50,7 @@ export default function PremiumPackagingQuoteBuilderV5({
   const [mobileBasketOpen,setMobileBasketOpen]=useState(false);
   const [basketReview,setBasketReview]=useState(false);
   const [lastSavedLineId,setLastSavedLineId]=useState('');
-  const [discountType,setDiscountType]=useState<'percent'|'amount'|'customer_price'>('percent');
+  const [discountType,setDiscountType]=useState<'percent'|'amount'|'customer_price'>('customer_price');
   const [discountValue,setDiscountValue]=useState('');
   const [existingCustomerPrice,setExistingCustomerPrice]=useState('');
   const [discountReason,setDiscountReason]=useState('');
@@ -141,9 +141,9 @@ export default function PremiumPackagingQuoteBuilderV5({
   function pricePerPiece(line:any,quoted:number){return quoted*priceFactor(line);}
   function beginAdjust(line:any){
     setAdjustingLineId(String(line.lineId));
-    setDiscountType(line.discountType==='amount'?'amount':line.discountType==='customer_price'?'customer_price':'percent');
+    setDiscountType(line.discountType==='amount'?'amount':line.discountType==='percent'?'percent':'customer_price');
     setDiscountValue(line.discountType==='none'?'':String(line.discountType==='amount'?priceOnQuote(line,Number(line.discountValue??0)):line.discountValue??''));
-    setExistingCustomerPrice(String(Number(priceOnQuote(line,Number(line.unitPrice??0)).toFixed(6))));
+    setExistingCustomerPrice(String(Number(priceOnQuote(line,Number(line.unitPrice??0)).toFixed(2))));
     setDiscountReason(String(line.discountReason??''));
     setLineNotice('');setLineError('');
   }
@@ -155,7 +155,7 @@ export default function PremiumPackagingQuoteBuilderV5({
     setLineError('');setLineNotice('');
     if(discountType==='customer_price'&&(!Number.isFinite(requestedPrice)||requestedPrice<=0)){setLineError('Customer price must be greater than zero.');return;}
     if(!Number.isFinite(value)||value<0){setLineError('Invalid customer price or discount.');return;}
-    if(!discountReason.trim()){setLineError('Enter a reason for this adjustment.');return;}
+    if(!discountReason.trim()){setLineError('Enter a reason for this adjustment (for example, Approved customer price).');return;}
     startTransition(async()=>{
       const response:any=await adjustPackagingPricingV5QuoteLine({quoteId,leadId,lineId:String(line.lineId),discountType:effectiveType,discountValue:value,reason:discountReason});
       if(!response.ok){setLineError(response.error??'Price adjustment could not be saved.');return;}
