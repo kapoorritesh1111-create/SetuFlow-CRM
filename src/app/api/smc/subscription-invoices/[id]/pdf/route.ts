@@ -1,47 +1,92 @@
-import {NextRequest,NextResponse} from 'next/server';
+import {NextResponse} from 'next/server';
 import {createClient} from '@/lib/supabase/server';
 import {createServiceRoleClient} from '@/lib/supabase/service-role';
 import {INTERNAL_ORG_ID} from '@/lib/config/internal';
-import {readFile} from 'node:fs/promises';
-import {join} from 'node:path';
-import chromium from '@sparticuz/chromium';
-import puppeteer from 'puppeteer-core';
+import {deflateSync} from 'node:zlib';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
-export const maxDuration=60;
-const esc=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
-const m=(n:number,c:string)=>new Intl.NumberFormat('en-US',{style:'currency',currency:c}).format(n);
-const n=(v:unknown)=>Number(v)||0;
-const safeLink=(v:string)=>{try{const u=new URL(v);return u.protocol==='https:'&&['wise.com','www.wise.com'].includes(u.hostname)?u.toString():''}catch{return ''}};
-export async function GET(req:NextRequest,{params}:{params:{id:string}}){
- const sb=await createClient();
- const {data:{user}}=await sb.auth.getUser();
- if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});
+const W=595,H=842;
+function ascii(t:unknown){return String(t??'').normalize('NFKD').replace(/[^\x20-\x7E]/g,c=>c==='–'||c==='—' ? '-' : c==='−' ? '-' : '?');}
+function lit(s:unknown){return '('+ascii(s).replace(/[\\()]/g,'\\$&')+')';}
+function money(n:unknown,c:string){return new Intl.NumberFormat('en-US',{style:'currency',currency:c}).format(Number(n)||0)}
+function urlSafe(s:string){try{const u=new URL(s);return u.protocol==='https:'&&['wise.com','www.wise.com'].includes(u.hostname)?u.toString():''}catch{return ''}}
+function wrap(str:string,max:number){const words=ascii(str).split(/\s+/);const out:string[]=[];let current='';for(const word of words){if(!word)continue;if((current+' '+word).trim().length>max&&current){out.push(current);current=word}else current=(current+' '+word).trim()}if(current)out.push(current);return out}
+type PdfPage={draw:string[];links:{url:string;rect:number[]}[]};
+export function buildInvoicePdf(invoice:any,orgName:string){
+ const pages:PdfPage[]=[{draw:[],links:[]}];let p=pages[0];let y=H-54;
+ const text=(x:number,top:number,s:unknown,size=10,bold=false,color=[0.09,0.2,0.34])=>{p.draw.push(`${color.join(' ')} rg BT /${bold?'F2':'F1'} ${size} Tf 1 0 0 1 ${x} ${top} Tm ${lit(s)} Tj ET`)};
+ const rect=(x:number,top:number,w:number,h:number,r=.94,g=.96,b=.98)=>p.draw.push(`${r} ${g} ${b} rg ${x} ${top} ${w} ${h} re f`);
+ const line=(x:number,top:number,x2:number,top2:number)=>p.draw.push(`0.81 0.87 0.91 RG 0.6 w ${x} ${top} m ${x2} ${top2} l S`);
+ const right=(x:number,top:number,s:unknown,size=10,bold=false)=>text(x-ascii(s).length*size*(bold?.56:.49),top,s,size,bold);
+ const nextPage=()=>{p={draw:[],links:[]};pages.push(p);y=H-55};
+ const heading=()=>{text(43,H-50,'SETU',26,true,[.11,.29,.49]);text(117,H-50,'FLOW',26,true,[.13,.55,.52]);right(W-43,H-47,'INVOICE',27,true);text(44,H-69,'SOFTWARE SUBSCRIPTIONS',8,true);right(W-43,H-69,invoice.invoice_number,11,true);p.draw.push(`0.13 0.58 0.56 RG 2 w 43 ${H-86} m ${W-43} ${H-86} l S`)};
+ heading();
+ text(43,724,'BILL TO',9,true);text(308,724,'ISSUED BY',9,true);
+ text(43,703,orgName,14,true);text(308,703,'SETU Groups LLC',14,true);
+ text(43,685,invoice.recipient_email||'',9);text(308,685,'SETU Flow - SaaS platform',9);
+ text(308,669,'EIN: 41-4901927',9);text(308,653,invoice.sender_email||'billing@setugroups.com',9);
+ rect(43,555,509,65);
+ const fact=[['PLAN',invoice.plan_name],['BILLING',invoice.billing_cycle==='annual'?'Annual / 12 months':'Monthly'],['SERVICE PERIOD',invoice.period_start+' to '+invoice.period_end],['DUE DATE',invoice.due_date]];
+ fact.forEach((f,i)=>{let x=53+i*128;text(x,601,f[0],8,true);text(x,580,f[1],i===2?8:9,true)});
+ text(43,532,'SUBSCRIPTION CHARGES',12,true);
+ rect(43,500,509,23,.10,.25,.40);
+ const cols=[49,263,312,370,427,501];
+ ['SERVICE / LICENSE','SEATS','RATE/MO','MONTHS','DISCOUNT','NET'].forEach((t,i)=>text(cols[i],508,t,7,true,[1,1,1]));
+ y=483;
+ for(const l of invoice.line_items||[]){
+  const desc=wrap(String(l.description||''),30);
+  if(y-25-desc.length*10<238){nextPage();heading();y=H-125}
+  text(49,y,desc[0]||'',9,true);desc.slice(1).forEach((s,i)=>text(49,y-(i+1)*11,s,9));
+  text(263,y,l.quantity,9);text(312,y,money(l.unit_price,invoice.currency),9);
+  text(373,y,l.months||(invoice.billing_cycle==='annual'?12:1),9);
+  text(429,y,l.discount_type==='percent'?String(l.discount_value)+'%':money(l.discount_amount,invoice.currency),9);
+  right(549,y,money(l.total,invoice.currency),9,true);
+  const step=Math.max(36,desc.length*12+15);line(43,y-step+9,552,y-step+9);y-=step;
+ }
+ if(y<260){nextPage();heading();y=H-135}
+ const totalX=338;
+ right(549,y-4,'Subtotal  '+money(invoice.subtotal,invoice.currency),10);
+ right(549,y-24,'Discounts  -'+money(invoice.discount_total,invoice.currency),10);
+ line(totalX,y-35,551,y-35);
+ right(549,y-60,'AMOUNT DUE  '+money(invoice.total,invoice.currency),15,true);
+ y-=103;
+ rect(43,y-65,509,80,.88,.95,.94);
+ text(54,y-5,'PAYMENT INSTRUCTIONS',11,true);
+ text(54,y-23,'Payment due '+invoice.due_date+'; reference '+invoice.invoice_number,9);
+ const wise=urlSafe(invoice.wise_payment_url||'');
+ if(wise){text(54,y-43,'CLICK HERE TO PAY USING WISE',10,true,[.08,.33,.49]);p.links.push({url:wise,rect:[52,y-48,270,y-30]})}
+ else text(54,y-43,'Contact billing for payment instructions.',9);
+ y-=112;
+ const terms=String(invoice.terms_and_conditions||'').replace(/\\n/g,'\n').split(/\r?\n/).filter(Boolean);
+ if(terms.length){if(y<150){nextPage();heading();y=H-125}text(43,y,'SUBSCRIPTION TERMS & CONDITIONS',11,true);y-=23;
+  for(const t of terms){const parts=wrap(t,105);if(y-parts.length*12<72){nextPage();heading();y=H-125}parts.forEach(s=>{text(43,y,s,8);y-=12});y-=5}
+ }
+ if(invoice.notes){const parts=wrap('Notes: '+invoice.notes,100);if(y-parts.length*12<70){nextPage();heading();y=H-125}parts.forEach(s=>{text(43,y,s,8);y-=12})}
+ pages.forEach((pg,i)=>{pg.draw.push(`0.52 0.58 0.64 rg BT /F1 8 Tf 1 0 0 1 43 34 Tm ${lit('SETU Groups LLC | SETU Flow | EIN 41-4901927')} Tj ET`);pg.draw.push(`0.52 0.58 0.64 rg BT /F1 8 Tf 1 0 0 1 493 34 Tm ${lit('Page '+(i+1)+' of '+pages.length)} Tj ET`)});
+ const objs:Buffer[]=[];const add=(s:string|Buffer)=>{objs.push(Buffer.isBuffer(s)?s:Buffer.from(s,'latin1'));return objs.length};
+ const catalog=add('');const pageTree=add('');const font1=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');const font2=add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+ const refs:number[]=[];
+ for(const pg of pages){const compressed=deflateSync(Buffer.from(pg.draw.join('\n'),'latin1'));const stream=add(Buffer.concat([Buffer.from('<< /Length '+compressed.length+' /Filter /FlateDecode >>\nstream\n'),compressed,Buffer.from('\nendstream')]));
+ const annotations=pg.links.map(link=>add(`<< /Type /Annot /Subtype /Link /Rect [${link.rect.join(' ')}] /Border [0 0 0] /A << /S /URI /URI ${lit(link.url)} >> >>`));
+ const page=add(`<< /Type /Page /Parent ${pageTree} 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 ${font1} 0 R /F2 ${font2} 0 R >> >> /Contents ${stream} 0 R /Annots [${annotations.map(a=>a+' 0 R').join(' ')}] >>`);refs.push(page);
+ }
+ objs[catalog-1]=Buffer.from(`<< /Type /Catalog /Pages ${pageTree} 0 R >>`);
+ objs[pageTree-1]=Buffer.from(`<< /Type /Pages /Kids [${refs.map(r=>r+' 0 R').join(' ')}] /Count ${refs.length} >>`);
+ const parts:Buffer[]=[Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n','latin1')];const offsets=[0];let size=parts[0].length;
+ objs.forEach((obj,i)=>{offsets.push(size);const item=Buffer.concat([Buffer.from((i+1)+' 0 obj\n'),obj,Buffer.from('\nendobj\n')]);parts.push(item);size+=item.length});
+ const xref=size;let trailer='xref\n0 '+(objs.length+1)+'\n0000000000 65535 f \n';
+ offsets.slice(1).forEach(off=>trailer+=String(off).padStart(10,'0')+' 00000 n \n');
+ trailer+='trailer\n<< /Size '+(objs.length+1)+' /Root '+catalog+' 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+ parts.push(Buffer.from(trailer));return Buffer.concat(parts);
+}
+export async function GET(_req:Request,{params}:{params:{id:string}}){
+ const sb=await createClient();const {data:{user}}=await sb.auth.getUser();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});
  const {data:member}=await (sb as any).from('organization_members').select('id').eq('organization_id',INTERNAL_ORG_ID).eq('user_id',user.id).eq('is_active',true).maybeSingle();
  if(!member)return NextResponse.json({error:'Forbidden'},{status:403});
  const db=createServiceRoleClient();if(!db)return NextResponse.json({error:'Billing unavailable'},{status:503});
  const {data:invoice,error}=await db.from('smc_subscription_invoices').select('*').eq('id',params.id).maybeSingle();
  if(error||!invoice)return NextResponse.json({error:'Invoice not found'},{status:404});
  const {data:org}=await db.from('organizations').select('name').eq('id',invoice.organization_id).maybeSingle();
- const lines=Array.isArray(invoice.line_items)?invoice.line_items:[];
- const rows=lines.map((l:any)=>'<tr><td><b>'+esc(l.description)+'</b></td><td>'+esc(l.quantity)+'</td><td>'+m(n(l.unit_price),invoice.currency)+'</td><td>'+esc(l.months|| (invoice.billing_cycle==='annual'?12:1))+'</td><td>'+m(n(l.gross),invoice.currency)+'</td><td>'+esc(l.discount_type==='percent'?l.discount_value+'%':'Fixed')+'<br><small>−'+m(n(l.discount_amount),invoice.currency)+'</small></td><td><b>'+m(n(l.total),invoice.currency)+'</b></td></tr>').join('');
- const terms=String(invoice.terms_and_conditions||'').replace(/\\n/g,'\n').split(/\r?\n/).filter(Boolean).map(t=>'<p>'+esc(t)+'</p>').join('');
- const wise=safeLink(String(invoice.wise_payment_url||''));
- let logo='';try{const bytes=await readFile(join(process.cwd(),'public','logos','setu-flow-logo.png'));logo='<img src="data:image/png;base64,'+bytes.toString('base64')+'" alt="SETU Flow" class="logo"/>'}catch{logo='<h3>SETU Flow</h3>'}
- const html=`<!doctype html><html><head><meta charset="utf-8"><style>
- @page{size:A4;margin:15mm 13mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#17304c;font-size:10px;margin:0;line-height:1.5}header{display:flex;justify-content:space-between;align-items:start;border-bottom:3px solid #279491;padding-bottom:18px}.logo{max-height:65px;max-width:180px;object-fit:contain}h1{font-size:29px;letter-spacing:2px;margin:0}h2{font-size:15px}h3{font-size:12px;margin:0 0 6px}.muted,small{color:#6b7d8c}small{font-size:9px}.label{font-size:9px;color:#698198;letter-spacing:1px;font-weight:bold}.parties{display:flex;justify-content:space-between;gap:20px;padding:22px 0}.parties>div{width:48%}.parties p{margin:3px 0}.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px;background:#f2f7fa;border-radius:5px}.facts b{display:block;margin-top:5px}table{width:100%;border-collapse:collapse;margin-top:12px}thead{background:#173e63;color:white}th,td{text-align:right;padding:10px 7px}th:first-child,td:first-child{text-align:left}th{font-size:8px;text-transform:uppercase}td{border-bottom:1px solid #dfe8ef;vertical-align:top}tbody tr{break-inside:avoid}.totals{margin:22px 0 25px auto;width:280px}.totals div{display:flex;justify-content:space-between;padding:6px 0}.totals .grand{border-top:2px solid #173e63;padding-top:13px;margin-top:6px;font-size:15px;color:#173e63}.payment{padding:15px;border-left:4px solid #279491;background:#eaf5f4;break-inside:avoid}.payment p{margin:4px 0}.pay{color:#173e63;font-weight:bold;text-decoration:underline}.terms{margin-top:23px;padding-top:12px;border-top:1px solid #d9e5ee}.terms p{font-size:9px;color:#536579;margin:0 0 8px;break-inside:avoid}.footer{margin-top:25px;border-top:1px solid #d9e5ee;padding-top:11px;display:flex;justify-content:space-between;color:#6b7d8c;font-size:9px}.page-heading{font-size:12px;font-weight:bold;text-align:right}
- </style></head><body><header><div>${logo}<div class="label">SOFTWARE SUBSCRIPTIONS</div></div><div style="text-align:right"><h1>INVOICE</h1><div class="page-heading">${esc(invoice.invoice_number)}</div></div></header>
- <div class="parties"><div><div class="label">BILL TO</div><h2>${esc(org?.name||'Customer')}</h2><p>${esc(invoice.recipient_email)}</p></div><div><div class="label">ISSUED BY</div><h2>SETU Groups LLC</h2><p>SETU Flow — SaaS platform</p><p>EIN: 41-4901927</p><p>${esc(invoice.sender_email||'billing@setugroups.com')}</p></div></div>
- <div class="facts"><div><div class="label">PLAN</div><b>${esc(invoice.plan_name)}</b></div><div><div class="label">CYCLE</div><b>${invoice.billing_cycle==='annual'?'Annual · 12 months':'Monthly'}</b></div><div><div class="label">SERVICE PERIOD</div><b>${esc(invoice.period_start)} – ${esc(invoice.period_end)}</b></div><div><div class="label">PAYMENT DUE</div><b>${esc(invoice.due_date)}</b></div></div>
- <h2 style="margin-top:26px">Subscription charges</h2><table><thead><tr><th>Service / license</th><th>Seats</th><th>Rate / month</th><th>Months</th><th>Subtotal</th><th>Discount</th><th>Net</th></tr></thead><tbody>${rows}</tbody></table>
- <div class="totals"><div><span>Subtotal</span><b>${m(n(invoice.subtotal),invoice.currency)}</b></div><div><span>Discount savings</span><b>−${m(n(invoice.discount_total),invoice.currency)}</b></div><div class="grand"><span>AMOUNT DUE</span><b>${m(n(invoice.total),invoice.currency)}</b></div></div>
- <div class="payment"><h3>Payment instructions</h3><p>Please pay by ${esc(invoice.due_date)} and include reference <b>${esc(invoice.invoice_number)}</b>.</p>${wise?'<p><a class="pay" href="'+esc(wise)+'">Pay invoice securely using Wise ↗</a></p>':'<p>Contact the billing team for payment instructions.</p>'}</div>
- ${invoice.notes?'<div style="margin-top:18px"><h3>Additional notes</h3><p>'+esc(invoice.notes)+'</p></div>':''}
- ${terms?'<section class="terms"><h3>Subscription terms &amp; conditions</h3>'+terms+'</section>':''}
- <footer class="footer"><span>SETU Groups LLC · SETU Flow · EIN 41-4901927</span><span>Billing questions: ${esc(invoice.sender_email||'billing@setugroups.com')}</span></footer></body></html>`;
- let browser;try{
- browser=await puppeteer.launch({args:chromium.args,executablePath:await chromium.executablePath(),headless:true});
- const page=await browser.newPage();await page.setContent(html,{waitUntil:'load'});const pdf=await page.pdf({format:'A4',printBackground:true,displayHeaderFooter:false,preferCSSPageSize:true});
- return new NextResponse(Buffer.from(pdf),{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="'+invoice.invoice_number+'.pdf"','Cache-Control':'private, no-store'}});
- }catch(e){console.error('Invoice PDF generation failed',e);return NextResponse.json({error:'Unable to generate invoice PDF'},{status:500})}finally{await browser?.close()}
+ try{const pdf=buildInvoicePdf(invoice,org?.name||'Customer');return new NextResponse(new Uint8Array(pdf),{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="'+invoice.invoice_number+'.pdf"','Cache-Control':'private, no-store'}})}
+ catch(e){console.error('Invoice PDF serialization failed',e);return NextResponse.json({error:'Invoice PDF generation failed'},{status:500})}
 }
