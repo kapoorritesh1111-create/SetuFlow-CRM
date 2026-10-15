@@ -188,3 +188,24 @@
   border: 1px solid #cde7e5; background: #eaf4f3; color: #1f7e7b;
   font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
 }
+
+/* Mobile usability hardening: preserve viewport, forms, and safe-area controls. */
+@media (max-width: 767px) {
+  .smc-root, .smc-shell, .smc-main { min-width: 0; max-width: 100%; }
+  .smc-main { overflow-x: hidden; overscroll-behavior-y: contain; }
+  .smc-main input, .smc-main select, .smc-main textarea { font-size: max(16px, 1em); max-width: 100%; }
+  .smc-main img, .smc-main video, .smc-main canvas { max-width: 100%; height: auto; }
+  .smc-main table { max-width: none; }
+  .smc-main :is(.smc-table-wrap, .smc-table-scroll, .smc-overflow-x, .overflow-x-auto) { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .smc-mtabs { box-sizing: content-box; }
+  .smc-mtab { min-width: 0; min-height: 44px; touch-action: manipulation; }
+  .smc-msheet { max-height: min(82dvh, calc(100dvh - env(safe-area-inset-top) - 16px)); overscroll-behavior: contain; }
+  .smc-msheet:not(.open), .smc-msheet-scrim:not(.open) { visibility: hidden; }
+  .smc-msheet-cell { min-width: 0; min-height: 48px; overflow-wrap: anywhere; }
+  .smc-msheet-grid { min-width: 0; }
+  .smc-msheet:focus-within { outline: none; }
+}
+@media (max-width: 359px) {
+  .smc-msheet-grid { grid-template-columns: 1fr; }
+  .smc-mtab-lb { font-size: 9px; }
+}
