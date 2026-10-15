@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   const tax_total=0;
   const { data: seq, error: seqError } = await db.rpc('smc_next_invoice_number');
   if (seqError || !seq) return bad('Could not allocate invoice number',500);
-  const {data,error}=await db.from('smc_subscription_invoices').insert({organization_id:x.organization_id,invoice_number:seq,billing_cycle:x.billing_cycle,plan_name:x.plan_name.trim(),currency:x.currency,period_start:x.period_start,period_end:x.period_end,due_date:x.due_date,wise_payment_url:url||null,line_items:lines,subtotal,discount_total,tax_total,total:money(subtotal-discount_total),notes:String(x.notes||'').slice(0,2000),created_by:user.id,status:'draft'}).select('*').single();
+  const {data,error}=await db.from('smc_subscription_invoices').insert({organization_id:x.organization_id,invoice_number:seq,billing_cycle:x.billing_cycle,plan_name:x.plan_name.trim(),currency:x.currency,period_start:x.period_start,period_end:x.period_end,due_date:x.due_date,wise_payment_url:url||null,line_items:lines,subtotal,discount_total,tax_total,total:money(subtotal-discount_total),notes:String(x.notes||'').slice(0,2000),terms_and_conditions:String(x.terms_and_conditions||'').slice(0,12000),recipient_email:String(x.recipient_email||'').slice(0,254),sender_email:String(x.sender_email||'').slice(0,254),created_by:user.id,status:'draft'}).select('*').single();
   return error?bad(error.message,500):NextResponse.json({invoice:data},{status:201});
 }
 export async function PATCH(request:NextRequest) {
