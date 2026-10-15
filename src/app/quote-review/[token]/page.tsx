@@ -162,10 +162,14 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
               const construction = constructionId ? byConstruction.get(String(constructionId)) : null;
               const pricedConstruction = line.pricing_breakdown_json?.construction ?? {};
               const constructionName = pricedConstruction.name || construction?.name || input.construction || input.substrate || snapshot.construction || '';
-              const width = Number(input.width_mm ?? variation?.width_mm ?? 0);
-              const height = Number(input.height_mm ?? variation?.height_mm ?? 0);
-              const gusset = Number(input.bottom_gusset_each_mm ?? variation?.bottom_gusset_each_mm ?? 0);
-              const dimensionText = variation?.dimension_label || (width>0&&height>0 ? [width,height,gusset>0?gusset:null].filter(Boolean).join(' × ')+' mm' : '');
+              const customSize = input.custom_size;
+              const isCustomSize = Number(customSize?.width_mm)>0 && Number(customSize?.height_mm)>0 && Number(customSize?.bottom_gusset_each_mm)>0;
+              const width = Number(isCustomSize ? customSize.width_mm : (input.width_mm ?? variation?.width_mm ?? 0));
+              const height = Number(isCustomSize ? customSize.height_mm : (input.height_mm ?? variation?.height_mm ?? 0));
+              const gusset = Number(isCustomSize ? customSize.bottom_gusset_each_mm : (input.bottom_gusset_each_mm ?? variation?.bottom_gusset_each_mm ?? 0));
+              const dimensionText = isCustomSize
+                ? `${width} × ${height} mm · BG ${gusset}+${gusset}`
+                : variation?.dimension_label || (width>0&&height>0 ? [width,height,gusset>0?gusset:null].filter(Boolean).join(' × ')+' mm' : '');
               const supplyForm = input.supply_form ? label(input.supply_form) : '';
               const printSpec = input.print ?? input.print_colors ?? '';
               const finishSpec = construction?.finish_type ?? pricedConstruction.finish_type ?? input.finish ?? '';
