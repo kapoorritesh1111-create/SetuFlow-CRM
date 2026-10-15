@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingIncludes: {
-    '/api/smc/subscription-invoices/*/pdf': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+    '/api/smc/subscription-invoices/**/*': ['./node_modules/@sparticuz/chromium/bin/**/*'],
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
   experimental: {
     webpackBuildWorker: false,
+    serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
     serverActions: {
       bodySizeLimit: '15mb'
     }
