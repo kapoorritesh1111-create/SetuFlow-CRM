@@ -209,3 +209,30 @@
   .smc-msheet-grid { grid-template-columns: 1fr; }
   .smc-mtab-lb { font-size: 9px; }
 }
+
+/* SMC mobile workflow layout — Billing and Client Organizations. */
+@media (max-width: 767px) {
+  .smc-billing-page { padding: 14px !important; overflow-x: hidden !important; }
+  .smc-billing-page > div { width: 100%; min-width: 0; }
+  .smc-billing-form { padding: 14px !important; min-width: 0; }
+  .smc-billing-form > div[style*="grid-template-columns"] { grid-template-columns: minmax(0, 1fr) !important; }
+  .smc-billing-line { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; padding: 14px 0; border-bottom: 1px solid #e2e8f0; }
+  .smc-billing-line > :first-child { grid-column: 1 / -1; }
+  .smc-billing-line > * { min-width: 0; max-width: 100%; }
+  .smc-billing-line :is(input, select) { min-width: 0; width: 100%; box-sizing: border-box; }
+  .smc-billing-page label { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+  .smc-billing-page :is(input, select, textarea) { box-sizing: border-box; min-width: 0; max-width: 100%; }
+  .smc-billing-page p { overflow-wrap: anywhere; }
+  .smc-billing-page button { min-height: 44px; }
+  .smc-client-workspace { height: auto !important; min-height: 100%; overflow: visible !important; }
+  .smc-client-workspace > div:first-child { padding: 16px !important; }
+  .smc-client-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .smc-client-body { grid-template-columns: minmax(0,1fr) !important; display: grid !important; gap: 14px !important; padding: 12px !important; overflow: visible !important; }
+  .smc-client-list { max-height: none !important; overflow: visible !important; min-width: 0; }
+  .smc-client-list > div:last-child { overflow: visible !important; max-height: none !important; }
+  .smc-client-details { min-width: 0 !important; overflow: visible !important; }
+  .smc-client-details [style*="grid-template-columns"] { grid-template-columns: minmax(0,1fr) !important; }
+  .smc-client-details [style*="grid-template-columns: 1fr auto"] { grid-template-columns: minmax(0,1fr) auto !important; }
+  .smc-client-details :is(input, select, textarea, button) { max-width: 100%; box-sizing: border-box; }
+  .smc-client-details [style*="overflow: auto"], .smc-client-details [style*="overflow-x"] { max-width: 100%; }
+}
