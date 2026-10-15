@@ -37,6 +37,7 @@ const NAV_GROUPS: NavGroup[] = [
     { id: "followups", path: "/smc/leads/followups", icon: "Bell", label: "Follow-up Queue" },
     { id: "clients", path: "/smc/clients", icon: "Users", label: "Client Orgs" },
     { id: "revenue", path: "/smc/revenue", icon: "$", label: "Revenue" },
+    { id: "billing", path: "/smc/billing", icon: "$", label: "Billing & Invoices" },
     { id: "mail-usage", path: "/smc/mail-usage", icon: "Mail", label: "Mail Usage" },
     { id: "roadmap", path: "/smc/roadmap", icon: "Road", label: "Roadmap" },
   ] },
