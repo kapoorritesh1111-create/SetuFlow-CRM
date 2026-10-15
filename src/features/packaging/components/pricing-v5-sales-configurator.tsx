@@ -59,6 +59,10 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
 
   const [editingLineId, setEditingLineId] = useState('');
   const [sizeId, setSizeId] = useState(sizes[0]?.id ?? '');
+  const [customMode, setCustomMode] = useState(false);
+  const [customWidth, setCustomWidth] = useState('150');
+  const [customHeight, setCustomHeight] = useState('220');
+  const [customGusset, setCustomGusset] = useState('50');
   const [constructionId, setConstructionId] = useState(constructions[0]?.id ?? '');
   const [print, setPrint] = useState<'CMYK' | 'CMYKW'>('CMYKW');
   const [quantity, setQuantity] = useState(1000);
@@ -74,15 +78,29 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
   const [saved, setSaved] = useState('');
   const [pending, startTransition] = useTransition();
 
-  const size = sizes.find((item: any) => item.id === sizeId) ?? sizes[0];
+  const customAnchor = useMemo(() => sizes.find((item:any)=>
+    Math.abs(Number(item.width_mm)-150)<0.01 &&
+    Math.abs(Number(item.height_mm)-220)<0.01 &&
+    Math.abs(Number(item.bottom_gusset_each_mm)-50)<0.01
+  ) ?? null, [sizes]);
+  const selectedSize = sizes.find((item: any) => item.id === sizeId) ?? sizes[0];
+  const customDimensionsValid = Number(customWidth)>0 && Number(customHeight)>0 && Number(customGusset)>0;
+  const size = customMode && customAnchor ? {
+    ...customAnchor,
+    width_mm:Number(customWidth||0),
+    height_mm:Number(customHeight||0),
+    bottom_gusset_each_mm:Number(customGusset||0),
+    name:`${customWidth || '—'}x${customHeight || '—'}mm custom (BG ${customGusset || '—'}+${customGusset || '—'})`,
+    custom_size:true,
+  } : selectedSize;
   const compatibleConstructions = useMemo(() => {
-    if (size?.custom_size) return constructions;
+    if (customMode) return constructions;
     const allowed=new Set((size?.allowed_pe_microns ?? []).map((value: unknown)=>Number(value)));
     return constructions.filter((item:any)=>allowed.has(Number(item.pe_micron)));
-  }, [constructions, size]);
+  }, [constructions, size, customMode]);
   const construction = compatibleConstructions.find((item: any) => item.id === constructionId) ?? compatibleConstructions[0] ?? null;
   const askBottomPrint = size?.bottom_registration_mode === 'optional' && size?.gusset_production_mode === 'conditional';
-  const matchingKlds = useMemo(() => klds.filter((item: any) => kldMatchesSize(item, size)), [klds, size]);
+  const matchingKlds = useMemo(() => customMode ? [] : klds.filter((item: any) => kldMatchesSize(item, size)), [klds, size, customMode]);
   const matchingKldIds = matchingKlds.map((item:any)=>String(item.id)).join('|');
   const validQuantities = useMemo(() => [1000,2000,3000,5000,10000,20000,30000,50000].filter((value)=>quantityAllowedForSize(size,value)), [size]);
   const sizeGuidance = useMemo(
@@ -92,7 +110,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
   const quantityAllowed = quantityAllowedForSize(size, quantity);
   const suggestedQuantity = quantityAllowed ? null : nextValidReviewQuantity(size,quantity);
   const manualSpotUvValid = !spotUvEnabled || (Number.isFinite(Number(spotUvAmount)) && Number(spotUvAmount) > 0);
-  const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && manualSpotUvValid && (!askBottomPrint || bottomPrintMode));
+  const canPrice = Boolean(family?.id && template?.id && size?.id && construction?.id && quantity > 0 && quantityAllowed && manualSpotUvValid && (!customMode || (customAnchor?.id && customDimensionsValid)) && (!askBottomPrint || bottomPrintMode));
   const currency = preview?.selling_price?.currency ?? template?.currency ?? 'INR';
   useEffect(() => {
     if (!sizes.some((item: any) => item.id === sizeId)) setSizeId(sizes[0]?.id ?? '');
@@ -135,7 +153,12 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
 
   function buildInput() {
     return {
-      size_profile_id: size?.id ?? '',
+      size_profile_id: customMode ? (customAnchor?.id ?? '') : (size?.id ?? ''),
+      custom_size: customMode ? {
+        width_mm:Number(customWidth),
+        height_mm:Number(customHeight),
+        bottom_gusset_each_mm:Number(customGusset),
+      } : null,
       construction_id: construction?.id ?? '',
       print,
       quantity,
@@ -176,12 +199,18 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [template?.id, size?.id, construction?.id, print, quantity, bottomPrintMode, selectedChargeCodes.join('|'), spotUvEnabled, spotUvAmount, kldFileId, canPrice]);
+  }, [template?.id, size?.id, construction?.id, print, quantity, bottomPrintMode, selectedChargeCodes.join('|'), spotUvEnabled, spotUvAmount, kldFileId, canPrice, customMode, customWidth, customHeight, customGusset, customAnchor?.id]);
 
   function editSavedLine(line: any) {
     if (!line) return;
     setEditingLineId(String(line.lineId ?? ''));
     setSizeId(String(line.sizeProfileId ?? sizes[0]?.id ?? ''));
+    setCustomMode(Boolean(line.customSize));
+    if(line.customSize){
+      setCustomWidth(String(line.customSize.width_mm ?? ''));
+      setCustomHeight(String(line.customSize.height_mm ?? ''));
+      setCustomGusset(String(line.customSize.bottom_gusset_each_mm ?? ''));
+    }
     setConstructionId(String(line.constructionId ?? constructions[0]?.id ?? ''));
     setPrint(line.print === 'CMYK' ? 'CMYK' : 'CMYKW');
     setQuantity(Number(line.quantity ?? 1000));
@@ -235,13 +264,21 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
     });
     const requestedSize=requestedSizeById??requestedSizeByDimensions;
     if(requestedSize) {
+      setCustomMode(false);
       setSizeId(String(requestedSize.id));
+      setKldFileId('');
+    } else if(width>0&&height>0&&customAnchor) {
+      setCustomMode(true);
+      setSizeId(String(customAnchor.id));
+      setCustomWidth(String(width));
+      setCustomHeight(String(height));
+      setCustomGusset(String(gusset>0?gusset:50));
       setKldFileId('');
     }
     const quantityText=String(requirementSeed.quantity??source.quantity_text??'');
     const rawQuantity=(quantityText.match(/[0-9][0-9,]*/)?.[0]??'').replaceAll(',','');
     const requestedQuantity=Math.floor(Number(rawQuantity||0));
-    const targetSize=requestedSize??size;
+    const targetSize=requestedSize??(customAnchor??size);
     if(requestedQuantity>0){
       const nextQuantity=quantityAllowedForSize(targetSize,requestedQuantity)?requestedQuantity:(nextValidReviewQuantity(targetSize,requestedQuantity)??firstValidReviewQuantity(targetSize));
       setQuantity(nextQuantity);
@@ -258,6 +295,7 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
 
   function startNewLine() {
     setEditingLineId('');
+    setCustomMode(false);
     setSizeId(sizes[0]?.id ?? '');
     setConstructionId(constructions[0]?.id ?? '');
     setPrint('CMYKW');
@@ -316,8 +354,9 @@ export default function PricingV5SalesConfigurator({ quoteId, leadId, options, s
             <div className="rounded-xl border border-cyan-200 bg-cyan-50/50 p-3 md:col-span-2"><div className="text-[10px] font-black uppercase tracking-wide text-cyan-700">Suggested approved sizes</div>{sizeGuidance.length?<div className="mt-2 grid gap-2 sm:grid-cols-3">{sizeGuidance.map((row:any)=><button type="button" key={row.item.id} onClick={()=>{setSizeId(row.item.id);setKldFileId('');invalidate();}} className="rounded-lg border border-cyan-200 bg-white px-3 py-2 text-left text-xs text-slate-700"><span className="block font-black">{row.item.name}</span>{row.matchedGram?<span className="mt-1 block font-semibold text-cyan-700">Closest configured fill: {Number(row.matchedGram).toLocaleString()} g</span>:null}{row.applicationExamples.length?<span className="mt-1 block font-semibold text-slate-400">{row.applicationExamples.join(' · ')}</span>:null}</button>)}</div>:<p className="mt-1 text-[11px] font-semibold text-slate-500">{fillGrams||application?'No approved size guidance matches this requirement yet. Choose an approved size manually.':'Enter fill weight and/or application for approved guidance.'}</p>}</div>
             </div>
             </details>
-            <label className="text-xs font-black text-slate-600">Pouch size<select value={size?.id ?? ''} onChange={(e) => { setSizeId(e.target.value); setKldFileId(''); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">Size guidance</div><div className="mt-1 text-sm font-black text-slate-800">{size?.width_mm} × {size?.height_mm} mm · BG {size?.bottom_gusset_each_mm}+{size?.bottom_gusset_each_mm}</div>{(size?.recommended_fill_grams??[]).length?<div className="mt-1 text-[11px] font-semibold text-cyan-700">Recommended fill: {(size.recommended_fill_grams??[]).map((v:any)=>Number(v).toLocaleString()+' g').join(' · ')}</div>:null}{size?.application_examples?<div className="mt-1 text-[11px] font-semibold text-slate-500">Typical applications: {size.application_examples}</div>:null}</div>
+            <label className="text-xs font-black text-slate-600">Pouch size<select value={customMode?'__custom__':(selectedSize?.id ?? '')} onChange={(e) => { if(e.target.value==='__custom__'){ if(customAnchor){setCustomMode(true);setSizeId(String(customAnchor.id));setCustomWidth('150');setCustomHeight('220');setCustomGusset('50');} }else{setCustomMode(false);setSizeId(e.target.value);} setKldFileId(''); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900">{sizes.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}{customAnchor?<option value="__custom__">Custom size — use 150 × 220 pricing bucket</option>:null}</select>{!customAnchor?<span className="mt-1 block text-[11px] font-semibold text-rose-600">Custom size is unavailable because the 150 × 220 mm pricing anchor is not configured.</span>:null}</label>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="text-[10px] font-black uppercase tracking-wide text-slate-400">{customMode?'Custom size':'Size guidance'}</div><div className="mt-1 text-sm font-black text-slate-800">{size?.width_mm} × {size?.height_mm} mm · BG {size?.bottom_gusset_each_mm}+{size?.bottom_gusset_each_mm}</div>{customMode?<div className="mt-1 text-[11px] font-semibold text-blue-700">Physical dimensions use the custom values; commercial bucket and quantity rules use the approved 150 × 220 mm profile.</div>:null}{!customMode&&(size?.recommended_fill_grams??[]).length?<div className="mt-1 text-[11px] font-semibold text-cyan-700">Recommended fill: {(size.recommended_fill_grams??[]).map((v:any)=>Number(v).toLocaleString()+' g').join(' · ')}</div>:null}{!customMode&&size?.application_examples?<div className="mt-1 text-[11px] font-semibold text-slate-500">Typical applications: {size.application_examples}</div>:null}</div>
+            {customMode?<div className="md:col-span-2 rounded-xl border border-blue-200 bg-blue-50/60 p-3"><div className="text-xs font-black text-blue-900">Custom stand-up pouch dimensions</div><p className="mt-1 text-[11px] font-semibold text-blue-700">Enter the actual pouch dimensions. Pricing uses these dimensions for material and production calculations while retaining the same PG bucket as 150 × 220 mm.</p><div className="mt-3 grid gap-2 sm:grid-cols-3"><label className="text-[11px] font-black text-slate-600">Width (mm)<input type="number" min="1" step="1" value={customWidth} onChange={(e)=>{setCustomWidth(e.target.value);setKldFileId('');invalidate();}} className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold"/></label><label className="text-[11px] font-black text-slate-600">Height (mm)<input type="number" min="1" step="1" value={customHeight} onChange={(e)=>{setCustomHeight(e.target.value);setKldFileId('');invalidate();}} className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold"/></label><label className="text-[11px] font-black text-slate-600">Bottom gusset each side (mm)<input type="number" min="1" step="1" value={customGusset} onChange={(e)=>{setCustomGusset(e.target.value);setKldFileId('');invalidate();}} className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-semibold"/></label></div></div>:null}
             <label className="text-xs font-black text-slate-600">Material & finish<select value={construction?.id ?? ''} disabled={!compatibleConstructions.length} onChange={(e) => { setConstructionId(e.target.value); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 disabled:bg-slate-100">{compatibleConstructions.map((item: any) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="mt-1 block text-[11px] font-semibold text-teal-700">{compatibleConstructions.length ? (size?.custom_size ? `Custom size · ${compatibleConstructions.length} active construction${compatibleConstructions.length===1?'':'s'} available` : `Approved PE ${(size?.allowed_pe_microns ?? []).join(' / ')}µ · ${compatibleConstructions.length} compatible construction${compatibleConstructions.length===1?'':'s'}`) : 'No approved construction is configured for this size.'}</span></label>
             <label className="text-xs font-black text-slate-600">Printing<select value={print} onChange={(e) => { setPrint(e.target.value as 'CMYK' | 'CMYKW'); invalidate(); }} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900"><option value="CMYK">Digital (CMYK)</option><option value="CMYKW">Digital (CMYKW)</option></select></label>
           </div>
