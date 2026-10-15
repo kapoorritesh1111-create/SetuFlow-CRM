@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingIncludes: {
+    '/api/smc/subscription-invoices/*/pdf': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
