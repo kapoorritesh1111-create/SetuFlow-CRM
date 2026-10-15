@@ -11,8 +11,6 @@ type NavGroup = { key: string; label: string; icon: string; items: NavItem[] };
 type TeamMember = { userId: string; name: string; initials: string; online: boolean };
 
 const SETU_ORG_ID = INTERNAL_ORG_ID;
-const CURRENT_USER_ID = "180afa12-6ff6-4e16-b8d1-04b13e508970";
-const CURRENT_USER_NAME = "Ritesh Kapoor";
 
 // Grouped navigation IA (S33-SMC-006): five functional groups instead of a flat tool list.
 const NAV_GROUPS: NavGroup[] = [
@@ -109,7 +107,7 @@ function icon(text: ReactNode) {
   return <span className="smc-ico">{text}</span>;
 }
 
-export function SmcShell({ children }: { children: ReactNode }) {
+export function SmcShell({ children, userId, userName }: { children: ReactNode; userId: string; userName: string }) {
   const pathname = usePathname();
   const [sb, setSb] = useState(true);
   const [notif, setNotif] = useState(false);
@@ -163,7 +161,7 @@ export function SmcShell({ children }: { children: ReactNode }) {
     {sb && <nav className="smc-sb"><div className="smc-sb-head"><div className="smc-workspace-brand"><span>Setu Mission Control</span><strong>{activeItem.label}</strong></div><span className="smc-mbdg">Internal</span></div><div className="smc-sb-scroll"><div className="smc-ngl">{shownGroup.label}</div>{shownGroup.items.map((n) => <Link key={n.id} href={n.path} className={`smc-ni ${isA(n.path) ? "active" : ""}`}>{icon(n.icon)} {n.label}{n.id === "issues" ? <span className="cnt">{counts.total || "..."}</span> : (n.id === "guests" && guestUnread > 0) ? <span className="cnt" style={{ background: "#279491", color: "#fff" }}>{guestUnread}</span> : (n.id === "followups" && followupOverdue > 0) ? <span className="cnt" style={{ background: "#dc2626", color: "#fff" }}>{followupOverdue}</span> : null}</Link>)}</div><div className="smc-tm-sec"><h4>Channels</h4>{CHANNELS.map((ch) => <button key={ch.key} className={"smc-tm smc-team-chat-row"} onClick={() => {}}><div className="smc-av" style={{ background: "#0f2744" }}>#</div><span>{ch.label}</span>{unreadCounts[ch.key] ? <span style={{marginLeft:"auto",background:"#279491",color:"#fff",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:8,minWidth:16,textAlign:"center"}}>{unreadCounts[ch.key]}</span> : <small>Channel</small>}</button>)}<h4 style={{ marginTop: 8 }}>Team</h4>{TEAM_MEMBERS.map((t) => <button key={t.userId} className={"smc-tm"} onClick={() => {}}><div className="smc-av" style={{ background: t.initials === "RK" ? "#279491" : t.initials === "KM" ? "#1F487C" : "#8b5cf6" }}>{t.initials}{t.online && <span className="on" />}</div><span>{t.name}</span><small>{t.online ? "Online" : "Away"}</small></button>)}</div></nav>}
     <main className="smc-main">{children}</main>
     <div className={`smc-notif ${notif ? "open" : ""}`}><div className="smc-notif-head"><h3>Notifications</h3><button onClick={() => setNotif(false)}>Close</button></div>{guestUnread > 0 ? <div style={{ padding: 12 }}><Link href="/smc/guests" onClick={() => setNotif(false)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#f8fafc", textDecoration: "none", color: "#1e293b" }}><span style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#1f487c,#279491)", color: "#fff", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{guestUnread}</span><span><strong style={{ fontSize: 13 }}>{guestUnread} guest {guestUnread === 1 ? "session" : "sessions"} awaiting a reply</strong><span style={{ display: "block", fontSize: 11.5, color: "#64748b", marginTop: 2 }}>Open Guest Sessions to respond →</span></span></Link></div> : <div className="smc-empty-state"><div className="smc-empty-icon">Bell</div><h4>No new notifications</h4><p>Live operational alerts will appear here when there is something to review.</p></div>}</div>
-    <CrmChatFab organizationId={SETU_ORG_ID} currentUserId={CURRENT_USER_ID} currentUserName={CURRENT_USER_NAME} orgMembers={TEAM_MEMBERS.map((t) => ({ id: t.userId, name: t.name, role: "member" }))} />
+    <CrmChatFab organizationId={SETU_ORG_ID} currentUserId={userId} currentUserName={userName} orgMembers={TEAM_MEMBERS.map((t) => ({ id: t.userId, name: t.name, role: "member" }))} />
     <div className={`smc-mobile-nav ${mobileNav ? "open" : ""}`}><div className="smc-mobile-nav-card"><div className="smc-mobile-nav-head"><h3>SMC navigation</h3><button onClick={() => setMobileNav(false)}>Close</button></div><div className="smc-mobile-nav-grid">{ALL_ITEMS.map((n) => <Link key={n.id} href={n.path} onClick={() => setMobileNav(false)}>{icon(n.icon)}<span>{n.label}</span></Link>)}</div></div></div>
   </div>;
 }
