@@ -1,0 +1,42 @@
+'use client';
+import {useEffect,useState} from 'react';
+type Line={description:string;quantity:number;unit_price:number;discount_type:'percent'|'fixed';discount_value:number};
+const starter:Line[]=[{description:'SETU Flow CRM subscription',quantity:15,unit_price:0,discount_type:'percent',discount_value:0},{description:'SETU Mail - 20 licenses',quantity:20,unit_price:0,discount_type:'percent',discount_value:0}];
+const today=()=>new Date().toISOString().slice(0,10);
+export default function BillingPage(){
+ const [orgs,setOrgs]=useState<{id:string;name:string}[]>([]),[org,setOrg]=useState(''),[invoices,setInvoices]=useState<any[]>([]),[cycle,setCycle]=useState('monthly'),[currency,setCurrency]=useState('USD'),[plan,setPlan]=useState('Growth'),[start,setStart]=useState(today()),[end,setEnd]=useState(today()),[due,setDue]=useState(today()),[url,setUrl]=useState(''),[notes,setNotes]=useState(''),[lines,setLines]=useState<Line[]>(starter),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency}).format(n);
+ const subtotal=lines.reduce((s,l)=>s+l.quantity*l.unit_price,0);
+ const discount=lines.reduce((s,l)=>s+(l.discount_type==='percent'?l.quantity*l.unit_price*l.discount_value/100:l.discount_value),0);
+ const load=async()=>{const r=await fetch('/api/smc/subscription-invoices');if(r.ok)setInvoices((await r.json()).invoices||[])};
+ useEffect(()=>{fetch('/api/smc/billing-organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);const stark=(d.organizations||[]).find((x:any)=>x.name.toLowerCase().includes('stark'));if(stark)setOrg(stark.id)}).catch(()=>{});load()},[]);
+ const change=(i:number,k:keyof Line,v:any)=>setLines(old=>old.map((l,j)=>i===j?{...l,[k]:v}:l));
+ const save=async()=>{setBusy(true);setMessage('');try{const r=await fetch('/api/smc/subscription-invoices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({organization_id:org,billing_cycle:cycle,currency,plan_name:plan,period_start:start,period_end:end,due_date:due,wise_payment_url:url,notes,line_items:lines})});const d=await r.json();if(!r.ok)throw Error(d.error||'Save failed');setMessage('Draft saved: '+d.invoice.invoice_number);await load()}catch(e:any){setMessage(e.message)}finally{setBusy(false)}};
+ const mark=async(id:string,status:string)=>{const r=await fetch('/api/smc/subscription-invoices',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});setMessage(r.ok?'Status updated':(await r.json()).error);await load()};
+ const field={padding:'9px',border:'1px solid #cbd5e1',borderRadius:8,width:'100%',background:'#fff',color:'#0f172a'} as const;
+ return <div style={{padding:24,maxWidth:1150,margin:'auto',color:'#0f172a'}}><h1 style={{fontSize:26,fontWeight:800}}>Billing &amp; Subscriptions</h1><p>Internal subscription invoices · manual Wise payment links · no payment integration</p>
+ <div style={{background:'white',padding:20,borderRadius:16,marginTop:18,display:'grid',gap:14}}>
+ <h2 style={{fontSize:20,fontWeight:700}}>Create subscription invoice</h2>
+ <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12}}>
+ <label>Customer<select style={field} value={org} onChange={e=>setOrg(e.target.value)}><option value=''>Select customer</option>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+ <label>Plan<input style={field} value={plan} onChange={e=>setPlan(e.target.value)}/></label>
+ <label>Cycle<select style={field} value={cycle} onChange={e=>setCycle(e.target.value)}><option value='monthly'>Monthly</option><option value='annual'>Annual</option></select></label>
+ <label>Currency<select style={field} value={currency} onChange={e=>setCurrency(e.target.value)}>{['USD','EUR','GBP','INR'].map(v=><option key={v}>{v}</option>)}</select></label>
+ <label>Period start<input style={field} type='date' value={start} onChange={e=>setStart(e.target.value)}/></label>
+ <label>Period end<input style={field} type='date' value={end} onChange={e=>setEnd(e.target.value)}/></label>
+ <label>Due date<input style={field} type='date' value={due} onChange={e=>setDue(e.target.value)}/></label></div>
+ <h3 style={{fontWeight:700}}>Invoice line items</h3>
+ {lines.map((l,i)=><div key={i} style={{display:'grid',gridTemplateColumns:'minmax(160px,3fr) repeat(4,minmax(90px,1fr)) 35px',gap:8,alignItems:'end'}}>
+ <label>Description<input style={field} value={l.description} onChange={e=>change(i,'description',e.target.value)}/></label>
+ <label>Users<input style={field} type='number' min='0' value={l.quantity} onChange={e=>change(i,'quantity',Number(e.target.value))}/></label>
+ <label>Price / user<input style={field} type='number' min='0' value={l.unit_price} onChange={e=>change(i,'unit_price',Number(e.target.value))}/></label>
+ <label>Discount<select style={field} value={l.discount_type} onChange={e=>change(i,'discount_type',e.target.value)}><option value='percent'>%</option><option value='fixed'>Fixed</option></select></label>
+ <label>Discount value<input style={field} type='number' min='0' value={l.discount_value} onChange={e=>change(i,'discount_value',Number(e.target.value))}/></label>
+ <button title='Remove line' onClick={()=>setLines(lines.filter((_,j)=>j!==i))}>×</button></div>)}
+ <button style={{border:'1px solid #cbd5e1',padding:9,borderRadius:8}} onClick={()=>setLines([...lines,{description:'Additional service',quantity:1,unit_price:0,discount_type:'percent',discount_value:0}])}>+ Add line</button>
+ <label>Wise payment link (paste manually)<input style={field} type='url' value={url} onChange={e=>setUrl(e.target.value)} placeholder='https://wise.com/pay/...' /></label>
+ <label>Notes<textarea style={field} value={notes} onChange={e=>setNotes(e.target.value)}/></label>
+ <div style={{textAlign:'right'}}>Subtotal: {money(subtotal)} · Discounts: {money(discount)}<h2 style={{fontSize:24,fontWeight:800}}>Total: {money(subtotal-discount)}</h2><small>Tax not applied; confirm tax treatment before issuing.</small></div>
+ <button disabled={busy||!org} onClick={save} style={{background:'#1F487C',color:'white',padding:12,borderRadius:10,fontWeight:700}}>{busy?'Saving...':'Save invoice draft'}</button>{message&&<p role='status'>{message}</p>}</div>
+ <h2 style={{fontSize:20,fontWeight:700,marginTop:28}}>Recent invoices</h2><div style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr>{['Invoice','Customer','Period','Amount','Status','Payment','Actions'].map(h=><th key={h} style={{textAlign:'left',padding:9}}>{h}</th>)}</tr></thead><tbody>{invoices.map(inv=><tr key={inv.id} style={{borderTop:'1px solid #cbd5e1'}}><td style={{padding:9}}>{inv.invoice_number}</td><td>{orgs.find(o=>o.id===inv.organization_id)?.name||inv.organization_id.slice(0,8)}</td><td>{inv.period_start} — {inv.period_end}</td><td>{inv.currency} {inv.total}</td><td>{inv.status}</td><td>{inv.wise_payment_url?<a target='_blank' rel='noopener noreferrer' href={inv.wise_payment_url}>Pay link</a>:'—'}</td><td><select aria-label='Update invoice status' value={inv.status} onChange={e=>mark(inv.id,e.target.value)}><option value='draft'>Draft</option>{['sent','partially_paid','paid','overdue','void'].map(v=><option key={v} value={v}>{v}</option>)}</select><button onClick={()=>{const w=window.open('','_blank');if(!w)return;const rows=(inv.line_items||[]).map((l:any)=>'<tr><td>'+String(l.description).replace(/[&<>]/g,'')+'</td><td>'+l.quantity+'</td><td>'+l.unit_price+'</td><td>'+l.discount_amount+'</td><td>'+l.total+'</td></tr>').join('');w.document.write('<html><head><title>Invoice '+inv.invoice_number+'</title></head><body style="font-family:Arial;padding:36px"><h1>SETU Flow · Subscription Invoice</h1><h2>'+inv.invoice_number+'</h2><p>'+inv.period_start+' to '+inv.period_end+'</p><table border="1" cellpadding="10"><tr><th>Service</th><th>Users</th><th>Rate</th><th>Discount</th><th>Total</th></tr>'+rows+'</table><h2>Total: '+inv.currency+' '+inv.total+'</h2><p>Due: '+inv.due_date+'</p>'+(inv.wise_payment_url?'<p><a href="'+inv.wise_payment_url+'">Pay Invoice</a></p>':'')+'<p>'+String(inv.notes||'').replace(/[&<>]/g,'')+'</p></body></html>');w.document.close();w.print()}}>Print / PDF</button></td></tr>)}</tbody></table></div></div>;
+}
