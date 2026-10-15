@@ -22,8 +22,8 @@ export default function BillingPage(){
  const save=async()=>{setBusy(true);setMessage('');try{const r=await fetch('/api/smc/subscription-invoices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({organization_id:org,billing_cycle:cycle,currency,plan_name:plan,period_start:start,period_end:end,due_date:due,wise_payment_url:url,notes,terms_and_conditions:terms,recipient_email:recipient,sender_email:sender,line_items:lines})});const d=await r.json();if(!r.ok)throw Error(d.error||'Save failed');setMessage('Draft saved: '+d.invoice.invoice_number);await load()}catch(e:any){setMessage(e.message)}finally{setBusy(false)}};
  const mark=async(id:string,status:string)=>{const r=await fetch('/api/smc/subscription-invoices',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});setMessage(r.ok?'Status updated':(await r.json()).error);await load()};
  const field={padding:'9px',border:'1px solid #cbd5e1',borderRadius:8,width:'100%',background:'#fff',color:'#0f172a'} as const;
- return <div style={{height:'100%',minHeight:0,overflowY:'auto',overflowX:'hidden',overscrollBehavior:'contain',padding:24,color:'#0f172a'}}><div style={{maxWidth:1150,margin:'0 auto',paddingBottom:80}}><h1 style={{fontSize:26,fontWeight:800}}>Billing &amp; Subscriptions</h1><p>Internal subscription invoices · manual Wise payment links · no payment integration</p>
- <div style={{background:'white',padding:20,borderRadius:16,marginTop:18,display:'grid',gap:14}}>
+ return <div className="smc-billing-page" style={{height:'100%',minHeight:0,overflowY:'auto',overflowX:'hidden',overscrollBehavior:'contain',padding:24,color:'#0f172a'}}><div style={{maxWidth:1150,margin:'0 auto',paddingBottom:80}}><h1 style={{fontSize:26,fontWeight:800}}>Billing &amp; Subscriptions</h1><p>Internal subscription invoices · manual Wise payment links · no payment integration</p>
+ <div className="smc-billing-form" style={{background:'white',padding:20,borderRadius:16,marginTop:18,display:'grid',gap:14}}>
  <h2 style={{fontSize:20,fontWeight:700}}>Create subscription invoice</h2>
  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12}}>
  <label>Customer<select style={field} value={org} onChange={e=>setOrg(e.target.value)}><option value=''>Select customer</option>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
@@ -34,7 +34,7 @@ export default function BillingPage(){
  <label>Period end<input style={field} type='date' value={end} onChange={e=>setEnd(e.target.value)}/></label>
  <label>Due date<input style={field} type='date' value={due} onChange={e=>setDue(e.target.value)}/></label></div>
  <p style={{background:'#eff6ff',padding:12,borderRadius:8}}>Rates are per user per month. {cycle==='annual'?'Annual billing: 12 months are included.':'Monthly billing: 1 month is included.'} Discounts are applied to the full billing-period line amount.</p><h3 style={{fontWeight:700}}>Invoice line items</h3>
- {lines.map((l,i)=><div key={i} style={{display:'grid',gridTemplateColumns:'minmax(160px,3fr) repeat(4,minmax(90px,1fr)) 35px',gap:8,alignItems:'end'}}>
+ {lines.map((l,i)=><div key={i} className="smc-billing-line" style={{display:'grid',gridTemplateColumns:'minmax(160px,3fr) repeat(4,minmax(90px,1fr)) 35px',gap:8,alignItems:'end'}}>
  <label>Description<input style={field} value={l.description} onChange={e=>change(i,'description',e.target.value)}/></label>
  <label>Users<input style={field} type='number' min='0' value={l.quantity} onChange={e=>change(i,'quantity',Number(e.target.value))}/></label>
  <label>Price / user<input style={field} type='text' inputMode='decimal' value={amountDrafts[i+'-unit_price']??String(l.unit_price)} onChange={e=>amountInput(i,'unit_price',e.target.value)}/></label>
