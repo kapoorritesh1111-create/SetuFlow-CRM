@@ -1,16 +1,26 @@
 {
   "id": "/smc",
-  "name": "SETU Flow SMC",
+  "name": "SETU Mission Control",
   "short_name": "SETU SMC",
-  "description": "Setu Mission Control — internal engineering console",
+  "description": "Internal mission control for SETU Flow operations, engineering, issues and system health.",
   "start_url": "/smc?source=pwa",
   "scope": "/smc",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f1b2d",
-  "theme_color": "#0f1b2d",
+  "background_color": "#020e25",
+  "theme_color": "#07385f",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/api/smc/pwa-icon?size=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/smc/pwa-icon?size=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
