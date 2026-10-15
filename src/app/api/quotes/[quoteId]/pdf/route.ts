@@ -667,7 +667,14 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       const product: any = productMap.get(line.product_id) ?? {};
       const sizeProfile:any = sizeProfileMap.get(String(line.packaging_size_profile_v5_id ?? input.size_profile_id ?? '')) ?? {};
       const construction:any = constructionMap.get(String(input.construction_id ?? snapshot.construction_id ?? '')) ?? {};
-      const size = text(sizeProfile.name ?? (sizeProfile.width_mm && sizeProfile.height_mm ? [sizeProfile.width_mm,sizeProfile.height_mm,sizeProfile.bottom_gusset_each_mm].filter(Boolean).join(' x ')+' mm':null) ?? variation.dimension_label ?? input.dimension_label ?? snapshot.dimension_label ??
+      const customSize = input.custom_size;
+      const customWidth = Number(customSize?.width_mm ?? 0);
+      const customHeight = Number(customSize?.height_mm ?? 0);
+      const customGusset = Number(customSize?.bottom_gusset_each_mm ?? 0);
+      const savedCustomLabel = customWidth > 0 && customHeight > 0 && customGusset > 0
+        ? `${customWidth} × ${customHeight} mm · BG ${customGusset}+${customGusset}`
+        : null;
+      const size = text(savedCustomLabel ?? sizeProfile.name ?? (sizeProfile.width_mm && sizeProfile.height_mm ? [sizeProfile.width_mm,sizeProfile.height_mm,sizeProfile.bottom_gusset_each_mm].filter(Boolean).join(' x ')+' mm':null) ?? variation.dimension_label ?? input.dimension_label ?? snapshot.dimension_label ??
         (input.width_mm && input.height_mm ? [input.width_mm,input.height_mm,input.bottom_gusset_each_mm].filter(Boolean).join(' x ') + ' mm' : null),'');
       const pricedConstruction = line.pricing_breakdown_json?.construction ?? {};
       const constructionName = text(pricedConstruction.name ?? construction.name ?? input.substrate ?? input.construction ?? input.material_construction ?? snapshot.substrate ?? snapshot.construction ?? snapshot.spec_summary,'');
