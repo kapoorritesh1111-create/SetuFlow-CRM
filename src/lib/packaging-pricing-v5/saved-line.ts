@@ -2,6 +2,7 @@ export type PricingV5SavedLineSummary = {
   lineId: string;
   sizeProfileId: string;
   constructionId: string;
+  customSize: { width_mm:number; height_mm:number; bottom_gusset_each_mm:number } | null;
   print: 'CMYK' | 'CMYKW';
   quantity: number;
   bottomPrintMode: 'solid_unregistered' | 'registered_artwork' | '';
@@ -42,6 +43,13 @@ export function toPricingV5SavedLineSummary(line: any): PricingV5SavedLineSummar
     lineId: String(line.id),
     sizeProfileId: String(input.size_profile_id ?? ''),
     constructionId: String(input.construction_id ?? ''),
+    customSize: input.custom_size && Number(input.custom_size.width_mm)>0 && Number(input.custom_size.height_mm)>0 && Number(input.custom_size.bottom_gusset_each_mm)>0
+      ? {
+          width_mm:Number(input.custom_size.width_mm),
+          height_mm:Number(input.custom_size.height_mm),
+          bottom_gusset_each_mm:Number(input.custom_size.bottom_gusset_each_mm),
+        }
+      : null,
     print,
     quantity: Math.max(0, Number(input.quantity ?? line.quantity ?? 0)),
     bottomPrintMode: bottom,
