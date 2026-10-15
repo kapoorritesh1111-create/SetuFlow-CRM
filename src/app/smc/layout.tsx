@@ -44,7 +44,7 @@ export default async function SmcLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="smc-root">
-      <SmcShell>{children}</SmcShell>
+      <SmcShell userId={workspace.user.id} userName={displayName}>{children}</SmcShell>
       <SmcMobileTabs
         userName={displayName}
         initials={getInitials(displayName)}
