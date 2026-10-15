@@ -107,6 +107,11 @@ export type ManualQuoteChargeV5 = {
 
 export type SupPricingInputV5 = {
   size_profile_id: string;
+  custom_size?: {
+    width_mm: number;
+    height_mm: number;
+    bottom_gusset_each_mm: number;
+  } | null;
   construction_id: string;
   print: 'CMYK' | 'CMYKW';
   quantity: number;
