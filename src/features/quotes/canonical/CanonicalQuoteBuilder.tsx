@@ -77,8 +77,13 @@ function ReviewStep({ data, quote, embedded = false }: { data: LeadProfileData; 
             ? `/leads/${data.lead!.id}/quote?quoteId=${quote.id}&step=2&editLine=${item.id}`
             : `/leads/${data.lead!.id}/quote?quoteId=${quote.id}&step=1`;
           const editLabel=source==='lead_requirement'?'Edit Requirement':isPackaging?'Edit Item':'Edit';
+          const customSize=item.input_snapshot_json?.input?.custom_size;
+          const isCustomSup=isPackaging&&isV5&&Number(customSize?.width_mm)>0&&Number(customSize?.height_mm)>0&&Number(customSize?.bottom_gusset_each_mm)>0;
+          const customerItemLabel=isCustomSup
+            ? `Stand Up Pouches · ${Number(customSize.width_mm)} × ${Number(customSize.height_mm)} mm · BG ${Number(customSize.bottom_gusset_each_mm)}+${Number(customSize.bottom_gusset_each_mm)}`
+            : (item.notes||item.product_name||'Product');
           return <div key={item.id||index} className="grid min-w-0 gap-3 p-3 text-sm md:grid-cols-[minmax(0,1fr)_100px_120px_minmax(180px,1fr)] md:items-center">
-            <div><div className="font-bold text-slate-900">{item.notes||item.product_name||'Product'}</div>{isV5?<div className="mt-1 text-[10px] font-black uppercase tracking-wide text-emerald-600">Approved Pricing V5</div>:source==='lead_requirement'?<div className="mt-1 text-[10px] font-black uppercase tracking-wide text-amber-600">Captured Requirement</div>:null}</div>
+            <div><div className="font-bold text-slate-900">{customerItemLabel}</div>{isV5&&!isCustomSup?<div className="mt-1 text-[10px] font-black uppercase tracking-wide text-emerald-600">Approved pricing</div>:source==='lead_requirement'?<div className="mt-1 text-[10px] font-black uppercase tracking-wide text-amber-600">Captured Requirement</div>:null}</div>
             <span className="font-semibold text-slate-600">Qty {defaultMoq(item).toLocaleString()}</span>
             <span className="font-black text-slate-950">{money(finalPrice(item)*defaultMoq(item),item.currency||quoteCurrency(data,quote))}</span>
             {embedded&&item.id?<QuoteReviewLineActions quoteId={quote.id} leadId={data.lead!.id} lineId={String(item.id)} editHref={editHref} editLabel={editLabel} quantity={defaultMoq(item)} isPricingV5={isV5}/>:null}
