@@ -46,8 +46,11 @@ const MORE_GROUPS: { label: string; items: Tab[] }[] = [
   ] },
   { label: "Growth", items: [
     { id: "leads", path: "/smc/leads", label: "Internal Leads", icon: "leads" },
+    { id: "followups", path: "/smc/leads/followups", label: "Follow-up Queue", icon: "alert" },
     { id: "clients", path: "/smc/clients", label: "Client Orgs", icon: "users" },
     { id: "revenue", path: "/smc/revenue", label: "Revenue", icon: "money" },
+    { id: "billing", path: "/smc/billing", label: "Billing & Invoices", icon: "money" },
+    { id: "mail-usage", path: "/smc/mail-usage", label: "Mail Usage", icon: "docs" },
     { id: "roadmap", path: "/smc/roadmap", label: "Roadmap", icon: "road" },
   ] },
   { label: "Intelligence", items: [
@@ -60,6 +63,7 @@ const MORE_GROUPS: { label: string; items: Tab[] }[] = [
     { id: "flags", path: "/smc/flags", label: "Feature Flags", icon: "flag" },
     { id: "demo", path: "/smc/demo", label: "Demo", icon: "demo" },
     { id: "settings", path: "/smc/settings", label: "Settings", icon: "settings" },
+    { id: "access", path: "/smc/settings/access", label: "Team Access", icon: "users" },
   ] },
 ];
 
@@ -117,6 +121,15 @@ export function SmcMobileTabs({ userName, initials, orgName, roleLabel, userId }
     return () => { active = false; };
   }, [pathname]);
 
+  useEffect(() => { setMore(false); }, [pathname]);
+
+  useEffect(() => {
+    if (!more) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [more]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMore(false); };
     document.addEventListener("keydown", onKey);
@@ -143,14 +156,14 @@ export function SmcMobileTabs({ userName, initials, orgName, roleLabel, userId }
             <span className="smc-mtab-lb">{t.label}</span>
           </Link>
         ))}
-        <button type="button" className={`smc-mtab ${more ? "active" : ""}`} onClick={() => setMore(true)} aria-label="More">
+        <button type="button" className={`smc-mtab ${more ? "active" : ""}`} onClick={() => setMore(true)} aria-label="More" aria-expanded={more} aria-controls="smc-mobile-menu">
           <span className="smc-mtab-ic"><Ico name="more" /></span>
           <span className="smc-mtab-lb">More</span>
         </button>
       </nav>
 
       <div className={`smc-msheet-scrim ${more ? "open" : ""}`} onClick={() => setMore(false)} />
-      <div className={`smc-msheet ${more ? "open" : ""}`} role="dialog" aria-label="SMC menu">
+      <div id="smc-mobile-menu" className={`smc-msheet ${more ? "open" : ""}`} role="dialog" aria-modal={more} aria-hidden={!more} aria-label="SMC menu">
         <div className="smc-msheet-grab" />
         <div className="smc-msheet-prof">
           <div className="smc-msheet-av">{initials}</div>
