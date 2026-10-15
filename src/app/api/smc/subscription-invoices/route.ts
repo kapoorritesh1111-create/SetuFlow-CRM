@@ -44,11 +44,12 @@ export async function POST(request: NextRequest) {
   for (const item of input) {
     const qty=Number(item.quantity),rate=Number(item.unit_price),discount=Number(item.discount_value||0);
     if (!String(item.description||'').trim() || !Number.isFinite(qty) || !Number.isFinite(rate) || !Number.isFinite(discount) || qty<0 || qty>100000 || rate<0 || rate>100000000 || discount<0 || !['percent','fixed'].includes(item.discount_type)) return bad('Invalid line item');
-    const gross=money(qty*rate);
+    const months = x.billing_cycle === 'annual' ? 12 : 1;
+    const gross=money(qty*rate*months);
     if (item.discount_type==='percent' && discount>100) return bad('Discount exceeds 100%');
     const discounted=money(item.discount_type==='percent'?gross*discount/100:discount);
     if (discounted>gross) return bad('Discount exceeds line amount');
-    lines.push({description:String(item.description).slice(0,200),quantity:qty,unit_price:rate,discount_type:item.discount_type,discount_value:discount,gross,discount_amount:discounted,total:money(gross-discounted)});
+    lines.push({description:String(item.description).slice(0,200),quantity:qty,unit_price:rate,months,discount_type:item.discount_type,discount_value:discount,gross,discount_amount:discounted,total:money(gross-discounted)});
   }
   const subtotal=money(lines.reduce((s,l)=>s+l.gross,0));
   const discount_total=money(lines.reduce((s,l)=>s+l.discount_amount,0));
