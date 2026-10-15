@@ -63,7 +63,7 @@ export async function PATCH(request:NextRequest) {
   if (!await access()) return bad('Unauthorized',403);
   const db=createServiceRoleClient(); if(!db) return bad('Backend unavailable',503);
   let x:any; try{x=await request.json();}catch{return bad('Invalid JSON');}
-  if(!['sent','partially_paid','paid','overdue','void'].includes(x.status)) return bad('Invalid status');
+  if(!['partially_paid','paid','overdue','void'].includes(x.status)) return bad('Invalid status');
   const {data,error}=await db.from('smc_subscription_invoices').update({status:x.status,issued_at:x.status==='sent'?new Date().toISOString():undefined,updated_at:new Date().toISOString()}).eq('id',x.id).select('*').single();
   return error?bad(error.message,500):NextResponse.json({invoice:data});
 }
