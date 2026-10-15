@@ -216,16 +216,33 @@ function calculateCore(context: PricingContextV5, input: SupPricingInputV5, incl
   const errors: string[] = [];
   const warnings: string[] = [];
   const quantity = Math.max(0, Math.floor(n(input.quantity)));
-  const size = context.sizeProfiles.find((item) => item.id === input.size_profile_id) ?? null;
+  const baseSize = context.sizeProfiles.find((item) => item.id === input.size_profile_id) ?? null;
+  const customWidth=n(input.custom_size?.width_mm);
+  const customHeight=n(input.custom_size?.height_mm);
+  const customGusset=n(input.custom_size?.bottom_gusset_each_mm);
+  const hasCustomSize=Boolean(input.custom_size);
+  if(hasCustomSize&&(!(customWidth>0)||!(customHeight>0)||!(customGusset>0))) {
+    errors.push('Custom pouch width, height and bottom gusset must all be greater than zero.');
+  }
+  const size = baseSize && hasCustomSize && customWidth>0 && customHeight>0 && customGusset>0
+    ? {
+        ...baseSize,
+        name:`${customWidth}x${customHeight}mm (custom · BG ${customGusset}+${customGusset})`,
+        width_mm:customWidth,
+        height_mm:customHeight,
+        bottom_gusset_each_mm:customGusset,
+        metadata:{...(baseSize.metadata??{}),custom_size:true,pricing_anchor_size_profile_id:baseSize.id},
+      }
+    : baseSize;
   const resolvedConstruction = resolveConstructionV5(input.construction_id, context.constructions, context.constructionLayers, context.masters);
 
   if (!quantity) errors.push('Quantity is required.');
-  if (!size) errors.push('Selected Pricing v5 size is not available.');
+  if (!baseSize) errors.push('Selected Pricing v5 size is not available.');
   const quantityGuidance = size && quantity && !quantityAllowed(size,quantity) ? quantityGuidanceForSize(size,quantity) : null;
   if (quantityGuidance) errors.push(quantityGuidance.message);
   if (!resolvedConstruction) errors.push('Selected Pricing v5 construction is not available.');
   if (resolvedConstruction) errors.push(...resolvedConstruction.validation_errors);
-  if(size?.is_quoteable&&resolvedConstruction?.construction.is_quoteable&&!constructionAllowedForSizeV5(size,resolvedConstruction.construction)){
+  if(!hasCustomSize&&size?.is_quoteable&&resolvedConstruction?.construction.is_quoteable&&!constructionAllowedForSizeV5(size,resolvedConstruction.construction)){
     errors.push(constructionCompatibilityErrorV5(size,resolvedConstruction.construction));
   }
 
