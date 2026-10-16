@@ -2,6 +2,8 @@
 
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
+import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
+import { previewPackagingFramePricingV5 } from '@/features/packaging/server/pricing-v5-frame-actions';
 
 export type QuickQuoteItem = {
   name: string;
@@ -39,6 +41,18 @@ export async function saveQuickQuoteEstimate(params:{id?:string;items:QuickQuote
   try {
     const error=validate(params.items);
     if(error) return {ok:false,error};
+    // Never persist client-declared V5 prices without checking the published engine.
+    // The saved snapshot remains internal; conversion still requires formal pricing review.
+    for(const line of params.items){
+      if(line.engine!=='sup'&&line.engine!=='frame') continue;
+      const preview=line.engine==='sup'
+        ?await previewPackagingPricingV5({templateId:String(line.templateId),input:line.input as any})
+        :await previewPackagingFramePricingV5({templateId:String(line.templateId),input:line.input as any});
+      if(!preview.ok||!preview.result?.selling_price) return {ok:false,error:'A product price is no longer valid. Recalculate the estimate.'};
+      const price=Number(preview.result.selling_price.unit_price);
+      if(!Number.isFinite(price)||price<=0||Math.abs(price-line.price)>0.011)
+        return {ok:false,error:'Pricing changed. Recalculate before saving.'};
+    }
     const {userId,organizationId}=await ownerContext();
     const db:any=await createClient();
     if (params.id) {
