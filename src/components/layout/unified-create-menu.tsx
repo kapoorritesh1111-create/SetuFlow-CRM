@@ -24,7 +24,7 @@ export function UnifiedCreateMenu({quickLead,scopeHref,canCreateQuote,vcardHref}
     {label:'Share vCard',href:vcardHref,icon:'▣'},
   ];
   return <div ref={root} className="relative shrink-0">
-    <button type="button" aria-haspopup="menu" aria-expanded={open} aria-controls="setu-create-menu"
+    <button type="button" data-tour="quick-lead-button" aria-haspopup="menu" aria-expanded={open} aria-controls="setu-create-menu"
       onClick={()=>setOpen(v=>!v)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-blue-700 px-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-800">
       <span aria-hidden>＋</span> Create <span aria-hidden className="text-[10px]">▾</span>
     </button>
