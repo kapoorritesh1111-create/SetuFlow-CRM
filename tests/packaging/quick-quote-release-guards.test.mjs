@@ -60,3 +60,8 @@ test('Conversion automatically prices all transferred products without a second 
   assert.match(action,/remaining\.some/);
   assert.match(action,/quick_quote_pending_reprice/);
 });
+
+test('3SS and CSS estimate lines use the service-family ID, not the pricing template ID',()=>{
+ const ui=read('src/features/quotes/components/quick-quote-workbench.tsx');
+ assert.match(ui,/familyId:chosen\.kind==='frame'\?String\(frameTemplate\?\.family_id\?\?''\)/);
+});
