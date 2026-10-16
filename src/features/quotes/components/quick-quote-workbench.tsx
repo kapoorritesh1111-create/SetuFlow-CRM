@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { convertQuickQuoteDraft } from '@/features/quotes/server/quick-quote-conversion-actions';
 import { findQuickQuoteCustomer, listQuickQuoteEstimates, saveQuickQuoteEstimate } from '@/features/quotes/server/quick-quote-estimate-actions';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
 import { previewPackagingFramePricingV5 } from '@/features/packaging/server/pricing-v5-frame-actions';
@@ -26,6 +27,10 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [error,setError]=useState('');
   const [pending,start]=useTransition();
   const [manualPrice,setManualPrice]=useState('');
+  const [newCompany,setNewCompany]=useState('');
+  const [newPhone,setNewPhone]=useState('');
+  const [newEmail,setNewEmail]=useState('');
+  const [convertError,setConvertError]=useState('');
   const [customerTerm,setCustomerTerm]=useState('');
   const [customerMatches,setCustomerMatches]=useState<any[]>([]);
   const [customerLookupError,setCustomerLookupError]=useState('');
@@ -104,6 +109,14 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
       ?(custom?`Custom ${width} x ${height} mm`:`Size ${size?.name??''}`)+` · ${construction?.name??''}`
       :chosen.kind==='frame'?`${width} x ${height} mm · ${construction?.name??''}`:'Manual price · requires formal quote approval'}]);
     setRows([]);setError('');
+  }
+  function convertDraft(){
+    if(!draftId){setConvertError('Save the estimate first.');return;}
+    start(async()=>{
+      const result=await convertQuickQuoteDraft({estimateId:draftId,existingLeadId:selectedLeadId||undefined,companyName:newCompany,phone:newPhone,email:newEmail});
+      if(!result.ok){setConvertError(result.error??'Conversion failed.');return;}
+      window.location.assign('/leads/'+result.leadId+'/quote?quoteId='+result.quoteId);
+    });
   }
   function lookupCustomers(){
     setCustomerLookupError('');setCustomerMatches([]);setSelectedLeadId('');
@@ -186,6 +199,8 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         {customerLookupError?<p role="status" className="mt-2 text-sm text-amber-800">{customerLookupError}</p>:null}
         <div className="mt-2 space-y-2">{customerMatches.map(c=><label key={c.id} className="flex min-h-12 items-center gap-3 rounded-lg border p-3 text-sm"><input type="radio" name="customer" checked={selectedLeadId===c.id} onChange={()=>setSelectedLeadId(c.id)}/><span><strong>{c.company_name}</strong><span className="block text-xs">{c.contact_name??''} · {c.phone??c.email??''}</span></span></label>)}</div>
         {selectedLeadId?<p className="mt-2 text-xs text-emerald-800">Existing lead selected. No changes to this lead have been made.</p>:null}
+        {!selectedLeadId?<div className="mt-3 grid gap-2 sm:grid-cols-3"><label className="text-sm">New company<input className={field} value={newCompany} onChange={e=>setNewCompany(e.target.value)}/></label><label className="text-sm">Phone<input className={field} value={newPhone} onChange={e=>setNewPhone(e.target.value)}/></label><label className="text-sm">Email<input className={field} value={newEmail} onChange={e=>setNewEmail(e.target.value)}/></label></div>:null}
+        <button disabled={pending||!draftId} onClick={convertDraft} className="mt-3 min-h-12 w-full rounded-xl bg-emerald-700 p-3 font-bold text-white disabled:opacity-50">Create Draft for Pricing Review</button>{convertError?<p role="alert" className="mt-2 text-sm text-red-700">{convertError}</p>:null}
       </div>
       <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Formalization and sending are intentionally disabled here until secure estimate persistence, lead selection, and atomic conversion are implemented and verified. Use the existing lead quote builder to issue formal quotations.</p>
     </section>
