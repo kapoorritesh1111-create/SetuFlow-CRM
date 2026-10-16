@@ -236,3 +236,10 @@
   .smc-client-details :is(input, select, textarea, button) { max-width: 100%; box-sizing: border-box; }
   .smc-client-details [style*="overflow: auto"], .smc-client-details [style*="overflow-x"] { max-width: 100%; }
 }
+
+/* Keep the client provisioning action in document flow on phone screens. */
+@media (max-width: 767px) {
+  .smc-clients-route-layout { overflow: visible !important; height: auto !important; min-height: 0 !important; }
+  .smc-client-setup-action { position: relative !important; inset: auto !important; top: auto !important; right: auto !important; justify-content: flex-end; padding: 12px 14px 0; z-index: 1 !important; }
+  .smc-client-setup-action a { min-height: 44px; max-width: 100%; white-space: normal; }
+}
