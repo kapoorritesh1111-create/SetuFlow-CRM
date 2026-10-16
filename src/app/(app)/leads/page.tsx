@@ -146,7 +146,7 @@ export default async function LeadsPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end px-3 pt-2 md:px-0"><Link href="/quick-quote" className="inline-flex min-h-11 items-center rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white">Quick Quote — Price without a lead</Link></div>
+      <div className="flex justify-end px-3 md:hidden"><Link href="/quick-quote" className="inline-flex min-h-11 items-center rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white">+ Quick Quote</Link></div>
       <div className="md:hidden">
         <LeadsMobileSurface
           initialLeadType={quickLeadType}
@@ -167,17 +167,17 @@ export default async function LeadsPage({
           </div>
         ) : null}
         {isStarkPackmate && canAccessStarkInbound ? (
-          <div className="flex items-center justify-between gap-4 rounded-panel border border-blue-200 bg-gradient-to-r from-blue-50 to-white px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2">
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-white">Inbound</span>
                 <p className="text-sm font-bold text-slate-900">Interakt qualification queue</p>
               </div>
-              <p className="mt-1 text-xs text-slate-600">Review WhatsApp/Instagram contacts with Setu Guru before they enter the qualified Lead Queue.</p>
+              
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
-              {canManageStarkInboundAssignments ? <Link href="/leads/inbound/assignments" className="rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-50">Manage assignments</Link> : null}
-              <Link href="/leads/inbound" className="rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Open Inbound →</Link>
+              {canManageStarkInboundAssignments ? <Link href="/leads/inbound/assignments" className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50">Manage assignments</Link> : null}
+              <Link href="/leads/inbound" className="rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800">Open Inbound →</Link>
             </div>
           </div>
         ) : null}
