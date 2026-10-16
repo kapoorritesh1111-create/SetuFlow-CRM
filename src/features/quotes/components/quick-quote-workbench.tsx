@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import { listQuickQuoteEstimates, saveQuickQuoteEstimate } from '@/features/quotes/server/quick-quote-estimate-actions';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
 import { previewPackagingFramePricingV5 } from '@/features/packaging/server/pricing-v5-frame-actions';
 
@@ -25,6 +26,10 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [error,setError]=useState('');
   const [pending,start]=useTransition();
   const [manualPrice,setManualPrice]=useState('');
+  const [draftId,setDraftId]=useState('');
+  const [draftLabel,setDraftLabel]=useState('Call estimate');
+  const [draftStatus,setDraftStatus]=useState('');
+  const [savedDrafts,setSavedDrafts]=useState<any[]>([]);
   const [basket,setBasket]=useState<{name:string;quantity:number;price:number;currency:string;notes:string}[]>([]);
 
   const all=[...(sup?.families??[]).map((f:any)=>({id:'sup:'+f.id,label:f.name,kind:'sup',templateId:sup.templates?.[0]?.id})),
@@ -95,6 +100,23 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
       :chosen.kind==='frame'?`${width} x ${height} mm · ${construction?.name??''}`:'Manual price · requires formal quote approval'}]);
     setRows([]);setError('');
   }
+  function saveDraft(){
+    setDraftStatus('');
+    start(async()=>{
+      const result=await saveQuickQuoteEstimate({id:draftId||undefined,items:basket,label:draftLabel});
+      if(!result.ok){setDraftStatus(result.error??'Save failed.');return;}
+      setDraftId(result.id??'');setDraftStatus('Internal estimate saved securely.');
+    });
+  }
+  function loadDrafts(){
+    setDraftStatus('');
+    start(async()=>{
+      const result=await listQuickQuoteEstimates();
+      if(!result.ok){setDraftStatus(result.error??'Could not load drafts.');return;}
+      setSavedDrafts(result.estimates);
+      if(!result.estimates.length)setDraftStatus('No saved estimates found.');
+    });
+  }
   const field='min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white';
   return <div className="space-y-5">
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -136,6 +158,12 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
       <h2 className="text-lg font-bold">4. Internal estimate basket ({basket.length})</h2>
       {basket.length?basket.map((b,i)=><div key={i} className="my-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3"><div className="text-sm"><strong>{b.name}</strong><p>{b.notes}</p><p>{b.quantity.toLocaleString('en-IN')} × {money(b.price,b.currency)}</p></div><button onClick={()=>setBasket(v=>v.filter((_,n)=>i!==n))} className="min-h-11 rounded-lg border px-3 text-sm">Remove</button></div>):<p className="mt-2 text-sm text-slate-500">Add a priced product to begin. No lead or formal quote has been created.</p>}
       {basket.length?<p className="mt-3 text-sm font-bold">Total internal estimate: {money(basket.reduce((s,r)=>s+r.quantity*r.price,0))}</p>:null}
+      <div className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+        <label className="block text-sm">Internal estimate name<input className={field} value={draftLabel} maxLength={100} onChange={e=>setDraftLabel(e.target.value)}/></label>
+        <div className="grid grid-cols-2 gap-2"><button disabled={pending||!basket.length} onClick={saveDraft} className="min-h-12 rounded-xl bg-blue-700 px-3 font-bold text-white disabled:opacity-50">Save Estimate</button><button disabled={pending} onClick={loadDrafts} className="min-h-12 rounded-xl border px-3 text-sm font-semibold">Resume Estimate</button></div>
+        {draftStatus?<p role="status" className="text-sm">{draftStatus}</p>:null}
+        {savedDrafts.length?<div className="space-y-2">{savedDrafts.map(d=><button key={d.id} onClick={()=>{setDraftId(d.id);setDraftLabel(d.label);setBasket(d.items);setSavedDrafts([]);setRows([]);setDraftStatus('Saved estimate loaded.')}} className="block min-h-12 w-full rounded-xl border p-3 text-left text-sm">{d.label} · {new Date(d.updated_at).toLocaleString()}</button>)}</div>:null}
+      </div>
       <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Formalization and sending are intentionally disabled here until secure estimate persistence, lead selection, and atomic conversion are implemented and verified. Use the existing lead quote builder to issue formal quotations.</p>
     </section>
   </div>;
