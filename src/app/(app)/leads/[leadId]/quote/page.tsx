@@ -123,6 +123,21 @@ export default async function QuotePage({
   }
 
   const canonicalPackaging = pricingV5Options || pricingV5FrameOptions || pricingV4Options ? null : packaging;
+  // Quick Quote transfer lines do not yet have a governed V5 pricing snapshot.
+  // Preserve every distinct product/size as a visible, unpriced requirement.
+  const pendingQuickQuoteLines = activeQuote ? (activeQuote.lineItems as any[])
+    .filter((line:any)=>line.input_snapshot_json?.source==='quick_quote_pending_reprice')
+    .map((line:any,index:number)=>{
+      const snapshot=line.input_snapshot_json??{};
+      const input=snapshot.input??{};
+      const dimensions=input.custom_size
+        ? `${input.custom_size.width_mm} × ${input.custom_size.height_mm} mm (custom)`
+        : input.width_mm&&input.height_mm ? `${input.width_mm} × ${input.height_mm} mm` : 'Selected standard size';
+      return {id:String(line.id),index:index+1,engine:String(snapshot.engine??''),dimensions,
+        quantity:Number(input.quantity??line.quantity??0),construction:String(input.construction_id??''),
+        sizeId:String(input.size_profile_id??''),extras:Array.isArray(input.selected_charge_codes)?input.selected_charge_codes:[],
+        templateId:String(line.packaging_template_id??''),notes:String(line.notes??'')};
+    }) : [];
   const savedPricingV5Lines = activeQuote ? listPricingV5SavedLineSummaries(activeQuote.lineItems as any[]) : [];
   const savedPricingV5FrameLines = activeQuote ? listPricingV5FrameSavedLineSummaries(activeQuote.lineItems as any[]) : [];
   const quoteCurrency = String(activeQuote?.currency || data.lead?.deal_currency || 'INR').toUpperCase();
@@ -157,6 +172,24 @@ export default async function QuotePage({
       </div>
 
       {activeQuote ? <nav aria-label="Quote steps" className="mb-4 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:hidden">{[1,2,3,4].map((step) => <Link key={step} href={`/leads/${params.leadId}/quote?quoteId=${activeQuote.id}&step=${step}`} aria-current={workflowStep === step ? "step" : undefined} className={`flex min-h-11 min-w-[94px] shrink-0 items-center justify-center rounded-xl px-3 text-xs font-bold ${workflowStep === step ? "bg-blue-800 text-white" : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100"}`}>{["Requirements","Pricing","Commercials","Review"][step-1]}</Link>)}</nav> : null}
+      {pendingQuickQuoteLines.length>0 ? (
+        <section className="mb-5 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 text-slate-900">
+          <h2 className="text-lg font-black">Quick Quote items awaiting commercial pricing ({pendingQuickQuoteLines.length})</h2>
+          <p className="mt-1 text-sm">All selected products and sizes have transferred into this quote. Complete the published V5 calculation for each line before approval or customer delivery. No estimate price is approved yet.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {pendingQuickQuoteLines.map(line=>(
+              <div key={line.id} className="rounded-xl border border-amber-200 bg-white p-3 text-sm">
+                <p className="font-bold">Item {line.index} · {line.engine==='sup'?'Stand Up Pouch':line.engine==='frame'?'3SS / Center Seal':'Product'}</p>
+                <p>{line.dimensions} · Quantity {line.quantity.toLocaleString()}</p>
+                <p className="break-all text-xs text-slate-600">Construction: {line.construction||'Not specified'}</p>
+                {line.extras.length>0?<p className="text-xs">Add-ons: {line.extras.join(', ')}</p>:null}
+                {line.notes?<p className="mt-1 text-xs">{line.notes}</p>:null}
+                <p className="mt-2 font-semibold text-amber-800">Not priced for customer</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {(pricingV5Options || pricingV5FrameOptions) && activeQuote ? (
         <PremiumPackagingQuoteBuilderV5
           quoteId={activeQuote.id}
