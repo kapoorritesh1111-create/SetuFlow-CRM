@@ -13,7 +13,7 @@ const banner = read('src/features/trial/trial-workspace-banner.tsx');
 const trialPage = read('src/app/(app)/trial/page.tsx');
 
 const anchorFiles = {
-  'quick-lead-button': 'src/components/layout/app-shell.tsx',
+  'quick-lead-button': 'src/components/layout/unified-create-menu.tsx',
   'lead-row': 'src/features/leads/ui/lead-table-row.tsx',
   'create-quote': 'src/features/quotes/components/quote-workspace.tsx',
   'convert-order': 'src/features/quotes/components/quote-workspace.tsx',
