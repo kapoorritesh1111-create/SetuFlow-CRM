@@ -1495,7 +1495,6 @@ export function LeadsWorkspace({
           ✅ Approval Queue
           <span style={{ background: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? '#f59e0b' : '#e2e8f0', color: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{quotes.filter((quote) => quote.approval_required && !quote.approved_at).length}</span>
         </button>
-        <a href="/quick-quote" className="ml-auto inline-flex min-h-9 items-center rounded-lg bg-blue-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-800">+ Quick Quote</a>
         <a href="/pipeline" style={{ marginLeft: '0', padding: '8px 12px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
           ⊕ View in Pipeline →
         </a>
