@@ -24,8 +24,8 @@ export function isPricingV5SavedQuoteLine(line: any) {
   return Boolean(
     line?.id &&
     line?.line_type === 'packaging' &&
-    Number(line?.calculation_version) === 5 &&
-    Number(line?.input_snapshot_json?.engine_version) === 5,
+    ((Number(line?.calculation_version) === 5 && Number(line?.input_snapshot_json?.engine_version) === 5) ||
+     (line?.input_snapshot_json?.source === 'quick_quote_pending_reprice' && line?.input_snapshot_json?.engine === 'sup')),
   );
 }
 

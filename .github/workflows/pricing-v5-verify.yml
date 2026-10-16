@@ -35,6 +35,8 @@ jobs:
         run: npm run typecheck
       - name: Packaging pricing tests
         run: npm run test:packaging
+      - name: Quick Quote release security contracts
+        run: npm run test:quick-quote
       - name: Pricing v5 material confirmations
         run: npx tsx --test tests/packaging/pricing-v5-material-confirmation.test.ts
       - name: Pricing v5 premium review contracts

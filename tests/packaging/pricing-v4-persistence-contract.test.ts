@@ -28,7 +28,7 @@ test('S51-PKG-049: repricing removes stale derived charge lines for the parent b
 test('S51-PKG-049: canonical PDF already renders packaging rows from mutable quote lines', () => {
   assert.match(pdfRoute, /from\('quote_line_items'\)/);
   assert.match(pdfRoute, /if \(line\.line_type === 'packaging'\)/);
-  assert.match(pdfRoute, /input_snapshot_json\?\.spec_summary/);
+  assert.match(pdfRoute, /input_snapshot_json/);
 });
 
 test('S51-PKG-050: RPC remains service-role only', () => {

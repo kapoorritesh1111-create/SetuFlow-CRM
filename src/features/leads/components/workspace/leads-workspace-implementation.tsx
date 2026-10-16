@@ -1471,14 +1471,14 @@ export function LeadsWorkspace({
   const inlineNoticeDescription = inlineActionState.error ?? inlineActionState.success ?? '';
 
   return (
-    <div className="mobile-premium-leads flex flex-col">
+    <div className="mobile-premium-leads flex min-w-0 flex-col">
       <InlineCoverageResolverRuntime />
       {inlineNoticeDescription ? (
         <NoticeToast title={inlineNoticeTitle} description={inlineNoticeDescription} tone={inlineActionState.error ? 'danger' : 'success'} />
       ) : null}
 
       {/* ═══ PAGE NAV TABS — inline view switcher ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center' }}>
+      <div className="flex-wrap gap-x-1 px-3" style={{ background: 'white', borderBottom: '1px solid #e2e8f0', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center' }}>
         <button type="button" onClick={() => setActiveView('list')} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'list' ? '#0b2e4a' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'list' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: 'pointer' }}>
           📋 Lead Queue
           <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
@@ -1495,13 +1495,13 @@ export function LeadsWorkspace({
           ✅ Approval Queue
           <span style={{ background: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? '#f59e0b' : '#e2e8f0', color: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{quotes.filter((quote) => quote.approval_required && !quote.approved_at).length}</span>
         </button>
-        <a href="/pipeline" style={{ marginLeft: 'auto', padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
+        <a href="/pipeline" style={{ marginLeft: '0', padding: '8px 12px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
           ⊕ View in Pipeline →
         </a>
       </div>
 
       {/* ═══ FILTER BAR — SF-18-092: redesigned with Tailwind, no inline styles ═══ */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-5 py-2" style={{ display: activeView === 'list' ? 'flex' : 'none' }}>
+      <div className="sticky top-[88px] z-20 flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm" style={{ display: activeView === 'list' ? 'flex' : 'none' }}>
 
         {/* Search box */}
         <div className="flex items-center gap-2 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[200px] focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
@@ -1528,7 +1528,7 @@ export function LeadsWorkspace({
         </label>
 
         {/* Product filter */}
-        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+        <label className={`${showAdvFilters || productIdFilter ? 'inline-flex' : 'hidden'} items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm`}>
           <span className="text-sm flex-shrink-0">📦</span>
           <div className="flex flex-col leading-none gap-0.5">
             <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Product</span>
@@ -1567,7 +1567,7 @@ export function LeadsWorkspace({
         </label>
 
         {/* Country filter */}
-        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+        <label className={`${showAdvFilters || countryIdFilter ? 'inline-flex' : 'hidden'} items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm`}>
           <span className="text-sm flex-shrink-0">🌐</span>
           <div className="flex flex-col leading-none gap-0.5">
             <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Country</span>
@@ -1580,8 +1580,7 @@ export function LeadsWorkspace({
         </label>
 
         {/* Source event filter */}
-        <label className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 min-w-[130px] cursor-pointer transition hover:shadow-sm ${tradeEventFilter ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300'}`}>
-          <span className="text-sm flex-shrink-0">🎪</span>
+        <label className={`${showAdvFilters || tradeEventFilter ? 'inline-flex' : 'hidden'} items-center gap-1.5 h-9 rounded-xl border px-3 min-w-[130px] cursor-pointer transition hover:shadow-sm ${tradeEventFilter ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300'}`}><span className="text-sm flex-shrink-0">🎪</span>
           <div className="flex flex-col leading-none gap-0.5">
             <span className={`text-[9px] font-extrabold uppercase tracking-[0.12em] leading-none ${tradeEventFilter ? 'text-emerald-600' : 'text-slate-400'}`}>Source event</span>
             <select value={tradeEventFilter} onChange={(e) => handleTradeEventFilterChange(e.target.value)}
@@ -1626,7 +1625,7 @@ export function LeadsWorkspace({
         {/* SF-18-100: More filters button */}
         <button type="button" onClick={() => setShowAdvFilters(v => !v)}
           className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 text-[11.5px] font-bold transition ${showAdvFilters || [advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].some(Boolean) ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white hover:border-slate-300'}`}>
-          🔬 More filters {[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length > 0 && <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">{[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length}</span>}
+          ⚙ More filters {[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length > 0 && <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">{[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length}</span>}
         </button>
 
         {/* Summary count */}
