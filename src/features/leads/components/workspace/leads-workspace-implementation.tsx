@@ -1581,7 +1581,7 @@ export function LeadsWorkspace({
         </label>
 
         {/* Source event filter */}
-        <label className={`text-sm flex-shrink-0`}>🎪</span>
+        <label className={`${showAdvFilters || tradeEventFilter ? 'inline-flex' : 'hidden'} items-center gap-1.5 h-9 rounded-xl border px-3 min-w-[130px] cursor-pointer transition hover:shadow-sm ${tradeEventFilter ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300'}`}><span className="text-sm flex-shrink-0">🎪</span>
           <div className="flex flex-col leading-none gap-0.5">
             <span className={`text-[9px] font-extrabold uppercase tracking-[0.12em] leading-none ${tradeEventFilter ? 'text-emerald-600' : 'text-slate-400'}`}>Source event</span>
             <select value={tradeEventFilter} onChange={(e) => handleTradeEventFilterChange(e.target.value)}
