@@ -9,6 +9,10 @@ export type QuickQuoteItem = {
   price: number;
   currency: string;
   notes: string;
+  engine?: 'sup'|'frame'|'manual';
+  templateId?: string|null;
+  familyId?: string;
+  input?: Record<string, unknown>|null;
 };
 
 function validate(items: QuickQuoteItem[]) {
@@ -18,7 +22,9 @@ function validate(items: QuickQuoteItem[]) {
       || typeof item.notes!=='string' || item.notes.length>1000
       || !Number.isSafeInteger(item.quantity) || item.quantity<=0
       || !Number.isFinite(item.price) || item.price<=0
-      || !/^[A-Z]{3}$/.test(item.currency)) return 'An estimate line contains invalid data.';
+      || !/^[A-Z]{3}$/.test(item.currency)
+      || (item.engine !== undefined && !['sup','frame','manual'].includes(item.engine))
+      || ((item.engine==='sup'||item.engine==='frame') && (!item.templateId || !item.familyId || !item.input || Number(item.input.quantity)!==item.quantity))) return 'An estimate line contains invalid data.';
   }
   return null;
 }
@@ -66,4 +72,22 @@ export async function listQuickQuoteEstimates() {
   }catch(error){
     return {ok:false,error:error instanceof Error?error.message:'Unable to load estimates.',estimates:[]};
   }
+}
+
+
+export async function findQuickQuoteCustomer(searchTerm:string){
+  try {
+    const term=String(searchTerm??'').trim();
+    if(term.length<3 || term.length>100) return {ok:false,error:'Enter at least 3 characters.',customers:[]};
+    const {userId,organizationId}=await ownerContext();
+    const db=await createClient();
+    // Query through the user-scoped Supabase session; never use service-role for customer search.
+    // Match exact email/phone, or company-name prefix; restrict to buyer leads in the current org.
+    const safe=term.replace(/[%_,()]/g,'').trim();
+    const filter=['company_name.ilike.'+safe+'%','email.eq.'+safe,'phone.eq.'+safe].join(',');
+    const {data,error}=await db.from('leads').select('id,company_name,contact_name,email,phone,owner_user_id')
+      .eq('organization_id',organizationId).eq('lead_type','buyer').or(filter).limit(10);
+    if(error)return {ok:false,error:'Customer lookup unavailable.',customers:[]};
+    return {ok:true,customers:(data??[]).map((x:any)=>({id:x.id,company_name:x.company_name,contact_name:x.contact_name,email:x.email,phone:x.phone}))};
+  }catch{return {ok:false,error:'Customer lookup unavailable.',customers:[]};}
 }
