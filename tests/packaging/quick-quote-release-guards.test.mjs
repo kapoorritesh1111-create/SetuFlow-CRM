@@ -50,3 +50,13 @@ test('Every transferred pouch and frame line can be edited in place without dupl
  assert.match(quote,/listPricingV5SavedLineSummaries/);
  assert.match(quote,/listPricingV5FrameSavedLineSummaries/);
 });
+
+test('Conversion automatically prices all transferred products without a second sales pricing step',()=>{
+  const action=read('src/features/quotes/server/quick-quote-conversion-actions.ts');
+  assert.match(action,/for\(const line of \(lines\?\?\[\]\)\)/);
+  assert.match(action,/savePackagingPricingV5QuoteLine/);
+  assert.match(action,/savePackagingFramePricingV5QuoteLine/);
+  assert.match(action,/lineId:line\.id/);
+  assert.match(action,/remaining\.some/);
+  assert.match(action,/quick_quote_pending_reprice/);
+});
