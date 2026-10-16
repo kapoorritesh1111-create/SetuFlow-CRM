@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 type CreateAction = { label: string; href?: string; onClick?: () => void; icon: string };
-export function UnifiedCreateMenu({quickLead,scopeHref,canCreateQuote}:{quickLead:()=>void;scopeHref:string;canCreateQuote:boolean}){
+export function UnifiedCreateMenu({quickLead,scopeHref,canCreateQuote,vcardHref}:{quickLead:()=>void;scopeHref:string;canCreateQuote:boolean;vcardHref:string}){
   const [open,setOpen]=useState(false);
   const root=useRef<HTMLDivElement>(null);
   useEffect(()=>{
@@ -21,7 +21,7 @@ export function UnifiedCreateMenu({quickLead,scopeHref,canCreateQuote}:{quickLea
     {label:'Lead',href:scopeHref,icon:'◉'},
     {label:'Task',href:'/tasks',icon:'✓'},
     {label:'Event',href:'/events',icon:'▦'},
-    {label:'Share vCard',href:'/vcard',icon:'▣'},
+    {label:'Share vCard',href:vcardHref,icon:'▣'},
   ];
   return <div ref={root} className="relative shrink-0">
     <button type="button" aria-haspopup="menu" aria-expanded={open} aria-controls="setu-create-menu"
