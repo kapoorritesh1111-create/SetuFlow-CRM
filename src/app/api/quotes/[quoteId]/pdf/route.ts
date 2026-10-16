@@ -589,6 +589,14 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
 
+  // Never generate a customer PDF for a Quick Quote draft awaiting governed reprice.
+  const {data:quickPending,error:quickPendingError}=await db.from('quote_line_items')
+    .select('id,input_snapshot_json,unit_price').eq('quote_id',quote.id);
+  if(quickPendingError) return NextResponse.json({error:'Unable to validate quote pricing.'},{status:503});
+  if((quickPending??[]).some((line:any)=>line.input_snapshot_json?.source==='quick_quote_pending_reprice'
+    || (line.input_snapshot_json?.internal_estimate_id && !(Number(line.unit_price)>0))))
+    return NextResponse.json({error:'Quick Quote draft requires validated pricing before PDF export.'},{status:409});
+
   const { data: leadRow } = await db.from('leads').select('id, company_name, contact_name, email, phone, country, owner_user_id').eq('organization_id', resolvedOrganizationId).eq('id', quote.lead_id).maybeSingle();
   const { data: quoteVersion } = quote.current_version_id
     ? await db.from('quote_versions').select('id,valid_until,pricing_basis,customer_message,sent_by,created_by').eq('quote_id',quote.id).eq('id',quote.current_version_id).maybeSingle()
