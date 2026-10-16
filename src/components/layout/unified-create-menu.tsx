@@ -39,7 +39,7 @@ export function UnifiedCreateMenu({quickLead,scopeHref,canCreateQuote,vcardHref}
 export function ShellSearch({scope}:{scope:'leads'|'quotes'|'global'}){
   const router=useRouter();
   const [query,setQuery]=useState('');
-  return <form role="search" onSubmit={e=>{e.preventDefault();const q=query.trim();if(!q)return;router.push(scope==='quotes'?'/quotes?search='+encodeURIComponent(q):'/leads?search='+encodeURIComponent(q));}} className="hidden min-w-[130px] max-w-[340px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 lg:flex">
+  return <form role="search" onSubmit={e=>{e.preventDefault();const q=query.trim();if(!q)return;router.push(scope==='quotes'?'/quotes?q='+encodeURIComponent(q):'/leads?q='+encodeURIComponent(q));}} className="hidden min-w-[130px] max-w-[340px] flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 lg:flex">
     <span aria-hidden className="text-slate-500">⌕</span>
     <input aria-label="Search CRM" value={query} onChange={e=>setQuery(e.target.value)} placeholder={scope==='quotes'?'Search quotes…':'Search leads, companies, phone…'} className="h-10 min-w-0 w-full bg-transparent text-sm outline-none placeholder:text-slate-500"/>
   </form>;
