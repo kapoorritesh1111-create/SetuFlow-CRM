@@ -69,7 +69,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const manualSpotUv=(sup?.charges??[]).find((c:any)=>c.code==='EXTRA_SPOT_UV'&&c.pricing_mode==='manual');
   const allowedExtras=chosen?.kind==='sup'?supEngineCharges:chosen?.kind==='frame' && frameTemplate?.supply_form==='three_side_seal_pouch'?[{code:'EXTRA_ZIPPER',name:'Zipper'}]:[];
   const currentExtras=extras.filter(code=>allowedExtras.some((charge:any)=>charge.code===code));
-  const manualQuoteCharges=chosen?.kind==='sup'&&spotUvEnabled&&Number(spotUvAmount)>0?[{code:'EXTRA_SPOT_UV',amount:Number(spotUvAmount),note:'Manual Spot UV charge.'}]:[];
+  const manualQuoteCharges=chosen?.kind==='sup'&&spotUvEnabled&&Number(spotUvAmount)>0?[{code:'EXTRA_SPOT_UV' as const,amount:Number(spotUvAmount),note:'Manual Spot UV charge.'}]:[];
   const rules=size?.quantity_rules??{};
   const quantities=useMemo(()=>{
     const input=Math.floor(Number(qty));
