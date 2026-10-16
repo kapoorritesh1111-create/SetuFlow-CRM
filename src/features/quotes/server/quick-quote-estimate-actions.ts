@@ -40,7 +40,7 @@ export async function saveQuickQuoteEstimate(params:{id?:string;items:QuickQuote
     const error=validate(params.items);
     if(error) return {ok:false,error};
     const {userId,organizationId}=await ownerContext();
-    const db=await createClient();
+    const db:any=await createClient();
     if (params.id) {
       const {data,error:dbError}=await db.from('quick_quote_estimates')
         .update({items:params.items,label:String(params.label||'Call estimate').slice(0,100),updated_at:new Date().toISOString()})
