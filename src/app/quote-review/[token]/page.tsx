@@ -96,6 +96,11 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
   const byConstruction = new Map<string, any>((constructions ?? []).map((r:any)=>[String(r.id),r]));
   const currency = quote.display_currency || quote.currency || 'INR';
   // Legacy inquiry placeholders remain lead context and cannot appear in the shared offer.
+  // A public customer link must never expose an unpriced Quick Quote handoff.
+  if((lines??[]).some((line:any)=>line.input_snapshot_json?.source==='quick_quote_pending_reprice'
+    || (line.input_snapshot_json?.internal_estimate_id && !(Number(line.unit_price)>0)))){
+    return <main className="mx-auto max-w-lg p-6"><h1 className="text-xl font-bold">Quote unavailable</h1><p>This quotation is still undergoing pricing review.</p></main>;
+  }
   const displayLines=(lines ?? []).filter((line:any)=>
     !(line.input_snapshot_json?.source==='lead_requirement' && Number(line.unit_price??0)<=0)
   );
