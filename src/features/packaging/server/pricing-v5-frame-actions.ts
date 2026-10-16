@@ -185,7 +185,7 @@ export async function savePackagingFramePricingV5QuoteLine(params:{
       source_hash:sourceHash({templateId:context.template.id,input:params.input,result}),
     };
     const hash=inputSnapshot.source_hash;
-    const description=`${result.supply_form.includes('three_side')?'3 Side Seal':'Center Seal'} · ${result.supply_form.endsWith('pouch')?'Pouch Form':'Roll Form'} · ${result.geometry.entered_width_mm} × ${result.geometry.entered_height_mm} mm`;
+    const description=`${result.supply_form.includes('three_side')?'3 Side Seal':'Center Seal'} · ${result.supply_form.endsWith('pouch')?'Pouch Form':'Roll Form'}${params.input.selected_charge_codes?.includes('EXTRA_ZIPPER')?' with Zipper':''} · ${result.geometry.entered_width_mm} × ${result.geometry.entered_height_mm} mm`;
     const internal={
       engine_version:5,
       calculation_engine_key:'frame_formula_v5',
