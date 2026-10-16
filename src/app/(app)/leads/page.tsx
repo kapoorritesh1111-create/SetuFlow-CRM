@@ -146,6 +146,7 @@ export default async function LeadsPage({
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end px-3 pt-2 md:px-0"><Link href="/quick-quote" className="inline-flex min-h-11 items-center rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white">Quick Quote — Price without a lead</Link></div>
       <div className="md:hidden">
         <LeadsMobileSurface
           initialLeadType={quickLeadType}
