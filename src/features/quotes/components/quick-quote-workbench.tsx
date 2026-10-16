@@ -22,6 +22,8 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [print,setPrint]=useState<'CMYK'|'CMYKW'>('CMYKW');
   const [bottom,setBottom]=useState<'solid_unregistered'|'registered_artwork'>('solid_unregistered');
   const [extras,setExtras]=useState<string[]>([]);
+  const [spotUvEnabled,setSpotUvEnabled]=useState(false);
+  const [spotUvAmount,setSpotUvAmount]=useState('');
   const [rows,setRows]=useState<Result[]>([]);
   const [selected,setSelected]=useState(0);
   const [error,setError]=useState('');
@@ -63,6 +65,11 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const resolvedBottom=askBottomPrint?bottom:
     size?.bottom_registration_mode==='required_registered'?'registered_artwork':
     size?.bottom_registration_mode==='required_unregistered'?'solid_unregistered':undefined;
+  const supEngineCharges=(sup?.charges??[]).filter((c:any)=>c.pricing_mode!=='manual');
+  const manualSpotUv=(sup?.charges??[]).find((c:any)=>c.code==='EXTRA_SPOT_UV'&&c.pricing_mode==='manual');
+  const allowedExtras=chosen?.kind==='sup'?supEngineCharges:chosen?.kind==='frame' && frameTemplate?.supply_form==='three_side_seal_pouch'?[{code:'EXTRA_ZIPPER',name:'Zipper'}]:[];
+  const currentExtras=extras.filter(code=>allowedExtras.some((charge:any)=>charge.code===code));
+  const manualQuoteCharges=chosen?.kind==='sup'&&spotUvEnabled&&Number(spotUvAmount)>0?[{code:'EXTRA_SPOT_UV',amount:Number(spotUvAmount),note:'Manual Spot UV charge.'}]:[];
   const rules=size?.quantity_rules??{};
   const quantities=useMemo(()=>{
     const input=Math.floor(Number(qty));
@@ -76,13 +83,14 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   function choose(id:string){
     const option=all.find(o=>o.id===id);
     setMode(id);setTemplateId(option?.templateId??'');setSizeId(sizes[0]?.id??'');
-    setConstructionId('');setCustom(false);setRows([]);setSelected(0);setError('');setExtras([]);
+    setConstructionId('');setCustom(false);setRows([]);setSelected(0);setError('');setExtras([]);setSpotUvEnabled(false);setSpotUvAmount('');
   }
   function calculate(){
     setError('');setRows([]);
     if(!chosen)return setError('Choose a service family.');
     if(chosen.kind==='manual')return setError('This family uses manual pricing. Enter an approved unit price instead.');
     if(!construction?.id)return setError('Choose an available construction.');
+    if(spotUvEnabled&&(!Number.isFinite(Number(spotUvAmount))||Number(spotUvAmount)<=0))return setError('Enter a valid approved Spot UV amount.');
     if(!quantities.includes(Number(qty)))return setError('Requested quantity is not permitted for this size.');
     if(!Number(width)||!Number(height)||Number(width)<=0||Number(height)<=0)return setError('Dimensions must be greater than zero.');
     start(async()=>{
@@ -91,7 +99,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         const response:any=chosen.kind==='sup'
           ?await previewPackagingPricingV5({templateId,input:{
             size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,
-            construction_id:construction.id,print,quantity:n,bottom_print_mode:resolvedBottom,selected_charge_codes:extras,
+            construction_id:construction.id,print,quantity:n,bottom_print_mode:resolvedBottom,selected_charge_codes:currentExtras,manual_quote_charges:manualQuoteCharges,
           }})
           :await previewPackagingFramePricingV5({templateId,input:{
             supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),
@@ -113,7 +121,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
       ?{quantity:Number(qty),unit:Number(manualPrice),total:Number(qty)*Number(manualPrice),currency:'INR'}
       :rows.find(r=>r.quantity===selected);
     if(!r||!(r.unit>0)||!(r.quantity>0))return setError('Calculate or enter an approved price first.');
-    const input=chosen.kind==='sup'?{size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,construction_id:construction?.id,print,quantity:r.quantity,bottom_print_mode:bottom,selected_charge_codes:extras}:chosen.kind==='frame'?{supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),construction_id:construction?.id,print,quantity:r.quantity,commercial_bucket:null,selected_charge_codes:extras}:null;
+    const input=chosen.kind==='sup'?{size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,construction_id:construction?.id,print,quantity:r.quantity,bottom_print_mode:resolvedBottom,selected_charge_codes:currentExtras,manual_quote_charges:manualQuoteCharges}:chosen.kind==='frame'?{supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),construction_id:construction?.id,print,quantity:r.quantity,commercial_bucket:null,selected_charge_codes:extras}:null;
     setBasket(b=>[...b,{name:chosen.label,quantity:r.quantity,price:r.unit,currency:r.currency,engine:chosen.kind,templateId:templateId||null,familyId:chosen.kind==='frame'?String(frameTemplate?.family_id??''):chosen.id.split(':')[1],input,notes:chosen.kind==='sup'
       ?(custom?`Custom ${width} x ${height} mm`:`Size ${size?.name??''}`)+` · ${construction?.name??''}`
       :chosen.kind==='frame'?`${width} x ${height} mm · ${construction?.name??''}`:'Manual price · requires formal quote approval'}]);
@@ -178,7 +186,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
           <label className="text-sm">Construction<select className={field} value={construction?.id??''} onChange={e=>{setConstructionId(e.target.value);setRows([])}}>{constructions.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
           <label className="text-sm">Print<select className={field} value={print} onChange={e=>setPrint(e.target.value as any)}><option value="CMYK">CMYK</option><option value="CMYKW">CMYK + White</option></select></label>
           {askBottomPrint?<label className="text-sm">Bottom print<select className={field} value={bottom} onChange={e=>setBottom(e.target.value as any)}><option value="solid_unregistered">Solid / unregistered</option><option value="registered_artwork">Registered / artwork</option></select></label>:null}
-          <div className="sm:col-span-2"><p className="mb-2 text-sm font-medium">Add-ons (optional)</p>{(chosen.kind==='sup'?sup?.charges: [{code:'EXTRA_ZIPPER',name:'Zipper'}])?.filter((x:any)=>x.pricing_mode!=='manual').map((x:any)=><label key={x.code} className="mr-4 inline-flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={extras.includes(x.code)} onChange={e=>{setExtras(v=>e.target.checked?[...v,x.code]:v.filter(c=>c!==x.code));setRows([])}}/>{x.name}</label>)}</div>
+          <div className="sm:col-span-2"><p className="mb-2 text-sm font-medium">Add-ons (optional)</p>{allowedExtras.map((x:any)=><label key={x.code} className="mr-4 inline-flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={extras.includes(x.code)} onChange={e=>{setExtras(v=>e.target.checked?[...v,x.code]:v.filter(c=>c!==x.code));setRows([])}}/>{x.name}</label>)}{chosen.kind==='sup'&&manualSpotUv?<div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3"><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={spotUvEnabled} onChange={e=>{setSpotUvEnabled(e.target.checked);setRows([]);if(!e.target.checked)setSpotUvAmount('')}}/>Spot UV — manual approved rate</label>{spotUvEnabled?<label className="mt-2 block text-sm">Spot UV total charge (INR)<input className={field} inputMode="decimal" value={spotUvAmount} onChange={e=>{setSpotUvAmount(e.target.value);setRows([])}}/></label>:null}</div>:null}</div>
         </>:null}
         <label className="text-sm">Requested quantity (pcs)<input className={field} inputMode="numeric" value={qty} onChange={e=>{setQty(e.target.value);setRows([])}}/></label>
         {chosen.kind==='manual'?<label className="text-sm">Approved unit price (INR)<input className={field} inputMode="decimal" value={manualPrice} onChange={e=>setManualPrice(e.target.value)}/></label>:null}
