@@ -41,7 +41,8 @@
     "build:vercel": "next build",
     "check:product-overview-polish": "python scripts/check-product-overview-ux-polish.py",
     "verify:modules": "npm run test:growth-agent && npm run test:packaging && npm run test:trade-events && npm run test:mail && npm run test:calendar",
-    "verify:predeploy": "npm run check:product-overview-polish && npm run typecheck && npm run verify:modules && npm run build:vercel"
+    "verify:predeploy": "npm run check:product-overview-polish && npm run typecheck && npm run verify:modules && npm run build:vercel",
+    "test:quick-quote": "node --test tests/packaging/quick-quote-release-guards.test.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^137.0.1",
