@@ -1529,7 +1529,7 @@ export function LeadsWorkspace({
         </label>
 
         {/* Product filter */}
-        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+        <label className={`${showAdvFilters || productIdFilter ? 'inline-flex' : 'hidden'} items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm`}>
           <span className="text-sm flex-shrink-0">📦</span>
           <div className="flex flex-col leading-none gap-0.5">
             <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Product</span>
@@ -1568,7 +1568,7 @@ export function LeadsWorkspace({
         </label>
 
         {/* Country filter */}
-        <label className="inline-flex items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm">
+        <label className={`${showAdvFilters || countryIdFilter ? 'inline-flex' : 'hidden'} items-center gap-1.5 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[110px] cursor-pointer transition hover:bg-white hover:border-slate-300 hover:shadow-sm`}>
           <span className="text-sm flex-shrink-0">🌐</span>
           <div className="flex flex-col leading-none gap-0.5">
             <span className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-slate-400 leading-none">Country</span>
@@ -1581,8 +1581,7 @@ export function LeadsWorkspace({
         </label>
 
         {/* Source event filter */}
-        <label className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 min-w-[130px] cursor-pointer transition hover:shadow-sm ${tradeEventFilter ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:bg-white hover:border-slate-300'}`}>
-          <span className="text-sm flex-shrink-0">🎪</span>
+        <label className={`text-sm flex-shrink-0`}>🎪</span>
           <div className="flex flex-col leading-none gap-0.5">
             <span className={`text-[9px] font-extrabold uppercase tracking-[0.12em] leading-none ${tradeEventFilter ? 'text-emerald-600' : 'text-slate-400'}`}>Source event</span>
             <select value={tradeEventFilter} onChange={(e) => handleTradeEventFilterChange(e.target.value)}
@@ -1627,7 +1626,7 @@ export function LeadsWorkspace({
         {/* SF-18-100: More filters button */}
         <button type="button" onClick={() => setShowAdvFilters(v => !v)}
           className={`inline-flex items-center gap-1.5 h-9 rounded-xl border px-3 text-[11.5px] font-bold transition ${showAdvFilters || [advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].some(Boolean) ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white hover:border-slate-300'}`}>
-          🔬 More filters {[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length > 0 && <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">{[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length}</span>}
+          ⚙ More filters {[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length > 0 && <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">{[advDealMin,advDealMax,advFollowUpTiming,advHasQuote,advSourceType].filter(Boolean).length}</span>}
         </button>
 
         {/* Summary count */}
