@@ -30,7 +30,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [draftLabel,setDraftLabel]=useState('Call estimate');
   const [draftStatus,setDraftStatus]=useState('');
   const [savedDrafts,setSavedDrafts]=useState<any[]>([]);
-  const [basket,setBasket]=useState<{name:string;quantity:number;price:number;currency:string;notes:string}[]>([]);
+  const [basket,setBasket]=useState<any[]>([]);
 
   const all=[...(sup?.families??[]).map((f:any)=>({id:'sup:'+f.id,label:f.name,kind:'sup',templateId:sup.templates?.[0]?.id})),
     ...(frame?.templates??[]).map((t:any)=>({id:'frame:'+t.id,label:t.supply_label??t.name,kind:'frame',templateId:t.id})),
@@ -95,7 +95,8 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
       ?{quantity:Number(qty),unit:Number(manualPrice),total:Number(qty)*Number(manualPrice),currency:'INR'}
       :rows.find(r=>r.quantity===selected);
     if(!r||!(r.unit>0)||!(r.quantity>0))return setError('Calculate or enter an approved price first.');
-    setBasket(b=>[...b,{name:chosen.label,quantity:r.quantity,price:r.unit,currency:r.currency,notes:chosen.kind==='sup'
+    const input=chosen.kind==='sup'?{size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,construction_id:construction?.id,print,quantity:r.quantity,bottom_print_mode:bottom,selected_charge_codes:extras}:chosen.kind==='frame'?{supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),construction_id:construction?.id,print,quantity:r.quantity,commercial_bucket:null,selected_charge_codes:extras}:null;
+    setBasket(b=>[...b,{name:chosen.label,quantity:r.quantity,price:r.unit,currency:r.currency,engine:chosen.kind,templateId:templateId||null,familyId:chosen.id.split(':')[1],input,notes:chosen.kind==='sup'
       ?(custom?`Custom ${width} x ${height} mm`:`Size ${size?.name??''}`)+` · ${construction?.name??''}`
       :chosen.kind==='frame'?`${width} x ${height} mm · ${construction?.name??''}`:'Manual price · requires formal quote approval'}]);
     setRows([]);setError('');
