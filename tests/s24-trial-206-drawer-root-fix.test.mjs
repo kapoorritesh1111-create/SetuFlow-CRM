@@ -41,13 +41,15 @@ test('quick-lead channel is a pure module pub/sub with no DOM coupling', () => {
   assert.ok(!channel.includes('addEventListener'));
 });
 
-test('header Quick Lead signals on /leads and navigates elsewhere', () => {
+test('unified Create menu invokes Quick Lead on Leads and navigates elsewhere', () => {
+  const createMenu = read('src/components/layout/unified-create-menu.tsx');
   assert.ok(shell.includes("pathname.startsWith('/leads')"));
   assert.ok(shell.includes('openQuickLeadDrawer'));
   assert.ok(shell.includes('quickLead=1'), 'cross-route navigation path must remain');
-  const buttonIdx = shell.indexOf('onClick={openQuickLeadDrawer}');
-  assert.ok(buttonIdx > -1, 'on-/leads trigger must be a button, not a Link');
-  assert.ok(shell.slice(buttonIdx - 400, buttonIdx + 200).includes('data-tour="quick-lead-button"'), 'tour anchor must survive on the button variant');
+  assert.ok(shell.includes('<UnifiedCreateMenu'), 'shell must mount unified menu');
+  assert.ok(createMenu.includes('data-tour="quick-lead-button"'), 'tour anchor belongs on visible Create trigger');
+  assert.ok(createMenu.includes("label:'Quick Lead',onClick:quickLead"), 'Create menu must keep Quick Lead action');
+  assert.ok(createMenu.includes('action.onClick?.()'), 'Quick Lead selection must invoke drawer action');
 });
 
 test('LeadsWorkspace is the sole drawer owner: subscribes to channel + consumes quickLead param once', () => {
