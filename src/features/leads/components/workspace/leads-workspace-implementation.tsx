@@ -1478,7 +1478,7 @@ export function LeadsWorkspace({
       ) : null}
 
       {/* ═══ PAGE NAV TABS — inline view switcher ═══ */}
-      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 24px', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center' }}>
+      <div className="flex-wrap gap-x-1 px-3" style={{ background: 'white', borderBottom: '1px solid #e2e8f0', display: activeView === 'list' ? 'flex' : 'none', alignItems: 'center' }}>
         <button type="button" onClick={() => setActiveView('list')} style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: activeView === 'list' ? '#0b2e4a' : '#94a3b8', borderTop: 'none', borderLeft: 'none', borderRight: 'none', borderBottom: activeView === 'list' ? '2px solid #0c7fff' : '2px solid transparent', marginBottom: '-1px', display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', cursor: 'pointer' }}>
           📋 Lead Queue
           <span style={{ background: summary.overdue > 0 ? '#f43f5e' : '#64748b', color: 'white', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{sortedLeads.length}</span>
@@ -1495,13 +1495,14 @@ export function LeadsWorkspace({
           ✅ Approval Queue
           <span style={{ background: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? '#f59e0b' : '#e2e8f0', color: quotes.some((quote) => quote.approval_required && !quote.approved_at) ? 'white' : '#94a3b8', borderRadius: '999px', padding: '1px 6px', fontSize: '9px', fontWeight: 800 }}>{quotes.filter((quote) => quote.approval_required && !quote.approved_at).length}</span>
         </button>
-        <a href="/pipeline" style={{ marginLeft: 'auto', padding: '12px 16px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
+        <a href="/quick-quote" className="ml-auto inline-flex min-h-9 items-center rounded-lg bg-blue-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-800">+ Quick Quote</a>
+        <a href="/pipeline" style={{ marginLeft: '0', padding: '8px 12px', fontSize: '12px', fontWeight: 700, color: '#94a3b8', borderBottom: '2px solid transparent', marginBottom: '-1px', textDecoration: 'none' }}>
           ⊕ View in Pipeline →
         </a>
       </div>
 
       {/* ═══ FILTER BAR — SF-18-092: redesigned with Tailwind, no inline styles ═══ */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-5 py-2" style={{ display: activeView === 'list' ? 'flex' : 'none' }}>
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-3 py-2" style={{ display: activeView === 'list' ? 'flex' : 'none' }}>
 
         {/* Search box */}
         <div className="flex items-center gap-2 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[200px] focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
