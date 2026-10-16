@@ -66,7 +66,7 @@ function DesktopNav({ pathname, scope, mode, canAccessAdmin, enabledModules, pac
     { title: 'Growth', items: [{ href: PRODUCT_ROUTES.app.capture, label: 'Capture', expandedLabel: 'Capture', icon: 'qrcode' }, { href: PRODUCT_ROUTES.app.leads, label: 'Leads', expandedLabel: 'Leads', icon: 'users' }, { href: PRODUCT_ROUTES.app.pipeline, label: 'Pipeline', expandedLabel: 'Pipeline', icon: 'filter' }] },
     { title: 'Commercial', items: [{ href: PRODUCT_ROUTES.app.quotes, label: 'Quotes', expandedLabel: 'Quotes', icon: 'comments-o' }, { href: PRODUCT_ROUTES.app.integrations, label: 'Send', expandedLabel: 'Send', icon: 'paper-plane-o' }, { href: PRODUCT_ROUTES.app.orders, label: 'Orders', expandedLabel: 'Orders', icon: 'archive' }] },
     { title: 'Work', items: [{ href: PRODUCT_ROUTES.app.tasks, label: 'Tasks', expandedLabel: 'Tasks', icon: 'check-square-o' }, { href: '/mail', label: 'Mail', expandedLabel: 'Setu Mail', icon: 'mail' }, { href: '/trade-events', label: 'Events', expandedLabel: 'Events', icon: 'calendar' }, { href: '/documents', label: 'Docs', expandedLabel: 'Documents', icon: 'file-text-o' }, ...(packagingEnabled ? [{ href: '/design-queue', label: 'Design', expandedLabel: 'Design Queue', icon: 'paint-brush' }, { href: '/dispatch-board', label: 'Dispatch', expandedLabel: 'Dispatch Board', icon: 'truck' }] : [])] },
-    { title: 'Setup', items: [{ href: PRODUCT_ROUTES.app.products, label: 'Catalog', expandedLabel: 'Catalog', icon: 'tags' }, ...(canAccessAdmin ? [{ href: '/admin', label: 'Admin', expandedLabel: 'Admin', icon: 'lock' }] : [])] },
+    { title: 'Setup', items: [{ href: PRODUCT_ROUTES.app.products, label: 'Catalog', expandedLabel: 'Catalog', icon: 'tags' }] },
   ].map((group) => ({
     ...group,
     items: group.items.filter((item) => {
@@ -162,6 +162,7 @@ export function AppShell({ children, profile, organization, membership, currentR
   <ShellSearch scope={pathname.startsWith('/quotes')?'quotes':pathname.startsWith('/leads')?'leads':'global'} />
   <div data-setu-header-actions className="ml-auto flex min-w-0 shrink-0 items-center gap-2">
     <span data-setu-growth-anchor aria-hidden="true" className="hidden" /><div className="hidden 2xl:block"><GlobalWorkspaceFilter scope={globalScope} onScopeChange={changeGlobalScope} accentColor={accentColor} supplierEnabled={supplierEnabled} /></div>
+    {canAccessAdmin ? <Link href="/admin" title="Administration" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50"><FaIcon icon="cog" fixedWidth /><span className="hidden 2xl:inline">Admin</span></Link> : null}
     <UnifiedCreateMenu quickLead={()=>{if(pathname.startsWith('/leads'))openQuickLeadDrawer();else router.push(withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`,globalScope));}} scopeHref={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`,globalScope)} canCreateQuote={enabledModules.has('full_crm')} vcardHref={shareHref} />
     <OfflineIndicator />
     {organizationId && userId ? <InAppNotificationCenter key={`${organizationId}-${userId}-${pathname}-${notificationResetKey}`} organizationId={organizationId} userId={userId} variant="inline" /> : null}
