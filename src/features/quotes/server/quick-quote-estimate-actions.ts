@@ -55,16 +55,28 @@ export async function saveQuickQuoteEstimate(params:{id?:string;items:QuickQuote
     }
     const {userId,organizationId}=await ownerContext();
     const db:any=await createClient();
+    // Resolve service families from published templates; never trust a browser-supplied
+    // family ID (older 3SS/CSS estimates accidentally stored the template ID).
+    const normalizedItems:QuickQuoteItem[]=[];
+    for(const item of params.items){
+      if(item.engine==='sup'||item.engine==='frame'){
+        const {data:template,error:templateError}=await db.from('packaging_pricing_templates')
+          .select('id,family_id').eq('id',item.templateId)
+          .eq('organization_id',organizationId).eq('status','published').eq('is_active',true).maybeSingle();
+        if(templateError||!template?.family_id) return {ok:false,error:'Selected pricing template is unavailable.'};
+        normalizedItems.push({...item,familyId:String(template.family_id)});
+      }else normalizedItems.push(item);
+    }
     if (params.id) {
       const {data,error:dbError}=await db.from('quick_quote_estimates')
-        .update({items:params.items,label:String(params.label||'Call estimate').slice(0,100),updated_at:new Date().toISOString()})
+        .update({items:normalizedItems,label:String(params.label||'Call estimate').slice(0,100),updated_at:new Date().toISOString()})
         .eq('id',params.id).eq('organization_id',organizationId).eq('owner_user_id',userId)
         .eq('status','draft').select('id').single();
       if(dbError||!data?.id)return {ok:false,error:dbError?.message??'Estimate not found.'};
       return {ok:true,id:data.id};
     }
     const {data,error:dbError}=await db.from('quick_quote_estimates')
-      .insert({organization_id:organizationId,owner_user_id:userId,status:'draft',items:params.items,
+      .insert({organization_id:organizationId,owner_user_id:userId,status:'draft',items:normalizedItems,
         label:String(params.label||'Call estimate').slice(0,100)})
       .select('id').single();
     if(dbError||!data?.id)return {ok:false,error:dbError?.message??'Could not save estimate.'};
