@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { FaIcon } from '@/components/ui/fa-icon';
+import { ContactRound, Settings } from 'lucide-react';
 import { MobileTabBar } from '@/components/shell/MobileTabBar';
 import { DesktopRedirect } from '@/components/shell/DesktopRedirect';
 import { OfflineIndicator } from '@/components/shell/OfflineIndicator';
@@ -164,9 +165,10 @@ export function AppShell({ children, profile, organization, membership, currentR
     <span data-setu-growth-anchor aria-hidden="true" className="hidden" /><div className="hidden 2xl:block"><GlobalWorkspaceFilter scope={globalScope} onScopeChange={changeGlobalScope} accentColor={accentColor} supplierEnabled={supplierEnabled} /></div>
     
     <UnifiedCreateMenu quickLead={()=>{if(pathname.startsWith('/leads'))openQuickLeadDrawer();else router.push(withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`,globalScope));}} scopeHref={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`,globalScope)} canCreateQuote={enabledModules.has('full_crm')} vcardHref={shareHref} />
+    <a href={shareHref} title="Share vCard" aria-label="Share vCard" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><ContactRound size={20} strokeWidth={1.8} aria-hidden="true" /></a>
     <OfflineIndicator />
     {organizationId && userId ? <InAppNotificationCenter key={`${organizationId}-${userId}-${pathname}-${notificationResetKey}`} organizationId={organizationId} userId={userId} variant="inline" /> : null}
-    {canAccessAdmin ? <Link href="/admin" title="Administration" aria-label="Administration" className="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" ><FaIcon icon="cog" fixedWidth /></Link> : null}
+    {canAccessAdmin ? <Link href="/admin" title="Administration" aria-label="Administration" className="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" ><Settings size={20} strokeWidth={1.8} aria-hidden="true" /></Link> : null}
     <DesktopUserMenu profileName={profileName} profileEmail={profileEmail} avatarUrl={profile?.avatar_url} onOpenMenu={closeNotificationCard} />
   </div>
 </div></header><div className="px-4 py-5 pb-[calc(80px+env(safe-area-inset-bottom))] sm:px-6 md:px-7 md:pb-8 xl:px-8">{isDesktopOnlyRoute ? <DesktopRedirect /> : null}<div className={isDesktopOnlyRoute ? 'hidden md:block' : undefined}>{children}</div></div></main></div><Link href={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`, globalScope)} aria-label="Quick Lead" style={{ background: `linear-gradient(135deg, ${accentColor} 0%, ${primaryColor} 150%)` }} className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-4 z-[300] flex h-[54px] w-[54px] items-center justify-center rounded-2xl text-3xl font-black text-white shadow-[0_6px_22px_rgba(12,127,255,0.5)] ring-2 ring-white/80 md:hidden">+</Link><MobileTabBar /></div></> }{organizationId && userId ? <CrmPushRegistrar organizationId={organizationId} userId={userId} /> : null}<SetuGuruWidget pathname={pathname} routeTitle={routeMeta.title} organizationName={organization?.name} roleLabel={roleLabel} /></>;
