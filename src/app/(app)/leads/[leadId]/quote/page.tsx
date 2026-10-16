@@ -185,6 +185,7 @@ export default async function QuotePage({
                 {line.extras.length>0?<p className="text-xs">Add-ons: {line.extras.join(', ')}</p>:null}
                 {line.notes?<p className="mt-1 text-xs">{line.notes}</p>:null}
                 <p className="mt-2 font-semibold text-amber-800">Not priced for customer</p>
+                <Link className="mt-2 inline-flex min-h-10 items-center rounded-lg bg-blue-700 px-3 py-2 text-xs font-bold text-white" href={`/leads/${params.leadId}/quote?quoteId=${activeQuote?.id}&step=2&editLine=${line.id}`}>Complete pricing for this item</Link>
               </div>
             ))}
           </div>
