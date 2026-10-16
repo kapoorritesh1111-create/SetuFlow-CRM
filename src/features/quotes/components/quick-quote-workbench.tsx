@@ -36,6 +36,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [customerLookupError,setCustomerLookupError]=useState('');
   const [selectedLeadId,setSelectedLeadId]=useState('');
   const [draftId,setDraftId]=useState('');
+  const [savedBasketFingerprint,setSavedBasketFingerprint]=useState('');
   const [draftLabel,setDraftLabel]=useState('Call estimate');
   const [draftStatus,setDraftStatus]=useState('');
   const [savedDrafts,setSavedDrafts]=useState<any[]>([]);
@@ -111,6 +112,8 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     setRows([]);setError('');
   }
   function convertDraft(){
+    if(basket.some(item=>item.engine==='manual')){setConvertError('Manual-price lines require the governed quotation builder.');return;}
+    if(JSON.stringify(basket)!==savedBasketFingerprint){setConvertError('Estimate changed: save it again before conversion.');return;}
     if(!draftId){setConvertError('Save the estimate first.');return;}
     start(async()=>{
       const result=await convertQuickQuoteDraft({estimateId:draftId,existingLeadId:selectedLeadId||undefined,companyName:newCompany,phone:newPhone,email:newEmail});
@@ -132,7 +135,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     start(async()=>{
       const result=await saveQuickQuoteEstimate({id:draftId||undefined,items:basket,label:draftLabel});
       if(!result.ok){setDraftStatus(result.error??'Save failed.');return;}
-      setDraftId(result.id??'');setDraftStatus('Internal estimate saved securely.');
+      setDraftId(result.id??'');setSavedBasketFingerprint(JSON.stringify(basket));setDraftStatus('Internal estimate saved securely.');
     });
   }
   function loadDrafts(){
@@ -189,20 +192,20 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         <label className="block text-sm">Internal estimate name<input className={field} value={draftLabel} maxLength={100} onChange={e=>setDraftLabel(e.target.value)}/></label>
         <div className="grid grid-cols-2 gap-2"><button disabled={pending||!basket.length} onClick={saveDraft} className="min-h-12 rounded-xl bg-blue-700 px-3 font-bold text-white disabled:opacity-50">Save Estimate</button><button disabled={pending} onClick={loadDrafts} className="min-h-12 rounded-xl border px-3 text-sm font-semibold">Resume Estimate</button></div>
         {draftStatus?<p role="status" className="text-sm">{draftStatus}</p>:null}
-        {savedDrafts.length?<div className="space-y-2">{savedDrafts.map(d=><button key={d.id} onClick={()=>{setDraftId(d.id);setDraftLabel(d.label);setBasket(d.items);setSavedDrafts([]);setRows([]);setDraftStatus('Saved estimate loaded.')}} className="block min-h-12 w-full rounded-xl border p-3 text-left text-sm">{d.label} · {new Date(d.updated_at).toLocaleString()}</button>)}</div>:null}
+        {savedDrafts.length?<div className="space-y-2">{savedDrafts.map(d=><button key={d.id} onClick={()=>{setDraftId(d.id);setDraftLabel(d.label);setBasket(d.items);setSavedBasketFingerprint(JSON.stringify(d.items));setSavedDrafts([]);setRows([]);setDraftStatus('Saved estimate loaded.')}} className="block min-h-12 w-full rounded-xl border p-3 text-left text-sm">{d.label} · {new Date(d.updated_at).toLocaleString()}</button>)}</div>:null}
       </div>
       <div className="mt-4 rounded-xl border border-slate-200 p-3">
         <h3 className="mb-1 text-base font-bold">5. Find existing buyer (formal quote preparation)</h3>
-        <p className="mb-3 text-xs text-slate-600">Search existing buyer leads in this workspace. Conversion is still disabled while the quote transaction is being built.</p>
+        <p className="mb-3 text-xs text-slate-600">Search existing buyer leads in this workspace. Conversion creates an internal draft; every line must pass pricing review before sharing.</p>
         <label className="block text-sm">Company, email or phone<input className={field} value={customerTerm} onChange={e=>{setCustomerTerm(e.target.value);setSelectedLeadId('')}} placeholder="At least 3 characters"/></label>
         <button disabled={pending||customerTerm.trim().length<3} onClick={lookupCustomers} className="mt-2 min-h-11 rounded-xl border px-4 text-sm font-semibold disabled:opacity-50">Find Customer</button>
         {customerLookupError?<p role="status" className="mt-2 text-sm text-amber-800">{customerLookupError}</p>:null}
         <div className="mt-2 space-y-2">{customerMatches.map(c=><label key={c.id} className="flex min-h-12 items-center gap-3 rounded-lg border p-3 text-sm"><input type="radio" name="customer" checked={selectedLeadId===c.id} onChange={()=>setSelectedLeadId(c.id)}/><span><strong>{c.company_name}</strong><span className="block text-xs">{c.contact_name??''} · {c.phone??c.email??''}</span></span></label>)}</div>
         {selectedLeadId?<p className="mt-2 text-xs text-emerald-800">Existing lead selected. No changes to this lead have been made.</p>:null}
         {!selectedLeadId?<div className="mt-3 grid gap-2 sm:grid-cols-3"><label className="text-sm">New company<input className={field} value={newCompany} onChange={e=>setNewCompany(e.target.value)}/></label><label className="text-sm">Phone<input className={field} value={newPhone} onChange={e=>setNewPhone(e.target.value)}/></label><label className="text-sm">Email<input className={field} value={newEmail} onChange={e=>setNewEmail(e.target.value)}/></label></div>:null}
-        <button disabled={pending||!draftId} onClick={convertDraft} className="mt-3 min-h-12 w-full rounded-xl bg-emerald-700 p-3 font-bold text-white disabled:opacity-50">Create Draft for Pricing Review</button>{convertError?<p role="alert" className="mt-2 text-sm text-red-700">{convertError}</p>:null}
+        <button disabled={pending||!draftId||JSON.stringify(basket)!==savedBasketFingerprint||basket.some(item=>item.engine==='manual')} onClick={convertDraft} className="mt-3 min-h-12 w-full rounded-xl bg-emerald-700 p-3 font-bold text-white disabled:opacity-50">Create Draft for Pricing Review</button>{convertError?<p role="alert" className="mt-2 text-sm text-red-700">{convertError}</p>:null}
       </div>
-      <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Formalization and sending are intentionally disabled here until secure estimate persistence, lead selection, and atomic conversion are implemented and verified. Use the existing lead quote builder to issue formal quotations.</p>
+      <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">A converted draft remains internal until its product lines are recalculated and approved in the standard quote builder; unpriced lines cannot be sent.</p>
     </section>
   </div>;
 }
