@@ -65,3 +65,12 @@ test('3SS and CSS estimate lines use the service-family ID, not the pricing temp
  const ui=read('src/features/quotes/components/quick-quote-workbench.tsx');
  assert.match(ui,/familyId:chosen\.kind==='frame'\?String\(frameTemplate\?\.family_id\?\?''\)/);
 });
+
+test('Quick Quote uses configured SUP add-ons and allows zipper only for 3SS pouch',()=>{
+ const q=read('src/features/quotes/components/quick-quote-workbench.tsx');
+ assert.match(q,/supEngineCharges/);
+ assert.match(q,/allowedExtras\.map/);
+ assert.match(q,/three_side_seal_pouch/);
+ assert.match(q,/manual_quote_charges:manualQuoteCharges/);
+ assert.match(q,/spotUvEnabled/);
+});
