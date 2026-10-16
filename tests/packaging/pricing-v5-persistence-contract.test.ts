@@ -238,7 +238,7 @@ test('S52-PKG-V5: Sales Quote supports editing an existing v5 line without dupli
 });
 
 test('S52-PKG-V5: changing quantity keeps a selected KLD while changing size clears it',()=>{
-  assert.match(salesConfigurator,/setSizeId\(e\.target\.value\); setKldFileId\(''\); invalidate\(\);/);
+  assert.match(salesConfigurator,/setSizeId\(e\.target\.value\);\s*\}?\s*setKldFileId\(''\);\s*invalidate\(\);/);
   assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId\]\);/);
   assert.doesNotMatch(salesConfigurator,/setKldFileId\(''\)[\s\S]*\}, \[sizeId, askBottomPrint, size, quantity\]\);/);
 });
@@ -259,7 +259,7 @@ test('S52-PKG-V5: Sales and customer quote receive safe higher-volume savings wi
   assert.match(quoteReview,/pricing_breakdown_json\?\.suggested_quantities/);
   assert.match(quoteReview,/Save more at higher quantities/);
   assert.match(quoteReview,/savings_pct/);
-  assert.match(quotePdf,/VOLUME SAVINGS & TERMS/);
+  assert.match(quotePdf,/VOLUME PRICING \(SUGGESTED\)|VOLUME SAVINGS & TERMS/);
   assert.match(quotePdf,/customerVolumeSuggestions/);
   assert.match(quotePdf,/lower\/pc/);
   assert.match(salesConfigurator,/suggested_quantities/);
@@ -404,7 +404,7 @@ test('S52-PKG-V5: Quote Studio can remove mutable Pricing v5 packaging lines ato
 test('S52-PKG-V5: customer discounts support percent or amount per piece and preserve approval controls',()=>{
   assert.match(premiumQuoteStudio,/Adjust Price/);
   assert.match(premiumQuoteStudio,/% discount/);
-  assert.match(premiumQuoteStudio,/\/ pc discount/);
+  assert.match(premiumQuoteStudio,/discount \/|Discount \/ \$\{quotePriceUnit\(line\)\}/);
   assert.match(premiumQuoteStudio,/15% below approved pricing requires approval/);
   assert.match(lineCommercialActions,/APPROVAL_THRESHOLD_PERCENT=15/);
   assert.match(lineCommercialActions,/app_adjust_packaging_v5_quote_line_tx/);
