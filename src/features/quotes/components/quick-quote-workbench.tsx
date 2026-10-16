@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { listQuickQuoteEstimates, saveQuickQuoteEstimate } from '@/features/quotes/server/quick-quote-estimate-actions';
+import { findQuickQuoteCustomer, listQuickQuoteEstimates, saveQuickQuoteEstimate } from '@/features/quotes/server/quick-quote-estimate-actions';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
 import { previewPackagingFramePricingV5 } from '@/features/packaging/server/pricing-v5-frame-actions';
 
@@ -26,6 +26,10 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [error,setError]=useState('');
   const [pending,start]=useTransition();
   const [manualPrice,setManualPrice]=useState('');
+  const [customerTerm,setCustomerTerm]=useState('');
+  const [customerMatches,setCustomerMatches]=useState<any[]>([]);
+  const [customerLookupError,setCustomerLookupError]=useState('');
+  const [selectedLeadId,setSelectedLeadId]=useState('');
   const [draftId,setDraftId]=useState('');
   const [draftLabel,setDraftLabel]=useState('Call estimate');
   const [draftStatus,setDraftStatus]=useState('');
@@ -101,6 +105,15 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
       :chosen.kind==='frame'?`${width} x ${height} mm · ${construction?.name??''}`:'Manual price · requires formal quote approval'}]);
     setRows([]);setError('');
   }
+  function lookupCustomers(){
+    setCustomerLookupError('');setCustomerMatches([]);setSelectedLeadId('');
+    start(async()=>{
+      const response=await findQuickQuoteCustomer(customerTerm);
+      if(!response.ok){setCustomerLookupError(response.error??'Unable to search customers.');return;}
+      setCustomerMatches(response.customers??[]);
+      if(!response.customers?.length)setCustomerLookupError('No matching existing buyer leads.');
+    });
+  }
   function saveDraft(){
     setDraftStatus('');
     start(async()=>{
@@ -164,6 +177,15 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         <div className="grid grid-cols-2 gap-2"><button disabled={pending||!basket.length} onClick={saveDraft} className="min-h-12 rounded-xl bg-blue-700 px-3 font-bold text-white disabled:opacity-50">Save Estimate</button><button disabled={pending} onClick={loadDrafts} className="min-h-12 rounded-xl border px-3 text-sm font-semibold">Resume Estimate</button></div>
         {draftStatus?<p role="status" className="text-sm">{draftStatus}</p>:null}
         {savedDrafts.length?<div className="space-y-2">{savedDrafts.map(d=><button key={d.id} onClick={()=>{setDraftId(d.id);setDraftLabel(d.label);setBasket(d.items);setSavedDrafts([]);setRows([]);setDraftStatus('Saved estimate loaded.')}} className="block min-h-12 w-full rounded-xl border p-3 text-left text-sm">{d.label} · {new Date(d.updated_at).toLocaleString()}</button>)}</div>:null}
+      </div>
+      <div className="mt-4 rounded-xl border border-slate-200 p-3">
+        <h3 className="mb-1 text-base font-bold">5. Find existing buyer (formal quote preparation)</h3>
+        <p className="mb-3 text-xs text-slate-600">Search existing buyer leads in this workspace. Conversion is still disabled while the quote transaction is being built.</p>
+        <label className="block text-sm">Company, email or phone<input className={field} value={customerTerm} onChange={e=>{setCustomerTerm(e.target.value);setSelectedLeadId('')}} placeholder="At least 3 characters"/></label>
+        <button disabled={pending||customerTerm.trim().length<3} onClick={lookupCustomers} className="mt-2 min-h-11 rounded-xl border px-4 text-sm font-semibold disabled:opacity-50">Find Customer</button>
+        {customerLookupError?<p role="status" className="mt-2 text-sm text-amber-800">{customerLookupError}</p>:null}
+        <div className="mt-2 space-y-2">{customerMatches.map(c=><label key={c.id} className="flex min-h-12 items-center gap-3 rounded-lg border p-3 text-sm"><input type="radio" name="customer" checked={selectedLeadId===c.id} onChange={()=>setSelectedLeadId(c.id)}/><span><strong>{c.company_name}</strong><span className="block text-xs">{c.contact_name??''} · {c.phone??c.email??''}</span></span></label>)}</div>
+        {selectedLeadId?<p className="mt-2 text-xs text-emerald-800">Existing lead selected. No changes to this lead have been made.</p>:null}
       </div>
       <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Formalization and sending are intentionally disabled here until secure estimate persistence, lead selection, and atomic conversion are implemented and verified. Use the existing lead quote builder to issue formal quotations.</p>
     </section>
