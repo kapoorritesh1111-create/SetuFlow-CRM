@@ -55,6 +55,14 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     return allowed.includes(Number(c.pe_micron));
   });
   const construction=constructions.find((c:any)=>String(c.id)===constructionId)??constructions[0];
+  // Mirror the canonical V5 Sales configurator: only conditional gusset routing
+  // offers an actual choice. Required modes are resolved from size metadata.
+  const askBottomPrint=chosen?.kind==='sup' && !custom
+    && size?.bottom_registration_mode==='optional'
+    && size?.gusset_production_mode==='conditional';
+  const resolvedBottom=askBottomPrint?bottom:
+    size?.bottom_registration_mode==='required_registered'?'registered_artwork':
+    size?.bottom_registration_mode==='required_unregistered'?'solid_unregistered':undefined;
   const rules=size?.quantity_rules??{};
   const quantities=useMemo(()=>{
     const input=Math.floor(Number(qty));
@@ -83,7 +91,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         const response:any=chosen.kind==='sup'
           ?await previewPackagingPricingV5({templateId,input:{
             size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,
-            construction_id:construction.id,print,quantity:n,bottom_print_mode:bottom,selected_charge_codes:extras,
+            construction_id:construction.id,print,quantity:n,bottom_print_mode:resolvedBottom,selected_charge_codes:extras,
           }})
           :await previewPackagingFramePricingV5({templateId,input:{
             supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),
@@ -169,7 +177,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         {chosen.kind!=='manual'?<>
           <label className="text-sm">Construction<select className={field} value={construction?.id??''} onChange={e=>{setConstructionId(e.target.value);setRows([])}}>{constructions.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
           <label className="text-sm">Print<select className={field} value={print} onChange={e=>setPrint(e.target.value as any)}><option value="CMYK">CMYK</option><option value="CMYKW">CMYK + White</option></select></label>
-          {chosen.kind==='sup'?<label className="text-sm">Bottom print<select className={field} value={bottom} onChange={e=>setBottom(e.target.value as any)}><option value="solid_unregistered">Solid / unregistered</option><option value="registered_artwork">Registered / artwork</option></select></label>:null}
+          {askBottomPrint?<label className="text-sm">Bottom print<select className={field} value={bottom} onChange={e=>setBottom(e.target.value as any)}><option value="solid_unregistered">Solid / unregistered</option><option value="registered_artwork">Registered / artwork</option></select></label>:null}
           <div className="sm:col-span-2"><p className="mb-2 text-sm font-medium">Add-ons (optional)</p>{(chosen.kind==='sup'?sup?.charges: [{code:'EXTRA_ZIPPER',name:'Zipper'}])?.filter((x:any)=>x.pricing_mode!=='manual').map((x:any)=><label key={x.code} className="mr-4 inline-flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={extras.includes(x.code)} onChange={e=>{setExtras(v=>e.target.checked?[...v,x.code]:v.filter(c=>c!==x.code));setRows([])}}/>{x.name}</label>)}</div>
         </>:null}
         <label className="text-sm">Requested quantity (pcs)<input className={field} inputMode="numeric" value={qty} onChange={e=>{setQty(e.target.value);setRows([])}}/></label>
