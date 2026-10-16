@@ -38,3 +38,15 @@ test('Quick Quote estimate and conversion reverify current published V5 unit pri
  assert.match(ui,/savedBasketFingerprint/);
  assert.match(ui,/basket\.some\(item=>item\.engine==='manual'\)/);
 });
+
+test('Every transferred pouch and frame line can be edited in place without duplicating items',()=>{
+ const sup=read('src/lib/packaging-pricing-v5/saved-line.ts');
+ const frame=read('src/lib/packaging-pricing-v5/frame-saved-line.ts');
+ const quote=read('src/app/(app)/leads/[leadId]/quote/page.tsx');
+ assert.match(sup,/quick_quote_pending_reprice/);
+ assert.match(frame,/quick_quote_pending_reprice/);
+ assert.match(quote,/pendingQuickQuoteLines\.map/);
+ assert.match(quote,/editLine=\$\{line\.id\}/);
+ assert.match(quote,/listPricingV5SavedLineSummaries/);
+ assert.match(quote,/listPricingV5FrameSavedLineSummaries/);
+});
