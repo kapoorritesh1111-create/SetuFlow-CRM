@@ -35,6 +35,7 @@ export type FrameFamilyPricingInputV5 = {
    * owner-selected default bucket. Admin/review tools may override it explicitly.
    */
   commercial_bucket: PricingBucketV5 | null;
+  selected_charge_codes?: string[];
 };
 
 export type FrameFamilyPricingReviewResultV5 = {
@@ -61,6 +62,7 @@ export type FrameFamilyPricingReviewResultV5 = {
     lamination_per_frame: number;
     slitting_per_frame: number;
     pouching_per_frame: number;
+    zipper_per_frame: number;
     process_per_frame: number;
     pre_commercial_per_frame: number;
     wastage_per_frame: number;
@@ -210,7 +212,30 @@ export function calculateFrameFamilyPriceReviewV5(
     }
   }
 
-  const processPerFrame = printingPerFrame + laminationPerFrame + slittingPerFrame + pouchingPerFrame;
+  // Optional zipper only for finished three-side-seal pouches; never implicitly enabled.
+  const selectedCodes = input.selected_charge_codes ?? [];
+  if (selectedCodes.some(code => code !== 'EXTRA_ZIPPER')) errors.push('Unsupported frame-family add-on selected.');
+  if (selectedCodes.includes('EXTRA_ZIPPER') && input.supply_form !== 'three_side_seal_pouch') {
+    errors.push('Zipper is only available for 3 Side Seal Pouch Form.');
+  }
+  let zipperPerFrame = 0;
+  if (selectedCodes.includes('EXTRA_ZIPPER') && input.supply_form === 'three_side_seal_pouch') {
+    const zipper = (context.charges ?? []).find(charge => charge.code === 'EXTRA_ZIPPER');
+    if (!zipper || zipper.current_rate == null || !Number.isFinite(Number(zipper.current_rate)) || Number(zipper.current_rate) < 0) {
+      errors.push('Approved zipper rate is unavailable. Configure EXTRA_ZIPPER in Pricing v5 before quoting.');
+    } else if (zipper.application_stage !== 'before_wastage_margin') {
+      errors.push('Zipper charge must be configured before wastage and margin for automatic 3SS pricing.');
+    } else if (zipper.basis === 'per_running_metre') {
+      zipperPerFrame = Number(zipper.current_rate) * (geometry.material_run_mm_per_frame / 1000);
+    } else if (zipper.basis === 'per_unit') {
+      zipperPerFrame = Number(zipper.current_rate) * geometry.units_per_frame;
+    } else if (zipper.basis === 'per_frame') {
+      zipperPerFrame = Number(zipper.current_rate);
+    } else {
+      errors.push('Zipper has an unsupported pricing basis.');
+    }
+  }
+  const processPerFrame = printingPerFrame + laminationPerFrame + slittingPerFrame + pouchingPerFrame + zipperPerFrame;
   const preCommercialPerFrame = materialPerFrame + adhesivePerFrame + processPerFrame;
   const wastagePerFrame = band ? preCommercialPerFrame * band.wastage_pct / 100 : 0;
   const marginPerFrame = band ? band.margin_per_frame : 0;
@@ -253,6 +278,7 @@ export function calculateFrameFamilyPriceReviewV5(
       lamination_per_frame: round(laminationPerFrame),
       slitting_per_frame: round(slittingPerFrame),
       pouching_per_frame: round(pouchingPerFrame),
+      zipper_per_frame: round(zipperPerFrame),
       process_per_frame: round(processPerFrame),
       pre_commercial_per_frame: round(preCommercialPerFrame),
       wastage_per_frame: round(wastagePerFrame),
