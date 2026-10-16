@@ -162,7 +162,7 @@ export function AppShell({ children, profile, organization, membership, currentR
   <ShellSearch scope={pathname.startsWith('/quotes')?'quotes':pathname.startsWith('/leads')?'leads':'global'} />
   <div className="ml-auto flex min-w-0 items-center gap-2">
     <div className="hidden xl:block"><GlobalWorkspaceFilter scope={globalScope} onScopeChange={changeGlobalScope} accentColor={accentColor} supplierEnabled={supplierEnabled} /></div>
-    <UnifiedCreateMenu quickLead={()=>{if(pathname.startsWith('/leads'))openQuickLeadDrawer();else router.push(withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`,globalScope));}} scopeHref={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`,globalScope)} canCreateQuote={enabledModules.has('full_crm')} />
+    <UnifiedCreateMenu quickLead={()=>{if(pathname.startsWith('/leads'))openQuickLeadDrawer();else router.push(withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`,globalScope));}} scopeHref={withScopeHref(`${PRODUCT_ROUTES.app.leads}?quickLead=1`,globalScope)} canCreateQuote={enabledModules.has('full_crm')} vcardHref={shareHref} />
     <OfflineIndicator />
     {organizationId && userId ? <InAppNotificationCenter key={`${organizationId}-${userId}-${pathname}-${notificationResetKey}`} organizationId={organizationId} userId={userId} variant="inline" /> : null}
     <DesktopUserMenu profileName={profileName} profileEmail={profileEmail} avatarUrl={profile?.avatar_url} onOpenMenu={closeNotificationCard} />
