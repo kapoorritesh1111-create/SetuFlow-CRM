@@ -4,6 +4,7 @@ export type PricingV5FrameSavedLineSummary = {
   templateId:string;
   constructionId:string;
   supplyForm:string;
+  hasZipper:boolean;
   customerQuoteUnit:'kg'|'pcs';
   finishedWeightKg:number;
   displayUnitPrice:number;
@@ -38,6 +39,7 @@ export function listPricingV5FrameSavedLineSummaries(lines:any[]):PricingV5Frame
       templateId:String(line.packaging_template_id??line.input_snapshot_json?.template_id??''),
       constructionId:String(input.construction_id),
       supplyForm:form,
+      hasZipper:Array.isArray(input.selected_charge_codes)&&input.selected_charge_codes.includes('EXTRA_ZIPPER'),
       widthMm:Number(input.width_mm??0),
       heightMm:Number(input.height_mm??0),
       sizeLabel:Number(input.width_mm)>0 && Number(input.height_mm)>0
@@ -46,7 +48,7 @@ export function listPricingV5FrameSavedLineSummaries(lines:any[]):PricingV5Frame
       familySlug:form.includes('three_side')?'3ss':'center-seal',
       print:input.print==='CMYK'?'CMYK':'CMYKW',
       quantity:Number(input.quantity??line.quantity??0),
-      label:`${label} ${form.endsWith('pouch')?'Pouch':'Roll'}`,
+      label:`${label} ${form.endsWith('pouch')?'Pouch':'Roll'}${Array.isArray(input.selected_charge_codes)&&input.selected_charge_codes.includes('EXTRA_ZIPPER')?' with Zipper':''}`,
       unitPrice:Number(line.unit_price??0),
       currency:String(line.currency??'INR'),
       baseUnitPrice:Number(line.catalog_price_amount??line.pricing_breakdown_json?.price_adjustment?.base_unit_price??line.unit_price??0),
