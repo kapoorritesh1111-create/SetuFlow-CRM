@@ -1471,7 +1471,7 @@ export function LeadsWorkspace({
   const inlineNoticeDescription = inlineActionState.error ?? inlineActionState.success ?? '';
 
   return (
-    <div className="mobile-premium-leads flex flex-col">
+    <div className="mobile-premium-leads flex min-w-0 flex-col">
       <InlineCoverageResolverRuntime />
       {inlineNoticeDescription ? (
         <NoticeToast title={inlineNoticeTitle} description={inlineNoticeDescription} tone={inlineActionState.error ? 'danger' : 'success'} />
@@ -1502,7 +1502,7 @@ export function LeadsWorkspace({
       </div>
 
       {/* ═══ FILTER BAR — SF-18-092: redesigned with Tailwind, no inline styles ═══ */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white px-3 py-2" style={{ display: activeView === 'list' ? 'flex' : 'none' }}>
+      <div className="sticky top-[88px] z-20 flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm" style={{ display: activeView === 'list' ? 'flex' : 'none' }}>
 
         {/* Search box */}
         <div className="flex items-center gap-2 h-9 rounded-xl border border-slate-200 bg-slate-50 px-3 min-w-[200px] focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition">
