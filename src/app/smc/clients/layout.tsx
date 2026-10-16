@@ -9,6 +9,7 @@ export default async function SmcClientsLayout({ children }: { children: ReactNo
 
   return (
     <div
+      className="smc-clients-route-layout"
       style={{
         position: 'relative',
         flex: 1,
@@ -21,6 +22,7 @@ export default async function SmcClientsLayout({ children }: { children: ReactNo
     >
       {operator ? (
         <div
+          className="smc-client-setup-action"
           style={{
             position: 'absolute',
             top: 18,
