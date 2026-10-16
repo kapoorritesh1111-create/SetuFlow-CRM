@@ -21,6 +21,8 @@ export default function PricingV5FrameSalesConfigurator({
   const [height,setHeight]=useState(180);
   const [quantity,setQuantity]=useState(5000);
   const [print,setPrint]=useState<'CMYK'|'CMYKW'>('CMYKW');
+  const [zipper,setZipper]=useState(false);
+  const zipperAllowed=template?.supply_form==='three_side_seal_pouch';
   const [preview,setPreview]=useState<any>(null);
   const [previewInputKey,setPreviewInputKey]=useState('');
   const [editingLineId,setEditingLineId]=useState<string|null>(null);
@@ -34,7 +36,7 @@ export default function PricingV5FrameSalesConfigurator({
     const next=templates.find((item:any)=>item.id===id);
     setTemplateId(id);
     setConstructionId(next?.constructions?.[0]?.id??'');
-    setPreview(null);setError('');setSaved('');setEditingLineId(null);
+    setZipper(false);setPreview(null);setError('');setSaved('');setEditingLineId(null);
   }
 
   function runPreview(){
@@ -51,16 +53,17 @@ export default function PricingV5FrameSalesConfigurator({
           print,
           quantity:Number(quantity),
           commercial_bucket:null,
+          selected_charge_codes:zipperAllowed&&zipper?['EXTRA_ZIPPER']:[],
         },
       });
       setPreview(response.result??null);
-      setPreviewInputKey(response.ok?JSON.stringify([template.id,template.supply_form,constructionId,Number(width),Number(height),Number(quantity),print]):'');
+      setPreviewInputKey(response.ok?JSON.stringify([template.id,template.supply_form,constructionId,Number(width),Number(height),Number(quantity),print,zipperAllowed&&zipper]):'');
       if(!response.ok&&!response.result?.smart_moq) setError(response.error??'Price could not be calculated.');
     });
   }
 
   const canAutoPrice=Boolean(template?.id&&constructionId&&Number(width)>0&&Number(height)>0&&Number(quantity)>0);
-  const currentInputKey=JSON.stringify([template?.id,template?.supply_form,constructionId,Number(width),Number(height),Number(quantity),print]);
+  const currentInputKey=JSON.stringify([template?.id,template?.supply_form,constructionId,Number(width),Number(height),Number(quantity),print,zipperAllowed&&zipper]);
   const previewIsCurrent=Boolean(preview?.ok&&previewInputKey===currentInputKey);
   useEffect(()=>{
     if(!canAutoPrice){
@@ -81,16 +84,17 @@ export default function PricingV5FrameSalesConfigurator({
             print,
             quantity:Number(quantity),
             commercial_bucket:null,
+          selected_charge_codes:zipperAllowed&&zipper?['EXTRA_ZIPPER']:[],
           },
         });
         if(cancelled) return;
         setPreview(response.result??null);
-        setPreviewInputKey(response.ok?JSON.stringify([template.id,template.supply_form,constructionId,Number(width),Number(height),Number(quantity),print]):'');
+        setPreviewInputKey(response.ok?JSON.stringify([template.id,template.supply_form,constructionId,Number(width),Number(height),Number(quantity),print,zipperAllowed&&zipper]):'');
         if(!response.ok&&!response.result?.smart_moq) setError(response.error??'Price could not be calculated.');
       });
     },250);
     return()=>{cancelled=true;window.clearTimeout(timer);};
-  },[template?.id,template?.supply_form,constructionId,width,height,quantity,print,canAutoPrice]);
+  },[template?.id,template?.supply_form,constructionId,width,height,quantity,print,zipper,zipperAllowed,canAutoPrice]);
 
   function saveLine(){
     if(!previewIsCurrent||!template?.id){setError('Price is updating for these dimensions. Wait for the current calculated price before saving.');return;}
@@ -106,6 +110,7 @@ export default function PricingV5FrameSalesConfigurator({
           print,
           quantity:Number(quantity),
           commercial_bucket:null,
+          selected_charge_codes:zipperAllowed&&zipper?['EXTRA_ZIPPER']:[],
         },
       });
       if(response.ok){setEditingLineId(response.lineId);setSaved(editingLineId?'Quote line updated.':'Quote line added to the quote.');router.refresh();onSaved?.(String(response.lineId??editingLineId??''));}
@@ -122,6 +127,7 @@ export default function PricingV5FrameSalesConfigurator({
     setHeight(Number(line.heightMm||180));
     setQuantity(Number(line.quantity||5000));
     setPrint(line.print==='CMYK'?'CMYK':'CMYKW');
+    setZipper(t.supply_form==='three_side_seal_pouch'&&Boolean(line.hasZipper));
     setEditingLineId(line.lineId);
     setPreview(null);setSaved('');setError('');
   }
@@ -161,6 +167,7 @@ export default function PricingV5FrameSalesConfigurator({
     const requestedQuantity=Math.floor(Number(rawQuantity||0));
     if(requestedQuantity>0) setQuantity(requestedQuantity);
     setEditingLineId(null);
+    setZipper(false);
     setPreview(null);
     setSaved('Lead requirement loaded. Confirm dimensions, calculate price, then add the quote line.');
     setError('');
@@ -185,6 +192,7 @@ export default function PricingV5FrameSalesConfigurator({
       <label className="text-xs font-black text-slate-600">Quantity<input type="number" min="1" step="1" value={quantity} onChange={(e)=>{setQuantity(Number(e.target.value));setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"/></label>
       <label className="text-xs font-black text-slate-600 xl:col-span-2">Construction<select value={constructionId} onChange={(e)=>{setConstructionId(e.target.value);setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold">{constructions.map((item:any)=><option key={item.id} value={item.id}>{item.name} · {item.structure_label}</option>)}</select></label>
       <label className="text-xs font-black text-slate-600">Printing<select value={print} onChange={(e)=>{setPrint(e.target.value as any);setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"><option value="CMYK">Digital (CMYK)</option><option value="CMYKW">Digital (CMYKW)</option></select></label>
+      {zipperAllowed?<label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-slate-700"><input type="checkbox" checked={zipper} onChange={e=>{setZipper(e.target.checked);setPreview(null);}} /> Add zipper (optional)</label>:null}
       <div className="flex items-end"><div className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-bold text-slate-500">{pending?'Updating approved price…':'Price updates automatically'}</div></div>
       </div>
     </div>
