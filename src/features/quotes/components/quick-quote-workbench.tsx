@@ -57,7 +57,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const construction=constructions.find((c:any)=>String(c.id)===constructionId)??constructions[0];
   // Mirror the canonical V5 Sales configurator: only conditional gusset routing
   // offers an actual choice. Required modes are resolved from size metadata.
-  const askBottomPrint=chosen?.kind==='sup' && !custom
+  const askBottomPrint=chosen?.kind==='sup'
     && size?.bottom_registration_mode==='optional'
     && size?.gusset_production_mode==='conditional';
   const resolvedBottom=askBottomPrint?bottom:
