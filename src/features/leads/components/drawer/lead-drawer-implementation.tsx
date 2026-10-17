@@ -249,6 +249,10 @@ export function LeadDrawer({
   const [quickInterestMode, setQuickInterestMode] =
     useState<QuickInterestMode>("product");
   const [quickInterestRequest, setQuickInterestRequest] = useState("");
+  const [starkServiceFamilyEnabled, setStarkServiceFamilyEnabled] = useState(false);
+  const [starkServiceFamilies, setStarkServiceFamilies] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedStarkServiceFamilyId, setSelectedStarkServiceFamilyId] = useState("");
+
   const [isDictatingNote, setIsDictatingNote] = useState(false);
   const [dictationStatus, setDictationStatus] = useState("");
   const [quickScanStatus, setQuickScanStatus] = useState<{
@@ -424,6 +428,7 @@ export function LeadDrawer({
     setSourceLabel(lead?.source_label ?? prefill?.sourceLabel ?? "");
     setQuickInterestMode("product");
     setQuickInterestRequest("");
+    setSelectedStarkServiceFamilyId("");
     setDictationStatus("");
     setQuickScanStatus({ tone: "idle", message: "" });
     setPostApplyAssist(null);
@@ -577,6 +582,25 @@ export function LeadDrawer({
     }
   }, [isEditingExistingLead, open, phone]);
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch("/api/leads/quick-service-families")
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload: { enabled?: boolean; families?: Array<{ id: string; name: string }> } | null) => {
+        if (cancelled) return;
+        setStarkServiceFamilyEnabled(Boolean(payload?.enabled));
+        setStarkServiceFamilies(payload?.families ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStarkServiceFamilyEnabled(false);
+          setStarkServiceFamilies([]);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [open]);
+
   const selectedCategoryIds = useMemo(
     () =>
       coverageSelections
@@ -606,13 +630,17 @@ export function LeadDrawer({
         products.find((product) => product.id === productId)?.name ?? "",
     )
     .filter(Boolean);
-  const quickInterestNote = buildInterestNote({
-    leadType,
-    mode: quickInterestMode,
-    categoryName: quickInterestCategoryName,
-    productNames: quickInterestProductNames,
-    request: quickInterestRequest,
-  });
+  const quickInterestNote = starkServiceFamilyEnabled
+    ? (starkServiceFamilies.find((family) => family.id === selectedStarkServiceFamilyId)?.name
+      ? `Interested in service family: ${starkServiceFamilies.find((family) => family.id === selectedStarkServiceFamilyId)?.name}`
+      : "")
+    : buildInterestNote({
+        leadType,
+        mode: quickInterestMode,
+        categoryName: quickInterestCategoryName,
+        productNames: quickInterestProductNames,
+        request: quickInterestRequest,
+      });
 
   const availableCountries = useMemo(() => {
     const filterMarketIds = autoMarketId ? [autoMarketId] : selectedMarketIdSet;
@@ -2953,6 +2981,29 @@ export function LeadDrawer({
                   >
                     Interest
                   </p>
+                  {starkServiceFamilyEnabled ? (
+                    <select
+                      aria-label="Service family"
+                      value={selectedStarkServiceFamilyId}
+                      onChange={(event) => setSelectedStarkServiceFamilyId(event.target.value)}
+                      style={{
+                        width: "100%",
+                        minHeight: "40px",
+                        padding: "8px 10px",
+                        borderRadius: "6px",
+                        border: "1px solid #e2e8f0",
+                        fontSize: "13px",
+                        background: "#f8fafc",
+                        color: "#1e293b",
+                      }}
+                    >
+                      <option value="">Select service family…</option>
+                      {starkServiceFamilies.map((family) => (
+                        <option key={family.id} value={family.id}>{family.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <>
                   <div
                     style={{
                       display: "grid",
@@ -3198,6 +3249,9 @@ export function LeadDrawer({
                       }}
                     />
                   ) : null}
+
+                    </>
+                  )}
 
                   {quickInterestNote ? (
                     <p
