@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import { createClient } from '@/lib/supabase/server';
 import { QueryIssuesAlert } from '@/components/ui/query-issues-alert';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 import { buildPipelinePageViewModel } from '@/features/pipeline/logic/build-pipeline-page-view-model';
@@ -34,6 +35,15 @@ export default async function PipelinePage({
   }
 
   const data = await getPipelinePageData(workspace.organization.id);
+  // Resolve procurement entitlement for the actual organization, even for support users.
+  // Navigation grants alone must never broaden the customer's pipeline data.
+  const supabase = await createClient();
+  const { data: supplierGrant } = await supabase.from('org_module_grants')
+    .select('enabled')
+    .eq('organization_id', workspace.organization.id)
+    .eq('module_key', 'supplier_procurement')
+    .maybeSingle();
+  const supplierEnabled = supplierGrant?.enabled === true;
 
   if (!data) {
     return (
@@ -47,16 +57,22 @@ export default async function PipelinePage({
     );
   }
 
+  const visiblePipelines = supplierEnabled ? data.pipelines : data.pipelines.filter((p) => p.lead_type !== 'supplier');
+  const visiblePipelineIds = new Set(visiblePipelines.map((p) => p.id));
+  const visibleStages = data.stages.filter((stage) => visiblePipelineIds.has(stage.pipeline_id) &&
+    (supplierEnabled || !/supplier/i.test(stage.name)));
+  const visibleLeads = data.leads.filter((lead) => (supplierEnabled || lead.lead_type !== 'supplier') &&
+    (!lead.pipeline_id || visiblePipelineIds.has(lead.pipeline_id)));
   const pipelineView = buildPipelinePageViewModel({
     searchMode: searchParams?.mode,
     workspaceCurrentRoles: workspace.currentRoles,
-    leads: data.leads,
+    leads: visibleLeads,
     activities: data.activities,
     complianceItems: data.complianceItems,
     quotes: data.quotes,
   });
-  const isWorkspaceEmpty = data.leads.length === 0;
-  const isStageConfigurationEmpty = data.stages.length === 0 || data.pipelines.length === 0;
+  const isWorkspaceEmpty = visibleLeads.length === 0;
+  const isStageConfigurationEmpty = visibleStages.length === 0 || visiblePipelines.length === 0;
 
   return (
     <div className="space-y-4">
@@ -67,9 +83,9 @@ export default async function PipelinePage({
         readOnlyMessage={pipelineView.readOnlyMessage}
         isWorkspaceEmpty={isWorkspaceEmpty}
         isStageConfigurationEmpty={isStageConfigurationEmpty}
-        stages={data.stages}
-        leads={data.leads}
-        pipelines={data.pipelines}
+        stages={visibleStages}
+        leads={visibleLeads}
+        pipelines={visiblePipelines}
         nextSteps={data.nextSteps}
         tradeEvents={data.tradeEvents}
         productCategories={data.productCategories}
@@ -91,8 +107,9 @@ export default async function PipelinePage({
         variants={data.variants}
         prices={data.prices}
         pricingRules={data.pricingRules}
-        initialMode={pipelineView.workspaceMode}
-        initialLeadType={pipelineView.initialLeadType}
+        supplierEnabled={supplierEnabled}
+        initialMode={supplierEnabled ? pipelineView.workspaceMode : pipelineView.workspaceMode === 'suppliers' ? 'buyers' : pipelineView.workspaceMode}
+        initialLeadType={supplierEnabled ? pipelineView.initialLeadType : 'buyer'}
         initialTodayState={pipelineView.todayState}
       />
     </div>
