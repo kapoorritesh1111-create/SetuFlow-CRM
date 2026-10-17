@@ -20,6 +20,6 @@ export async function GET() {
   }
   return NextResponse.json({
     enabled: true,
-    families: (data ?? []).filter((family) => Boolean(family.id && family.name)),
+    families: ((data ?? []) as Array<{ id: string; name: string }>).filter((family) => Boolean(family.id && family.name)),
   });
 }
