@@ -75,6 +75,10 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId, 
   const [dictating, setDictating] = useState(false);
   const [dictationMessage, setDictationMessage] = useState('');
   const recognitionRef = useRef<{ stop: () => void } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scannerRef = useRef<HTMLElement | null>(null);
+  const savingRef = useRef(false);
+  const [lastSavedName, setLastSavedName] = useState('');
 
   const previewKind = useMemo(() => selectedFile?.type?.startsWith('image/') ? 'image' : selectedFile?.type === 'application/pdf' ? 'pdf' : 'none', [selectedFile]);
   const canScan = Boolean(scanFile || assistText.trim());
@@ -88,6 +92,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId, 
   function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     setSelectedFile(file);
+    setLastSavedName('');
     setScanFile(null);
     setExtraction(null);
     setDraft(draftFromExtraction(null));
@@ -184,6 +189,8 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId, 
   }
 
   async function saveLead() {
+    if (savingRef.current || createdLeadId) return;
+    savingRef.current = true;
     setIsSaving(true);
     setError('');
     try {
@@ -212,19 +219,35 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId, 
       const result = await createLeadFromContactScanReview(formData);
       if (result.error) throw new Error(result.error);
       if (!result.success || !result.lead?.id) throw new Error('Lead save could not be verified. Please retry without taking another picture.');
-      setCreatedLeadId(result.lead.id);
-      setStatus(result.success);
+      // The confirmed lead is saved; reset every capture field for the next visitor.
+      // Keep the event and buyer/supplier selection so trade-show capture stays fast.
+      setLastSavedName(draft.contactName.trim() || draft.companyName.trim() || 'Contact');
+      setCreatedLeadId('');
+      setSelectedFile(null);
+      setScanFile(null);
+      setExtraction(null);
+      setAssistText('');
+      setDraft(draftFromExtraction(null));
+      setDictationMessage('');
+      if (dictating) recognitionRef.current?.stop();
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setStatus('Ready to scan the next business card.');
+      scannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (saveError) {
       const message = saveError instanceof Error ? saveError.message : 'Unable to create lead from business card scan.';
       setError(message);
       setStatus(message);
     } finally {
+      savingRef.current = false;
       setIsSaving(false);
     }
   }
 
   return (
-    <section className="space-y-4">
+    <section ref={scannerRef} className="space-y-4">
+      {lastSavedName ? <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">✓ {lastSavedName} saved successfully. Ready for the next business card.</div> : null}
       <div className="rounded-hero bg-[linear-gradient(145deg,#0c172d_0%,#122241_100%)] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,.22)]">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -247,7 +270,7 @@ export function MobileBusinessCardScanner({ initialLeadType = 'buyer', eventId, 
           <span className="text-3xl">📇</span>
           <span className="mt-2 text-sm font-black text-slate-950 dark:text-white">{selectedFile ? 'Retake or replace card photo' : 'Take or upload business card photo'}</span>
           <span className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-300">Camera capture is enabled on mobile. Large phone photos are optimized before scan.</span>
-          <input type="file" accept="image/*,application/pdf" capture="environment" className="sr-only" onChange={onFileChange} data-mobile-card-scan-input />
+          <input ref={fileInputRef} type="file" accept="image/*,application/pdf" capture="environment" className="sr-only" onChange={onFileChange} data-mobile-card-scan-input />
         </label>
 
         {previewUrl ? (
