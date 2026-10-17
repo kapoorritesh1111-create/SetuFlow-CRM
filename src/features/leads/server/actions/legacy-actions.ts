@@ -659,18 +659,9 @@ async function resolveDefaultNextStepId(db: any, organizationId: string, request
     return { nextStepId: requestedNextStepId, error: null as string | null };
   }
 
-  const { data, error } = await db
-    .from('next_steps')
-    .select('id, name')
-    .eq('organization_id', organizationId)
-    .ilike('name', 'Send Introduction')
-    .limit(1)
-    .maybeSingle();
-
-  if (error) return { nextStepId: null as string | null, error: error.message };
-  if (!data?.id) return { nextStepId: null as string | null, error: 'Default next step "Send Introduction" is not configured.' };
-
-  return { nextStepId: data.id, error: null as string | null };
+  // No automatic next step until the organization has an approved introduction workflow.
+  // Explicit user-selected next steps are still validated above.
+  return { nextStepId: null as string | null, error: null as string | null };
 }
 
 async function resolvePipelineStageDefaults(
