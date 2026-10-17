@@ -96,6 +96,7 @@ export interface LeadCardProps {
 }
 
 export interface PipelineBoardProps {
+  supplierEnabled?: boolean;
   currentUserId: string;
   canManageLeads: boolean;
   readOnlyMessage?: string | null;
