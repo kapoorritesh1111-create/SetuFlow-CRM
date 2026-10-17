@@ -43,7 +43,7 @@ export default async function PipelinePage({
     .eq('organization_id', workspace.organization.id)
     .eq('module_key', 'supplier_procurement')
     .maybeSingle();
-  const supplierEnabled = supplierGrant?.enabled === true;
+  const supplierEnabled = (supplierGrant as { enabled: boolean } | null)?.enabled === true;
 
   if (!data) {
     return (
