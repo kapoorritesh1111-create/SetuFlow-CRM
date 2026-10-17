@@ -145,6 +145,23 @@ export function buildStageMoveReadiness(input: StageMoveReadinessInput): StageMo
     pushAction(actionItems, 'Complete overdue follow-up')
   }
 
+  // Ordinary sales stages are advisory: qualification, product mapping, pricing, compliance, and follow-ups
+  // may still be gathered while the salesperson progresses the opportunity.
+  // Only a confirmed Won transition retains a mandatory commercial gate.
+  if (input.targetStageIsWon && input.acceptedQuoteCount <= 0) {
+    return {
+      status: 'blocked',
+      summary: 'An approved or accepted quote is required before marking this lead Won.',
+      blockers: ['No approved or accepted quote is available for Won'],
+      warnings: [...warnings, ...blockers],
+      actionItems: [...actionItems, 'Secure approved quote'],
+      canMove: false,
+    }
+  }
+
+  warnings.push(...blockers);
+  blockers.length = 0;
+
   if (blockers.length) {
     return {
       status: 'blocked',
