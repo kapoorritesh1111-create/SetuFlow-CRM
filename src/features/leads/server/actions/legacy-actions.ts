@@ -661,7 +661,7 @@ async function resolveDefaultNextStepId(db: any, organizationId: string, request
 
   const { data, error } = await db
     .from('next_steps')
-    .select('id, name, is_lost')
+    .select('id, name')
     .eq('organization_id', organizationId)
     .ilike('name', 'Send Introduction')
     .limit(1)
