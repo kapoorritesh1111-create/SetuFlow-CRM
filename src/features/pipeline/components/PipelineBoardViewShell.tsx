@@ -70,7 +70,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
     return saved === 'full' || saved === 'compact' || saved === 'micro' ? saved : 'compact';
   });
 
-  const activeLeadType = normalizeMode(searchParams.get('mode')) || props.initialLeadType || '';
+  const activeLeadType = props.supplierEnabled === false ? 'buyer' : normalizeMode(searchParams.get('mode')) || props.initialLeadType || '';
   const activeWorkspaceMode = activeLeadType === 'supplier' ? 'suppliers' : activeLeadType === 'buyer' ? 'buyers' : 'all';
   const search = searchParams.get('q')?.trim().toLowerCase() ?? '';
   const ownerId = searchParams.get('owner') ?? '';
@@ -80,6 +80,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
   const tradeEventId = searchParams.get('event') ?? '';
 
   const setJourneyMode = (mode: '' | LeadJourney) => {
+    if (mode === 'supplier' && props.supplierEnabled === false) return;
     const params = new URLSearchParams(searchParams.toString());
     if (mode) params.set('mode', mode);
     else params.delete('mode');
@@ -179,7 +180,7 @@ export function PipelineBoardViewShell(props: PipelineBoardProps) {
   const leadTypeTabs: Array<{ value: '' | LeadJourney; label: string; count: number }> = [
     { value: '', label: 'All', count: props.leads.length },
     { value: 'buyer', label: 'Buyer', count: props.leads.filter((lead) => lead.lead_type === 'buyer').length },
-    { value: 'supplier', label: 'Supplier', count: props.leads.filter((lead) => lead.lead_type === 'supplier').length },
+    ...(props.supplierEnabled === false ? [] : [{ value: 'supplier' as const, label: 'Supplier', count: props.leads.filter((lead) => lead.lead_type === 'supplier').length }]),
   ];
 
   return (
