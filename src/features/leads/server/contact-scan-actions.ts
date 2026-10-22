@@ -99,9 +99,9 @@ function parseReviewedLeadType(formData: FormData): 'buyer' | 'supplier' | null 
 // provider call cannot roll back the customer's lead or cause a duplicate scan.
 async function sendTradeShowScanThankYou(input: { leadId: string; eventId: string; contactName: string; phone: string; email: string; requirements: string }) {
   const workspace = await requireWorkspace();
-  if (!workspace.user || !workspace.organization || workspace.organization.id !== 'b97913cb-3b95-4247-8ced-ffdc0d392d2a') return;
+  if (!workspace.user || !workspace.organization) return;
   const db: any = await createClient();
-  const { data: event } = await db.from('trade_events').select('id,name').eq('id',input.eventId).eq('organization_id',workspace.organization.id).maybeSingle();
+  const { data: event } = await db.from('trade_events').select('id,name,booth_number').eq('id',input.eventId).eq('organization_id',workspace.organization.id).maybeSingle();
   if (!event?.id) return;
   const { data: sent } = await db.from('communications').select('id').eq('organization_id',workspace.organization.id).eq('lead_id',input.leadId).eq('communication_type','trade_show_scan_thank_you').limit(1);
   if (sent?.length) return;
@@ -128,8 +128,8 @@ async function sendTradeShowScanThankYou(input: { leadId: string; eventId: strin
   if (templateName && localNumber) {
     try {
       const { sendInteraktTemplate } = await import('@/features/integrations/interakt/client');
-      // Dedicated approved template must contain exactly these five body placeholders.
-      const delivered = await sendInteraktTemplate({countryCode:'91',phoneNumber:localNumber,templateName,languageCode:process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE_LANGUAGE || 'en',bodyValues:[greeting,String(event.name),share.url,vcardUrl || 'Contact available on request',String(workspace.profile?.full_name || 'Stark Packmate team')],callbackData:JSON.stringify({source:'trade_show_scan_thank_you',lead_id:input.leadId,event_id:input.eventId})});
+      // Approved template placeholders: {{1}} customer, {{2}} event, {{3}} stall, {{4}} capturing team member.
+      const delivered = await sendInteraktTemplate({countryCode:'91',phoneNumber:localNumber,templateName,languageCode:process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE_LANGUAGE || 'en',bodyValues:[greeting,String(event.name),String(event.booth_number || 'our stall'),String(workspace.profile?.full_name || 'Stark Packmate team')],callbackData:JSON.stringify({source:'trade_show_scan_thank_you',lead_id:input.leadId,event_id:input.eventId})});
       providerId = delivered.id;
       channel = 'whatsapp';
     } catch (e) { failure = e instanceof Error ? e.message : 'WhatsApp provider failed'; }
