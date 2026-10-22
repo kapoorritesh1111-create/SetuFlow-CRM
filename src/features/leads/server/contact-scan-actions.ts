@@ -99,25 +99,16 @@ function parseReviewedLeadType(formData: FormData): 'buyer' | 'supplier' | null 
 // provider call cannot roll back the customer's lead or cause a duplicate scan.
 async function sendTradeShowScanThankYou(input: { leadId: string; eventId: string; contactName: string; phone: string; email: string; requirements: string }) {
   const workspace = await requireWorkspace();
-  if (!workspace.user || !workspace.organization) return;
+  if (!workspace.user || !workspace.organization || workspace.organization.id !== 'b97913cb-3b95-4247-8ced-ffdc0d392d2a') return;
   const db: any = await createClient();
   const { data: event } = await db.from('trade_events').select('id,name,booth_number').eq('id',input.eventId).eq('organization_id',workspace.organization.id).maybeSingle();
   if (!event?.id) return;
   const { data: sent } = await db.from('communications').select('id').eq('organization_id',workspace.organization.id).eq('lead_id',input.leadId).eq('communication_type','trade_show_scan_thank_you').limit(1);
   if (sent?.length) return;
-  const { data: brochures } = await db.from('catalog_brochures').select('id,name').eq('organization_id',workspace.organization.id).eq('is_active',true);
-  const active = (brochures ?? []) as Array<{id:string;name:string}>;
-  const lower = input.requirements.toLowerCase();
-  const family = /flat.?bottom/.test(lower) ? 'flat bottom' : /center.?seal|centre.?seal|3.?side|three.?side|css|3ss/.test(lower) ? 'center seal' : 'stand';
-  const selected = active.find((b) => b.name.toLowerCase().includes(family))
-    ?? active.find((b) => /stand.?up/i.test(b.name));
-  if (!selected) { console.error('[trade-show-thank-you] no active brochure'); return; }
-  const { createCatalogBrochureShare } = await import('@/features/catalog-brochures/server');
-  const share = await createCatalogBrochureShare({ brochureId:selected.id,leadId:input.leadId,channel:'trade_show_follow_up' });
   const { data: card } = await db.from('my_card_settings').select('share_slug').eq('organization_id',workspace.organization.id).eq('user_id',workspace.user.id).maybeSingle();
   const vcardUrl = card?.share_slug ? `https://www.setuflowcrm.com/card?share=${encodeURIComponent(card.share_slug)}` : '';
   const greeting = input.contactName.trim() || 'Customer';
-  const body = `Hi ${greeting}, thank you for visiting the Stark Packmate stall at ${event.name}. Here is our ${share.brochureName}: ${share.url}.${vcardUrl ? ` Save my digital contact card: ${vcardUrl}` : ''}`;
+  const body = `Hi ${greeting}, thank you for meeting the Stark Packmate team at ${event.name}. It was a pleasure connecting with you at ${event.booth_number ? `stall ${event.booth_number}` : 'our stall'}. Your contact was captured by ${String(workspace.profile?.full_name || 'Stark Packmate team')}, and we look forward to continuing our conversation. Please reply if you would like to discuss your packaging requirements or learn more about our products.${vcardUrl ? ` Save our digital contact card: ${vcardUrl}` : ''}`;
   const templateName = process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE?.trim();
   const digits = input.phone.replace(/\D/g,'');
   const countryCode = digits.length === 12 && digits.startsWith('91') ? '91' : '';
@@ -166,7 +157,7 @@ async function sendTradeShowScanThankYou(input: { leadId: string; eventId: strin
     communication_type:'trade_show_scan_thank_you',direction:'outbound',channel:channel === 'none' ? 'system' : channel,
     subject:`Trade show thank-you: ${event.name}`,body,summary:channel === 'none' ? 'Thank-you pending: provider/template unavailable' : 'Trade show thank-you sent',
     status:channel === 'none' ? 'failed' : 'sent',sent_at:channel === 'none' ? null : new Date().toISOString(),
-    created_by:workspace.user.id,metadata:{event_id:input.eventId,booth_number:event.booth_number || null,brochure_id:selected.id,share_id:share.id,vcard_url:vcardUrl,interakt_template:templateName||null,provider_id:providerId,email_status:emailStatus,email_failure:emailFailure||null,failure},
+    created_by:workspace.user.id,metadata:{event_id:input.eventId,booth_number:event.booth_number || null,vcard_url:vcardUrl,interakt_template:templateName||null,provider_id:providerId,email_status:emailStatus,email_failure:emailFailure||null,failure},
   });
   if (auditError) console.error('[trade-show-thank-you] audit failed',auditError);
 }
