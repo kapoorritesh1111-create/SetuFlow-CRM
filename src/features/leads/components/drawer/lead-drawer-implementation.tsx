@@ -3591,6 +3591,8 @@ export function LeadDrawer({
                   setWebsite={setWebsite}
                   notes={notes}
                   setNotes={setNotes}
+                  sourceType={sourceType}
+                  sourceLabel={sourceLabel}
                   setSourceType={setSourceType}
                   setSourceLabel={setSourceLabel}
                   tradeEventId={tradeEventId}
