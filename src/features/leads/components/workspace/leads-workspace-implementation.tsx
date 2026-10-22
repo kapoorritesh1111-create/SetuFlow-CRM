@@ -2056,7 +2056,6 @@ export function LeadsWorkspace({
         }}
         mode={drawerState.mode}
         lead={drawerState.leadId ? selectedLead : initialEventLead}
-        prefill={initialQuickCapture}
         title={drawerState.leadId ? 'Edit Lead' : drawerState.mode === 'quick' ? 'Quick Add Lead' : 'Full Add Lead'}
         currentUserId={currentUserId}
         stages={stages}
