@@ -102,13 +102,15 @@ export default async function LeadsPage({
 
   const viewModel = buildLeadsPageViewModel({ workspace, data, searchParams });
 
-  const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase());
-  const quickLeadProductId = readParam(searchParams?.productId).trim();
+  // An event-origin link must always initialize Quick Add, even if an older event card omits quickLead=1.
   const eventId = readParam(searchParams?.eventId).trim();
+  const quickLeadEnabled = ['1', 'true', 'yes'].includes(readParam(searchParams?.quickLead).toLowerCase()) || Boolean(eventId);
+  const quickLeadProductId = readParam(searchParams?.productId).trim();
   const requestedSourceType = readParam(searchParams?.sourceType).trim();
   const requestedSourceLabel = readParam(searchParams?.sourceLabel).trim();
   // Event capture must remain reliable even if a deep link omits the display label.
-  const eventSourceLabel = requestedSourceLabel || String(data.tradeEvents.find((event) => String(event.id) === eventId)?.name ?? '').trim();
+  const selectedTradeEvent = data.tradeEvents.find((event) => String(event.id) === eventId);
+  const eventSourceLabel = requestedSourceLabel || String(selectedTradeEvent?.name ?? '').trim();
   const modeLeadType = readModeLeadType(searchParams?.mode);
   const requestedLeadType = readRequestedLeadType(searchParams?.leadType);
   const quickLeadType: 'buyer' | 'supplier' = requestedLeadType || modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer');
@@ -137,7 +139,7 @@ export default async function LeadsPage({
     ? {
         ...(requestedSourceType || eventId ? { sourceType: requestedSourceType || 'trade_show' } : {}),
         ...(eventSourceLabel ? { sourceLabel: eventSourceLabel } : {}),
-        ...(eventId ? { tradeEventId: eventId } : {}),
+        ...(eventId ? { tradeEventId: eventId, sourceType: 'trade_show' } : {}),
         leadType: quickLeadType,
         selectedProductIds: quickLeadProductId ? [quickLeadProductId] : [],
         autoOpenQuoteAfterSave: false,
@@ -234,7 +236,7 @@ export default async function LeadsPage({
           initialQuickCapture={initialQuickCapture}
           initialEventId={eventId || null}
           // Event-origin Quick Lead should use the fast capture form with its event context seeded.
-          initialFastField={Boolean(quickLeadEnabled && eventId)}
+          initialFastField={Boolean(eventId)}
         />
         <QuoteReviewInlineComplianceFix />
       </div>
