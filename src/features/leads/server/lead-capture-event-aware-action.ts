@@ -328,14 +328,27 @@ export async function saveLead(previousState: ActionState | undefined, formData:
     };
     const entryId = await saveEventInteraction(db, interaction);
     await ensureEventFollowUpTask(db, interaction, entryId);
-    try {
-      const { sendTradeShowScanThankYou } = await import('@/features/leads/server/contact-scan-actions');
-      await sendTradeShowScanThankYou({ leadId: result.lead.id, eventId: tradeEventId, contactName, phone, email, requirements: notes, phoneCountryCode: clean(formData.get('phone_country_code')), country });
-    } catch (error) {
-      console.error('[trade-show-thank-you] quick lead post-save follow-up failed', error);
-    }
   } catch (error) {
     console.error('[trade-event-quick-lead] lead saved but event interaction fanout failed', error);
+  }
+
+  // Sending the post-save thank-you is independent from event-interaction
+  // logging. A failure while creating the event timeline must not suppress the
+  // outbound message after the lead itself has been saved successfully.
+  try {
+    const { sendTradeShowScanThankYou } = await import('@/features/leads/server/contact-scan-actions');
+    await sendTradeShowScanThankYou({
+      leadId: result.lead.id,
+      eventId: tradeEventId,
+      contactName,
+      phone,
+      email,
+      requirements: notes,
+      phoneCountryCode: clean(formData.get('phone_country_code')),
+      country,
+    });
+  } catch (error) {
+    console.error('[trade-show-thank-you] quick lead post-save follow-up failed', error);
   }
 
   return result;
