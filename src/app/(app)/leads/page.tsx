@@ -151,16 +151,18 @@ export default async function LeadsPage({
   return (
     <div className="space-y-4">
       <div className="flex justify-end px-3 md:hidden"><Link href="/quick-quote" className="inline-flex min-h-11 items-center rounded-xl bg-blue-700 px-4 py-2 text-sm font-bold text-white">+ Quick Quote</Link></div>
-      <div className="md:hidden">
-        <LeadsMobileSurface
-          initialLeadType={quickLeadType}
-          leads={mobileLeadCards}
-          user={mobileUser}
-          signedIn={mobileSignedIn}
-        />
-      </div>
+      {!quickLeadEnabled ? (
+        <div className="md:hidden">
+          <LeadsMobileSurface
+            initialLeadType={quickLeadType}
+            leads={mobileLeadCards}
+            user={mobileUser}
+            signedIn={mobileSignedIn}
+          />
+        </div>
+      ) : null}
 
-      <div className="hidden space-y-4 md:block">
+      <div className={quickLeadEnabled ? "space-y-4" : "hidden space-y-4 md:block"}>
         <QueryIssuesAlert issues={data.queryIssues} />
         {trialLeadLimitReached ? (
           <TrialBlockedNotice message={`Guided trial lead limit reached (${trialCapability?.max_leads}). Remove a test lead or convert the workspace to add more.`} />
