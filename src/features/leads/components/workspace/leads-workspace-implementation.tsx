@@ -976,6 +976,17 @@ export function LeadsWorkspace({
       setInlineActionState({ success: `${lead.company_name || 'Lead'} saved.` });
     }
 
+    // Trade-show booth capture is a rapid-entry workflow: after saving one
+    // attendee, immediately show a clean form for the next attendee with the
+    // same event/source prefilled. Do not divert the user into coverage setup.
+    const continueTradeShowCapture =
+      drawerState.mode === 'quick' &&
+      Boolean(quickCapturePrefill?.tradeEventId || initialEventId);
+    if (continueTradeShowCapture) {
+      setDrawerState({ open: true, mode: 'quick', leadId: null, initialStepId: 'basics' });
+      return;
+    }
+
     const needsCoverageAfterQuickLead = drawerState.mode === 'quick' && lead && (!selectedProductIds || selectedProductIds.length === 0);
     if (needsCoverageAfterQuickLead) {
       setActiveLeadId(lead.id);
