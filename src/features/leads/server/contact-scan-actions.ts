@@ -125,6 +125,8 @@ async function sendTradeShowScanThankYou(input: { leadId: string; eventId: strin
   let channel = 'none';
   let providerId = '';
   let failure = '';
+  let emailStatus = 'not_attempted';
+  let emailFailure = '';
   if (templateName && localNumber) {
     try {
       const { sendInteraktTemplate } = await import('@/features/integrations/interakt/client');
@@ -134,22 +136,37 @@ async function sendTradeShowScanThankYou(input: { leadId: string; eventId: strin
       channel = 'whatsapp';
     } catch (e) { failure = e instanceof Error ? e.message : 'WhatsApp provider failed'; }
   }
-  if (channel === 'none' && input.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.email)) {
+  // Email is attempted independently, even when WhatsApp succeeds.
+  if (input.email && /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(input.email)) {
     try {
       const { getSetuNotificationFromAddress,sendTransactionalEmail } = await import('@/features/client-onboarding/server/notifications');
       const from = getSetuNotificationFromAddress();
-      if (from) {
-        const outcome = await sendTransactionalEmail({from,to:input.email,subject:`Thank you for visiting Stark Packmate at ${event.name}`,text:body,html:`<p>${body.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</p>`});
-        if (outcome.status === 'email_sent') channel = 'email'; else failure = outcome.error || 'Email failed';
+      if (!from) throw new Error('Missing configured transactional email sender');
+      const outcome = await sendTransactionalEmail({from,to:input.email,subject:`Thank you for visiting Stark Packmate at ${event.name}`,text:body,html:`<p>${body.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</p>`});
+      if (outcome.status === 'email_sent') {
+        emailStatus = 'sent';
+        if (channel === 'none') channel = 'email';
+      } else {
+        emailStatus = 'failed';
+        emailFailure = outcome.error || 'Email failed';
+        if (channel === 'none') failure = emailFailure;
       }
-    } catch(e) { failure = e instanceof Error ? e.message : 'Email provider failed'; }
+    } catch(e) {
+      emailStatus = 'failed';
+      emailFailure = e instanceof Error ? e.message : 'Email provider failed';
+      if (channel === 'none') failure = emailFailure;
+    }
+  } else {
+    emailStatus = 'skipped';
+    emailFailure = 'No valid customer email supplied';
   }
+
   const { error: auditError } = await db.from('communications').insert({
     organization_id:workspace.organization.id,lead_id:input.leadId,related_entity:'lead',related_id:input.leadId,
     communication_type:'trade_show_scan_thank_you',direction:'outbound',channel:channel === 'none' ? 'system' : channel,
     subject:`Trade show thank-you: ${event.name}`,body,summary:channel === 'none' ? 'Thank-you pending: provider/template unavailable' : 'Trade show thank-you sent',
     status:channel === 'none' ? 'failed' : 'sent',sent_at:channel === 'none' ? null : new Date().toISOString(),
-    created_by:workspace.user.id,metadata:{event_id:input.eventId,brochure_id:selected.id,share_id:share.id,vcard_url:vcardUrl,interakt_template:templateName||null,provider_id:providerId,failure},
+    created_by:workspace.user.id,metadata:{event_id:input.eventId,booth_number:event.booth_number || null,brochure_id:selected.id,share_id:share.id,vcard_url:vcardUrl,interakt_template:templateName||null,provider_id:providerId,email_status:emailStatus,email_failure:emailFailure||null,failure},
   });
   if (auditError) console.error('[trade-show-thank-you] audit failed',auditError);
 }
