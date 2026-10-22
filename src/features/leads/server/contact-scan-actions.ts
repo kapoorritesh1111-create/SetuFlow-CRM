@@ -97,7 +97,7 @@ function parseReviewedLeadType(formData: FormData): 'buyer' | 'supplier' | null 
 
 // Trade-show follow-up is best-effort AFTER the canonical CRM save. A failed
 // provider call cannot roll back the customer's lead or cause a duplicate scan.
-async function sendTradeShowScanThankYou(input: { leadId: string; eventId: string; contactName: string; phone: string; email: string; requirements: string }) {
+export async function sendTradeShowScanThankYou(input: { leadId: string; eventId: string; contactName: string; phone: string; email: string; requirements: string }) {
   const workspace = await requireWorkspace();
   if (!workspace.user || !workspace.organization || workspace.organization.id !== 'b97913cb-3b95-4247-8ced-ffdc0d392d2a') return;
   const db: any = await createClient();
