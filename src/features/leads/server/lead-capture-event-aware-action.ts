@@ -330,7 +330,7 @@ export async function saveLead(previousState: ActionState | undefined, formData:
     await ensureEventFollowUpTask(db, interaction, entryId);
     try {
       const { sendTradeShowScanThankYou } = await import('@/features/leads/server/contact-scan-actions');
-      await sendTradeShowScanThankYou({ leadId: result.lead.id, eventId: tradeEventId, contactName, phone, email, requirements: notes });
+      await sendTradeShowScanThankYou({ leadId: result.lead.id, eventId: tradeEventId, contactName, phone, email, requirements: notes, phoneCountryCode: clean(formData.get('phone_country_code')), country });
     } catch (error) {
       console.error('[trade-show-thank-you] quick lead post-save follow-up failed', error);
     }
