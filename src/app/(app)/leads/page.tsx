@@ -107,6 +107,8 @@ export default async function LeadsPage({
   const eventId = readParam(searchParams?.eventId).trim();
   const requestedSourceType = readParam(searchParams?.sourceType).trim();
   const requestedSourceLabel = readParam(searchParams?.sourceLabel).trim();
+  // Event capture must remain reliable even if a deep link omits the display label.
+  const eventSourceLabel = requestedSourceLabel || String(data.tradeEvents.find((event) => String(event.id) === eventId)?.name ?? '').trim();
   const modeLeadType = readModeLeadType(searchParams?.mode);
   const requestedLeadType = readRequestedLeadType(searchParams?.leadType);
   const quickLeadType: 'buyer' | 'supplier' = requestedLeadType || modeLeadType || (requestedSourceType === 'supplier' ? 'supplier' : 'buyer');
@@ -133,8 +135,8 @@ export default async function LeadsPage({
 
   const initialQuickCapture = quickLeadEnabled
     ? {
-        ...(requestedSourceType ? { sourceType: requestedSourceType } : {}),
-        ...(requestedSourceLabel ? { sourceLabel: requestedSourceLabel } : {}),
+        ...(requestedSourceType || eventId ? { sourceType: requestedSourceType || 'trade_show' } : {}),
+        ...(eventSourceLabel ? { sourceLabel: eventSourceLabel } : {}),
         ...(eventId ? { tradeEventId: eventId } : {}),
         leadType: quickLeadType,
         selectedProductIds: quickLeadProductId ? [quickLeadProductId] : [],
@@ -231,7 +233,8 @@ export default async function LeadsPage({
           initialTodayState={viewModel.todayState}
           initialQuickCapture={initialQuickCapture}
           initialEventId={eventId || null}
-          initialFastField={false}
+          // Event-origin Quick Lead should use the fast capture form with its event context seeded.
+          initialFastField={Boolean(quickLeadEnabled && eventId)}
         />
         <QuoteReviewInlineComplianceFix />
       </div>
