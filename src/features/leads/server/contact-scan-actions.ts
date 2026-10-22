@@ -136,7 +136,7 @@ function normalizeWhatsAppRecipient(phone: string, phoneCountryCode?: string, co
 
   const code = suppliedCode || inferredCode;
   if (!code) return null; // Never guess a country for a national-format number.
-  const national = normalizedDigits.startsWith(code) && normalizedDigits.length > code.length
+  const national = normalizedDigits.startsWith(code) && normalizedDigits.length > 10
     ? normalizedDigits.slice(code.length)
     : normalizedDigits;
   if (national.length < 6 || national.length > 12) return null;
@@ -272,7 +272,7 @@ export async function createLeadFromContactScanReview(formData: FormData): Promi
 
   if (eventDraft && interactionSaved) {
     try {
-      await sendTradeShowScanThankYou({leadId:result.lead.id,eventId:tradeEventId,contactName,phone,email,requirements:notes});
+      await sendTradeShowScanThankYou({ leadId: result.lead.id, eventId: tradeEventId, contactName, phone, email, requirements: notes, phoneCountryCode: String(formData.get('phone_country_code') ?? ''), country: String(formData.get('country') ?? '') });
     } catch (error) {
       console.error('[trade-show-thank-you] post-save follow-up failed',error);
     }
