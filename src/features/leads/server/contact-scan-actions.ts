@@ -95,9 +95,57 @@ function parseReviewedLeadType(formData: FormData): 'buyer' | 'supplier' | null 
 }
 
 
+const COUNTRY_CALLING_CODES: Record<string, string> = {
+  us: '1', usa: '1', 'united states': '1', canada: '1', ca: '1',
+  gb: '44', uk: '44', 'united kingdom': '44', england: '44',
+  in: '91', india: '91', au: '61', australia: '61', nz: '64', 'new zealand': '64',
+  de: '49', germany: '49', fr: '33', france: '33', it: '39', italy: '39',
+  es: '34', spain: '34', pt: '351', portugal: '351', nl: '31', netherlands: '31',
+  be: '32', belgium: '32', ch: '41', switzerland: '41', at: '43', austria: '43',
+  se: '46', sweden: '46', no: '47', norway: '47', dk: '45', denmark: '45',
+  fi: '358', finland: '358', ie: '353', ireland: '353', pl: '48', poland: '48',
+  cz: '420', 'czech republic': '420', gr: '30', greece: '30', tr: '90', turkey: '90',
+  ae: '971', 'united arab emirates': '971', sa: '966', 'saudi arabia': '966',
+  qa: '974', qatar: '974', kw: '965', kuwait: '965', om: '968', oman: '968',
+  bh: '973', bahrain: '973', eg: '20', egypt: '20', za: '27', 'south africa': '27',
+  ng: '234', nigeria: '234', ke: '254', kenya: '254', sg: '65', singapore: '65',
+  my: '60', malaysia: '60', id: '62', indonesia: '62', ph: '63', philippines: '63',
+  th: '66', thailand: '66', vn: '84', vietnam: '84', jp: '81', japan: '81',
+  kr: '82', 'south korea': '82', cn: '86', china: '86', hk: '852', 'hong kong': '852',
+  tw: '886', taiwan: '886', br: '55', brazil: '55', mx: '52', mexico: '52',
+  ar: '54', argentina: '54', cl: '56', chile: '56', co: '57', colombia: '57',
+  pe: '51', peru: '51', ua: '380', ukraine: '380', ru: '7', russia: '7',
+};
+
+function normalizeWhatsAppRecipient(phone: string, phoneCountryCode?: string, country?: string) {
+  const raw = String(phone ?? '').trim();
+  if (!raw) return null;
+  const digits = raw.replace(/\\D/g, '');
+  const explicitInternational = raw.startsWith('+') || raw.startsWith('00');
+  const normalizedDigits = raw.startsWith('00') ? digits.slice(2) : digits;
+  const suppliedCode = String(phoneCountryCode ?? '').replace(/\\D/g, '');
+  const countryKey = String(country ?? '').trim().toLowerCase();
+  const inferredCode = COUNTRY_CALLING_CODES[countryKey] || '';
+  const knownCodes = [...new Set(Object.values(COUNTRY_CALLING_CODES))].sort((a, b) => b.length - a.length);
+
+  if (explicitInternational) {
+    const code = knownCodes.find((candidate) => normalizedDigits.startsWith(candidate));
+    if (!code || normalizedDigits.length - code.length < 6 || normalizedDigits.length - code.length > 12) return null;
+    return { countryCode: code, phoneNumber: normalizedDigits.slice(code.length) };
+  }
+
+  const code = suppliedCode || inferredCode;
+  if (!code) return null; // Never guess a country for a national-format number.
+  const national = normalizedDigits.startsWith(code) && normalizedDigits.length > code.length
+    ? normalizedDigits.slice(code.length)
+    : normalizedDigits;
+  if (national.length < 6 || national.length > 12) return null;
+  return { countryCode: code, phoneNumber: national };
+}
+
 // Trade-show follow-up is best-effort AFTER the canonical CRM save. A failed
 // provider call cannot roll back the customer's lead or cause a duplicate scan.
-export async function sendTradeShowScanThankYou(input: { leadId: string; eventId: string; contactName: string; phone: string; email: string; requirements: string }) {
+export async function sendTradeShowScanThankYou(input: { leadId: string; eventId: string; contactName: string; phone: string; email: string; requirements: string; phoneCountryCode?: string; country?: string }) {
   const workspace = await requireWorkspace();
   if (!workspace.user || !workspace.organization || workspace.organization.id !== 'b97913cb-3b95-4247-8ced-ffdc0d392d2a') return;
   const db: any = await createClient();
@@ -118,14 +166,18 @@ export async function sendTradeShowScanThankYou(input: { leadId: string; eventId
   let failure = '';
   let emailStatus = 'not_attempted';
   let emailFailure = '';
-  if (templateName && localNumber) {
+  if (templateName && recipient) {
     try {
       const { sendInteraktTemplate } = await import('@/features/integrations/interakt/client');
       // Approved template placeholders: {{1}} customer, {{2}} event, {{3}} stall, {{4}} capturing team member.
-      const delivered = await sendInteraktTemplate({countryCode:'91',phoneNumber:localNumber,templateName,languageCode:process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE_LANGUAGE || 'en',bodyValues:[greeting,String(event.name),String(event.booth_number || 'our stall'),String(workspace.profile?.full_name || 'Stark Packmate team')],callbackData:JSON.stringify({source:'trade_show_scan_thank_you',lead_id:input.leadId,event_id:input.eventId})});
+      const delivered = await sendInteraktTemplate({countryCode:recipient.countryCode,phoneNumber:recipient.phoneNumber,templateName,languageCode:process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE_LANGUAGE || 'en',bodyValues:[greeting,String(event.name),String(event.booth_number || 'our stall'),String(workspace.profile?.full_name || 'Stark Packmate team')],callbackData:JSON.stringify({source:'trade_show_scan_thank_you',lead_id:input.leadId,event_id:input.eventId})});
       providerId = delivered.id;
       channel = 'whatsapp';
     } catch (e) { failure = e instanceof Error ? e.message : 'WhatsApp provider failed'; }
+  } else if (!recipient) {
+    failure = 'WhatsApp skipped: could not normalize the phone number. Add an international +country-code number or set the lead country/calling code.';
+  } else if (!templateName) {
+    failure = 'WhatsApp skipped: approved Interakt template is not configured.';
   }
   // Email is attempted independently, even when WhatsApp succeeds.
   if (input.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.email)) {
