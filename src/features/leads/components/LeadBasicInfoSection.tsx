@@ -33,6 +33,8 @@ interface LeadBasicInfoSectionProps {
   setWebsite: (value: string) => void;
   notes: string;
   setNotes: (value: string) => void;
+  sourceType: string;
+  sourceLabel: string;
   setSourceType: (value: string) => void;
   setSourceLabel: (value: string) => void;
   tradeEventId: string;
@@ -84,6 +86,8 @@ export default function LeadBasicInfoSection({
   setWebsite,
   notes,
   setNotes,
+  sourceType,
+  sourceLabel,
   setSourceType,
   setSourceLabel,
   tradeEventId,
@@ -111,8 +115,9 @@ export default function LeadBasicInfoSection({
   setPostApplyAssist,
   clearAfterSaveGuidance,
 }: LeadBasicInfoSectionProps) {
-  const [sourceTypeState, setSourceTypeState] = React.useState(tradeEventId ? 'trade_show' : '');
-  const isTradeShowSource = sourceTypeState === 'trade_show';
+  // Use the drawer's source state as the single source of truth. A local state
+  // initialized only on mount misses event context supplied after route navigation.
+  const isTradeShowSource = sourceType === 'trade_show';
   const selectedEvent = tradeEvents.find((event) => event.id === tradeEventId) ?? null;
 
   return (
@@ -186,10 +191,9 @@ export default function LeadBasicInfoSection({
           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Lead source</span>
           <select
             name="source_type"
-            value={sourceTypeState}
+            value={sourceType || (tradeEventId ? 'trade_show' : '')}
             onChange={(event) => {
               const next = event.target.value;
-              setSourceTypeState(next);
               setSourceType(next);
               if (next !== 'trade_show') setTradeEventId('');
             }}
@@ -229,7 +233,7 @@ export default function LeadBasicInfoSection({
         ) : (
           <label className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Event / source label</span>
-            <input name="source_label" onChange={(event) => setSourceLabel(event.target.value)} className={inputClassName()} placeholder="e.g. referral, website, distributor intro" />
+            <input name="source_label" value={sourceLabel} onChange={(event) => setSourceLabel(event.target.value)} className={inputClassName()} placeholder="e.g. referral, website, distributor intro" />
           </label>
         )}
 
