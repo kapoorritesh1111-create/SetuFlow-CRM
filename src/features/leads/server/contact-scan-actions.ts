@@ -128,7 +128,7 @@ export async function sendTradeShowScanThankYou(input: { leadId: string; eventId
     } catch (e) { failure = e instanceof Error ? e.message : 'WhatsApp provider failed'; }
   }
   // Email is attempted independently, even when WhatsApp succeeds.
-  if (input.email && /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(input.email)) {
+  if (input.email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.email)) {
     try {
       const { getSetuNotificationFromAddress,sendTransactionalEmail } = await import('@/features/client-onboarding/server/notifications');
       const from = getSetuNotificationFromAddress();
