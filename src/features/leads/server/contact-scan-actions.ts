@@ -175,7 +175,9 @@ export async function sendTradeShowScanThankYou(input: { leadId: string; eventId
   const vcardUrl = card?.share_slug ? `https://www.setuflowcrm.com/card?share=${encodeURIComponent(card.share_slug)}` : '';
   const greeting = input.contactName.trim() || 'Customer';
   const body = `Hi ${greeting}, thank you for meeting the Stark Packmate team at ${event.name}. It was a pleasure connecting with you at ${event.booth_number ? `stall ${event.booth_number}` : 'our stall'}. Your contact was captured by ${String(workspace.profile?.full_name || 'Stark Packmate team')}, and we look forward to continuing our conversation. Please reply if you would like to discuss your packaging requirements or learn more about our products.${vcardUrl ? ` Save our digital contact card: ${vcardUrl}` : ''}`;
-  const templateName = process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE?.trim();
+  // Use the exact approved Interakt template name. A stale deployment env value
+  // must not silently select a nonexistent/unapproved template.
+  const templateName = 'starkpackmate_event_followup';
   const recipient = normalizeWhatsAppRecipient(input.phone, input.phoneCountryCode, input.country);
   let channel = 'none';
   let providerId = '';
