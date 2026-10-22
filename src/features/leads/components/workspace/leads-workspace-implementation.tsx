@@ -2043,7 +2043,7 @@ export function LeadsWorkspace({
 
       {/* Lead drawer for new lead creation */}
       <LeadDrawer
-        key={`${initialLeadType || 'all'}-${drawerState.mode}-${drawerState.leadId ?? 'new'}`}
+        key={`${initialLeadType || 'all'}-${drawerState.mode}-${drawerState.leadId ?? 'new'}-${initialEventId ?? 'no-event'}-${initialQuickCapture?.sourceLabel ?? 'no-label'}`}
         open={drawerState.open}
         onClose={closeDrawer}
         onSaved={handleLeadSaved}
@@ -2056,6 +2056,7 @@ export function LeadsWorkspace({
         }}
         mode={drawerState.mode}
         lead={drawerState.leadId ? selectedLead : initialEventLead}
+        prefill={initialQuickCapture}
         title={drawerState.leadId ? 'Edit Lead' : drawerState.mode === 'quick' ? 'Quick Add Lead' : 'Full Add Lead'}
         currentUserId={currentUserId}
         stages={stages}
