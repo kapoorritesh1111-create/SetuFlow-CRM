@@ -309,6 +309,13 @@ export function LeadsWorkspace({
   const [deleteState, setDeleteState] = useState<FormState>({});
   const [isDeletePending, startDeleteTransition] = useTransition();
   const [drawerState, setDrawerState] = useState<DrawerState>({ open: Boolean(initialFastField && initialEventId), mode: 'quick', leadId: null, initialStepId: 'basics' });
+  // Keep the initial capture payload alive after removing one-shot URL params.
+  // router.replace triggers a server render where initialQuickCapture becomes null;
+  // without this client snapshot the open drawer can lose its event prefill.
+  const [quickCapturePrefill, setQuickCapturePrefill] = useState(initialQuickCapture);
+  useEffect(() => {
+    if (initialQuickCapture) setQuickCapturePrefill(initialQuickCapture);
+  }, [initialQuickCapture]);
   const [spotlightLeadId, setSpotlightLeadId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(50);
   const [actionsExpanded, setActionsExpanded] = useState(false);
@@ -1368,7 +1375,7 @@ export function LeadsWorkspace({
   }, [canManageLeads]);
 
   useEffect(() => {
-    if ((!initialQuickCapture && !initialFastField) || !canManageLeads) return;
+    if ((!quickCapturePrefill && !initialFastField) || !canManageLeads) return;
     setDrawerState((current) => (current.open ? current : { open: true, mode: 'quick', leadId: null, initialStepId: 'basics' }));
     const params = new URLSearchParams(searchParams.toString());
     let changed = false;
@@ -1382,7 +1389,7 @@ export function LeadsWorkspace({
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }
-  }, [canManageLeads, initialFastField, initialQuickCapture, pathname, router, searchParams]);
+  }, [canManageLeads, initialFastField, quickCapturePrefill, pathname, router, searchParams]);
 
   const handleTradeEventFilterChange = (eventId: string) => {
     setTradeEventFilter(eventId);
@@ -2084,7 +2091,7 @@ export function LeadsWorkspace({
         canNavigatePrev={false}
         canNavigateNext={false}
         navigationMeta={drawerState.leadId ? 'Editing selected lead in the inline Leads workspace.' : 'Create a new lead from the inline Leads workspace.'}
-        prefill={drawerState.open && !drawerState.leadId ? initialQuickCapture : null}
+        prefill={drawerState.open && !drawerState.leadId ? quickCapturePrefill : null}
         fastFieldMode={Boolean(initialFastField && initialEventId && !drawerState.leadId)}
         guidedTrialCoach={guidedTrialCoach}
       />
