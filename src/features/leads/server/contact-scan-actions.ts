@@ -120,10 +120,10 @@ const COUNTRY_CALLING_CODES: Record<string, string> = {
 function normalizeWhatsAppRecipient(phone: string, phoneCountryCode?: string, country?: string) {
   const raw = String(phone ?? '').trim();
   if (!raw) return null;
-  const digits = raw.replace(/\\D/g, '');
+  const digits = raw.replace(/\D/g, '');
   const explicitInternational = raw.startsWith('+') || raw.startsWith('00');
   const normalizedDigits = raw.startsWith('00') ? digits.slice(2) : digits;
-  const suppliedCode = String(phoneCountryCode ?? '').replace(/\\D/g, '');
+  const suppliedCode = String(phoneCountryCode ?? '').replace(/\D/g, '');
   const countryKey = String(country ?? '').trim().toLowerCase();
   const inferredCode = COUNTRY_CALLING_CODES[countryKey] || '';
   const knownCodes = [...new Set(Object.values(COUNTRY_CALLING_CODES))].sort((a, b) => b.length - a.length);
@@ -158,9 +158,7 @@ export async function sendTradeShowScanThankYou(input: { leadId: string; eventId
   const greeting = input.contactName.trim() || 'Customer';
   const body = `Hi ${greeting}, thank you for meeting the Stark Packmate team at ${event.name}. It was a pleasure connecting with you at ${event.booth_number ? `stall ${event.booth_number}` : 'our stall'}. Your contact was captured by ${String(workspace.profile?.full_name || 'Stark Packmate team')}, and we look forward to continuing our conversation. Please reply if you would like to discuss your packaging requirements or learn more about our products.${vcardUrl ? ` Save our digital contact card: ${vcardUrl}` : ''}`;
   const templateName = process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE?.trim();
-  const digits = input.phone.replace(/\D/g,'');
-  const countryCode = digits.length === 12 && digits.startsWith('91') ? '91' : '';
-  const localNumber = countryCode ? digits.slice(2) : digits.length === 10 ? digits : '';
+  const recipient = normalizeWhatsAppRecipient(input.phone, input.phoneCountryCode, input.country);
   let channel = 'none';
   let providerId = '';
   let failure = '';
