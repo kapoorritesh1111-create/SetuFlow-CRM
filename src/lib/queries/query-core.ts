@@ -2682,7 +2682,18 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
       .limit(40),
   ]);
 
-  addIssue(issues, 'lead profile', leadResult.error);
+  // The lead viewer must remain available even if optional shipping-profile columns
+  // have not reached this environment yet. Retry with the stable core lead fields.
+  const resolvedLeadResult = leadResult.error
+    ? await (supabase as any)
+        .from('leads')
+        .select('id, company_name, contact_name, job_title, email, phone, whatsapp_number, phone_secondary, website, social_handle, lead_type, country, country_id, source_type, source_label, next_follow_up_at, created_at, updated_at, stage_id, next_step_id, owner_user_id, trade_event_id, notes, pipeline_id, intro_sent, deal_value, deal_currency, phone_country_code, phone_secondary_country_code')
+        .eq('organization_id', organizationId)
+        .eq('id', leadId)
+        .maybeSingle()
+    : leadResult;
+
+  addIssue(issues, 'lead profile', resolvedLeadResult.error);
   addIssue(issues, 'profile next steps', nextStepsResult.error);
   addIssue(issues, 'profile trade events', tradeEventsResult.error);
   addIssue(issues, 'profile products', productsResult.error);
@@ -2853,10 +2864,10 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     .map((productId) => productMap.get(productId))
     .filter((item): item is LeadProfileData['linkedProducts'][number] => Boolean(item));
 
-  const parsedLeadWorkflow = parseLeadWorkflow((leadResult.data as any)?.notes ?? null);
+  const parsedLeadWorkflow = parseLeadWorkflow((resolvedLeadResult.data as any)?.notes ?? null);
   const leadInterestRows = rows(leadProductsResult.data) as Array<any>;
-  const sanitizedLead = leadResult.data
-    ? ({ ...(leadResult.data as any), notes: parsedLeadWorkflow.plainNotes } as LeadProfileData['lead'])
+  const sanitizedLead = resolvedLeadResult.data
+    ? ({ ...(resolvedLeadResult.data as any), notes: parsedLeadWorkflow.plainNotes } as LeadProfileData['lead'])
     : null;
 
   const linkedMarkets = (rows(leadMarketsResult.data) as Array<{ lead_id: string; market_id: string }>)
