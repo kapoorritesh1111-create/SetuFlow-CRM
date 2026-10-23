@@ -207,10 +207,10 @@ async function sendLeadCaptureIntro(params: { db: any; organization: any; actorU
     const isStarkPackmateEvent = organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' && Boolean(lead.trade_event_id);
     if (isStarkPackmateEvent) {
       const rawPhone = whatsappTarget.trim();
-      const digits = rawPhone.replace(/\\D/g, '');
+      const digits = rawPhone.replace(/\D/g, '');
       const explicitInternational = rawPhone.startsWith('+') || rawPhone.startsWith('00');
       const normalizedDigits = rawPhone.startsWith('00') ? digits.slice(2) : digits;
-      const callingCode = clean(lead.phone_country_code).replace(/\\D/g, '');
+      const callingCode = clean(lead.phone_country_code).replace(/\D/g, '');
       const countryCallingCodes: Record<string, string> = { india: '91', in: '91', bulgaria: '359', bg: '359', usa: '1', us: '1', 'united states': '1', uk: '44', gb: '44' };
       const countryKey = clean(lead.country).toLowerCase();
       const code = explicitInternational
