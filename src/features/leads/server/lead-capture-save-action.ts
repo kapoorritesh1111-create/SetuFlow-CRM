@@ -216,7 +216,7 @@ async function sendLeadCaptureIntro(params: { db: any; organization: any; actorU
       const code = explicitInternational
         ? ['971','966','420','421','351','358','380','359','353','254','234','212','213','213','972','974','965','968','973','880','977','966','91','90','86','84','82','81','65','63','62','61','60','55','52','49','48','47','46','45','44','43','41','40','39','38','36','34','33','32','31','30','27','20','7','1'].find((candidate) => normalizedDigits.startsWith(candidate))
         : (callingCode || countryCallingCodes[countryKey] || '');
-      const nationalNumber = explicitInternational ? normalizedDigits.slice(code.length) : (code && normalizedDigits.startsWith(code) && normalizedDigits.length > 10 ? normalizedDigits.slice(code.length) : normalizedDigits);
+      const nationalNumber = explicitInternational && code ? normalizedDigits.slice(code.length) : (code && normalizedDigits.startsWith(code) && normalizedDigits.length > 10 ? normalizedDigits.slice(code.length) : normalizedDigits);
       try {
         if (!code || nationalNumber.length < 6 || nationalNumber.length > 12) {
           throw new Error('WhatsApp skipped: phone number needs a valid international country code.');
