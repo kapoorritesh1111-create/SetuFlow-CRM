@@ -204,23 +204,62 @@ async function sendLeadCaptureIntro(params: { db: any; organization: any; actorU
   const whatsappTarget = clean(lead.whatsapp_number || lead.phone);
   if (whatsappTarget) {
     const body = `Hi ${recipient}, great meeting you at ${eventName}. This is ${senderName} from ${orgName}.${booth ? ` Thanks for stopping by booth ${booth}.` : ''} We specialize in ${category}, and I noted your interest in ${interest}.${followUp ? ` I’ll follow up with you on ${followUp}.` : ' I’ll follow up with you soon.'}${cardUrl ? ` You can save my vCard here: ${cardUrl}` : ''}`;
-    const whatsappRow = await insertIntroCommunication(db, {
-      organization_id: organization.id,
-      lead_id: lead.id,
-      related_id: lead.id,
-      direction: 'outbound',
-      channel: 'whatsapp',
-      subject: 'Lead capture intro WhatsApp',
-      body,
-      summary: 'Intro WhatsApp drafted after lead capture.',
-      status: 'draft',
-      created_by: actorUserId,
-      whatsapp_link_type: 'draft',
-      metadata: { ...baseMetadata, target: whatsappTarget, live_delivery_enabled: false },
-    });
-    if (whatsappRow?.id) {
-      whatsappStatus = 'draft';
-      customerRows += 1;
+    const isStarkPackmateEvent = organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' && Boolean(lead.trade_event_id);
+    if (isStarkPackmateEvent) {
+      const rawPhone = whatsappTarget.trim();
+      const digits = rawPhone.replace(/\\D/g, '');
+      const explicitInternational = rawPhone.startsWith('+') || rawPhone.startsWith('00');
+      const normalizedDigits = rawPhone.startsWith('00') ? digits.slice(2) : digits;
+      const callingCode = clean(lead.phone_country_code).replace(/\\D/g, '');
+      const countryCallingCodes: Record<string, string> = { india: '91', in: '91', bulgaria: '359', bg: '359', usa: '1', us: '1', 'united states': '1', uk: '44', gb: '44' };
+      const countryKey = clean(lead.country).toLowerCase();
+      const code = explicitInternational
+        ? ['971','966','420','421','351','358','380','359','353','254','234','212','213','213','972','974','965','968','973','880','977','966','91','90','86','84','82','81','65','63','62','61','60','55','52','49','48','47','46','45','44','43','41','40','39','38','36','34','33','32','31','30','27','20','7','1'].find((candidate) => normalizedDigits.startsWith(candidate))
+        : (callingCode || countryCallingCodes[countryKey] || '');
+      const nationalNumber = explicitInternational ? normalizedDigits.slice(code.length) : (code && normalizedDigits.startsWith(code) && normalizedDigits.length > 10 ? normalizedDigits.slice(code.length) : normalizedDigits);
+      try {
+        if (!code || nationalNumber.length < 6 || nationalNumber.length > 12) {
+          throw new Error('WhatsApp skipped: phone number needs a valid international country code.');
+        }
+        const { sendInteraktTemplate } = await import('@/features/integrations/interakt/client');
+        const delivered = await sendInteraktTemplate({
+          countryCode: code,
+          phoneNumber: nationalNumber,
+          templateName: 'starkpackmate_event_followup',
+          languageCode: process.env.INTERAKT_STARK_PACKMATE_TRADE_SHOW_TEMPLATE_LANGUAGE || 'en',
+          bodyValues: [recipient, eventName, booth || 'our stall', senderName],
+          callbackData: JSON.stringify({ source: 'lead_capture_intro', lead_id: lead.id, event_id: lead.trade_event_id }),
+        });
+        const whatsappRow = await insertIntroCommunication(db, {
+          organization_id: organization.id, lead_id: lead.id, related_id: lead.id,
+          direction: 'outbound', channel: 'whatsapp', subject: 'Trade-show WhatsApp follow-up',
+          body, summary: 'Approved Interakt trade-show follow-up submitted successfully.',
+          status: 'sent', sent_at: new Date().toISOString(), created_by: actorUserId,
+          provider_message_id: delivered.id, provider_payload: { provider: 'interakt', message: delivered.message ?? null },
+          whatsapp_link_type: 'provider', metadata: { ...baseMetadata, target: whatsappTarget, live_delivery_enabled: true, provider: 'interakt', provider_message_id: delivered.id, template_name: 'starkpackmate_event_followup' },
+        });
+        if (whatsappRow?.id) { whatsappStatus = 'sent'; customerRows += 1; }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Interakt WhatsApp delivery failed.';
+        await insertIntroCommunication(db, {
+          organization_id: organization.id, lead_id: lead.id, related_id: lead.id,
+          direction: 'outbound', channel: 'whatsapp', subject: 'Trade-show WhatsApp follow-up',
+          body, summary: 'Approved Interakt trade-show follow-up failed.',
+          status: 'failed', created_by: actorUserId,
+          whatsapp_link_type: 'provider', metadata: { ...baseMetadata, target: whatsappTarget, live_delivery_enabled: true, provider: 'interakt', template_name: 'starkpackmate_event_followup', delivery_error: errorMessage },
+        });
+        whatsappStatus = 'failed';
+        console.error('[lead-capture-intro] Interakt delivery failed', error);
+      }
+    } else {
+      const whatsappRow = await insertIntroCommunication(db, {
+        organization_id: organization.id, lead_id: lead.id, related_id: lead.id,
+        direction: 'outbound', channel: 'whatsapp', subject: 'Lead capture intro WhatsApp',
+        body, summary: 'Intro WhatsApp drafted after lead capture.', status: 'draft',
+        created_by: actorUserId, whatsapp_link_type: 'draft',
+        metadata: { ...baseMetadata, target: whatsappTarget, live_delivery_enabled: false },
+      });
+      if (whatsappRow?.id) { whatsappStatus = 'draft'; customerRows += 1; }
     }
   }
 
