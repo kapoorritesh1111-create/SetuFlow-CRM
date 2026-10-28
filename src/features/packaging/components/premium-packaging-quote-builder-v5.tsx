@@ -5,10 +5,11 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import PricingV5SalesConfigurator from '@/features/packaging/components/pricing-v5-sales-configurator';
 import PricingV5FrameSalesConfigurator from '@/features/packaging/components/pricing-v5-frame-sales-configurator';
+import StarkLabelQuickQuote from '@/features/packaging/components/stark-label-quick-quote';
 import QuoteRequirementPanel from '@/features/packaging/components/quote-requirement-panel';
 import { adjustPackagingPricingV5QuoteLine, removePackagingPricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-line-commercial-actions';
 
-type FamilyKey='sup'|'center-seal'|'3ss';
+type FamilyKey='sup'|'center-seal'|'3ss'|'labels';
 type Intent={lineId:string;mode:'edit'|'duplicate'}|null;
 
 function money(value:number,currency:string){
@@ -16,6 +17,7 @@ function money(value:number,currency:string){
   catch{return currency+' '+value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
 }
 function familyMeta(key:FamilyKey){
+  if(key==='labels')return {label:'Labels',sub:'Material, finish and quantity',badge:'LBL',tone:'from-teal-500 to-blue-600',image:'/packaging/quote-stock/stark-roll-stock.png'};
   if(key==='center-seal') return {label:'Center Seal Pouch',sub:'Pouch or roll form',badge:'CS',tone:'from-indigo-500 to-blue-600',image:'/packaging/quote-stock/stark-center-seal.png'};
   if(key==='3ss') return {label:'3 Side Seal Pouch',sub:'Pouch or roll form',badge:'3SS',tone:'from-violet-500 to-fuchsia-600',image:'/packaging/quote-stock/stark-three-side-seal.png'};
   return {label:'Stand Up Pouch',sub:'Gusset, zipper, premium finish',badge:'SUP',tone:'from-teal-500 to-cyan-600',image:'/packaging/quote-stock/stark-stand-up.png'};
@@ -34,6 +36,7 @@ export default function PremiumPackagingQuoteBuilderV5({
   const available=useMemo<FamilyKey[]>(()=>{
     const out:FamilyKey[]=[];
     if(supOptions?.templates?.length) out.push('sup');
+    if(starkLabelQuoteable) out.push('labels');
     if((frameOptions?.templates??[]).some((t:any)=>t.family_slug==='center-seal-pouches')) out.push('center-seal');
     if((frameOptions?.templates??[]).some((t:any)=>t.family_slug==='three-side-seal-pouches')) out.push('3ss');
     return out;
