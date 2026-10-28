@@ -26,10 +26,10 @@ function Shape({kind,compact=false}:{kind:FamilyKey|'flat'|'labels'|'sleeves';co
 }
 
 export default function PremiumPackagingQuoteBuilderV5({
-  quoteId,leadId,buyerName,quoteNumber,status,currency,supOptions,frameOptions,supSavedLines=[],frameSavedLines=[],quoteTotal=0,quoteLineCount=0,requestedQuantity=0,initialStep=1,initialEditLine=null,
+  quoteId,leadId,buyerName,quoteNumber,status,currency,supOptions,frameOptions,supSavedLines=[],frameSavedLines=[],quoteTotal=0,quoteLineCount=0,requestedQuantity=0,initialStep=1,initialEditLine=null,starkLabelQuoteable=false,
 }:{
   quoteId:string;leadId:string;buyerName:string;quoteNumber:string;status:string;currency:string;
-  supOptions?:any|null;frameOptions?:any|null;supSavedLines?:any[];frameSavedLines?:any[];quoteTotal?:number;quoteLineCount?:number;requestedQuantity?:number;initialStep?:number;initialEditLine?:string|null;
+  starkLabelQuoteable?:boolean;supOptions?:any|null;frameOptions?:any|null;supSavedLines?:any[];frameSavedLines?:any[];quoteTotal?:number;quoteLineCount?:number;requestedQuantity?:number;initialStep?:number;initialEditLine?:string|null;
 }){
   const available=useMemo<FamilyKey[]>(()=>{
     const out:FamilyKey[]=[];
@@ -37,7 +37,7 @@ export default function PremiumPackagingQuoteBuilderV5({
     if((frameOptions?.templates??[]).some((t:any)=>t.family_slug==='center-seal-pouches')) out.push('center-seal');
     if((frameOptions?.templates??[]).some((t:any)=>t.family_slug==='three-side-seal-pouches')) out.push('3ss');
     return out;
-  },[supOptions,frameOptions]);
+  },[supOptions,frameOptions,starkLabelQuoteable]);
   const [active,setActive]=useState<FamilyKey>(available[0]??'sup');
   const [step,setStep]=useState(Math.min(4,Math.max(1,initialStep||1)));
   const [intent,setIntent]=useState<Intent>(null);

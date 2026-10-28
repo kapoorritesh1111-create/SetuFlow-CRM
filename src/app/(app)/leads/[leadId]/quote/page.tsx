@@ -200,6 +200,7 @@ export default async function QuotePage({
           status={String(activeQuote.status || 'draft').replaceAll('_',' ')}
           currency={quoteCurrency}
           supOptions={pricingV5Options}
+          starkLabelQuoteable={workspace.organization.id==='b97913cb-3b95-4247-8ced-ffdc0d392d2a'}
           frameOptions={pricingV5FrameOptions}
           supSavedLines={savedPricingV5Lines}
           frameSavedLines={savedPricingV5FrameLines}
