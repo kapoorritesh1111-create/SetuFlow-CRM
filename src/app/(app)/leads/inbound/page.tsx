@@ -21,11 +21,11 @@ import {
 import { readSharedInboundConversation } from '@/features/integrations/interakt/shared-inbound-conversation';
 import {
   addStarkInboundQuickNote,
-  markStarkInboundBadInquiry,
   createStarkInteraktLeadOverride,
   evaluateStarkInteraktPage,
   readInboundWorkspaceV2,
 } from '@/features/integrations/interakt/workspace-v2';
+import { markStarkInboundBadInquiry } from '@/features/integrations/interakt/inbound-actions';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
