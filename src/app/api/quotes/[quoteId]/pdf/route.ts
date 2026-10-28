@@ -685,7 +685,8 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       const size = text(savedCustomLabel ?? sizeProfile.name ?? (sizeProfile.width_mm && sizeProfile.height_mm ? [sizeProfile.width_mm,sizeProfile.height_mm,sizeProfile.bottom_gusset_each_mm].filter(Boolean).join(' x ')+' mm':null) ?? variation.dimension_label ?? input.dimension_label ?? snapshot.dimension_label ??
         (input.width_mm && input.height_mm ? [input.width_mm,input.height_mm,input.bottom_gusset_each_mm].filter(Boolean).join(' x ') + ' mm' : null),'');
       const pricedConstruction = line.pricing_breakdown_json?.construction ?? {};
-      const constructionName = text(pricedConstruction.name ?? construction.name ?? input.substrate ?? input.construction ?? input.material_construction ?? snapshot.substrate ?? snapshot.construction ?? snapshot.spec_summary,'');
+      const labelSpec = snapshot.calculation_engine_key==='label_workbook_v5' ? text(snapshot.result?.specification ?? line.pricing_breakdown_json?.specification ?? (line.notes ? String(line.notes).split(' · ')[0] : ''),'') : '';
+      const constructionName = text(labelSpec || pricedConstruction.name || construction.name || input.substrate || input.construction || input.material_construction || snapshot.substrate || snapshot.construction || snapshot.spec_summary,'');
       const structureLabel = text(pricedConstruction.structure_label ?? '', '');
       const productName = text(product.name ?? variation.name ?? snapshot.product_name ?? family.name,'Packaging item');
       const details = [family.name ? 'Family: ' + family.name : '', size ? 'Size: ' + size : ''].filter(Boolean).join(' | ');

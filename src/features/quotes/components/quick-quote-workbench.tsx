@@ -33,6 +33,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [manualPrice,setManualPrice]=useState('');
   const [labelCode,setLabelCode]=useState('SPPL1');
   const [labelSheet1,setLabelSheet1]=useState<any>(null);
+  const [frameMinRun,setFrameMinRun]=useState<number|null>(null);
   const [newCompany,setNewCompany]=useState('');
   const [newPhone,setNewPhone]=useState('');
   const [newEmail,setNewEmail]=useState('');
@@ -87,7 +88,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   function choose(id:string){
     const option=all.find(o=>o.id===id);
     setMode(id);setTemplateId(option?.templateId??'');setSizeId(sizes[0]?.id??'');
-    setConstructionId('');setCustom(false);setLabelSheet1(null);setRows([]);setSelected(0);setError('');setExtras([]);setSpotUvEnabled(false);setSpotUvAmount('');
+    setConstructionId('');setCustom(false);setLabelSheet1(null);setFrameMinRun(null);setRows([]);setSelected(0);setError('');setExtras([]);setSpotUvEnabled(false);setSpotUvAmount('');
   }
   function calculate(){
     setError('');setRows([]);
@@ -109,6 +110,8 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     if(!Number(width)||!Number(height)||Number(width)<=0||Number(height)<=0)return setError('Dimensions must be greater than zero.');
     start(async()=>{
       const found:Result[]=[];
+      let belowMinimum=false;
+      let observedMinRun:number|null=null;
       for(const n of quantities){
         const response:any=chosen.kind==='sup'
           ?await previewPackagingPricingV5({templateId,input:{
@@ -119,14 +122,20 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
             supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),
             construction_id:construction.id,print,quantity:n,commercial_bucket:null,selected_charge_codes:extras,
           }});
+        if(chosen.kind==='frame'&&response.result?.smart_moq){
+          const moq=response.result.smart_moq;
+          observedMinRun=Number(moq.minimum_run_length_m??250);
+          if(moq.below_minimum)belowMinimum=true;
+        }
         if(response.ok&&response.result?.selling_price){
           const r=response.result;
           found.push({quantity:n,unit:Number(r.selling_price.unit_price),total:Number(r.selling_price.product_total),
             currency:String(r.selling_price.currency??'INR'),weight:r.roll_weight?.finished_weight_kg??null,perKg:r.roll_weight?.price_per_kg??null});
         }
       }
+      setFrameMinRun(observedMinRun);
       setRows(found);setSelected(found.findIndex(r=>r.quantity===Number(qty))>=0?Number(qty):found[0]?.quantity??0);
-      if(!found.length)setError('No valid prices returned for these specifications. Check MOQ and published construction rules.');
+      if(!found.length)setError(belowMinimum?'Minimum production run is '+(observedMinRun??250)+' m. Increase quantity until this run length is reached.':'No valid prices returned for these specifications. Check MOQ and published construction rules.');
     });
   }
   function addLine(){
@@ -192,8 +201,8 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         {chosen.kind==='sup'?<label className="text-sm font-medium">Size<select className={field} value={size?.id??''} onChange={e=>{setSizeId(e.target.value);setRows([]);setConstructionId('')}}>{sizes.map((s:any)=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>:null}
         {chosen.kind==='sup'?<label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={custom} onChange={e=>{setCustom(e.target.checked);setRows([])}}/>Custom size</label>:null}
         {(chosen.kind!=='sup'||custom)?<>
-          <label className="text-sm">Width (mm)<input className={field} inputMode="decimal" value={width} onChange={e=>setWidth(e.target.value)}/></label>
-          <label className="text-sm">Height (mm)<input className={field} inputMode="decimal" value={height} onChange={e=>setHeight(e.target.value)}/></label>
+          <label className="text-sm">{chosen.kind==='frame'?(String(frameTemplate?.supply_form??'').endsWith('_roll')?'Web width (mm)':'Finished pouch width (mm)'):'Width (mm)'}<input className={field} inputMode="decimal" value={width} onChange={e=>setWidth(e.target.value)}/></label>
+          <label className="text-sm">{chosen.kind==='frame'?(String(frameTemplate?.supply_form??'').endsWith('_roll')?'Repeat length (mm)':'Finished pouch height (mm)'):'Height (mm)'}<input className={field} inputMode="decimal" value={height} onChange={e=>setHeight(e.target.value)}/></label>
           {chosen.kind==='sup'?<label className="text-sm">Bottom gusset each (mm)<input className={field} inputMode="decimal" value={gusset} onChange={e=>setGusset(e.target.value)}/></label>:null}
         </>:null}
         {chosen.kind!=='manual'&&chosen.kind!=='label'?<>
@@ -204,6 +213,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         </>:null}
         <label className="text-sm">Requested quantity (pcs)<input className={field} inputMode="numeric" value={qty} onChange={e=>{setQty(e.target.value);setRows([])}}/></label>
         {chosen.kind==='label'?<label className="text-sm">Material and finish<select className={field} value={labelCode} onChange={e=>{setLabelCode(e.target.value);setRows([])}}>{STARK_LABEL_WORKBOOK_SEED.map(x=><option key={x.code} value={x.code}>{x.code} · {x.specification}</option>)}</select></label>:null}
+        {chosen.kind==='frame'?<p className="sm:col-span-2 text-xs font-semibold text-slate-600">Minimum manufacturing run: {frameMinRun??250} metres. Quantities below this run length cannot be quoted.</p>:null}
         {chosen.kind==='manual'?<label className="text-sm">Approved unit price (INR)<input className={field} inputMode="decimal" value={manualPrice} onChange={e=>setManualPrice(e.target.value)}/></label>:null}
       </div>
       {chosen.kind==='label'&&labelSheet1?<div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-slate-800">
