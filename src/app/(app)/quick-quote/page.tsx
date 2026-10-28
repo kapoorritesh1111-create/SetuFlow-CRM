@@ -12,17 +12,42 @@ export default async function QuickQuotePage() {
 
   // This route is a salesperson-only INTERNAL price preview. It cannot issue a
   // quote number, create a public quote link or send an unapproved estimate.
-  const enabled = await isPackagingPricingV5EnabledForOrg(orgId);
-  const [sup, frame] = enabled ? await Promise.all([
-    listSalesPackagingPricingV5Options(orgId),
-    listSalesPackagingFramePricingV5Options(orgId),
-  ]) : [null, null];
+  // A temporary failure in one pricing source must not crash the entire
+  // authenticated sales workspace. Keep the successful families available.
+  const enabledResult = await Promise.allSettled([isPackagingPricingV5EnabledForOrg(orgId)]);
+  const enabled = enabledResult[0].status === 'fulfilled' && enabledResult[0].value;
+  if (enabledResult[0].status === 'rejected') {
+    console.error('[quick-quote] pricing entitlement lookup failed', enabledResult[0].reason);
+  }
+  const pricingResults = enabled
+    ? await Promise.allSettled([
+        listSalesPackagingPricingV5Options(orgId),
+        listSalesPackagingFramePricingV5Options(orgId),
+      ])
+    : null;
+  const sup = pricingResults?.[0]?.status === 'fulfilled' ? pricingResults[0].value : null;
+  const frame = pricingResults?.[1]?.status === 'fulfilled' ? pricingResults[1].value : null;
+  if (pricingResults?.[0]?.status === 'rejected') {
+    console.error('[quick-quote] SUP pricing options failed', pricingResults[0].reason);
+  }
+  if (pricingResults?.[1]?.status === 'rejected') {
+    console.error('[quick-quote] frame pricing options failed', pricingResults[1].reason);
+  }
 
-  const db = createServiceRoleClient();
-  const { data: manualFamilies } = db ? await db.from('packaging_service_families')
-    .select('id,name,slug,is_active,is_quoteable,pricing_engine_type')
-    .eq('organization_id',orgId).eq('is_active',true)
-    .order('name') : {data:[]};
+  let manualFamilies: any[] = [];
+  try {
+    const db = createServiceRoleClient();
+    if (db) {
+      const { data, error } = await db.from('packaging_service_families')
+        .select('id,name,slug,is_active,is_quoteable,pricing_engine_type')
+        .eq('organization_id',orgId).eq('is_active',true)
+        .order('name');
+      if (error) throw error;
+      manualFamilies = data ?? [];
+    }
+  } catch (error) {
+    console.error('[quick-quote] manual service family lookup failed', error);
+  }
 
   const covered = new Set([
     ...(sup?.families ?? []).map((f:any) => String(f.id)),
