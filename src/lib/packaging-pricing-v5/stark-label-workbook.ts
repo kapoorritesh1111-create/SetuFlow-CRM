@@ -13,6 +13,9 @@ export function calculateStarkLabelPrice(input:StarkLabelCalculationInput){
   const along=Math.floor(STARK_LABEL_MACHINE.length_mm/(input.width_mm+STARK_LABEL_MACHINE.bleed_mm));
   const labels_per_frame=across*along;
   if(labels_per_frame<=0)throw new Error('Label dimensions exceed the production frame.');
+  // Sheet1 rows 17-23: MOQ=100 frames; Q1-Q5 are 100/200/300/500/1000 frames.
+  const tier_frames=[...STARK_LABEL_BANDS];
+  const tier_quantities=tier_frames.map(n=>n*labels_per_frame);
   const frames=Math.ceil(input.quantity/labels_per_frame);
   if(frames<100)throw new Error('Minimum production is 100 frames ('+(labels_per_frame*100)+' labels).');
   const rates=input.rate_overrides?.[input.code]??base.per_frame_rates;
@@ -21,5 +24,6 @@ export function calculateStarkLabelPrice(input:StarkLabelCalculationInput){
   const rate=rates[STARK_LABEL_BANDS.indexOf(band)];
   const produced_quantity=frames*labels_per_frame;
   const total=frames*rate;
-  return {code:base.code,specification:base.specification,width_mm:input.width_mm,height_mm:input.height_mm,labels_per_frame,frames,produced_quantity,requested_quantity:input.quantity,selected_band_frames:band,per_frame_rate:rate,unit_price:total/produced_quantity,product_total:total,currency:'INR',source:'stark_label_workbook_v1'};
+  const sheet1_tiers=tier_frames.map((frameCount,i)=>({frames:frameCount,quantity: tier_quantities[i],per_frame_rate:rates[i],unit_price:rates[i]/labels_per_frame,total:frameCount*rates[i]}));
+  return {sheet1_tiers,bleed_mm:STARK_LABEL_MACHINE.bleed_mm,machine_width_mm:STARK_LABEL_MACHINE.width_mm,machine_length_mm:STARK_LABEL_MACHINE.length_mm,ups_machine_width:across,ups_machine_length:along,moq_labels:labels_per_frame*100,code:base.code,specification:base.specification,width_mm:input.width_mm,height_mm:input.height_mm,labels_per_frame,frames,produced_quantity,requested_quantity:input.quantity,selected_band_frames:band,per_frame_rate:rate,unit_price:total/produced_quantity,product_total:total,currency:'INR',source:'stark_label_workbook_v1'};
 }

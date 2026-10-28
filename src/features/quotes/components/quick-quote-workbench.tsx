@@ -32,6 +32,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [pending,start]=useTransition();
   const [manualPrice,setManualPrice]=useState('');
   const [labelCode,setLabelCode]=useState('SPPL1');
+  const [labelSheet1,setLabelSheet1]=useState<any>(null);
   const [newCompany,setNewCompany]=useState('');
   const [newPhone,setNewPhone]=useState('');
   const [newEmail,setNewEmail]=useState('');
@@ -86,7 +87,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   function choose(id:string){
     const option=all.find(o=>o.id===id);
     setMode(id);setTemplateId(option?.templateId??'');setSizeId(sizes[0]?.id??'');
-    setConstructionId('');setCustom(false);setRows([]);setSelected(0);setError('');setExtras([]);setSpotUvEnabled(false);setSpotUvAmount('');
+    setConstructionId('');setCustom(false);setLabelSheet1(null);setRows([]);setSelected(0);setError('');setExtras([]);setSpotUvEnabled(false);setSpotUvAmount('');
   }
   function calculate(){
     setError('');setRows([]);
@@ -97,8 +98,9 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         const res:any=await previewStarkLabelQuote({code:labelCode,width_mm:Number(width),height_mm:Number(height),quantity:Number(qty)});
         if(!res.ok||!res.result){setError(res.error??'Label price unavailable.');return;}
         const x=res.result;
-        setRows([{quantity:Number(x.produced_quantity),unit:Number(x.unit_price),total:Number(x.product_total),currency:'INR',weight:null,perKg:null}]);
-        setSelected(Number(x.produced_quantity));
+        setLabelSheet1(x);
+        setRows((x.sheet1_tiers??[]).map((tier:any)=>({quantity:Number(tier.quantity),unit:Number(tier.unit_price),total:Number(tier.total),currency:'INR',weight:null,perKg:null})));
+        setSelected(Number(x.sheet1_tiers?.find((t:any)=>Number(t.quantity)>=Number(qty))?.quantity??x.sheet1_tiers?.[4]?.quantity??x.produced_quantity));
       });return;
     }
     if(!construction?.id)return setError('Choose an available construction.');
@@ -204,6 +206,12 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         {chosen.kind==='label'?<label className="text-sm">Material and finish<select className={field} value={labelCode} onChange={e=>{setLabelCode(e.target.value);setRows([])}}>{STARK_LABEL_WORKBOOK_SEED.map(x=><option key={x.code} value={x.code}>{x.code} · {x.specification}</option>)}</select></label>:null}
         {chosen.kind==='manual'?<label className="text-sm">Approved unit price (INR)<input className={field} inputMode="decimal" value={manualPrice} onChange={e=>setManualPrice(e.target.value)}/></label>:null}
       </div>
+      {chosen.kind==='label'&&labelSheet1?<div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-slate-800">
+        <p className="font-bold">Sheet1 production layout</p>
+        <p>{labelSheet1.ups_machine_width} across × {labelSheet1.ups_machine_length} along = {labelSheet1.labels_per_frame} labels/frame</p>
+        <p>3 mm bleed · 320 × 980 mm frame · MOQ {Number(labelSheet1.moq_labels).toLocaleString('en-IN')} labels</p>
+        <p className="mt-1 text-xs">Prices below follow Sheet1 Q1–Q5 quantity breaks, calculated using the selected specification's frame prices.</p>
+      </div>:null}
       <button disabled={pending} onClick={chosen.kind==='manual'?addLine:calculate} className="mt-4 min-h-12 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white disabled:opacity-50">{pending?'Calculating valid quantities…':chosen.kind==='manual'?'Add Manual Estimate':chosen.kind==='label'?'Calculate Label Price':'Calculate All Valid Prices'}</button>
       {error?<p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>:null}
     </section>:null}
