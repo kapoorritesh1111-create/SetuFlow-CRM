@@ -140,6 +140,15 @@ export default async function QuotePage({
     }) : [];
   const savedPricingV5Lines = activeQuote ? listPricingV5SavedLineSummaries(activeQuote.lineItems as any[]) : [];
   const savedPricingV5FrameLines = activeQuote ? listPricingV5FrameSavedLineSummaries(activeQuote.lineItems as any[]) : [];
+  const savedLabelLines = activeQuote ? (activeQuote.lineItems as any[])
+    .filter((line:any)=>String(line.input_snapshot_json?.calculation_engine_key??'')==='label_workbook_v5')
+    .map((line:any)=>({
+      lineId:String(line.id),label:'Labels · '+String(line.input_snapshot_json?.result?.specification??line.input_snapshot_json?.input?.code??''),
+      familySlug:'labels',sizeLabel:String(line.input_snapshot_json?.input?.width_mm??'')+' × '+String(line.input_snapshot_json?.input?.height_mm??'')+' mm',
+      quantity:Number(line.quantity??0),unitPrice:Number(line.unit_price??0),
+      baseUnitPrice:Number(line.catalog_price_amount??line.unit_price??0),customerQuoteUnit:'pcs',
+      input:line.input_snapshot_json?.input??{},
+    })) : [];
   const quoteCurrency = String(activeQuote?.currency || data.lead?.deal_currency || 'INR').toUpperCase();
   const pricingLineTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.quantity||0)*Number(line.unit_price||line.catalog_price_amount||0)),0) : 0;
   const optionalChargeTotal = (packaging?.charges ?? []).reduce((sum:number,item:any)=>sum+Math.max(0,Number(item.amount??0)),0);
@@ -204,6 +213,7 @@ export default async function QuotePage({
           frameOptions={pricingV5FrameOptions}
           supSavedLines={savedPricingV5Lines}
           frameSavedLines={savedPricingV5FrameLines}
+          labelSavedLines={savedLabelLines}
           quoteTotal={liveQuoteTotal}
           quoteLineCount={activeQuoteLineCount}
           requestedQuantity={activeRequestedQuantity}

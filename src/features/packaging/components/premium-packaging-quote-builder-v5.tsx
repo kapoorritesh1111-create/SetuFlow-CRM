@@ -26,10 +26,10 @@ function Shape({kind,compact=false}:{kind:FamilyKey|'flat'|'labels'|'sleeves';co
 }
 
 export default function PremiumPackagingQuoteBuilderV5({
-  quoteId,leadId,buyerName,quoteNumber,status,currency,supOptions,frameOptions,supSavedLines=[],frameSavedLines=[],quoteTotal=0,quoteLineCount=0,requestedQuantity=0,initialStep=1,initialEditLine=null,starkLabelQuoteable=false,
+  quoteId,leadId,buyerName,quoteNumber,status,currency,supOptions,frameOptions,supSavedLines=[],frameSavedLines=[],labelSavedLines=[],quoteTotal=0,quoteLineCount=0,requestedQuantity=0,initialStep=1,initialEditLine=null,starkLabelQuoteable=false,
 }:{
   quoteId:string;leadId:string;buyerName:string;quoteNumber:string;status:string;currency:string;
-  starkLabelQuoteable?:boolean;supOptions?:any|null;frameOptions?:any|null;supSavedLines?:any[];frameSavedLines?:any[];quoteTotal?:number;quoteLineCount?:number;requestedQuantity?:number;initialStep?:number;initialEditLine?:string|null;
+  starkLabelQuoteable?:boolean;supOptions?:any|null;frameOptions?:any|null;supSavedLines?:any[];frameSavedLines?:any[];labelSavedLines?:any[];quoteTotal?:number;quoteLineCount?:number;requestedQuantity?:number;initialStep?:number;initialEditLine?:string|null;
 }){
   const available=useMemo<FamilyKey[]>(()=>{
     const out:FamilyKey[]=[];
@@ -69,7 +69,7 @@ export default function PremiumPackagingQuoteBuilderV5({
     const ids=new Set(filteredFrame.templates.map((t:any)=>String(t.id)));
     return frameSavedLines.filter((line:any)=>ids.has(String(line.templateId)));
   },[filteredFrame,frameSavedLines]);
-  const pricedLineCount=supSavedLines.length+frameSavedLines.length;
+  const pricedLineCount=supSavedLines.length+frameSavedLines.length+labelSavedLines.length;
   const lineCount=Math.max(quoteLineCount,pricedLineCount);
   useEffect(()=>{setStep(Math.min(4,Math.max(1,initialStep||1)));},[initialStep]);
   useEffect(()=>{
@@ -78,13 +78,15 @@ export default function PremiumPackagingQuoteBuilderV5({
     if(!id) return;
     const supLine=supSavedLines.find((line:any)=>String(line.lineId)===id);
     if(supLine){setActive('sup');setIntent({lineId:id,mode:'edit'});setRequirementSeed(null);setStep(2);return;}
+    const labelLine=labelSavedLines.find((line:any)=>String(line.lineId)===id);
+    if(labelLine){setActive('labels');setIntent({lineId:id,mode:'edit'});setRequirementSeed(null);setStep(2);return;}
     const frameLine=frameSavedLines.find((line:any)=>String(line.lineId)===id);
     if(frameLine){
       const familySlug=String(frameLine.familySlug??frameLine.family_slug??frameLine.supplyForm??'').toLowerCase();
       setActive(familySlug.includes('3')||familySlug.includes('three_side')?'3ss':'center-seal');
       setIntent({lineId:id,mode:'edit'});setRequirementSeed(null);setStep(2);
     }
-  },[initialEditLine,supSavedLines.length,frameSavedLines.length,basketReview]);
+  },[initialEditLine,supSavedLines.length,frameSavedLines.length,labelSavedLines.length,basketReview]);
   function goStep(next:number){
     const safe=Math.min(4,Math.max(1,next));
     setStep(safe);
@@ -212,13 +214,13 @@ export default function PremiumPackagingQuoteBuilderV5({
           {!basketReview?<button type="button" onClick={()=>goStep(3)} className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-black text-white">Discount / custom pricing →</button>:null}
         </div>
         {pricedLineCount>0?<div className="mt-4 space-y-2">
-          {[...supSavedLines,...frameSavedLines].map((line:any)=>{
+          {[...supSavedLines,...frameSavedLines,...labelSavedLines].map((line:any)=>{
             const id=String(line.lineId??'');
-            const family:FamilyKey=supSavedLines.some((saved:any)=>String(saved.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal';
+            const family:FamilyKey=labelSavedLines.some((saved:any)=>String(saved.lineId)===id)?'labels':supSavedLines.some((saved:any)=>String(saved.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal';
             return <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-white p-3">
               <div><p className="text-sm font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p>
                 <p className="text-xs font-semibold text-slate-600">{family==='sup'?(line.customSize?`${Number(line.customSize.width_mm)} × ${Number(line.customSize.height_mm)} mm · BG ${Number(line.customSize.bottom_gusset_each_mm)}+${Number(line.customSize.bottom_gusset_each_mm)} · Custom`:String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size')):String(line.sizeLabel??'Dimensions not specified')} · {line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString()} kg · ${money(Number(line.displayUnitPrice),currency)}/kg`:`Qty ${Number(line.quantity??0).toLocaleString()} · ${money(Number(line.unitPrice??0),currency)}/pc`}</p></div>
-              {family!=='sup'?<label className="text-xs font-bold text-slate-700">Customer quotation price
+              {family!=='sup'&&family!=='labels'?<label className="text-xs font-bold text-slate-700">Customer quotation price
                 <select aria-label="Customer quotation price unit" disabled={pending} value={line.customerQuoteUnit??(String(line.supplyForm).endsWith('_roll')?'kg':'pcs')} onChange={e=>updateQuoteUnit(id,e.target.value as 'kg'|'pcs')} className="ml-2 rounded-lg border border-blue-200 bg-white p-2">
                   <option value="pcs">Per piece</option><option value="kg" disabled={!(Number(line.finishedWeightKg)>0)}>Per kg</option>
                 </select>
@@ -257,7 +259,7 @@ export default function PremiumPackagingQuoteBuilderV5({
       <div className="sticky top-2 z-30 mb-3 rounded-xl border border-blue-200 bg-white/95 p-2 shadow-lg backdrop-blur xl:hidden"><button type="button" aria-expanded={mobileBasketOpen} onClick={()=>setMobileBasketOpen(true)} className="flex w-full items-center justify-between rounded-lg bg-blue-700 px-4 py-3 text-sm font-black text-white"><span>View Quote Basket · {pricedLineCount} priced items</span><span>{money(quoteTotal,currency)} →</span></button></div>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">Step 2 · Configure & Price</div><h2 className="mt-1 text-xl font-black text-slate-950">{familyMeta(active).label}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Confirm the specification, size or dimensions, KLD and quantity. Pricing and higher-volume options stay in the same workspace.</p>{requirementSeed?<div className="mt-2 flex flex-wrap items-center gap-2"><div className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black text-cyan-800">Using lead requirement · {requirementSeed.dimensions||requirementSeed.quantity||'captured requirement'}</div><button type="button" onClick={()=>goStep(1)} className="text-[10px] font-black text-blue-700 underline">Change requirement</button><button type="button" onClick={()=>setRequirementSeed(null)} className="text-[10px] font-black text-slate-600 underline">Don't use requirement</button></div>:null}</div></div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0">{active==='sup'&&supOptions?<PricingV5SalesConfigurator quoteId={quoteId} leadId={leadId} options={supOptions} savedLines={supSavedLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed} onSaved={savedLineSuccessfully}/>:null}{(active==='center-seal'||active==='3ss')&&filteredFrame?.templates?.length?<PricingV5FrameSalesConfigurator quoteId={quoteId} leadId={leadId} options={filteredFrame} savedLines={filteredFrameLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed} onSaved={savedLineSuccessfully}/>:null}</div>
+        <div className="min-w-0">{active==='sup'&&supOptions?<PricingV5SalesConfigurator quoteId={quoteId} leadId={leadId} options={supOptions} savedLines={supSavedLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed} onSaved={savedLineSuccessfully} savedLines={labelSavedLines} focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''}/>:null}{(active==='center-seal'||active==='3ss')&&filteredFrame?.templates?.length?<PricingV5FrameSalesConfigurator quoteId={quoteId} leadId={leadId} options={filteredFrame} savedLines={filteredFrameLines} embedded focusLineId={intent?.mode==='edit'?intent.lineId:''} duplicateLineId={intent?.mode==='duplicate'?intent.lineId:''} requirementSeed={requirementSeed} onSaved={savedLineSuccessfully}/>:null}</div>
         {mobileBasketOpen?<button type="button" aria-label="Close quote basket" onClick={()=>setMobileBasketOpen(false)} className="fixed inset-0 z-30 bg-slate-950/40 xl:hidden"/>:null}
         <aside aria-label="Live quote basket" className={'min-w-0 self-start rounded-2xl border border-blue-200 bg-white p-4 shadow-sm xl:sticky xl:top-4 '+(mobileBasketOpen?'fixed inset-x-3 bottom-3 z-40 max-h-[75vh] overflow-y-auto shadow-2xl':'hidden xl:block')}>
           <div className="mb-2 flex justify-end xl:hidden"><button type="button" onClick={()=>setMobileBasketOpen(false)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Close basket ✕</button></div>
@@ -270,7 +272,7 @@ export default function PremiumPackagingQuoteBuilderV5({
           {lineNotice?<p role="status" className="mt-2 rounded-lg bg-emerald-50 p-2 text-xs font-semibold text-emerald-800">{lineNotice}</p>:null}
           {quoteLineCount>pricedLineCount?<p className="mt-3 rounded-lg bg-amber-50 p-2 text-xs font-semibold text-amber-800">{quoteLineCount-pricedLineCount} additional draft or unpriced line{quoteLineCount-pricedLineCount===1?'':'s'} not counted as priced items.</p>:null}
           <div className="mt-3 max-h-[48vh] space-y-2 overflow-y-auto pr-1 xl:max-h-[60vh]">
-            {[...supSavedLines,...frameSavedLines].map((line:any)=>{
+            {[...supSavedLines,...frameSavedLines,...labelSavedLines].map((line:any)=>{
               const id=String(line.lineId??'');
               const family:FamilyKey=supSavedLines.some((l:any)=>String(l.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal';
               const size=family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??(Number(line.widthMm)>0&&Number(line.heightMm)>0?`${line.widthMm} × ${line.heightMm} mm`:null)??line.sizeName??line.dimensions??'Dimensions not specified');
@@ -333,11 +335,11 @@ export default function PremiumPackagingQuoteBuilderV5({
       {lineError?<p role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">{lineError}</p>:null}
       {lineNotice?<p role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{lineNotice}</p>:null}
       <div className="mt-5 space-y-3">
-        {[...supSavedLines,...frameSavedLines].length ? [...supSavedLines,...frameSavedLines].map((line:any)=>{
+        {[...supSavedLines,...frameSavedLines,...labelSavedLines].length ? [...supSavedLines,...frameSavedLines,...labelSavedLines].map((line:any)=>{
           const lineId=String(line.lineId??'');
           const basePrice=Number(line.baseUnitPrice??line.unitPrice??0);
           const quantity=Number(line.quantity??0);
-          const lineFamily:FamilyKey = supSavedLines.some((item:any)=>String(item.lineId)===lineId) ? 'sup' : (String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal');
+          const lineFamily:FamilyKey = labelSavedLines.some((item:any)=>String(item.lineId)===lineId)?'labels':supSavedLines.some((item:any)=>String(item.lineId)===lineId) ? 'sup' : (String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal');
           return <div key={lineId} className="rounded-2xl border border-slate-200 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div><p className="text-sm font-black text-slate-950">{String(line.label??familyMeta(lineFamily).label)}</p><p className="mt-1 text-xs font-semibold text-slate-500">{lineFamily==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??'Dimensions not specified')} · {lineFamily!=='sup'&&line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString('en-IN',{maximumFractionDigits:2})} kg · ${money(Number(line.displayUnitPrice),currency)} / kg`:`Qty ${quantity>0?quantity.toLocaleString():'—'} · ${basePrice>0?money(Number(line.unitPrice??basePrice),currency)+' / pc':'Approved pricing'}`}</p></div>
