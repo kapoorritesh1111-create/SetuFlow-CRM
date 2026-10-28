@@ -7,7 +7,7 @@ AS $function$
   with base as materialized (
     select
       s.id, s.source_provider, s.intake_status, s.sales_queue_suppressed,
-      s.last_inbound_at, s.source_created_at, s.source_modified_at,
+      s.last_inbound_at, s.last_outbound_at, s.source_created_at, s.source_modified_at,
       s.contact_name, s.person_name, s.company_name, s.brand_name,
       s.full_phone_number, s.guru_evaluation_status, s.needs_reply,
       s.acquisition_type, s.ad_platform, s.channel_source,
