@@ -7,6 +7,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 const LOCKED=new Set(['accepted','rejected','expired','cancelled','declined','sent','approval_pending','superseded']);
 const APPROVAL_THRESHOLD_PERCENT=15;
+const STARK_ORG='b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 
 async function context(quoteId:string,leadId:string){
   const workspace=await requireWorkspace();
@@ -67,6 +68,13 @@ export async function adjustPackagingPricingV5QuoteLine(params:{
     if(type==='customer_price'&&value<=0) return {ok:false,error:'Customer price must be greater than zero.'};
     const service:any=createServiceRoleClient();
     if(!service) return {ok:false,error:'Pricing persistence service is unavailable.'};
+    let approvalThreshold=APPROVAL_THRESHOLD_PERCENT;
+    if(workspace.organization!.id===STARK_ORG){
+      const {data:policy,error:policyError}=await service.from('stark_pricing_discount_policy')
+        .select('approval_threshold_percent').eq('organization_id',STARK_ORG).maybeSingle();
+      if(policyError)throw new Error('Discount policy could not be loaded: '+policyError.message);
+      if(policy?.approval_threshold_percent!=null)approvalThreshold=Number(policy.approval_threshold_percent);
+    }
     const {data,error}=await service.rpc('app_adjust_packaging_v5_quote_line_tx',{
       p_organization_id:workspace.organization!.id,
       p_quote_id:quote.id,
@@ -76,7 +84,7 @@ export async function adjustPackagingPricingV5QuoteLine(params:{
       p_discount_value:value,
       p_reason:String(params.reason??'').trim()||null,
       p_actor_user_id:workspace.user!.id,
-      p_approval_threshold_percent:APPROVAL_THRESHOLD_PERCENT,
+      p_approval_threshold_percent:approvalThreshold,
     });
     if(error) return {ok:false,error:error.message??'Packaging price adjustment could not be saved.'};
     const row=Array.isArray(data)?data[0]:data;

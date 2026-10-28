@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdminWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service-role';
 import { loadPricingContextV5 } from '@/lib/packaging-pricing-v5/repository';
 
 const ADMIN_PATH='/admin/packaging-pricing-v5';
@@ -567,13 +568,12 @@ export async function publishPackagingTemplateV5(formData:FormData){
   const template=await requireDraftTemplate(supabase,organization.id,templateId);
   const validation=await validatePackagingTemplateV5(templateId);
   if(!validation.ok) throw new Error(validation.errors.join(' '));
-  const now=new Date().toISOString();
-  const {data,error}=await supabase.from('packaging_pricing_templates').update({status:'published',is_active:true,published_at:now,published_by:user.id,updated_at:now}).eq('organization_id',organization.id).eq('id',templateId).eq('status','draft').eq('calculation_version',5).eq('calculation_engine_key',template.calculation_engine_key).select('id').maybeSingle();
-  if(error||!data?.id) throw new Error(error?.message??'Pricing v5 template was not found or is no longer a draft.');
-  if(template.supersedes_template_id){
-    const {error:archiveError}=await supabase.from('packaging_pricing_templates').update({status:'archived',is_active:false,updated_at:now}).eq('organization_id',organization.id).eq('id',template.supersedes_template_id).eq('calculation_version',5).eq('calculation_engine_key',template.calculation_engine_key);
-    if(archiveError) throw new Error(`New revision published, but prior revision could not be archived: ${archiveError.message}`);
-  }
+  const service:any=createServiceRoleClient();
+  if(!service)throw new Error('Pricing publication service is unavailable.');
+  const {error:publishError}=await service.rpc('app_publish_packaging_template_v5_tx',{
+    p_org:organization.id,p_template:templateId,p_actor:user.id,
+  });
+  if(publishError)throw new Error(publishError.message);
   revalidatePath(ADMIN_PATH);
 }
 
