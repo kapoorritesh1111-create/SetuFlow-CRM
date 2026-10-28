@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {STARK_LABEL_WORKBOOK_SEED,calculateStarkLabelPrice} from '../../src/lib/packaging-pricing-v5/stark-label-workbook';
+test('label workbook seed has 77 complete rate rows',()=>{assert.equal(STARK_LABEL_WORKBOOK_SEED.length,77);assert.ok(STARK_LABEL_WORKBOOK_SEED.every(x=>x.per_frame_rates.length===5));});
+test('200 x 60 label uses 20 ups and workbook SPPL22 band',()=>{const x=calculateStarkLabelPrice({code:'SPPL22',width_mm:200,height_mm:60,quantity:2000});assert.equal(x.labels_per_frame,20);assert.equal(x.frames,100);assert.equal(x.per_frame_rate,110);assert.equal(x.product_total,11000);});
+test('minimum frames, machine fit and owner override validated',()=>{assert.throws(()=>calculateStarkLabelPrice({code:'SPPL22',width_mm:200,height_mm:60,quantity:1000}),/Minimum/);assert.throws(()=>calculateStarkLabelPrice({code:'SPPL22',width_mm:1000,height_mm:60,quantity:2000}),/exceed/);assert.equal(calculateStarkLabelPrice({code:'SPPL22',width_mm:200,height_mm:60,quantity:4000,rate_overrides:{SPPL22:[99,97,95,93,91]}}).per_frame_rate,97);});
