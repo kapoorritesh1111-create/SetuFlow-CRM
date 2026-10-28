@@ -187,7 +187,7 @@ function buildPdf(data: PdfData) {
     put(28,652,clip(data.org?.contact_email,53,''),6.1,false,MUTED);
     if(data.org?.tax_id)put(28,642,'Tax ID: '+clip(data.org.tax_id,38),6.1,false,MUTED);
     put(365,706,'CREATED BY',6.0,true,BLUE);
-    put(365,693,clip(data.salesRepresentative?.name||'Stark Packmate Sales Team',32),8.5,true,NAVY);
+    put(365,693,clip(data.salesRepresentative?.name && !data.salesRepresentative.name.includes('@') ? data.salesRepresentative.name : 'Stark Packmate Sales Team',32),8.5,true,NAVY);
     put(365,679,clip(data.salesRepresentative?.email||data.org?.contact_email,44,''),6.2,false,MUTED);
     if(data.salesRepresentative?.phone)put(365,667,clip(data.salesRepresentative.phone,26),6.2,false,MUTED);
     box(24,557,564,76,'#f8fbfc',LINE);
@@ -338,9 +338,9 @@ function buildPdf(data: PdfData) {
     }
     const termsY=matrixTop-matrix.length*28-12;
     put(28,termsY,'PAYMENT & PRODUCTION',6.5,true,NAVY);
-    put(28,termsY-13,clip(data.paymentTerms||'50% advance; balance before dispatch',70),5.7,false,INK);
-    put(28,termsY-24,clip(data.leadTime||'Production lead time as agreed',88),5.4,false,MUTED);
-    put(28,termsY-36,'Bank/payment details supplied following order confirmation.',5.1,false,MUTED);
+    put(28,termsY-13,clip(data.paymentTerms||'50% advance; balance before dispatch',63),5.7,false,INK);
+    put(28,termsY-24,clip(data.leadTime||'Production lead time as agreed',64),5.4,false,MUTED);
+    put(28,termsY-36,'Bank details supplied after order confirmation.',5.1,false,MUTED);
     }else{
   y = financeTop - 64;
   const rawSuggestions=(data.volumeSuggestions??[]).slice(0,2);
@@ -393,14 +393,14 @@ function buildPdf(data: PdfData) {
   }
 
   if(data.includeStarkPolicy && !hasContinuation){
+    // The review QR occupies its own right-side column; never overlap payment text.
     if(qrObj){
-      box(28,70,58,58,'#ffffff',LINE);
-      ops.push(`q 50 0 0 50 32 74 cm /ReviewQR Do Q`);
-      put(94,111,'VIEW THE LIVE QUOTATION',7,true,NAVY);
-      put(94,98,'Scan to review specifications, terms and approval options.',5.8,false,MUTED);
-      put(94,85,'Approval is recorded only after customer confirmation.',5.4,false,MUTED);
+      box(495,79,76,75,'#ffffff',LINE);
+      ops.push(`q 64 0 0 64 501 84 cm /ReviewQR Do Q`);
+      put(489,166,'SCAN TO REVIEW',6,true,NAVY);
+      put(489,157,'& APPROVE',6,true,NAVY);
     }else{
-      put(28,94,'Secure customer review link will appear when this quote is shared.',6,false,MUTED);
+      put(489,113,'Review link available when shared.',5.1,false,MUTED);
     }
   }
   put(36, 45, 'STARK PACKMATE PRIVATE LIMITED', 5.8, true, NAVY);
@@ -563,30 +563,30 @@ function buildPdf(data: PdfData) {
       col=0;cy=672;
     };
     const nextColumn=()=>{if(col===0){col=1;cy=672;}else newPage();};
-    const fit=(height:number)=>{if(cy-height<75)nextColumn();};
+    const fit=(height:number)=>{if(cy-height<68)nextColumn();};
     newPage();
     for(const [index,section] of STARK_PACKMATE_POLICY.entries()){
       const title=section.title.replace(/^\d+\.\s*/,'');
-      const paragraphs=section.points.map(p=>wrap(p,bodyWidth-9,6.75));
-      const estimated=22+paragraphs.reduce((sum,lines)=>sum+lines.length*8.25+7,0);
-      if(cy-estimated<75&&cy<480)nextColumn();
+      const paragraphs=section.points.map(p=>wrap(p,bodyWidth-9,6.35));
+      const estimated=19+paragraphs.reduce((sum,lines)=>sum+lines.length*7.45+5,0);
+      if(cy-estimated<68&&cy<470)nextColumn();
       fit(38);
       const x=starts[col];
       drawText(x,cy,String(index+1).padStart(2,'0'),7.5,true,'#0f766e');
       drawText(x+22,cy, title,7.4,true,NAVY);
-      cy-=14;
+      cy-=12;
       for(const lines of paragraphs){
-        fit(lines.length*8.25+8);
+        fit(lines.length*7.45+5);
         const px=starts[col]+6;
-        for(const line of lines){drawText(px,cy,line,6.75,false,INK);cy-=8.25;}
-        cy-=7;
+        for(const line of lines){drawText(px,cy,line,6.35,false,INK);cy-=7.45;}
+        cy-=5;
       }
-      cy-=7;
+      cy-=5;
     }
-    const ack=wrap(STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT,bodyWidth-6,6.8);
-    fit(ack.length*8.5+26);
+    const ack=wrap(STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT,bodyWidth-6,6.35);
+    fit(ack.length*7.45+21);
     drawText(starts[col],cy,'CLIENT ACKNOWLEDGEMENT',7.2,true,'#0f766e');cy-=12;
-    for(const line of ack){drawText(starts[col],cy,line,6.8,false,NAVY);cy-=8.5;}
+    for(const line of ack){drawText(starts[col],cy,line,6.35,false,NAVY);cy-=7.45;}
     policyPages.push(policyOps);
     for(const [index,operations] of policyPages.entries()){
       operations.push(rgb(LINE)+' RG 0.6 w 38 58 m 574 58 l S');
@@ -804,7 +804,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     const baseQty=unit==='kg'?(view?.displayQuantity??row.qty):row.qty;
     const options=existing.length?existing.map(o=>({quantity:o.quantity,price:o.unit_price,saving:o.savings_pct})):
       [2,3,5].map(m=>({quantity:Math.ceil(Number(baseQty)*m)}));
-    return {product:row.product,unit,options};
+    return {product:unit==='kg' && /3 side seal pouches/i.test(row.product)?'3 Side Seal - Roll Form':row.product,unit,options};
   });
   const currentCustomerMessage = text(quoteVersion?.customer_message, '');
   const isStark = isStarkPackmateOrganization(org);
