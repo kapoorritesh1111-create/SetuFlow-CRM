@@ -195,9 +195,7 @@ AS $function$
       'browsingHidden', (select count(*) from base where sales_queue_suppressed = true)
     )
   );
-$function$
-
-
+$function$;
 
 -- A fresh customer message reopens a previously rejected inquiry.
 CREATE OR REPLACE FUNCTION public.stark_reopen_bad_inquiry_on_new_message()
