@@ -1,3 +1,5 @@
+import QRCode from 'qrcode';
+import { parsePdfImage } from '@/lib/pdf/organization-logo';
 import {resolveFrameQuotePresentation} from '@/lib/packaging-pricing-v5/customer-quote-unit';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -42,6 +44,8 @@ type PdfData = {
   taxTotal?: number;
   taxLabel?: string;
   logoImage?: PdfImage | null;
+  reviewQrImage?: PdfImage | null;
+  salesRepresentative?: { name:string; email:string; phone?:string };
   includeStarkPolicy?: boolean;
   domesticQuote?: boolean;
 };
@@ -142,6 +146,8 @@ function buildPdf(data: PdfData) {
   if (data.logoImage?.smask) smaskObj = add(`<< /Type /XObject /Subtype /Image /Width ${data.logoImage.width} /Height ${data.logoImage.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length ${data.logoImage.smask.length} >>${NL}stream${NL}${data.logoImage.smask.toString('binary')}${NL}endstream`);
   if (data.logoImage) logoObj = add(`<< /Type /XObject /Subtype /Image /Width ${data.logoImage.width} /Height ${data.logoImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /${data.logoImage.filter} ${smaskObj ? `/SMask ${smaskObj} 0 R ` : ''}/Length ${data.logoImage.data.length} >>${NL}stream${NL}${data.logoImage.data.toString('binary')}${NL}endstream`);
 
+  let qrObj=0;
+  if(data.reviewQrImage)qrObj=add(`<< /Type /XObject /Subtype /Image /Width ${data.reviewQrImage.width} /Height ${data.reviewQrImage.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /${data.reviewQrImage.filter} /Length ${data.reviewQrImage.data.length} >>${NL}stream${NL}${data.reviewQrImage.data.toString('binary')}${NL}endstream`);
   const ops: string[] = [];
   const copy: PdfText[] = [];
   const left = 24;
@@ -168,12 +174,18 @@ function buildPdf(data: PdfData) {
     box(left, 724, 60, 50, NAVY);
     put(54, 748, logo, logo.length > 2 ? 7 : 9, true, '#ffffff', true);
   }
-  put(96, 754, 'COMMERCIAL QUOTATION', 16.5, true, NAVY);
-  put(96, 738, 'Buyer-facing offer and commercial terms', 7.4, false, MUTED);
+  put(96, 754, data.includeStarkPolicy ? text(data.org?.legal_name ?? data.org?.name,'STARK PACKMATE') : 'COMMERCIAL QUOTATION', data.includeStarkPolicy ? 12.5 : 16.5, true, NAVY);
+  put(96, 738, data.includeStarkPolicy ? 'COMMERCIAL QUOTATION' : 'Buyer-facing offer and commercial terms', 7.4, false, MUTED);
   box(447, 733, 131, 32, '#f8fbff', LINE);
   put(570, 753, data.quoteNo, 8.8, true, NAVY, true);
   put(570, 741, `${data.quoteDate} | Valid ${data.validUntil}`, 5.8, false, MUTED, true);
 
+  if(data.includeStarkPolicy && data.salesRepresentative?.name){
+    put(24,711,'CREATED BY',5.7,true,BLUE);
+    put(91,711,clip(data.salesRepresentative.name,33),6.5,true,NAVY);
+    if(data.salesRepresentative.email)put(275,711,clip(data.salesRepresentative.email,37),5.8,false,MUTED);
+    if(data.salesRepresentative.phone)put(570,711,clip(data.salesRepresentative.phone,20),5.8,false,MUTED,true);
+  }
   const identityCardY=624, identityCardH=80;
   box(24, identityCardY, 174, identityCardH, PANEL, LINE);
   put(36, identityCardY+64, data.domesticQuote ? 'SELLER' : 'SELLER / EXPORTER', 6.4, true, BLUE);
@@ -306,6 +318,17 @@ function buildPdf(data: PdfData) {
     put(36, y-19, 'Financial summary and commercial terms follow after the final product line.', 4.8, false, MUTED);
   }
 
+  if(data.includeStarkPolicy){
+    if(qrObj){
+      box(28,70,58,58,'#ffffff',LINE);
+      ops.push(`q 50 0 0 50 32 74 cm /ReviewQR Do Q`);
+      put(94,111,'SCAN TO VIEW & APPROVE',7,true,NAVY);
+      put(94,98,'Open secure quotation, specifications and terms.',5.8,false,MUTED);
+      put(94,85,'Approval is recorded only after customer confirmation.',5.4,false,MUTED);
+    }else{
+      put(28,94,'Customer review QR available when this quotation is shared.',6,false,MUTED);
+    }
+  }
   put(36, 45, 'STARK PACKMATE PRIVATE LIMITED', 5.8, true, NAVY);
   put(36, 35, 'Flexible Packaging for a Better Tomorrow', 4.8, false, MUTED);
   put(576, 45, 'Generated from Setu Flow CRM', 4.8, false, MUTED, true);
@@ -317,7 +340,7 @@ function buildPdf(data: PdfData) {
   });
   const stream = [...ops, ...textOps].join(NL);
   const content = add(`<< /Length ${Buffer.byteLength(stream, 'binary')} >>${NL}stream${NL}${stream}${NL}endstream`);
-  const xobjects = logoObj ? `/XObject << /Logo ${logoObj} 0 R >>` : '';
+  const xobjects = (logoObj || qrObj) ? `/XObject << ${logoObj ? `/Logo ${logoObj} 0 R` : ''} ${qrObj ? `/ReviewQR ${qrObj} 0 R` : ''} >>` : '';
   const page = add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> ${xobjects} >> /Contents ${content} 0 R >>`);
   const pageRefs = [page];
 
@@ -585,7 +608,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
 
   if (!organizationId) return NextResponse.json({ error: 'Workspace not found.' }, { status: 403 });
   const resolvedOrganizationId=organizationId;
-  const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, created_by, current_version_id, sent_version_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer').eq('organization_id', resolvedOrganizationId).eq('id', quoteId).maybeSingle();
+  const { data: quote, error } = await db.from('quotes').select('id, quote_number, lead_id, created_by, current_version_id, sent_version_id, currency, display_currency, updated_at, created_at, valid_until, pricing_basis, destination_port, market_id, country_id, freight_profile_id, approval_required, approved_at, notes_customer, industry_metadata').eq('organization_id', resolvedOrganizationId).eq('id', quoteId).maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!quote?.id) return NextResponse.json({ error: 'Quote not found.' }, { status: 404 });
 
@@ -657,6 +680,15 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       (!buyerCountry && currency === 'INR' && !quote.destination_port && !quote.country_id));
   const displayBasis = domesticQuote ? 'Direct' : quoteBase;
   const logoImage = await loadOrganizationLogo(db, resolvedOrganizationId, org);
+  const isStarkLogoQuote=isStarkPackmateOrganization(org);
+  const shareToken=String(quote.industry_metadata?.customer_review_token??'').trim();
+  let reviewQrImage:PdfImage|null=null;
+  if(isStarkLogoQuote && shareToken.length>=32){
+    const reviewUrl=`${url.origin}/quote-review/${encodeURIComponent(shareToken)}`;
+    try{
+      reviewQrImage=parsePdfImage(await QRCode.toBuffer(reviewUrl,{type:'png',margin:1,width:256,errorCorrectionLevel:'M'}),'image/png');
+    }catch{reviewQrImage=null;}
+  }
   const { data: optionalCharges } = await db.from('quote_optional_charges').select('label, amount, currency').eq('organization_id', resolvedOrganizationId).eq('quote_id', quote.id);
 
   const v5TaxTotal = lines.reduce((sum, line) => line.line_type === 'packaging' && Number(line.calculation_version) === 5
@@ -759,6 +791,8 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     taxTotal: v5TaxTotal,
     taxLabel: v5TaxTotal > 0 ? 'GST' : undefined,
     logoImage,
+    reviewQrImage,
+    salesRepresentative: leadOwnerProfile ? {name:String(leadOwnerProfile.full_name??''),email:String(leadOwnerProfile.email??'')} : undefined,
     includeStarkPolicy: isStark,
   });
 
