@@ -3,6 +3,7 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { previewPackagingPricingV5, savePackagingPricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-actions';
 import { previewPackagingFramePricingV5, savePackagingFramePricingV5QuoteLine } from '@/features/packaging/server/pricing-v5-frame-actions';
+import { previewStarkLabelQuote, saveStarkLabelQuoteLine } from '@/features/packaging/server/stark-label-quote-actions';
 export async function convertQuickQuoteDraft(params:{estimateId:string;existingLeadId?:string;companyName?:string;contactName?:string;phone?:string;email?:string}){
   try{
     const w=await requireWorkspace();
@@ -16,8 +17,13 @@ export async function convertQuickQuoteDraft(params:{estimateId:string;existingL
       if(estimate.status!=='draft'||!Array.isArray(estimate.items)||!estimate.items.length)
         return {ok:false,error:'No valid draft estimate was found.'};
       for(const item of estimate.items){
-        if(!['sup','frame'].includes(item.engine)||!item.templateId||!item.input)
+        if(!['sup','frame','label'].includes(item.engine)||!item.input||(item.engine!=='label'&&!item.templateId))
           return {ok:false,error:'Every item must be priced through published V5 before conversion.'};
+        if(item.engine==='label'){
+          const p:any=await previewStarkLabelQuote({code:String(item.input.code),width_mm:Number(item.input.width_mm),height_mm:Number(item.input.height_mm),quantity:Number(item.input.quantity)});
+          if(!p.ok||!p.result||Number(p.result.produced_quantity)!==Number(item.quantity)||Math.abs(Number(p.result.unit_price)-Number(item.price))>0.000001)return {ok:false,error:'Labels pricing changed; recalculate the estimate.'};
+          continue;
+        }
         const pricing:any=item.engine==='sup'
           ?await previewPackagingPricingV5({templateId:item.templateId,input:item.input})
           :await previewPackagingFramePricingV5({templateId:item.templateId,input:item.input});
@@ -58,8 +64,10 @@ export async function convertQuickQuoteDraft(params:{estimateId:string;existingL
       if(metaError||!meta)return {ok:false,error:'Quote line configuration unavailable. Please retry.'};
       const resolvedTemplate=templateId||String(meta.packaging_template_id??'');
       const resolvedFamily=familyId||String(meta.packaging_family_id??'');
-      if(!input||!resolvedTemplate||!resolvedFamily)return {ok:false,error:'Quote line is missing required configuration.'};
-      const saved=snapshot.engine==='sup'
+      if(!input||(!resolvedTemplate&&snapshot.engine!=='label')||!resolvedFamily)return {ok:false,error:'Quote line is missing required configuration.'};
+      const saved=snapshot.engine==='label'
+        ?await saveStarkLabelQuoteLine({quoteId:result.quote_id,leadId:result.lead_id,lineId:line.id,code:String(input.code),width_mm:Number(input.width_mm),height_mm:Number(input.height_mm),quantity:Number(input.quantity)})
+        :snapshot.engine==='sup'
         ?await savePackagingPricingV5QuoteLine({quoteId:result.quote_id,leadId:result.lead_id,
           lineId:line.id,templateId:resolvedTemplate,familyId:resolvedFamily,input})
         :snapshot.engine==='frame'

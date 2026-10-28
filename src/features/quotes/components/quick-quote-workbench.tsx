@@ -142,7 +142,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     setRows([]);setError('');
   }
   function convertDraft(){
-    if(basket.some(item=>item.engine==='manual'||item.engine==='label')){setConvertError('Manual-price and Labels estimate lines require the governed quotation builder for customer conversion.');return;}
+    if(basket.some(item=>item.engine==='manual')){setConvertError('Manual-price lines require the governed quotation builder for customer conversion.');return;}
     if(JSON.stringify(basket)!==savedBasketFingerprint){setConvertError('Estimate changed: save it again before conversion.');return;}
     if(!draftId){setConvertError('Save the estimate first.');return;}
     start(async()=>{
