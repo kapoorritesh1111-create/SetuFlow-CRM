@@ -587,7 +587,10 @@ export async function savePackagingFrameTemplateSettingsV5(formData:FormData){
   const {data:current,error:currentError}=await supabase.from('packaging_pricing_templates')
     .select('production_rules_json').eq('organization_id',organization.id).eq('id',templateId).maybeSingle();
   if(currentError||!current) throw new Error(currentError?.message??'Pricing v5 template was not found.');
-  const rules={...(current.production_rules_json??{}),default_commercial_bucket:bucket,commercial_bucket_mapping:'owner_configured'};
+  const inkRaw=text(formData,'printing_ink_gsm');
+  const inkGsm=inkRaw===''?null:Number(inkRaw);
+  if(inkGsm!==null&&(!Number.isFinite(inkGsm)||inkGsm<0||inkGsm>30)) throw new Error('Printing ink GSM must be between 0 and 30.');
+  const rules={...(current.production_rules_json??{}),default_commercial_bucket:bucket,commercial_bucket_mapping:'owner_configured',...(inkGsm===null?{}:{printing_ink_gsm:inkGsm})};
   const {data,error}=await supabase.from('packaging_pricing_templates')
     .update({production_rules_json:rules,updated_at:new Date().toISOString()})
     .eq('organization_id',organization.id).eq('id',templateId).eq('status','draft').select('id').maybeSingle();
