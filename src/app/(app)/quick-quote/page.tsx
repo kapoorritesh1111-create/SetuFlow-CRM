@@ -21,14 +21,15 @@ export default async function QuickQuotePage() {
   const db = createServiceRoleClient();
   const { data: manualFamilies } = db ? await db.from('packaging_service_families')
     .select('id,name,slug,is_active,is_quoteable,pricing_engine_type')
-    .eq('organization_id',orgId).eq('is_active',true).eq('is_quoteable',true)
+    .eq('organization_id',orgId).eq('is_active',true)
     .order('name') : {data:[]};
 
   const covered = new Set([
     ...(sup?.families ?? []).map((f:any) => String(f.id)),
     ...(frame?.families ?? []).map((f:any) => String(f.id)),
   ]);
-  const manual = (manualFamilies ?? []).filter((f:any) => !covered.has(String(f.id)));
+  const allowedManual=new Set(['flat-bottom-pouches','spout-pouches','shrink-sleeves','courier-bags']);
+  const manual = (manualFamilies ?? []).filter((f:any) => !covered.has(String(f.id)) && (f.slug==='labels'?f.is_quoteable&&orgId==='b97913cb-3b95-4247-8ced-ffdc0d392d2a':allowedManual.has(String(f.slug))));
   return (
     <main className="mx-auto max-w-6xl px-3 pb-28 pt-4 sm:px-6">
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
