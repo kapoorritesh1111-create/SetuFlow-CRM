@@ -55,6 +55,9 @@ function FramePreview({data,showMatrix=false}:{data:any;showMatrix?:boolean}){
   const [pending,startTransition]=useTransition();
   const construction=constructions.find((x:any)=>x.id===constructionId)??constructions[0];
   const supplyForm=String(template?.production_rules_json?.supply_form??'');
+  const isCenterRoll=supplyForm==='center_seal_roll';
+  const widthLabel=isCenterRoll?'Open width mm':'Pouch width mm';
+  const heightLabel=isCenterRoll?'Repeat length mm':'Pouch height mm';
   const currency=preview?.selling_price?.currency??template?.currency??'INR';
   const breakdown=Object.entries(preview?.cost_breakdown?.per_unit??{});
 
@@ -87,12 +90,13 @@ function FramePreview({data,showMatrix=false}:{data:any;showMatrix?:boolean}){
     <Card className="p-5">
       <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-black text-slate-950">{showMatrix?'Price Matrix':'Quick Price Preview'}</h2><p className="mt-1 text-sm text-slate-500">Enter customer dimensions and use the same V5 frame engine as Sales.</p></div><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600">Owner view</span></div>
       <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <label><Label>Width mm</Label><input className={input} type="number" min="1" value={width} onChange={(e)=>{setWidth(Number(e.target.value));setPreview(null);setMatrix([]);}}/></label>
-        <label><Label>Height mm</Label><input className={input} type="number" min="1" value={height} onChange={(e)=>{setHeight(Number(e.target.value));setPreview(null);setMatrix([]);}}/></label>
+        <label><Label>{widthLabel}</Label><input className={input} type="number" min="1" value={width} onChange={(e)=>{setWidth(Number(e.target.value));setPreview(null);setMatrix([]);}}/></label>
+        <label><Label>{heightLabel}</Label><input className={input} type="number" min="1" value={height} onChange={(e)=>{setHeight(Number(e.target.value));setPreview(null);setMatrix([]);}}/></label>
         <label><Label>Quantity pcs</Label><input className={input} type="number" min="1" value={quantity} onChange={(e)=>{setQuantity(Number(e.target.value));setPreview(null);}}/></label>
         <label className="md:col-span-2"><Label>Construction</Label><select className={input} value={construction?.id??''} onChange={(e)=>{setConstructionId(e.target.value);setPreview(null);setMatrix([]);}}>{constructions.map((x:any)=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
         <label><Label>Printing</Label><select className={input} value={print} onChange={(e)=>{setPrint(e.target.value as any);setPreview(null);setMatrix([]);}}><option value="CMYK">Digital (CMYK)</option><option value="CMYKW">Digital (CMYKW)</option></select></label>
       </div>
+      {preview?.roll_weight?.material_layers?.length?<details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-sm font-black text-slate-800">Finished laminate weight breakdown</summary><div className="mt-3 space-y-1 text-xs text-slate-700">{(preview.roll_weight.material_layers??[]).map((v:any,i:number)=><div key={i} className="flex justify-between"><span>{String(v.name)}</span><b>{Number(v.gsm).toFixed(2)} GSM</b></div>)}<div className="flex justify-between"><span>Printing ink</span><b>{Number(preview.roll_weight.printing_ink_gsm??0).toFixed(2)} GSM</b></div><div className="flex justify-between"><span>Lamination adhesive</span><b>{Number(preview.roll_weight.lamination_gsm??0).toFixed(2)} GSM</b></div><div className="flex justify-between border-t border-slate-200 pt-2 font-black"><span>Finished total</span><b>{Number(preview.roll_weight.total_gsm??0).toFixed(2)} GSM</b></div><div className="flex justify-between"><span>Finished weight</span><b>{Number(preview.roll_weight.finished_weight_kg??0).toFixed(2)} kg</b></div><div className="flex justify-between"><span>Production material consumption</span><b>{Number(preview.roll_weight.production_material_weight_kg??0).toFixed(2)} kg</b></div></div></details>:null}
       {error?<div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div>:null}
       {preview?.smart_moq?<div className="mt-4 space-y-3">
         <div className={preview.smart_moq.below_minimum?"rounded-xl border border-amber-200 bg-amber-50 p-4":"rounded-xl border border-emerald-200 bg-emerald-50 p-4"}>
