@@ -33,8 +33,9 @@ function n(value: unknown): number {
  * IMPORTANT:
  * - These rules intentionally preserve the v4 workbook orientation and do not rotate
  *   dimensions to improve yield.
- * - Center Seal Roll/Pouch and 3SS Roll use entered width across the 740 mm frame and
- *   entered height along the 1120 mm repeat, matching the current v4 workbook engine.
+ * - Center Seal Roll uses entered open width across the machine and entered repeat length.
+ * - Center Seal Pouch uses the finished width: open width = 2 * pouch width + 20 mm.
+ * - 3SS Roll uses book-fold layout: open width = 2 * pouch width; repeat = pouch height.
  * - 3SS Pouch preserves the current workbook rule:
  *     open laminate width = (2 * formed height) + 12 mm
  *     repeat length       = formed width
@@ -55,7 +56,15 @@ export function resolveFrameFamilyGeometryV5(
   const machineLength = n(machineLengthMm) || 1120;
 
   const threeSideSealPouch = supplyForm === 'three_side_seal_pouch';
-  const openLaminateWidth = threeSideSealPouch ? (2 * height) + 12 : width;
+  const centerSealPouch = supplyForm === 'center_seal_pouch';
+  const threeSideSealRoll = supplyForm === 'three_side_seal_roll';
+  const openLaminateWidth = threeSideSealPouch
+    ? (2 * height) + 12
+    : centerSealPouch
+      ? (2 * width) + 20
+      : threeSideSealRoll
+        ? 2 * width
+        : width;
   const repeatLength = threeSideSealPouch ? width : height;
 
   const across = width > 0 && height > 0 ? Math.floor(machineWidth / openLaminateWidth) : 0;
