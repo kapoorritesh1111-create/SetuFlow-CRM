@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-type FamilyKey='sup'|'center-seal'|'3ss';
+type FamilyKey='sup'|'center-seal'|'3ss'|'labels';
 type Requirement={
   id:string;
   label:string;
@@ -26,11 +26,13 @@ function familyKeyFor(requirement:Requirement,families:Family[]):FamilyKey|null{
   if(text.includes('center')) return 'center-seal';
   if(text.includes('three')||text.includes('3 side')||text.includes('3-side')||text.includes('3ss')) return '3ss';
   if(text.includes('stand')) return 'sup';
+  if(text.includes('label')) return 'labels';
   return null;
 }
 function familyImage(key:FamilyKey|null){
   if(key==='center-seal') return '/packaging/quote-stock/stark-center-seal.png';
   if(key==='3ss') return '/packaging/quote-stock/stark-three-side-seal.png';
+  if(key==='labels') return '/packaging/quote-stock/stark-roll-stock.png';
   return '/packaging/quote-stock/stark-stand-up.png';
 }
 
