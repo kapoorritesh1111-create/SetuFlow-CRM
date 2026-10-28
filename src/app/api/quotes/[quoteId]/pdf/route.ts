@@ -327,7 +327,7 @@ function buildPdf(data: PdfData) {
     else put(32,base-77,'Bank/payment instructions provided separately after confirmation.',5.8,false,MUTED);
     put(32,base-101,'The complete approved commercial policy follows this quotation.',5.5,false,MUTED);
     const suggestions=(data.volumeSuggestions??[]).slice(0,2);
-    if(suggestions.length){
+    if(suggestions.length && base-124>142){
       put(32,base-114,'HIGHER-QUANTITY OPTIONS',6.0,true,'#0f766e');
       let sy=base-124;
       for(const item of suggestions){
