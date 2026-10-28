@@ -80,6 +80,8 @@ export type FrameFamilyPricingReviewResultV5 = {
   roll_weight: {
     total_gsm: number;
     finished_weight_kg: number;
+    production_material_weight_kg: number;
+    printing_ink_gsm: number;
     price_per_kg: number;
   } | null;
   validation_errors: string[];
@@ -244,10 +246,19 @@ export function calculateFrameFamilyPriceReviewV5(
   const unitPrice = quantity ? productTotal / quantity : 0;
   const gstPct = n(context.template.quote_config_json?.gst_pct ?? 18);
   const gst = productTotal * gstPct / 100;
-  const totalGsm = materialGsm + adhesiveGsm;
+  // Owner workbook: finished-roll weight is based on the customer laminate footprint,
+  // not the full 740 x 1120 machine frame used for manufacturing cost.
+  // Ink is part of the shipped laminate GSM, but printing process cost stays separate.
+  // All allowances are owner-configurable through the template's production rules.
+  const printingInkGsm = n(context.template.production_rules_json?.printing_ink_gsm ?? 4);
+  if (printingInkGsm < 0) errors.push('Printing ink GSM cannot be negative.');
+  const totalGsm = materialGsm + adhesiveGsm + Math.max(0,printingInkGsm);
+  const finishedAreaM2PerUnit = geometry.open_laminate_width_mm * geometry.repeat_length_mm / 1_000_000;
   const finishedWeightKg = totalGsm > 0
-    ? (totalGsm * geometry.frame_web_area_m2 * framesExact) / 1000
+    ? (totalGsm * finishedAreaM2PerUnit * quantity) / 1000
     : 0;
+  // Production material consumption still uses full machine frame area for costing.
+  const productionMaterialWeightKg = (materialGsm + adhesiveGsm) * geometry.frame_web_area_m2 * framesExact / 1000;
   const pricePerKg = finishedWeightKg > 0 ? productTotal / finishedWeightKg : 0;
 
   if (geometry.apply_pouching) {
@@ -296,6 +307,8 @@ export function calculateFrameFamilyPriceReviewV5(
     roll_weight: {
       total_gsm: round(totalGsm, 2),
       finished_weight_kg: round(finishedWeightKg, 2),
+      production_material_weight_kg: round(productionMaterialWeightKg, 2),
+      printing_ink_gsm: round(printingInkGsm, 4),
       price_per_kg: round(pricePerKg, 2),
     },
     validation_errors: errors,
