@@ -46,6 +46,7 @@ type PdfData = {
   logoImage?: PdfImage | null;
   reviewQrImage?: PdfImage | null;
   salesRepresentative?: { name:string; email:string; phone?:string };
+  bankDetails?: string;
   includeStarkPolicy?: boolean;
   domesticQuote?: boolean;
 };
@@ -162,6 +163,46 @@ function buildPdf(data: PdfData) {
 
   box(0, 0, 612, 792, '#ffffff');
 
+  if(data.includeStarkPolicy){
+    // Akshay-approved compact commercial quotation, instead of the standard cards.
+    if(logoObj && data.logoImage){
+      const scale=Math.min(160/data.logoImage.width,46/data.logoImage.height);
+      const w=data.logoImage.width*scale,h=data.logoImage.height*scale;
+      ops.push(`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} 27 ${(751-h/2).toFixed(2)} cm /Logo Do Q`);
+    }else{
+      box(24,728,42,42,NAVY);
+      put(45,749,logo,8,true,'#ffffff',true);
+    }
+    put(225,755,clip(data.org?.legal_name ?? data.org?.name,45),12.4,true,NAVY);
+    put(225,739,'PACKAGING SOLUTIONS  |  CUSTOMER QUOTATION',6.2,false,MUTED);
+    put(578,766,'QUOTATION',8,true,BLUE,true);
+    put(578,751,data.quoteNo,8.5,true,NAVY,true);
+    put(578,738,'Date: '+data.quoteDate,6.5,false,MUTED,true);
+    line(24,720,588,720,LINE,0.8);
+    put(28,706,'SELLER',6.0,true,BLUE);
+    put(28,693,clip(data.org?.legal_name ?? data.org?.name,42),9.1,true,NAVY);
+    wrapPdf([data.org?.registered_address,data.org?.city,data.org?.postal_code].filter(Boolean).join(', '),310,6.2,false,2).forEach((v,i)=>put(28,680-i*10,v,6.2,false,MUTED));
+    put(28,652,clip(data.org?.contact_email,53,''),6.1,false,MUTED);
+    if(data.org?.tax_id)put(28,642,'Tax ID: '+clip(data.org.tax_id,38),6.1,false,MUTED);
+    put(365,706,'CREATED BY',6.0,true,BLUE);
+    put(365,693,clip(data.salesRepresentative?.name||'Stark Packmate Sales Team',32),8.5,true,NAVY);
+    put(365,679,clip(data.salesRepresentative?.email||data.org?.contact_email,44,''),6.2,false,MUTED);
+    if(data.salesRepresentative?.phone)put(365,667,clip(data.salesRepresentative.phone,26),6.2,false,MUTED);
+    box(24,557,564,76,'#ffffff',LINE);
+    line(212,557,212,633,LINE);
+    line(400,557,400,633,LINE);
+    put(33,618,'BILLED TO',6.3,true,BLUE);
+    put(33,601,clip(data.buyer?.company_name,34,'Customer'),8.2,true,NAVY);
+    put(33,587,clip(data.buyer?.contact_name,39,''),6.0,false,MUTED);
+    put(33,573,clip(data.buyer?.email,39,''),6.0,false,MUTED);
+    put(221,618,'SHIPPED TO',6.3,true,BLUE);
+    put(221,601,clip(data.buyer?.company_name,34,'Customer'),8.0,true,NAVY);
+    put(221,587,clip(data.buyer?.country||data.destination,38,'As agreed'),6.2,false,MUTED);
+    put(409,618,'QUOTE DETAILS',6.3,true,BLUE);
+    put(409,601,'Basis: '+clip(data.basis,23),6.0,false,MUTED);
+    put(409,589,'Valid: '+data.validUntil,6.0,false,MUTED);
+    put(409,577,'Currency: '+data.currency,6.0,false,MUTED);
+  } else {
   // Premium first-page commercial layout.
   box(left, 724, 564, 50, '#ffffff', LINE);
   box(left, 724, 60, 50, '#ffffff', LINE);
@@ -211,10 +252,12 @@ function buildPdf(data: PdfData) {
     put(578,sy,clip(value,23),5.7,false,INK,true);
   });
 
-  put(24, 603, 'PRODUCTS & PRICING', 7.2, true, BLUE);
-  line(24, 596, 588, 596, '#dbe7f3', 0.8);
 
-  let y = 575;
+  }
+  put(24, data.includeStarkPolicy?544:603, data.includeStarkPolicy?'JOB DETAILS / PRODUCTS':'PRODUCTS & PRICING', 7.2, true, BLUE);
+  line(24, data.includeStarkPolicy?536:596, 588, data.includeStarkPolicy?536:596, '#dbe7f3', 0.8);
+
+  let y = data.includeStarkPolicy?520:575;
   const tableX=18;
   box(tableX, y-19, 576, 22, '#eaf1f8', LINE);
   put(24, y-11, '#', 5.2, true, NAVY);
@@ -269,6 +312,19 @@ function buildPdf(data: PdfData) {
     put(x, financeTop-42, clip(value,24), 5.8, index===3, index===3 ? NAVY : INK);
   });
 
+  if(data.includeStarkPolicy){
+    const base=financeTop-67;
+    put(28,base-1,'PAYMENT & DISPATCH',7.1,true,BLUE);
+    line(24,base-8,588,base-8,LINE);
+    put(32,base-24,'Payment terms',6.0,true,NAVY);
+    wrapPdf(data.paymentTerms||'50% advance; balance before dispatch',270,6,false,2).forEach((v,i)=>put(32,base-36-i*10,v,6,false,MUTED));
+    put(325,base-24,'Production lead time',6,true,NAVY);
+    wrapPdf(data.leadTime||'As agreed',248,6,false,2).forEach((v,i)=>put(325,base-36-i*10,v,6,false,MUTED));
+    put(32,base-64,'Bank details',6.2,true,NAVY);
+    if(data.bankDetails)wrapPdf(data.bankDetails,510,5.8,false,2).forEach((v,i)=>put(32,base-77-i*10,v,5.8,false,MUTED));
+    else put(32,base-77,'Bank/payment instructions provided separately after confirmation.',5.8,false,MUTED);
+    put(32,base-101,'Complete commercial conditions are attached after this quotation.',5.5,false,MUTED);
+  }else{
   y = financeTop - 64;
   const rawSuggestions=(data.volumeSuggestions??[]).slice(0,2);
   const suggestionGroups=rawSuggestions.map((item,index)=>{
@@ -313,12 +369,13 @@ function buildPdf(data: PdfData) {
     wrapPdf(value,156,4.8,false,2).forEach((lineText,lineIndex)=>put(x+12,y-32-lineIndex*8,lineText,4.8,lineIndex===0,INK));
   });
 
+  }
   } else {
     put(36, y-8, 'Products continue on the next quotation page.', 5.1, true, BLUE);
     put(36, y-19, 'Financial summary and commercial terms follow after the final product line.', 4.8, false, MUTED);
   }
 
-  if(data.includeStarkPolicy){
+  if(data.includeStarkPolicy && !hasContinuation){
     if(qrObj){
       box(28,70,58,58,'#ffffff',LINE);
       ops.push(`q 50 0 0 50 32 74 cm /ReviewQR Do Q`);
@@ -624,7 +681,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   const { data: quoteVersion } = quote.current_version_id
     ? await db.from('quote_versions').select('id,valid_until,pricing_basis,customer_message,sent_by,created_by').eq('quote_id',quote.id).eq('id',quote.current_version_id).maybeSingle()
     : { data: null };
-  const leadOwnerUserId = leadRow?.owner_user_id ?? null;
+  const leadOwnerUserId = quote.created_by ?? quoteVersion?.created_by ?? leadRow?.owner_user_id ?? null;
   const { data: leadOwnerProfile } = leadOwnerUserId
     ? await db.from('profiles').select('id,full_name,email').eq('id', leadOwnerUserId).maybeSingle()
     : { data: null };
