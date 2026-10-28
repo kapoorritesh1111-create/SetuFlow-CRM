@@ -110,6 +110,7 @@ export default async function PackagingPricingV5AdminPage({searchParams}:{search
       <div className="border-t border-slate-200 bg-white px-5 py-3">
         <div className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Packaging Family</div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
+          {organization.id==='b97913cb-3b95-4247-8ced-ffdc0d392d2a'?<Link href="/admin/stark-label-pricing" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:border-blue-400">Labels · Owner Rates</Link>:null}
           <Link href="/admin/packaging-pricing-v5" className={'rounded-xl border px-4 py-2 text-xs font-black '+(familyKey==='sup'?'border-blue-600 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>Stand Up Pouches</Link>
           <Link href="/admin/packaging-pricing-v5?family=center-seal&form=pouch" className={'rounded-xl border px-4 py-2 text-xs font-black '+(familyKey==='center-seal'&&form==='pouch'?'border-blue-600 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>Center Seal Pouches</Link>
           <Link href="/admin/packaging-pricing-v5?family=3ss&form=pouch" className={'rounded-xl border px-4 py-2 text-xs font-black '+(familyKey==='3ss'&&form==='pouch'?'border-blue-600 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-600 hover:border-slate-300')}>3 Side Seal Pouches</Link>
