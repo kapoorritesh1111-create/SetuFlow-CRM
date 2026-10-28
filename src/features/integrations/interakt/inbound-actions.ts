@@ -449,3 +449,31 @@ export async function createStarkInteraktLeadOverride(formData: FormData): Promi
 
   redirect(`/leads/${lead.id}?source=inbound-qualified`);
 }
+
+
+export async function markStarkInboundBadInquiry(formData: FormData): Promise<void> {
+  const workspace = await requireStarkWriteAccess();
+  const organizationId = workspace.organization.id;
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+  const rowId = clean(formData.get('rowId'));
+  const confirmed = clean(formData.get('confirmBadInquiry')) === 'yes';
+  if (!rowId || !confirmed) throw new Error('Check “Mark as bad inquiry” before hiding this inquiry.');
+
+  const { data: row, error: rowError } = await db.from('lead_intake_staging')
+    .select('id,source_provider')
+    .eq('organization_id', organizationId)
+    .eq('id', rowId)
+    .maybeSingle();
+  if (rowError || !row?.id || !isSupportedProvider(row.source_provider)) throw new Error('Inbound inquiry not found.');
+
+  const now = nowIso();
+  const { error } = await db.from('lead_intake_staging')
+    .update({ bad_inquiry_at: now, bad_inquiry_by: workspace.user.id, updated_at: now })
+    .eq('organization_id', organizationId)
+    .eq('id', rowId);
+  if (error) throw new Error(`Unable to mark inquiry as bad: ${String(error.message ?? 'unknown database error')}`);
+
+  revalidatePath(INBOUND_PATH);
+  redirect(`${INBOUND_PATH}?view=list&badInquiry=1`);
+}
