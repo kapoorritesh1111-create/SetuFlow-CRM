@@ -162,6 +162,7 @@ function buildPdf(data: PdfData) {
   const logo = orgLogoMark(data.org);
 
   box(0, 0, 612, 792, '#ffffff');
+  if(data.includeStarkPolicy){box(0,783,612,9,NAVY);box(24,782,110,3,'#0d9488');}
 
   if(data.includeStarkPolicy){
     // Akshay-approved compact commercial quotation, instead of the standard cards.
@@ -175,10 +176,10 @@ function buildPdf(data: PdfData) {
     }
     put(225,755,clip(data.org?.legal_name ?? data.org?.name,45),12.4,true,NAVY);
     put(225,739,'PACKAGING SOLUTIONS  |  CUSTOMER QUOTATION',6.2,false,MUTED);
-    put(578,766,'QUOTATION',8,true,BLUE,true);
+    put(578,766,'QUOTATION',8,true,'#0f766e',true);
     put(578,751,data.quoteNo,8.5,true,NAVY,true);
     put(578,738,'Date: '+data.quoteDate,6.5,false,MUTED,true);
-    line(24,720,588,720,LINE,0.8);
+    line(24,720,588,720,'#a8c6d0',1.0);
     put(28,706,'SELLER',6.0,true,BLUE);
     put(28,693,clip(data.org?.legal_name ?? data.org?.name,42),9.1,true,NAVY);
     wrapPdf([data.org?.registered_address,data.org?.city,data.org?.postal_code].filter(Boolean).join(', '),310,6.2,false,2).forEach((v,i)=>put(28,680-i*10,v,6.2,false,MUTED));
@@ -188,17 +189,17 @@ function buildPdf(data: PdfData) {
     put(365,693,clip(data.salesRepresentative?.name||'Stark Packmate Sales Team',32),8.5,true,NAVY);
     put(365,679,clip(data.salesRepresentative?.email||data.org?.contact_email,44,''),6.2,false,MUTED);
     if(data.salesRepresentative?.phone)put(365,667,clip(data.salesRepresentative.phone,26),6.2,false,MUTED);
-    box(24,557,564,76,'#ffffff',LINE);
+    box(24,557,564,76,'#f8fbfc',LINE);
     line(212,557,212,633,LINE);
     line(400,557,400,633,LINE);
-    put(33,618,'BILLED TO',6.3,true,BLUE);
+    put(33,618,'BILLED TO',6.3,true,'#0f766e');
     put(33,601,clip(data.buyer?.company_name,34,'Customer'),8.2,true,NAVY);
     put(33,587,clip(data.buyer?.contact_name,39,''),6.0,false,MUTED);
     put(33,573,clip(data.buyer?.email,39,''),6.0,false,MUTED);
-    put(221,618,'SHIPPED TO',6.3,true,BLUE);
+    put(221,618,'SHIPPED TO',6.3,true,'#0f766e');
     put(221,601,clip(data.buyer?.company_name,34,'Customer'),8.0,true,NAVY);
     put(221,587,clip(data.buyer?.country||data.destination,38,'As agreed'),6.2,false,MUTED);
-    put(409,618,'QUOTE DETAILS',6.3,true,BLUE);
+    put(409,618,'QUOTE DETAILS',6.3,true,'#0f766e');
     put(409,601,'Basis: '+clip(data.basis,23),6.0,false,MUTED);
     put(409,589,'Valid: '+data.validUntil,6.0,false,MUTED);
     put(409,577,'Currency: '+data.currency,6.0,false,MUTED);
@@ -259,7 +260,7 @@ function buildPdf(data: PdfData) {
 
   let y = data.includeStarkPolicy?520:575;
   const tableX=18;
-  box(tableX, y-19, 576, 22, '#eaf1f8', LINE);
+  box(tableX, y-19, 576, 22, data.includeStarkPolicy?'#dcecf0':'#eaf1f8', LINE);
   put(24, y-11, '#', 5.2, true, NAVY);
   put(48, y-11, 'Product / Service', 5.2, true, NAVY);
   put(166, y-11, 'Size', 5.2, true, NAVY);
@@ -271,10 +272,10 @@ function buildPdf(data: PdfData) {
   y -= 24;
 
   data.rows.slice(0, FIRST_PAGE_ROWS).forEach((row, index) => {
-    const rowHeight = 48;
-    box(tableX, y-rowHeight+7, 576, rowHeight, index % 2 ? '#ffffff' : '#f9fbfd', LINE);
+    const rowHeight = data.includeStarkPolicy?51:48;
+    box(tableX, y-rowHeight+7, 576, rowHeight, index % 2 ? '#ffffff' : (data.includeStarkPolicy?'#f6fafb':'#f9fbfd'), LINE);
     put(24, y-8, String(index+1), 5.4, true, MUTED);
-    put(48, y-5, clip(row.product, 34), 5.7, true, NAVY);
+    put(48, y-5, clip(row.product, 34), data.includeStarkPolicy?6.1:5.7, true, NAVY);
     const familyText = row.family && row.family !== row.product ? row.family : '';
     if(familyText) put(48, y-17, clip(`Family: ${familyText}`,34),4.55,false,MUTED);
     put(166, y-8, clip(row.size || '-', 18), 5.15, true, INK);
@@ -291,14 +292,15 @@ function buildPdf(data: PdfData) {
   const hasContinuation = data.rows.length > FIRST_PAGE_ROWS;
   if (!hasContinuation) {
     line(tableX, y+6, 594, y+6, NAVY, 1.15);
+  if(data.includeStarkPolicy)box(370,y-20,224,29,'#e6f3f1');
   put(466, y-9, 'GRAND TOTAL', 7.2, true, NAVY, true);
-  put(588, y-9, money(total,data.currency), 9.0, true, NAVY, true);
+  put(588, y-9, money(total,data.currency), data.includeStarkPolicy?10:9.0, true, NAVY, true);
 
   // Compact customer summary: avoid repeating Ex Delhi, GST and validity,
   // which are already visible in the quote summary at the top of the page.
   y -= 30;
   const financeTop = y;
-  box(24, financeTop-52, 564, 52, '#ffffff', LINE);
+  box(24, financeTop-52, 564, 52, data.includeStarkPolicy?'#f8fbfc':'#ffffff', LINE);
   put(36, financeTop-14, `FINANCIAL SUMMARY (${data.currency})`, 6.8, true, BLUE);
   const financeCols = [
     ['Subtotal', money(subtotal,data.currency)],
@@ -314,7 +316,7 @@ function buildPdf(data: PdfData) {
 
   if(data.includeStarkPolicy){
     const base=financeTop-67;
-    put(28,base-1,'PAYMENT & DISPATCH',7.1,true,BLUE);
+    put(28,base-1,'PAYMENT & DISPATCH',7.1,true,'#0f766e');
     line(24,base-8,588,base-8,LINE);
     put(32,base-24,'Payment terms',6.0,true,NAVY);
     wrapPdf(data.paymentTerms||'50% advance; balance before dispatch',270,6,false,2).forEach((v,i)=>put(32,base-36-i*10,v,6,false,MUTED));
@@ -323,7 +325,20 @@ function buildPdf(data: PdfData) {
     put(32,base-64,'Bank details',6.2,true,NAVY);
     if(data.bankDetails)wrapPdf(data.bankDetails,510,5.8,false,2).forEach((v,i)=>put(32,base-77-i*10,v,5.8,false,MUTED));
     else put(32,base-77,'Bank/payment instructions provided separately after confirmation.',5.8,false,MUTED);
-    put(32,base-101,'Complete commercial conditions are attached after this quotation.',5.5,false,MUTED);
+    put(32,base-101,'The complete approved commercial policy follows this quotation.',5.5,false,MUTED);
+    const suggestions=(data.volumeSuggestions??[]).slice(0,2);
+    if(suggestions.length){
+      put(32,base-114,'HIGHER-QUANTITY OPTIONS',6.0,true,'#0f766e');
+      let sy=base-124;
+      for(const item of suggestions){
+        const options=String(item).replace(/^Item\\s+\\d+:\\s*/i,'').split(' | ').filter(Boolean).slice(0,3);
+        for(const option of options){
+          if(sy<142)break;
+          put(32,sy,clip(option,116),4.7,false,MUTED);
+          sy-=10;
+        }
+      }
+    }
   }else{
   y = financeTop - 64;
   const rawSuggestions=(data.volumeSuggestions??[]).slice(0,2);
@@ -379,11 +394,11 @@ function buildPdf(data: PdfData) {
     if(qrObj){
       box(28,70,58,58,'#ffffff',LINE);
       ops.push(`q 50 0 0 50 32 74 cm /ReviewQR Do Q`);
-      put(94,111,'SCAN TO VIEW & APPROVE',7,true,NAVY);
-      put(94,98,'Open secure quotation, specifications and terms.',5.8,false,MUTED);
+      put(94,111,'VIEW THE LIVE QUOTATION',7,true,NAVY);
+      put(94,98,'Scan to review specifications, terms and approval options.',5.8,false,MUTED);
       put(94,85,'Approval is recorded only after customer confirmation.',5.4,false,MUTED);
     }else{
-      put(28,94,'Customer review QR available when this quotation is shared.',6,false,MUTED);
+      put(28,94,'Secure customer review link will appear when this quote is shared.',6,false,MUTED);
     }
   }
   put(36, 45, 'STARK PACKMATE PRIVATE LIMITED', 5.8, true, NAVY);
