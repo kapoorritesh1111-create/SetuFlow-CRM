@@ -4,6 +4,7 @@ import { requireWorkspace } from '@/lib/workspace/auth';
 import { createClient } from '@/lib/supabase/server';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
 import { previewPackagingFramePricingV5 } from '@/features/packaging/server/pricing-v5-frame-actions';
+import { previewStarkLabelQuote } from '@/features/packaging/server/stark-label-quote-actions';
 
 export type QuickQuoteItem = {
   name: string;
@@ -11,7 +12,7 @@ export type QuickQuoteItem = {
   price: number;
   currency: string;
   notes: string;
-  engine?: 'sup'|'frame'|'manual';
+  engine?: 'sup'|'frame'|'manual'|'label';
   templateId?: string|null;
   familyId?: string;
   input?: Record<string, unknown>|null;
@@ -25,7 +26,7 @@ function validate(items: QuickQuoteItem[]) {
       || !Number.isSafeInteger(item.quantity) || item.quantity<=0
       || !Number.isFinite(item.price) || item.price<=0
       || !/^[A-Z]{3}$/.test(item.currency)
-      || (item.engine !== undefined && !['sup','frame','manual'].includes(item.engine))
+      || (item.engine !== undefined && !['sup','frame','manual','label'].includes(item.engine))
       || ((item.engine==='sup'||item.engine==='frame') && (!item.templateId || !item.familyId || !item.input || Number(item.input.quantity)!==item.quantity))) return 'An estimate line contains invalid data.';
   }
   return null;
@@ -52,6 +53,15 @@ export async function saveQuickQuoteEstimate(params:{id?:string;items:QuickQuote
       const price=Number(preview.result.selling_price.unit_price);
       if(!Number.isFinite(price)||price<=0||Math.abs(price-line.price)>0.011)
         return {ok:false,error:'Pricing changed. Recalculate before saving.'};
+    }
+    for(const line of params.items){
+      if(line.engine!=='label')continue;
+      if(!line.input)return {ok:false,error:'Label specification is missing.'};
+      const i=line.input;
+      const calculated:any=await previewStarkLabelQuote({code:String(i.code??''),width_mm:Number(i.width_mm),height_mm:Number(i.height_mm),quantity:Number(i.quantity)});
+      if(!calculated.ok||!calculated.result)return {ok:false,error:calculated.error??'Label price is unavailable.'};
+      if(calculated.result.produced_quantity!==line.quantity||Math.abs(Number(calculated.result.unit_price)-line.price)>0.000001)
+        return {ok:false,error:'Label price or production quantity changed. Recalculate the estimate.'};
     }
     const {userId,organizationId}=await ownerContext();
     const db:any=await createClient();

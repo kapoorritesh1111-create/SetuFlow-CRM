@@ -5,6 +5,8 @@ import { convertQuickQuoteDraft } from '@/features/quotes/server/quick-quote-con
 import { findQuickQuoteCustomer, listQuickQuoteEstimates, saveQuickQuoteEstimate } from '@/features/quotes/server/quick-quote-estimate-actions';
 import { previewPackagingPricingV5 } from '@/features/packaging/server/pricing-v5-actions';
 import { previewPackagingFramePricingV5 } from '@/features/packaging/server/pricing-v5-frame-actions';
+import { previewStarkLabelQuote } from '@/features/packaging/server/stark-label-quote-actions';
+import { STARK_LABEL_WORKBOOK_SEED } from '@/lib/packaging-pricing-v5/stark-label-workbook';
 
 type Result = { quantity:number; unit:number; total:number; currency:string; weight:number|null; perKg:number|null };
 type Props = { sup:any; frame:any; manualFamilies:any[] };
@@ -29,6 +31,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [error,setError]=useState('');
   const [pending,start]=useTransition();
   const [manualPrice,setManualPrice]=useState('');
+  const [labelCode,setLabelCode]=useState('SPPL1');
   const [newCompany,setNewCompany]=useState('');
   const [newPhone,setNewPhone]=useState('');
   const [newEmail,setNewEmail]=useState('');
@@ -46,7 +49,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
 
   const all=[...(sup?.families??[]).map((f:any)=>({id:'sup:'+f.id,label:f.name,kind:'sup',templateId:sup.templates?.[0]?.id})),
     ...(frame?.templates??[]).map((t:any)=>({id:'frame:'+t.id,label:t.supply_label??t.name,kind:'frame',templateId:t.id})),
-    ...manualFamilies.map((f:any)=>({id:'manual:'+f.id,label:f.name,kind:'manual',templateId:''}))];
+    ...manualFamilies.map((f:any)=>({id:(f.slug==='labels'?'label:':'manual:')+f.id,label:f.name,kind:f.slug==='labels'?'label':'manual',templateId:''}))];
   const chosen=all.find(f=>f.id===mode)??null;
   const frameTemplate=(frame?.templates??[]).find((t:any)=>String(t.id)===String(templateId))??null;
   const sizes=sup?.sizes??[];
@@ -89,6 +92,15 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     setError('');setRows([]);
     if(!chosen)return setError('Choose a service family.');
     if(chosen.kind==='manual')return setError('This family uses manual pricing. Enter an approved unit price instead.');
+    if(chosen.kind==='label'){
+      start(async()=>{
+        const res:any=await previewStarkLabelQuote({code:labelCode,width_mm:Number(width),height_mm:Number(height),quantity:Number(qty)});
+        if(!res.ok||!res.result){setError(res.error??'Label price unavailable.');return;}
+        const x=res.result;
+        setRows([{quantity:Number(x.produced_quantity),unit:Number(x.unit_price),total:Number(x.product_total),currency:'INR',weight:null,perKg:null}]);
+        setSelected(Number(x.produced_quantity));
+      });return;
+    }
     if(!construction?.id)return setError('Choose an available construction.');
     if(spotUvEnabled&&(!Number.isFinite(Number(spotUvAmount))||Number(spotUvAmount)<=0))return setError('Enter a valid approved Spot UV amount.');
     if(!quantities.includes(Number(qty)))return setError('Requested quantity is not permitted for this size.');
@@ -121,14 +133,14 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
       ?{quantity:Number(qty),unit:Number(manualPrice),total:Number(qty)*Number(manualPrice),currency:'INR'}
       :rows.find(r=>r.quantity===selected);
     if(!r||!(r.unit>0)||!(r.quantity>0))return setError('Calculate or enter an approved price first.');
-    const input=chosen.kind==='sup'?{size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,construction_id:construction?.id,print,quantity:r.quantity,bottom_print_mode:resolvedBottom,selected_charge_codes:currentExtras,manual_quote_charges:manualQuoteCharges}:chosen.kind==='frame'?{supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),construction_id:construction?.id,print,quantity:r.quantity,commercial_bucket:null,selected_charge_codes:extras}:null;
+    const input=chosen.kind==='sup'?{size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,construction_id:construction?.id,print,quantity:r.quantity,bottom_print_mode:resolvedBottom,selected_charge_codes:currentExtras,manual_quote_charges:manualQuoteCharges}:chosen.kind==='frame'?{supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),construction_id:construction?.id,print,quantity:r.quantity,commercial_bucket:null,selected_charge_codes:extras}:chosen.kind==='label'?{code:labelCode,width_mm:Number(width),height_mm:Number(height),quantity:Number(qty)}:null;
     setBasket(b=>[...b,{name:chosen.label,quantity:r.quantity,price:r.unit,currency:r.currency,engine:chosen.kind,templateId:templateId||null,familyId:chosen.kind==='frame'?String(frameTemplate?.family_id??''):chosen.id.split(':')[1],input,notes:chosen.kind==='sup'
       ?(custom?`Custom ${width} x ${height} mm`:`Size ${size?.name??''}`)+` · ${construction?.name??''}`
-      :chosen.kind==='frame'?`${width} x ${height} mm · ${construction?.name??''}`:'Manual price · requires formal quote approval'}]);
+      :chosen.kind==='frame'?`${width} x ${height} mm · ${construction?.name??''}`:chosen.kind==='label'?`${width} x ${height} mm · ${labelCode} · workbook-priced`:'Manual price · requires formal quote approval'}]);
     setRows([]);setError('');
   }
   function convertDraft(){
-    if(basket.some(item=>item.engine==='manual')){setConvertError('Manual-price lines require the governed quotation builder.');return;}
+    if(basket.some(item=>item.engine==='manual'||item.engine==='label')){setConvertError('Manual-price and Labels estimate lines require the governed quotation builder for customer conversion.');return;}
     if(JSON.stringify(basket)!==savedBasketFingerprint){setConvertError('Estimate changed: save it again before conversion.');return;}
     if(!draftId){setConvertError('Save the estimate first.');return;}
     start(async()=>{
@@ -182,16 +194,17 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
           <label className="text-sm">Height (mm)<input className={field} inputMode="decimal" value={height} onChange={e=>setHeight(e.target.value)}/></label>
           {chosen.kind==='sup'?<label className="text-sm">Bottom gusset each (mm)<input className={field} inputMode="decimal" value={gusset} onChange={e=>setGusset(e.target.value)}/></label>:null}
         </>:null}
-        {chosen.kind!=='manual'?<>
+        {chosen.kind!=='manual'&&chosen.kind!=='label'?<>
           <label className="text-sm">Construction<select className={field} value={construction?.id??''} onChange={e=>{setConstructionId(e.target.value);setRows([])}}>{constructions.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
           <label className="text-sm">Print<select className={field} value={print} onChange={e=>setPrint(e.target.value as any)}><option value="CMYK">CMYK</option><option value="CMYKW">CMYK + White</option></select></label>
           {askBottomPrint?<label className="text-sm">Bottom print<select className={field} value={bottom} onChange={e=>setBottom(e.target.value as any)}><option value="solid_unregistered">Solid / unregistered</option><option value="registered_artwork">Registered / artwork</option></select></label>:null}
           <div className="sm:col-span-2"><p className="mb-2 text-sm font-medium">Add-ons (optional)</p>{allowedExtras.map((x:any)=><label key={x.code} className="mr-4 inline-flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={extras.includes(x.code)} onChange={e=>{setExtras(v=>e.target.checked?[...v,x.code]:v.filter(c=>c!==x.code));setRows([])}}/>{x.name}</label>)}{chosen.kind==='sup'&&manualSpotUv?<div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3"><label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={spotUvEnabled} onChange={e=>{setSpotUvEnabled(e.target.checked);setRows([]);if(!e.target.checked)setSpotUvAmount('')}}/>Spot UV — manual approved rate</label>{spotUvEnabled?<label className="mt-2 block text-sm">Spot UV total charge (INR)<input className={field} inputMode="decimal" value={spotUvAmount} onChange={e=>{setSpotUvAmount(e.target.value);setRows([])}}/></label>:null}</div>:null}</div>
         </>:null}
         <label className="text-sm">Requested quantity (pcs)<input className={field} inputMode="numeric" value={qty} onChange={e=>{setQty(e.target.value);setRows([])}}/></label>
+        {chosen.kind==='label'?<label className="text-sm">Material and finish<select className={field} value={labelCode} onChange={e=>{setLabelCode(e.target.value);setRows([])}}>{STARK_LABEL_WORKBOOK_SEED.map(x=><option key={x.code} value={x.code}>{x.code} · {x.specification}</option>)}</select></label>:null}
         {chosen.kind==='manual'?<label className="text-sm">Approved unit price (INR)<input className={field} inputMode="decimal" value={manualPrice} onChange={e=>setManualPrice(e.target.value)}/></label>:null}
       </div>
-      <button disabled={pending} onClick={chosen.kind==='manual'?addLine:calculate} className="mt-4 min-h-12 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white disabled:opacity-50">{pending?'Calculating valid quantities…':chosen.kind==='manual'?'Add Manual Estimate':'Calculate All Valid Prices'}</button>
+      <button disabled={pending} onClick={chosen.kind==='manual'?addLine:calculate} className="mt-4 min-h-12 w-full rounded-xl bg-blue-700 px-4 py-3 font-bold text-white disabled:opacity-50">{pending?'Calculating valid quantities…':chosen.kind==='manual'?'Add Manual Estimate':chosen.kind==='label'?'Calculate Label Price':'Calculate All Valid Prices'}</button>
       {error?<p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>:null}
     </section>:null}
     {rows.length>0?<section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
