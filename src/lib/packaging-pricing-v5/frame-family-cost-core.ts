@@ -82,6 +82,9 @@ export type FrameFamilyPricingReviewResultV5 = {
     finished_weight_kg: number;
     production_material_weight_kg: number;
     printing_ink_gsm: number;
+    material_gsm: number;
+    lamination_gsm: number;
+    material_layers: { name: string; gsm: number }[];
     price_per_kg: number;
   } | null;
   validation_errors: string[];
@@ -157,6 +160,7 @@ export function calculateFrameFamilyPriceReviewV5(
 
   let materialPerFrame = 0;
   let materialGsm = 0;
+  const materialLayers: { name: string; gsm: number }[] = [];
   let adhesivePerFrame = 0;
   let adhesiveGsm = 0;
   let printingPerFrame = 0;
@@ -178,6 +182,7 @@ export function calculateFrameFamilyPriceReviewV5(
         : n(layer.master.micron) * n(layer.master.density);
       const gramsPerFrame = gsm * frameAreaM2;
       materialGsm += gsm;
+      materialLayers.push({ name: layer.master.name, gsm: round(gsm, 4) });
       materialPerFrame += gramsPerFrame * n(layer.master.current_rate) / 1000;
     }
 
@@ -309,6 +314,9 @@ export function calculateFrameFamilyPriceReviewV5(
       finished_weight_kg: round(finishedWeightKg, 2),
       production_material_weight_kg: round(productionMaterialWeightKg, 2),
       printing_ink_gsm: round(printingInkGsm, 4),
+      material_gsm: round(materialGsm, 4),
+      lamination_gsm: round(adhesiveGsm, 4),
+      material_layers: materialLayers,
       price_per_kg: round(pricePerKg, 2),
     },
     validation_errors: errors,
