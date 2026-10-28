@@ -26,6 +26,7 @@ type PdfRow = { sku: string; product: string; family?: string; size?: string; co
 type PdfData = {
   quoteNo: string;
   volumeSuggestions?: string[];
+  volumeMatrix?: Array<{product:string;unit:string;options:Array<{quantity:number;price?:number;saving?:number}>}>;
   org: any;
   buyer: any;
   market: string;
@@ -315,31 +316,32 @@ function buildPdf(data: PdfData) {
   });
 
   if(data.includeStarkPolicy){
-    const base=financeTop-67;
-    put(28,base-1,'PAYMENT & DISPATCH',7.1,true,'#0f766e');
-    line(24,base-8,588,base-8,LINE);
-    put(32,base-24,'Payment terms',6.0,true,NAVY);
-    wrapPdf(data.paymentTerms||'50% advance; balance before dispatch',270,6,false,2).forEach((v,i)=>put(32,base-36-i*10,v,6,false,MUTED));
-    put(325,base-24,'Production lead time',6,true,NAVY);
-    wrapPdf(data.leadTime||'As agreed',248,6,false,2).forEach((v,i)=>put(325,base-36-i*10,v,6,false,MUTED));
-    put(32,base-64,'Bank details',6.2,true,NAVY);
-    if(data.bankDetails)wrapPdf(data.bankDetails,510,5.8,false,2).forEach((v,i)=>put(32,base-77-i*10,v,5.8,false,MUTED));
-    else put(32,base-77,'Bank/payment instructions provided separately after confirmation.',5.8,false,MUTED);
-    put(32,base-101,'The complete approved commercial policy follows this quotation.',5.5,false,MUTED);
-    const suggestions=(data.volumeSuggestions??[]).slice(0,2);
-    if(suggestions.length && base-124>142){
-      put(32,base-114,'HIGHER-QUANTITY OPTIONS',6.0,true,'#0f766e');
-      let sy=base-124;
-      for(const item of suggestions){
-        const options=String(item).replace(/^Item\\s+\\d+:\\s*/i,'').split(' | ').filter(Boolean).slice(0,3);
-        for(const option of options){
-          if(sy<142)break;
-          put(32,sy,clip(option,116),4.7,false,MUTED);
-          sy-=10;
-        }
+    // Signature V4: every quoted product has its own compact, honest volume row.
+    const matrix=(data.volumeMatrix??[]).slice(0,4);
+    const headingY=financeTop-65;
+    put(28,headingY,'VOLUME OPPORTUNITIES',8,true,NAVY);
+    put(579,headingY,'EXPLORE YOUR NEXT ORDER',5.4,true,'#0f766e',true);
+    line(24,headingY-8,588,headingY-8,'#cbd5e1',0.7);
+    const matrixTop=headingY-17;
+    for(const [index,product] of matrix.entries()){
+      const top=matrixTop-index*28;
+      box(24,top-26,564,26,index%2===0?'#f5f9fa':'#ffffff',LINE);
+      put(33,top-10,clip(product.product,25),6.5,true,NAVY);
+      put(33,top-20,'Higher-quantity options',4.8,false,MUTED);
+      for(let j=0;j<3;j++){
+        const option=product.options[j];
+        if(!option)continue;
+        const x=218+j*122;
+        put(x,top-10,Number(option.quantity).toLocaleString('en-IN')+' '+product.unit,5.5,true,NAVY);
+        put(x,top-20,option.price!=null?money(option.price,data.currency)+' / '+(product.unit==='kg'?'kg':'pc')+'  '+(option.saving!=null?option.saving.toFixed(1)+'% lower':''):'PRICE ON REQUEST',4.4,false,option.price!=null?'#0f766e':MUTED);
       }
     }
-  }else{
+    const termsY=matrixTop-matrix.length*28-12;
+    put(28,termsY,'PAYMENT & PRODUCTION',6.5,true,NAVY);
+    put(28,termsY-13,clip(data.paymentTerms||'50% advance; balance before dispatch',70),5.7,false,INK);
+    put(28,termsY-24,clip(data.leadTime||'Production lead time as agreed',88),5.4,false,MUTED);
+    put(28,termsY-36,'Bank/payment details supplied following order confirmation.',5.1,false,MUTED);
+    }else{
   y = financeTop - 64;
   const rawSuggestions=(data.volumeSuggestions??[]).slice(0,2);
   const suggestionGroups=rawSuggestions.map((item,index)=>{
@@ -533,106 +535,66 @@ function buildPdf(data: PdfData) {
     pageRefs.push(add(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR ${font} 0 R /FB ${fontBold} 0 R >> >> /Contents ${sContent} 0 R >>`));
   }
 
-  if (data.includeStarkPolicy) {
-    // Standalone policy appendix: the first quotation page remains unchanged.
-    // Keep every policy point intact while paginating by paragraph, never by
-    // unmeasured character counts (which caused orphaned headings and overflow).
-    const paper = { left: 38, right: 574, bottom: 73 };
-    const policyPages: string[][] = [];
-    let policyOps: string[] = [];
-    let cursor = 0;
-    let pageIndex = 0;
-    const policyRect = (x:number,y:number,w:number,h:number,color:string) =>
-      policyOps.push(rgb(color)+' rg '+x+' '+y.toFixed(2)+' '+w+' '+h.toFixed(2)+' re f');
-    const policyRule = (x:number,y:number,w:number,color:string) =>
-      policyOps.push(rgb(color)+' RG 0.7 w '+x+' '+y.toFixed(2)+' m '+(x+w)+' '+y.toFixed(2)+' l S');
-    const policyText = (x:number,y:number,value:string,size:number,bold=false,color=INK) => {
-      const printable=value.replace(/[\u2013\u2014]/g,'-').replace(/\u00b1/g,'+/-').replace(/\u00d7/g,'x')
-        .replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').normalize('NFKD').replace(/[^\x20-\x7e]/g,'');
-      policyOps.push('BT '+rgb(color)+' rg /F'+(bold?'B':'R')+' '+size+
-        ' Tf 1 0 0 1 '+x+' '+y.toFixed(2)+' Tm ('+pdfText(printable)+') Tj ET');
+  if(data.includeStarkPolicy){
+    // Signature policy appendix: two editorial columns, preserving the full approved text.
+    // Overflow goes to a new page instead of truncating or silently modifying terms.
+    let policyOps:string[]=[];
+    const policyPages:string[][]=[];
+    let col=0, cy=674;
+    const starts=[38,316], bodyWidth=245;
+    const drawText=(x:number,y:number,value:string,size:number,bold=false,color=INK)=>{
+      const safe=value.replace(/[\u2013\u2014]/g,'-').replace(/\u00b1/g,'+/-').replace(/\u00d7/g,'x').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').normalize('NFKD').replace(/[^\x20-\x7e]/g,'');
+      policyOps.push('BT '+rgb(color)+' rg /F'+(bold?'B':'R')+' '+size+' Tf 1 0 0 1 '+x+' '+y.toFixed(1)+' Tm ('+pdfText(safe)+') Tj ET');
     };
-    const wrapPolicy = (value:string, maxWidth:number, fontSize:number, bold=false) => {
-      const words=value.split(/\s+/).filter(Boolean);
-      const wrapped:string[]=[]; let current='';
-      for(const word of words){
-        const candidate=current?current+' '+word:word;
-        if(current && width(candidate,fontSize,bold)>maxWidth){wrapped.push(current);current=word;}
-        else current=candidate;
-      }
-      if(current) wrapped.push(current);
-      return wrapped;
+    const wrap=(value:string,w:number,size:number,bold=false)=>{
+      const words=value.split(/\s+/).filter(Boolean);let line='';const lines:string[]=[];
+      for(const word of words){const next=line?line+' '+word:word;if(line&&width(next,size,bold)>w){lines.push(line);line=word;}else line=next;}
+      if(line)lines.push(line);return lines;
     };
     const newPage=()=>{
-      if(pageIndex) policyPages.push(policyOps);
-      pageIndex++;
-      policyOps=[];
-      policyRect(0,0,612,792,'#ffffff');
-      policyRect(0,765,612,27,NAVY);
-      policyText(paper.left,775,'STARK PACKMATE',10,true,'#ffffff');
-      policyText(455,775,'QUOTATION APPENDIX',7,true,'#ffffff');
-      policyText(paper.left,736,'CLIENT ORDER, DELIVERY & REJECTION POLICY',13.3,true,NAVY);
-      policyText(paper.left,719,'Commercial terms and conditions  |  '+data.quoteNo,8,false,MUTED);
-      policyRule(paper.left,705,paper.right-paper.left,LINE);
-      cursor=686;
-      if(pageIndex===1){
-        const introLines=wrapPolicy(STARK_PACKMATE_POLICY_INTRO,490,8.6);
-        const height=19+introLines.length*13;
-        policyRect(paper.left,cursor-height,536,height,'#eff6ff');
-        policyRect(paper.left,cursor-height,3,height,BLUE);
-        introLines.forEach((v,i)=>policyText(52,cursor-18-i*13,v,8.6,false,NAVY));
-        cursor-=height+21;
-      }
+      if(policyOps.length)policyPages.push(policyOps);
+      policyOps=[rgb('#ffffff')+' rg 0 0 612 792 re f'];
+      policyOps.push(rgb(NAVY)+' rg 0 776 612 16 re f');
+      drawText(38,751,'STARK PACKMATE  /  TERMS OF SUPPLY',11,true,NAVY);
+      drawText(574,751,data.quoteNo,7,true,MUTED);
+      policyOps.push(rgb(LINE)+' RG 0.7 w 38 738 m 574 738 l S');
+      drawText(38,719,'CLIENT ORDER, DELIVERY & REJECTION POLICY',10.4,true,NAVY);
+      drawText(38,703,STARK_PACKMATE_POLICY_INTRO,5.6,false,MUTED);
+      col=0;cy=672;
     };
+    const nextColumn=()=>{if(col===0){col=1;cy=672;}else newPage();};
+    const fit=(height:number)=>{if(cy-height<75)nextColumn();};
     newPage();
-    for(const [sectionIndex, section] of STARK_PACKMATE_POLICY.entries()){
+    for(const [index,section] of STARK_PACKMATE_POLICY.entries()){
       const title=section.title.replace(/^\d+\.\s*/,'');
-      const pointLines=section.points.map(point=>wrapPolicy(point,480,8.25));
-      const needed=40+pointLines.reduce((total,lines)=>total+lines.length*12.5+10,0);
-      // Keep a section on the same page when possible; if too long,
-      // continue after a full paragraph with the section title repeated.
-      if(cursor-needed<paper.bottom && cursor<490) newPage();
-      let firstPart=true;
-      const heading=()=>{
-        const label=firstPart?title:title+' (continued)';
-        policyRect(paper.left,cursor-26,536,27,'#edf2f7');
-        policyRect(paper.left,cursor-26,3,27,BLUE);
-        policyText(51,cursor-18,String(sectionIndex+1).padStart(2,'0'),9,true,BLUE);
-        policyText(80,cursor-18,label,10.1,true,NAVY);
-        cursor-=39;firstPart=false;
-      };
-      heading();
-      for(const lines of pointLines){
-        const paragraphHeight=lines.length*12.5+10;
-        if(cursor-paragraphHeight<paper.bottom){
-          newPage();
-          heading();
-        }
-        policyRect(53,cursor-6,3,3,BLUE);
-        lines.forEach((value,i)=>policyText(65,cursor-7-i*12.5,value,8.25,false,INK));
-        cursor-=paragraphHeight;
+      const paragraphs=section.points.map(p=>wrap(p,bodyWidth-9,6.75));
+      const estimated=22+paragraphs.reduce((sum,lines)=>sum+lines.length*8.25+7,0);
+      if(cy-estimated<75&&cy<480)nextColumn();
+      fit(38);
+      const x=starts[col];
+      drawText(x,cy,String(index+1).padStart(2,'0'),7.5,true,'#0f766e');
+      drawText(x+22,cy, title,7.4,true,NAVY);
+      cy-=14;
+      for(const lines of paragraphs){
+        fit(lines.length*8.25+8);
+        const px=starts[col]+6;
+        for(const line of lines){drawText(px,cy,line,6.75,false,INK);cy-=8.25;}
+        cy-=7;
       }
-      cursor-=13;
+      cy-=7;
     }
-    const acknowledgement=wrapPolicy(STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT,498,8.3);
-    const acknowledgeHeight=23+acknowledgement.length*13;
-    if(cursor-acknowledgeHeight<paper.bottom) newPage();
-    policyRect(paper.left,cursor-acknowledgeHeight,536,acknowledgeHeight,'#eaf6f3');
-    policyRect(paper.left,cursor-acknowledgeHeight,3,acknowledgeHeight,'#0f766e');
-    acknowledgement.forEach((value,i)=>policyText(53,cursor-20-i*13,value,8.3,i===0,NAVY));
+    const ack=wrap(STARK_PACKMATE_POLICY_ACKNOWLEDGEMENT,bodyWidth-6,6.8);
+    fit(ack.length*8.5+26);
+    drawText(starts[col],cy,'CLIENT ACKNOWLEDGEMENT',7.2,true,'#0f766e');cy-=12;
+    for(const line of ack){drawText(starts[col],cy,line,6.8,false,NAVY);cy-=8.5;}
     policyPages.push(policyOps);
     for(const [index,operations] of policyPages.entries()){
-      const footerY=41;
-      operations.push(rgb(LINE)+' RG 0.6 w 38 61 m 574 61 l S');
-      operations.push('BT '+rgb(MUTED)+' rg /FR 7 Tf 1 0 0 1 38 '+footerY+' Tm ('+
-        pdfText('Stark Packmate | '+data.quoteNo+' | Commercial terms')+') Tj ET');
-      operations.push('BT '+rgb(NAVY)+' rg /FB 7 Tf 1 0 0 1 519 '+footerY+' Tm ('+
-        pdfText((index+1)+' / '+policyPages.length)+') Tj ET');
-      const policyStream=operations.join(NL);
-      const policyContent=add('<< /Length '+Buffer.byteLength(policyStream,'binary')+' >>'+NL+
-        'stream'+NL+policyStream+NL+'endstream');
-      pageRefs.push(add('<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR '+
-        font+' 0 R /FB '+fontBold+' 0 R >> >> /Contents '+policyContent+' 0 R >>'));
+      operations.push(rgb(LINE)+' RG 0.6 w 38 58 m 574 58 l S');
+      operations.push('BT '+rgb(MUTED)+' rg /FR 6.5 Tf 1 0 0 1 38 42 Tm ('+pdfText('Stark Packmate | '+data.quoteNo+' | Approved commercial conditions')+') Tj ET');
+      operations.push('BT '+rgb(MUTED)+' rg /FB 6.5 Tf 1 0 0 1 542 42 Tm ('+pdfText((index+1)+' / '+policyPages.length)+') Tj ET');
+      const stream=operations.join(NL);
+      const content=add('<< /Length '+Buffer.byteLength(stream,'binary')+' >>'+NL+'stream'+NL+stream+NL+'endstream');
+      pageRefs.push(add('<< /Type /Page /Parent 0 0 R /MediaBox [0 0 612 792] /Resources << /Font << /FR '+font+' 0 R /FB '+fontBold+' 0 R >> >> /Contents '+content+' 0 R >>'));
     }
   }
   const pages = add(`<< /Type /Pages /Kids [${pageRefs.map(ref=>ref+' 0 R').join(' ')}] /Count ${pageRefs.length} >>`);
@@ -834,6 +796,16 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
       return [`${prefix}${summary}`];
     });
 
+  const volumeMatrix=rows.filter(row=>row.product&&Number(row.qty)>0).slice(0,4).map((row)=>{
+    const line=lines.find(l=>l.line_type==='packaging'&&Math.abs(Number(l.quantity)*Number(l.unit_price)-row.total)<0.05);
+    const view=line?resolveFrameQuotePresentation(line):null;
+    const unit=view?.isFrame&&view.unit==='kg'?'kg':'pcs';
+    const existing=line&&unit==='pcs'?customerVolumeSuggestions(line.quantity,line.unit_price,Array.isArray(line.pricing_breakdown_json?.suggested_quantities)?line.pricing_breakdown_json.suggested_quantities:[],3):[];
+    const baseQty=unit==='kg'?(view?.displayQuantity??row.qty):row.qty;
+    const options=existing.length?existing.map(o=>({quantity:o.quantity,price:o.unit_price,saving:o.savings_pct})):
+      [2,3,5].map(m=>({quantity:Math.ceil(Number(baseQty)*m)}));
+    return {product:row.product,unit,options};
+  });
   const currentCustomerMessage = text(quoteVersion?.customer_message, '');
   const isStark = isStarkPackmateOrganization(org);
   const paymentTerms = commercialValue(currentCustomerMessage, 'Payment terms') || (isStark && domesticQuote ? '50% Advance, 50% Before Dispatch' : '');
@@ -860,6 +832,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
     terms: text(org?.quote_terms_conditions ?? quote.notes_customer, 'Prices are subject to validity, Incoterms basis, final order confirmation, agreed payment terms, and buyer destination charges unless included.'),
     rows,
     volumeSuggestions,
+    volumeMatrix,
     taxTotal: v5TaxTotal,
     taxLabel: v5TaxTotal > 0 ? 'GST' : undefined,
     logoImage,
