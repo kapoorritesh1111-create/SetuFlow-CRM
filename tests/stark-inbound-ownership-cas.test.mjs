@@ -12,3 +12,14 @@ test('general webhook data refresh never includes ownerPatch', () => {
   assert.doesNotMatch(webhook, /updated_at: now,\s*\.\.\.ownerPatch/);
   assert.match(webhook, /updated_at: now,\s*\.\.\.identityPatch/);
 });
+
+test('blank Interakt provider ownership uses only explicit available Sales users', () => {
+  assert.match(webhook, /assignee\s*\?\s*await initialSetuOwnerFromInterakt\(db, assignee\)\s*:\s*await availableInitialSalesOwner\(db, intake\.id\)/);
+  assert.match(webhook, /eq\('status', 'available'\)/);
+  assert.match(webhook, /member\.is_internal_support/);
+  assert.match(webhook, /toLowerCase\(\) === 'sales'/);
+});
+
+test('provider-named ownership does not trigger fallback', () => {
+  assert.match(webhook, /A provider-specified assignee is authoritative/);
+});
