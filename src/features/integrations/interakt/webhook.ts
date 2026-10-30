@@ -420,8 +420,9 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   const hasAnyOwner = Boolean(intake.setu_assigned_user_id || intake.setu_assigned_invitation_id || intake.setu_assigned_email);
   // Interakt's explicit owner is authoritative. Only unowned contacts with
   // no provider assignee can enter online Sales balancing.
-  const initialOwner = !hasAnyOwner && assignee
-    ? await initialSetuOwnerFromInterakt(db, assignee)
+  const effectiveProviderAssignee = assignee || clean(intake.interakt_assignee_name);
+  const initialOwner = !hasAnyOwner && effectiveProviderAssignee
+    ? await initialSetuOwnerFromInterakt(db, effectiveProviderAssignee)
     : null;
   const ownerPatch = initialOwner ? {
     setu_assigned_user_id: initialOwner.userId,
@@ -442,7 +443,7 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     raw_payload: data,
     company_evidence: companyEvidence,
     company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at,
-    interakt_assignee_name: assignee,
+    interakt_assignee_name: effectiveProviderAssignee,
     updated_at: now,
     ...identityPatch,
     ...attribution,
@@ -467,7 +468,7 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     }
   }
 
-  if (!hasAnyOwner && !assignee && incoming) {
+  if (!hasAnyOwner && !effectiveProviderAssignee && incoming) {
     // The database function serializes allocations across concurrent webhooks,
     // checks chat_presence within the same 2-minute window as chat, and
     // refuses to modify a row once Interakt or a manager has assigned it.
