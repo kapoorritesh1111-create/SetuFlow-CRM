@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
-import { readStarkInboundAssignmentManager, readStarkInboundAvailability, reassignStarkInboundLead, updateStarkInboundAvailability } from '@/features/integrations/interakt/assignment-management';
+import { readStarkInboundAssignmentManager, reassignStarkInboundLead } from '@/features/integrations/interakt/assignment-management';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 
@@ -32,7 +32,6 @@ export default async function InboundAssignmentsPage({ searchParams = {} }: { se
 
   const q = String(searchParams.q ?? '').trim();
   const data = await readStarkInboundAssignmentManager({ q });
-  const availability = await readStarkInboundAvailability();
 
   return (
     <div className="space-y-5 pb-10">
@@ -49,25 +48,6 @@ export default async function InboundAssignmentsPage({ searchParams = {} }: { se
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><p className="text-sm font-black text-blue-950">Eligible Sales / Field Sales pool</p><p className="mt-1 text-xs text-blue-800">Active Sales and Field Sales users can be selected here. Automatic inbound routing stays with Sales only; Field Sales is available for deliberate reassignment. Support accounts are excluded.</p></div>
           <div className="flex flex-wrap gap-2">{data.assignees.map((assignee) => <span key={assignee.key} className="rounded-full border border-blue-200 bg-white px-3 py-1.5 text-[11px] font-bold text-blue-900">{assignee.name}{assignee.status === 'pending' ? ' · Pending' : ' · Active'}</span>)}</div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-black text-slate-950">Availability for new inquiries</h2>
-        <p className="mt-1 text-xs text-slate-500">Availability affects only future, unowned inquiries. Existing lead ownership is never changed. Users are Off duty until explicitly enabled.</p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {data.assignees.filter((agent) => agent.kind === 'user').map((agent) => (
-            <form key={agent.key} action={updateStarkInboundAvailability} className="flex items-center gap-2 rounded-xl border border-slate-200 p-3">
-              <input type="hidden" name="userId" value={agent.userId ?? ''} />
-              <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-800">{agent.name}</span>
-              <select name="status" defaultValue={availability[agent.userId ?? ''] ?? 'off_duty'} className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs">
-                <option value="available">Available</option>
-                <option value="away">Away</option>
-                <option value="off_duty">Off duty</option>
-              </select>
-              <PendingSubmitButton idleLabel="Save" pendingLabel="Saving…" className="rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-white" />
-            </form>
-          ))}
         </div>
       </section>
 
