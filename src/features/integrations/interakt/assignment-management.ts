@@ -279,3 +279,41 @@ export async function reassignStarkInboundLead(formData: FormData): Promise<void
   revalidatePath('/leads/inbound');
   revalidatePath('/leads/inbound/assignments');
 }
+
+/** Explicit availability is used only for initial, unowned Interakt routing. */
+export async function updateStarkInboundAvailability(formData: FormData): Promise<void> {
+  const { organization, user } = await requireStarkAssignmentManager();
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+  const userId = clean(formData.get('userId'));
+  const status = clean(formData.get('status'));
+  if (!['available', 'away', 'off_duty'].includes(status)) throw new Error('Invalid availability state.');
+  const agents = await loadEligibleSalesAssignees(organization.id);
+  if (!agents.some((agent) => agent.kind === 'user' && agent.userId === userId)) {
+    throw new Error('Only active Sales or Field Sales users may have availability set.');
+  }
+  const { error } = await db.from('stark_inbound_agent_availability').upsert({
+    organization_id: organization.id,
+    user_id: userId,
+    status,
+    updated_by: user.id,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'organization_id,user_id' });
+  if (error) throw new Error('Unable to save availability.');
+  await db.from('audit_logs').insert({
+    organization_id: organization.id, actor_user_id: user.id,
+    entity_type: 'organization_member', entity_id: userId,
+    action: 'inbound_availability_changed', payload: { status },
+  });
+  revalidatePath('/leads/inbound/assignments');
+}
+
+export async function readStarkInboundAvailability(): Promise<Record<string, string>> {
+  const { organization } = await requireStarkAssignmentManager();
+  const db = createAdminSupabaseClient() as any;
+  if (!db) throw new Error('Database admin client unavailable.');
+  const { data, error } = await db.from('stark_inbound_agent_availability')
+    .select('user_id,status').eq('organization_id', organization.id);
+  if (error) throw new Error('Unable to load availability.');
+  return Object.fromEntries((data ?? []).map((row: any) => [row.user_id, row.status]));
+}
