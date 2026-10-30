@@ -417,8 +417,12 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   if (textIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(textIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   if (imageIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(imageIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   const attribution = mergeAttribution(intake, attributionFromPayload(data));
-  const initialOwner = !intake.setu_assigned_user_id && assignee
-    ? await initialSetuOwnerFromInterakt(db, assignee)
+  const hasAnyOwner = Boolean(intake.setu_assigned_user_id || intake.setu_assigned_invitation_id || intake.setu_assigned_email);
+  // Interakt's explicit owner is authoritative. Only unowned contacts with
+  // no provider assignee can enter online Sales balancing.
+  const effectiveProviderAssignee = assignee || clean(intake.interakt_assignee_name);
+  const initialOwner = !hasAnyOwner && effectiveProviderAssignee
+    ? await initialSetuOwnerFromInterakt(db, effectiveProviderAssignee)
     : null;
   const ownerPatch = initialOwner ? {
     setu_assigned_user_id: initialOwner.userId,
@@ -439,12 +443,40 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     raw_payload: data,
     company_evidence: companyEvidence,
     company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at,
-    interakt_assignee_name: assignee,
+    interakt_assignee_name: effectiveProviderAssignee,
     updated_at: now,
-    ...ownerPatch,
     ...identityPatch,
     ...attribution,
   }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
+
+  // Initial ownership is a separate compare-and-set operation. Never write
+  // owner fields based only on the stale intake snapshot: a manager may have
+  // reassigned the lead while this webhook was processing.
+  if (initialOwner) {
+    const { error: assignmentError } = await db.from('lead_intake_staging')
+      .update(ownerPatch)
+      .eq('id', intake.id)
+      .eq('organization_id', STARK_PACKMATE_ORG_ID)
+      .is('setu_assigned_user_id', null)
+      .is('setu_assigned_invitation_id', null)
+      .is('setu_assigned_email', null);
+    if (assignmentError) {
+      console.error('[stark-inbound:initial-owner] conditional assignment failed', {
+        intakeId: intake.id,
+        error: assignmentError.message,
+      });
+    }
+  }
+
+  if (!hasAnyOwner && !effectiveProviderAssignee && incoming) {
+    // The database function serializes allocations across concurrent webhooks,
+    // checks chat_presence within the same 2-minute window as chat, and
+    // refuses to modify a row once Interakt or a manager has assigned it.
+    const { error: routingError } = await db.rpc('stark_assign_online_unowned_interakt', { p_intake_id: intake.id });
+    if (routingError) {
+      console.warn('[stark-inbound:routing] online allocation unavailable', { code: routingError.code ?? 'unknown' });
+    }
+  }
 
   if (incoming) {
     try {
