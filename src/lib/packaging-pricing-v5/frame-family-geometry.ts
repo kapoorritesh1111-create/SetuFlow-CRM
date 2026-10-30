@@ -33,12 +33,10 @@ function n(value: unknown): number {
  * IMPORTANT:
  * - These rules intentionally preserve the v4 workbook orientation and do not rotate
  *   dimensions to improve yield.
- * - Center Seal Roll uses entered open width across the machine and entered repeat length.
- * - Center Seal Pouch uses the finished width: open width = 2 * pouch width + 20 mm.
- * - 3SS Roll uses book-fold layout: open width = 2 * pouch width; repeat = pouch height.
- * - 3SS Pouch preserves the current workbook rule:
- *     open laminate width = (2 * formed height) + 12 mm
- *     repeat length       = formed width
+ * - All four forms use ENTERED OPEN WEB WIDTH directly for machine-across.
+ * - All four forms use ENTERED REPEAT LENGTH directly for machine-along.
+ * - Finished pouch size and trim allowances are separate specifications and
+ *   must never be folded into the already-open entered production width.
  * - The frame costing footprint remains the full machine web (740 x 1120) per frame.
  *   This is the migration basis only; owner review must confirm any family-specific
  *   trim/edge allowances before publication.
@@ -55,17 +53,10 @@ export function resolveFrameFamilyGeometryV5(
   const machineWidth = n(machineWidthMm) || 740;
   const machineLength = n(machineLengthMm) || 1120;
 
-  const threeSideSealPouch = supplyForm === 'three_side_seal_pouch';
-  const centerSealPouch = supplyForm === 'center_seal_pouch';
-  const threeSideSealRoll = supplyForm === 'three_side_seal_roll';
-  const openLaminateWidth = threeSideSealPouch
-    ? (2 * height) + 12
-    : centerSealPouch
-      ? (2 * width) + 20
-      : threeSideSealRoll
-        ? 2 * width
-        : width;
-  const repeatLength = threeSideSealPouch ? width : height;
+  // Client production workbook: entered width is ALREADY the open laminate width
+  // for Center Seal and 3SS, pouch and roll alike. Never unfold it again.
+  const openLaminateWidth = width;
+  const repeatLength = height;
 
   const across = width > 0 && height > 0 ? Math.floor(machineWidth / openLaminateWidth) : 0;
   const along = width > 0 && height > 0 ? Math.floor(machineLength / repeatLength) : 0;

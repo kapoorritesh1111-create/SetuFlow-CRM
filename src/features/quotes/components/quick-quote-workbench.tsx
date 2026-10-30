@@ -201,8 +201,8 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         {chosen.kind==='sup'?<label className="text-sm font-medium">Size<select className={field} value={size?.id??''} onChange={e=>{setSizeId(e.target.value);setRows([]);setConstructionId('')}}>{sizes.map((s:any)=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>:null}
         {chosen.kind==='sup'?<label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={custom} onChange={e=>{setCustom(e.target.checked);setRows([])}}/>Custom size</label>:null}
         {(chosen.kind!=='sup'||custom)?<>
-          <label className="text-sm">{chosen.kind==='frame'?(String(frameTemplate?.supply_form??'').endsWith('_roll')?'Web width (mm)':'Finished pouch width (mm)'):'Width (mm)'}<input className={field} inputMode="decimal" value={width} onChange={e=>setWidth(e.target.value)}/></label>
-          <label className="text-sm">{chosen.kind==='frame'?(String(frameTemplate?.supply_form??'').endsWith('_roll')?'Repeat length (mm)':'Finished pouch height (mm)'):'Height (mm)'}<input className={field} inputMode="decimal" value={height} onChange={e=>setHeight(e.target.value)}/></label>
+          <label className="text-sm">{chosen.kind==='frame'?(String(frameTemplate?.supply_form??'').endsWith('_roll')?'Open web width (mm)':'Open web width (mm)'):'Width (mm)'}<input className={field} inputMode="decimal" value={width} onChange={e=>setWidth(e.target.value)}/></label>
+          <label className="text-sm">{chosen.kind==='frame'?(String(frameTemplate?.supply_form??'').endsWith('_roll')?'Repeat length (mm)':'Repeat length (mm)'):'Height (mm)'}<input className={field} inputMode="decimal" value={height} onChange={e=>setHeight(e.target.value)}/></label>
           {chosen.kind==='sup'?<label className="text-sm">Bottom gusset each (mm)<input className={field} inputMode="decimal" value={gusset} onChange={e=>setGusset(e.target.value)}/></label>:null}
         </>:null}
         {chosen.kind!=='manual'&&chosen.kind!=='label'?<>

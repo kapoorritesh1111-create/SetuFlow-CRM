@@ -27,11 +27,11 @@ export default function PricingV5FrameSalesConfigurator({
   const isCenterPouch=template?.supply_form==='center_seal_pouch';
   const isThreeRoll=template?.supply_form==='three_side_seal_roll';
   const isThreePouch=template?.supply_form==='three_side_seal_pouch';
-  const widthLabel=isCenterRoll?'Open width (mm)':'Pouch width (mm)';
-  const heightLabel=isCenterRoll?'Repeat length (mm)':'Pouch height (mm)';
-  const inputDimensionLabel=isCenterRoll?'Open width × repeat length':'Pouch width × pouch height';
-  const expectedOpenWidth=isCenterPouch?2*Number(width)+20:isThreePouch?2*Number(height)+12:isThreeRoll?2*Number(width):Number(width);
-  const expectedRepeat=isThreePouch?Number(width):Number(height);
+  const widthLabel='Open web width (mm)';
+  const heightLabel='Repeat length (mm)';
+  const inputDimensionLabel='Open width × repeat length';
+  const expectedOpenWidth=Number(width);
+  const expectedRepeat=Number(height);
   const [preview,setPreview]=useState<any>(null);
   const [previewInputKey,setPreviewInputKey]=useState('');
   const [editingLineId,setEditingLineId]=useState<string|null>(null);
@@ -200,7 +200,7 @@ export default function PricingV5FrameSalesConfigurator({
       <label className="text-xs font-black text-slate-600">{heightLabel}<input type="number" min="1" value={height} onChange={(e)=>{setHeight(Number(e.target.value));setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"/></label>
       <div className="md:col-span-2 xl:col-span-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <span className="font-black text-slate-800">{inputDimensionLabel}.</span>{' '}
-        {isCenterPouch?'Center Seal Pouch: open laminate width = (2 × pouch width) + 20 mm.':isThreePouch?'3SS Pouch: laminate width = (2 × pouch height) + 12 mm; repeat = pouch width.':isThreeRoll?'3SS Roll: book-fold open laminate width = 2 × pouch width; repeat = pouch height.':'Center Seal Roll: enter the actual open laminate width and repeat length.'}
+        Enter the actual OPEN web width and repeat length from the production layout for pouch and roll forms. Do not enter finished pouch width here.
         {Number(width)>0&&Number(height)>0?<span className="ml-2 font-bold text-teal-800">Laminate layout: {preview?.geometry?.open_laminate_width_mm??expectedOpenWidth} mm open × {preview?.geometry?.repeat_length_mm??expectedRepeat} mm repeat</span>:null}
       </div>
       <label className="text-xs font-black text-slate-600">Quantity<input type="number" min="1" step="1" value={quantity} onChange={(e)=>{setQuantity(Number(e.target.value));setPreview(null);}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"/></label>
