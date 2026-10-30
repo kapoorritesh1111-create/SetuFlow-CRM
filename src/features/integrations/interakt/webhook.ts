@@ -202,6 +202,37 @@ async function initialSetuOwnerFromInterakt(db: any, assigneeName: string | null
   return null;
 }
 
+/** Opt-in fallback for Interakt messages without a provider assignee.
+ * Explicit availability only; pending invites, support and Field Sales excluded.
+ * Stable selection avoids reallocation on webhook retries. */
+async function availableInitialSalesOwner(db: any, intakeId: string) {
+  const { data: states, error: stateError } = await db
+    .from('stark_inbound_agent_availability')
+    .select('user_id').eq('organization_id', STARK_PACKMATE_ORG_ID).eq('status', 'available');
+  if (stateError) throw new Error('Unable to check Stark inbound availability.');
+  if (!states?.length) return null;
+  const { data: members, error } = await db.from('organization_members')
+    .select('user_id,is_internal_support,profiles!inner(id,email,full_name),user_roles!inner(roles!inner(name))')
+    .eq('organization_id', STARK_PACKMATE_ORG_ID).eq('is_active', true)
+    .in('user_id', states.map((entry: any) => entry.user_id));
+  if (error) throw new Error('Unable to check eligible Stark Sales users.');
+  const candidates = (members ?? []).filter((member: any) => {
+    const roles = Array.isArray(member.user_roles) ? member.user_roles : [];
+    const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+    return !member.is_internal_support && !String(profile?.email ?? '').toLowerCase().startsWith('support@')
+      && roles.some((link: any) => {
+        const role = Array.isArray(link.roles) ? link.roles[0] : link.roles;
+        return String(role?.name ?? '').toLowerCase() === 'sales';
+      });
+  }).sort((a: any, b: any) => String(a.user_id).localeCompare(String(b.user_id)));
+  if (!candidates.length) return null;
+  const hash = crypto.createHash('sha256').update(intakeId).digest();
+  const index = hash.readUInt32BE(0) % candidates.length;
+  const selected = candidates[index];
+  const profile = Array.isArray(selected.profiles) ? selected.profiles[0] : selected.profiles;
+  return { userId: selected.user_id, email: String(profile.email ?? '').toLowerCase(), displayName: clean(profile.full_name) || profile.email };
+}
+
 function evidenceEntry(intelligence: InteraktCompanyIntelligence, input: { messageId?: string | null; mediaUrl?: string | null; question?: string | null; at?: string | null }) {
   return { source: intelligence.source, company_name: intelligence.companyName, brand_name: intelligence.brandName, confidence: intelligence.confidence, evidence: intelligence.evidence, model: intelligence.model, message_id: input.messageId ?? null, media_url: input.mediaUrl ?? null, question: input.question ?? null, observed_at: input.at ?? new Date().toISOString() };
 }
@@ -417,9 +448,12 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   if (textIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(textIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   if (imageIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(imageIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   const attribution = mergeAttribution(intake, attributionFromPayload(data));
-  const initialOwner = !intake.setu_assigned_user_id && assignee
+  const hasAnyOwner = Boolean(intake.setu_assigned_user_id || intake.setu_assigned_invitation_id || intake.setu_assigned_email);
+  // A provider-specified assignee is authoritative. Never fall back merely
+  // because the provider's named person is Away or cannot be matched.
+  const initialOwner = hasAnyOwner ? null : assignee
     ? await initialSetuOwnerFromInterakt(db, assignee)
-    : null;
+    : await availableInitialSalesOwner(db, intake.id);
   const ownerPatch = initialOwner ? {
     setu_assigned_user_id: initialOwner.userId,
     setu_assigned_invitation_id: null,
