@@ -441,10 +441,28 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at,
     interakt_assignee_name: assignee,
     updated_at: now,
-    ...ownerPatch,
     ...identityPatch,
     ...attribution,
   }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
+
+  // Initial ownership is a separate compare-and-set operation. Never write
+  // owner fields based only on the stale intake snapshot: a manager may have
+  // reassigned the lead while this webhook was processing.
+  if (initialOwner) {
+    const { error: assignmentError } = await db.from('lead_intake_staging')
+      .update(ownerPatch)
+      .eq('id', intake.id)
+      .eq('organization_id', STARK_PACKMATE_ORG_ID)
+      .is('setu_assigned_user_id', null)
+      .is('setu_assigned_invitation_id', null)
+      .is('setu_assigned_email', null);
+    if (assignmentError) {
+      console.error('[stark-inbound:initial-owner] conditional assignment failed', {
+        intakeId: intake.id,
+        error: assignmentError.message,
+      });
+    }
+  }
 
   if (incoming) {
     try {
