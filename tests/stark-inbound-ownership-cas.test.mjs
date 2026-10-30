@@ -14,7 +14,7 @@ test('webhook never overwrites an existing assigned user, email or invitation', 
 });
 
 test('only unowned Interakt inquiries without named provider assignee use online allocation', () => {
-  assert.match(webhook,/!hasAnyOwner && !assignee && incoming/);
+  assert.match(webhook,/!hasAnyOwner && !effectiveProviderAssignee && incoming/);
   assert.match(webhook,/stark_assign_online_unowned_interakt/);
   assert.match(allocator,/s\.source_provider = 'interakt'/);
   assert.match(allocator,/nullif\(btrim\(s\.interakt_assignee_name\)/);
@@ -42,4 +42,9 @@ test('allocation is serialized, least-loaded and cannot rewrite manual/provider 
 test('IndiaMART routing not modified by online allocation', () => {
   assert.match(allocator,/s\.source_provider = 'interakt'/);
   assert.doesNotMatch(allocator,/source_provider = 'indiamart'/);
+});
+
+test('sparse webhooks retain existing provider owner identity', () => {
+  assert.match(webhook,/const effectiveProviderAssignee = assignee \|\| clean\(intake\.interakt_assignee_name\)/);
+  assert.match(webhook,/interakt_assignee_name: effectiveProviderAssignee/);
 });
