@@ -209,13 +209,21 @@ async function availableInitialSalesOwner(db: any, intakeId: string) {
   const { data: states, error: stateError } = await db
     .from('stark_inbound_agent_availability')
     .select('user_id').eq('organization_id', STARK_PACKMATE_ORG_ID).eq('status', 'available');
-  if (stateError) throw new Error('Unable to check Stark inbound availability.');
+  // During rollout or a temporary availability-read outage, fail closed:
+  // keep the inquiry unassigned rather than interrupting the Interakt webhook.
+  if (stateError) {
+    console.warn('[stark-inbound:availability] fallback unavailable', { code: stateError.code ?? 'unknown' });
+    return null;
+  }
   if (!states?.length) return null;
   const { data: members, error } = await db.from('organization_members')
     .select('user_id,is_internal_support,profiles!inner(id,email,full_name),user_roles!inner(roles!inner(name))')
     .eq('organization_id', STARK_PACKMATE_ORG_ID).eq('is_active', true)
     .in('user_id', states.map((entry: any) => entry.user_id));
-  if (error) throw new Error('Unable to check eligible Stark Sales users.');
+  if (error) {
+    console.warn('[stark-inbound:availability] sales eligibility lookup unavailable', { code: error.code ?? 'unknown' });
+    return null;
+  }
   const candidates = (members ?? []).filter((member: any) => {
     const roles = Array.isArray(member.user_roles) ? member.user_roles : [];
     const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
