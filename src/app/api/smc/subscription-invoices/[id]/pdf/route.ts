@@ -48,14 +48,16 @@ export function buildInvoicePdf(invoice:any,orgName:string){
  right(549,y-4,'Subtotal  '+money(invoice.subtotal,invoice.currency),10);
  right(549,y-21,'Discounts  -'+money(invoice.discount_total,invoice.currency),10);
  line(totalX,y-30,551,y-30);
- right(549,y-49,'AMOUNT DUE  '+money(invoice.total,invoice.currency),15,true);
+ right(549,y-49,'AMOUNT DUE  '+money(Math.max(0,Number(invoice.total)-Number(invoice._paid_minor||0)/100),invoice.currency),15,true);
  y-=74;
  rect(43,y-51,509,62,.88,.95,.94);
  text(54,y-5,'PAYMENT INSTRUCTIONS',11,true);
  text(54,y-23,'Payment due '+invoice.due_date+'; reference '+invoice.invoice_number,9);
- const wise=urlSafe(invoice.wise_payment_url||'');
+ const stripe=String(invoice._stripe_payment_url||'');
+ if(stripe){text(54,y-39,'PAY SECURELY WITH SETU FLOW',10,true,[.08,.33,.49]);p.links.push({url:stripe,rect:[52,y-44,320,y-26]})}
+ else {const wise=urlSafe(invoice.wise_payment_url||'');
  if(wise){text(54,y-39,'CLICK HERE TO PAY USING WISE',10,true,[.08,.33,.49]);p.links.push({url:wise,rect:[52,y-44,270,y-26]})}
- else text(54,y-39,'Contact billing for payment instructions.',9);
+ else text(54,y-39,invoice.status==='paid'?'PAID - No payment due':'Contact billing for payment instructions.',9);}
  y-=77;
  const terms=String(invoice.terms_and_conditions||'').replace(/\\n/g,'\n').split(/\r?\n/).filter(Boolean);
  if(terms.length){if(y<115){nextPage();heading();y=H-110}text(43,y,'SUBSCRIPTION TERMS & CONDITIONS',10,true);y-=16;
@@ -87,6 +89,10 @@ export async function GET(_req:Request,{params}:{params:{id:string}}){
  const {data:invoice,error}=await db.from('smc_subscription_invoices').select('*').eq('id',params.id).maybeSingle();
  if(error||!invoice)return NextResponse.json({error:'Invoice not found'},{status:404});
  const {data:org}=await db.from('organizations').select('name').eq('id',invoice.organization_id).maybeSingle();
- try{const pdf=buildInvoicePdf(invoice,org?.name||'Customer');return new NextResponse(new Uint8Array(pdf),{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="'+invoice.invoice_number+'.pdf"','Cache-Control':'private, no-store'}})}
+ const {data:paidRows}=await db.from('smc_invoice_payments').select('amount_minor,currency').eq('invoice_id',params.id).eq('status','succeeded');
+ const paidMinor=(paidRows||[]).filter(p=>p.currency===invoice.currency).reduce((s,p)=>s+Number(p.amount_minor),0);
+ const {data:links}=await db.from('smc_stripe_payment_links').select('token,expires_at').eq('invoice_id',params.id).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(1);
+ const invoicePdf={...invoice,_paid_minor:paidMinor,_stripe_payment_url:paidMinor<Math.round(Number(invoice.total)*100)&&links?.[0]?'https://www.setuflowcrm.com/pay/'+links[0].token:null};
+ try{const pdf=buildInvoicePdf(invoicePdf,org?.name||'Customer');return new NextResponse(new Uint8Array(pdf),{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="'+invoice.invoice_number+'.pdf"','Cache-Control':'private, no-store'}})}
  catch(e){console.error('Invoice PDF serialization failed',e);return NextResponse.json({error:'Invoice PDF generation failed'},{status:500})}
 }
