@@ -15,7 +15,7 @@ export async function POST(req:NextRequest){
  const {data:staff}=await (sb as any).from('organization_members').select('id').eq('organization_id',INTERNAL_ORG_ID).eq('user_id',user.id).eq('is_active',true).maybeSingle();
  if(!member&&!staff)return fail('Forbidden',403);
  if(!staff){const {data:roles}=await db.from('user_roles').select('roles(name)').eq('organization_member_id',member.id);if(!roles?.some((r:any)=>['owner','admin'].includes(String(r.roles?.name||'').toLowerCase())))return fail('Billing admin required',403)}
- const secret=process.env.STRIPE_SECRET_KEY;if(!secret?.startsWith('sk_'))return fail('Stripe unavailable',503);
+ const secret=process.env.STRIPE_SECRET_KEY;if(!secret||! /^(sk|rk)_(live|test)_/.test(secret))return fail('Stripe unavailable',503);
  const currency=String(i.currency).toUpperCase();if(!['USD','EUR','GBP','INR'].includes(currency))return fail('Unsupported currency',400);
  const {data:p,error:pe}=await db.from('smc_invoice_payments').select('amount_minor,currency,status').eq('invoice_id',id);if(pe)return fail('Payment ledger unavailable',503);
  const total=Math.round(Number(i.total)*100),paid=(p||[]).filter((x:any)=>x.currency===currency&&x.status==='succeeded').reduce((s:number,x:any)=>s+Number(x.amount_minor),0);
