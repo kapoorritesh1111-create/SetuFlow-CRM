@@ -22,7 +22,21 @@ export async function GET(request: NextRequest) {
   let q = db.from('smc_subscription_invoices').select('*').order('created_at',{ascending:false}).limit(100);
   if (org) q = q.eq('organization_id',org);
   const {data,error} = await q;
-  return error ? bad(error.message,500) : NextResponse.json({ invoices: data });
+  if(error)return bad(error.message,500);
+  const ids=(data||[]).map(i=>i.id);
+  if(!ids.length)return NextResponse.json({invoices:[]});
+  const [paymentResult,linkResult]=await Promise.all([
+    db.from('smc_invoice_payments').select('invoice_id,amount_minor,currency,status').in('invoice_id',ids).eq('status','succeeded'),
+    db.from('smc_stripe_payment_links').select('invoice_id,token,expires_at,created_at').in('invoice_id',ids).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false})
+  ]);
+  if(paymentResult.error||linkResult.error)return bad('Billing reconciliation unavailable',503);
+  const invoices=(data||[]).map(i=>{
+    const paid_minor=(paymentResult.data||[]).filter(p=>p.invoice_id===i.id&&p.currency===i.currency).reduce((s,p)=>s+Number(p.amount_minor),0);
+    const total_minor=Math.round(Number(i.total)*100);
+    const link=(linkResult.data||[]).find(l=>l.invoice_id===i.id);
+    return {...i,paid_minor,balance_minor:Math.max(0,total_minor-paid_minor),stripe_payment_url:link&&!['paid','void'].includes(i.status)?'https://www.setuflowcrm.com/pay/'+link.token:null};
+  });
+  return NextResponse.json({invoices},{headers:{'Cache-Control':'private,no-store'}});
 }
 export async function POST(request: NextRequest) {
   const user = await access();
