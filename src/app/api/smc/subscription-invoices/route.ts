@@ -71,14 +71,15 @@ export async function PATCH(request:NextRequest) {
    for(const key of ['notes','terms_and_conditions','recipient_email','sender_email']){
      if(x[key]!==undefined){if(typeof x[key]!=='string')return bad('Invalid '+key);changes[key]=x[key].slice(0,key==='terms_and_conditions'?12000:key==='notes'?2000:254)}
    }
-   if(x.due_date!==undefined){if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(x.due_date))return bad('Invalid due date');changes.due_date=x.due_date}
+   if(x.due_date!==undefined){if(!/^\d{4}-\d{2}-\d{2}$/.test(x.due_date))return bad('Invalid due date');changes.due_date=x.due_date}
    if(invoice.status==='draft'){
      if(x.plan_name!==undefined){if(typeof x.plan_name!=='string'||!x.plan_name.trim())return bad('Plan required');changes.plan_name=x.plan_name.trim().slice(0,150)}
-     if(x.period_start!==undefined||x.period_end!==undefined){const a=x.period_start??invoice.period_start,b=x.period_end??invoice.period_end;if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(a)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(b)||b<a)return bad('Invalid period');changes.period_start=a;changes.period_end=b}
+     if(x.period_start!==undefined||x.period_end!==undefined){const a=x.period_start??invoice.period_start,b=x.period_end??invoice.period_end;if(!/^\d{4}-\d{2}-\d{2}$/.test(a)||!/^\d{4}-\d{2}-\d{2}$/.test(b)||b<a)return bad('Invalid period');changes.period_start=a;changes.period_end=b}
    }else if(['plan_name','period_start','period_end','line_items','total','currency','billing_cycle'].some(k=>x[k]!==undefined))return bad('Financial fields are locked after issuing',409);
    const {data,error}=await db.from('smc_subscription_invoices').update(changes).eq('id',invoice.id).eq('status',invoice.status).select('*').single();
    return error?bad(error.message,500):NextResponse.json({invoice:data});
  }
+ if(x.action==='issue') {if(invoice.status!=='draft')return bad('Only draft invoices can be issued',409);if(Number(invoice.total)<=0||!invoice.recipient_email)return bad('Positive amount and recipient email required',400);const {data,error}=await db.from('smc_subscription_invoices').update({status:'sent',issued_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',invoice.id).eq('status','draft').select('*').single();return error?bad(error.message,500):NextResponse.json({invoice:data});}
  if(!['partially_paid','paid','overdue','void'].includes(x.status))return bad('Invalid status');
  if(invoice.status==='void'||invoice.status==='paid')return bad('Paid or void invoices are locked',409);
  const {data,error}=await db.from('smc_subscription_invoices').update({status:x.status,updated_at:new Date().toISOString()}).eq('id',invoice.id).eq('status',invoice.status).select('*').single();
