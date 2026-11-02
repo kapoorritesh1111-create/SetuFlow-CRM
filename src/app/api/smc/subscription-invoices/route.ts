@@ -22,7 +22,21 @@ export async function GET(request: NextRequest) {
   let q = db.from('smc_subscription_invoices').select('*').order('created_at',{ascending:false}).limit(100);
   if (org) q = q.eq('organization_id',org);
   const {data,error} = await q;
-  return error ? bad(error.message,500) : NextResponse.json({ invoices: data });
+  if(error)return bad(error.message,500);
+  const ids=(data||[]).map(i=>i.id);
+  if(!ids.length)return NextResponse.json({invoices:[]});
+  const [paymentResult,linkResult]=await Promise.all([
+    db.from('smc_invoice_payments').select('invoice_id,amount_minor,currency,status').in('invoice_id',ids).eq('status','succeeded'),
+    db.from('smc_stripe_payment_links').select('invoice_id,token,expires_at,created_at').in('invoice_id',ids).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false})
+  ]);
+  if(paymentResult.error||linkResult.error)return bad('Billing reconciliation unavailable',503);
+  const invoices=(data||[]).map(i=>{
+    const paid_minor=(paymentResult.data||[]).filter(p=>p.invoice_id===i.id&&p.currency===i.currency).reduce((s,p)=>s+Number(p.amount_minor),0);
+    const total_minor=Math.round(Number(i.total)*100);
+    const link=(linkResult.data||[]).find(l=>l.invoice_id===i.id);
+    return {...i,paid_minor,balance_minor:Math.max(0,total_minor-paid_minor),stripe_payment_url:link&&!['paid','void'].includes(i.status)?'https://www.setuflowcrm.com/pay/'+link.token:null};
+  });
+  return NextResponse.json({invoices},{headers:{'Cache-Control':'private,no-store'}});
 }
 export async function POST(request: NextRequest) {
   const user = await access();
@@ -60,10 +74,28 @@ export async function POST(request: NextRequest) {
   return error?bad(error.message,500):NextResponse.json({invoice:data},{status:201});
 }
 export async function PATCH(request:NextRequest) {
-  if (!await access()) return bad('Unauthorized',403);
-  const db=createServiceRoleClient(); if(!db) return bad('Backend unavailable',503);
-  let x:any; try{x=await request.json();}catch{return bad('Invalid JSON');}
-  if(!['partially_paid','paid','overdue','void'].includes(x.status)) return bad('Invalid status');
-  const {data,error}=await db.from('smc_subscription_invoices').update({status:x.status,issued_at:x.status==='sent'?new Date().toISOString():undefined,updated_at:new Date().toISOString()}).eq('id',x.id).select('*').single();
-  return error?bad(error.message,500):NextResponse.json({invoice:data});
+ if(!await access())return bad('Unauthorized',403);
+ const db=createServiceRoleClient();if(!db)return bad('Backend unavailable',503);
+ let x:any;try{x=await request.json()}catch{return bad('Invalid JSON')}
+ const {data:invoice}=await db.from('smc_subscription_invoices').select('*').eq('id',x.id).maybeSingle();
+ if(!invoice)return bad('Invoice not found',404);
+ if(x.action==='edit'){
+   if(!['draft','partially_paid','overdue'].includes(invoice.status))return bad('Paid or void invoices are locked',409);
+   const changes:any={updated_at:new Date().toISOString()};
+   for(const key of ['notes','terms_and_conditions','recipient_email','sender_email']){
+     if(x[key]!==undefined){if(typeof x[key]!=='string')return bad('Invalid '+key);changes[key]=x[key].slice(0,key==='terms_and_conditions'?12000:key==='notes'?2000:254)}
+   }
+   if(x.due_date!==undefined){if(!/^\d{4}-\d{2}-\d{2}$/.test(x.due_date))return bad('Invalid due date');changes.due_date=x.due_date}
+   if(invoice.status==='draft'){
+     if(x.plan_name!==undefined){if(typeof x.plan_name!=='string'||!x.plan_name.trim())return bad('Plan required');changes.plan_name=x.plan_name.trim().slice(0,150)}
+     if(x.period_start!==undefined||x.period_end!==undefined){const a=x.period_start??invoice.period_start,b=x.period_end??invoice.period_end;if(!/^\d{4}-\d{2}-\d{2}$/.test(a)||!/^\d{4}-\d{2}-\d{2}$/.test(b)||b<a)return bad('Invalid period');changes.period_start=a;changes.period_end=b}
+   }else if(['plan_name','period_start','period_end','line_items','total','currency','billing_cycle'].some(k=>x[k]!==undefined))return bad('Financial fields are locked after issuing',409);
+   const {data,error}=await db.from('smc_subscription_invoices').update(changes).eq('id',invoice.id).eq('status',invoice.status).select('*').single();
+   return error?bad(error.message,500):NextResponse.json({invoice:data});
+ }
+ if(x.action==='issue') {if(invoice.status!=='draft')return bad('Only draft invoices can be issued',409);if(Number(invoice.total)<=0||!invoice.recipient_email)return bad('Positive amount and recipient email required',400);const {data,error}=await db.from('smc_subscription_invoices').update({status:'sent',issued_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',invoice.id).eq('status','draft').select('*').single();return error?bad(error.message,500):NextResponse.json({invoice:data});}
+ if(!['partially_paid','paid','overdue','void'].includes(x.status))return bad('Invalid status');
+ if(invoice.status==='void'||invoice.status==='paid')return bad('Paid or void invoices are locked',409);
+ const {data,error}=await db.from('smc_subscription_invoices').update({status:x.status,updated_at:new Date().toISOString()}).eq('id',invoice.id).eq('status',invoice.status).select('*').single();
+ return error?bad(error.message,500):NextResponse.json({invoice:data});
 }
