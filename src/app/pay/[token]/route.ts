@@ -12,5 +12,5 @@ export async function GET(_req:NextRequest,{params}:{params:{token:string}}){
  if(!invoice||!['sent','partially_paid','overdue'].includes(invoice.status))return new NextResponse('This invoice is no longer payable.',{status:410});
  const url=new URL(link.stripe_checkout_url);
  if(url.protocol!=='https:'||!(url.hostname==='checkout.stripe.com'||url.hostname.endsWith('.checkout.stripe.com')))return new NextResponse('Invalid checkout destination',{status:500});
- return NextResponse.redirect(url.toString(),303,{headers:{'Referrer-Policy':'no-referrer','Cache-Control':'no-store'}});
+ return NextResponse.redirect(url.toString(),{status:303,headers:{'Referrer-Policy':'no-referrer','Cache-Control':'no-store'}});
 }
