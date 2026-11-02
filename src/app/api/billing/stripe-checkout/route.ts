@@ -1,3 +1,4 @@
+import {randomBytes} from 'node:crypto';
 import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@/lib/supabase/server';
 import {createServiceRoleClient} from '@/lib/supabase/service-role';
@@ -21,12 +22,16 @@ export async function POST(req:NextRequest){
  const total=Math.round(Number(i.total)*100),paid=(p||[]).filter((x:any)=>x.currency===currency&&x.status==='succeeded').reduce((s:number,x:any)=>s+Number(x.amount_minor),0);
  const amount=total-paid;if(!Number.isSafeInteger(amount)||amount<=0)return fail('No balance due',409);
  const {data:mapping}=await db.from('smc_stripe_customers').select('stripe_customer_id').eq('organization_id',i.organization_id).maybeSingle();
- const base=process.env.NEXT_PUBLIC_APP_URL||'https://www.setuflowcrm.com';
- const form=new URLSearchParams({mode:'payment',client_reference_id:id,success_url:base+'/billing?status=returned',cancel_url:base+'/billing?status=cancelled'});
+ const base='https://www.setuflowcrm.com';
+ const form=new URLSearchParams({mode:'payment',client_reference_id:id,success_url:base+'/billing/payment-result?status=returned',cancel_url:base+'/billing/payment-result?status=cancelled'});
  form.set('line_items[0][price_data][currency]',currency.toLowerCase());form.set('line_items[0][price_data][unit_amount]',String(amount));form.set('line_items[0][price_data][product_data][name]','SETU Flow invoice '+i.invoice_number);form.set('line_items[0][quantity]','1');
  form.set('metadata[smc_invoice_id]',id);form.set('metadata[organization_id]',i.organization_id);form.set('payment_intent_data[metadata][smc_invoice_id]',id);
  if(mapping?.stripe_customer_id)form.set('customer',mapping.stripe_customer_id);
  const out=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{Authorization:'Bearer '+secret,'Content-Type':'application/x-www-form-urlencoded','Idempotency-Key':'smc-'+id+'-'+amount},body:form,cache:'no-store'});
  const session=await out.json();if(!out.ok||!session.url)return fail('Stripe checkout could not be created',502);
- return NextResponse.json({url:session.url,amount_minor:amount,currency,invoice_number:i.invoice_number},{headers:{'Cache-Control':'private,no-store'}});
+ const token=randomBytes(24).toString('hex');
+ const expiry=new Date((Number(session.expires_at)||Math.floor(Date.now()/1000)+1800)*1000).toISOString();
+ const {error:linkError}=await db.from('smc_stripe_payment_links').insert({token,invoice_id:id,organization_id:i.organization_id,stripe_session_id:session.id,stripe_checkout_url:session.url,expires_at:expiry});
+ if(linkError)return fail('Payment link could not be saved',503);
+ return NextResponse.json({url:base+'/pay/'+token,amount_minor:amount,currency,invoice_number:i.invoice_number},{headers:{'Cache-Control':'private,no-store'}});
 }
