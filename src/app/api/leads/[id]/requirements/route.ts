@@ -56,14 +56,14 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
   const incoming=Array.isArray(body.requirements)?body.requirements:[];
   const[{data:familyRows},{data:sizeRows},{data:templateRows}]=await Promise.all([
     db.from('packaging_service_families').select('id,name').eq('organization_id',org).eq('is_active',true),
-    db.from('packaging_size_profiles_v5').select('id,family_id,name').eq('organization_id',org).eq('is_active',true).eq('is_quoteable',true),
+    db.from('packaging_size_profiles_v5').select('id,family_id,name,width_mm,height_mm,bottom_gusset_each_mm').eq('organization_id',org).eq('is_active',true).eq('is_quoteable',true),
     db.from('packaging_pricing_templates').select('id,family_id,name,quote_config_json').eq('organization_id',org).order('updated_at',{ascending:false})
   ]);
   const familyMap=new Map<string,any>();
   for(const f of familyRows??[])familyMap.set(String(f.id),f);
   const dimensionMap=new Map<string,any>();
   const familyHasSizes=new Set((sizeRows??[]).map((s:any)=>s.family_id));
-  for(const s of sizeRows??[])dimensionMap.set(String(s.id),{id:s.id,familyId:s.family_id,label:s.name,sizeProfileId:s.id});
+  for(const s of sizeRows??[])dimensionMap.set(String(s.id),{id:s.id,familyId:s.family_id,label:s.name,sizeProfileId:s.id,width_mm:s.width_mm,height_mm:s.height_mm,gusset_mm:s.bottom_gusset_each_mm});
   for(const t of templateRows??[]){
     if(familyHasSizes.has(t.family_id))continue;
     const d=t.quote_config_json?.default_dimensions;const width=Number(d?.width_mm),height=Number(d?.height_mm);
@@ -83,9 +83,13 @@ export async function PUT(request:Request,{params}:{params:{id:string}}){
       valid.push({label:family.name,quantity,quantityMode,notes,familyId,dimensionOptionId:'custom',dimensions:label,sizeProfileId:null,dimensionsStructured:{width_mm:width,height_mm:height,gusset_mm:gusset},sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}});
       continue;
     }
-    const dimension=dimensionMap.get(dimensionOptionId);
+    let dimension=dimensionMap.get(dimensionOptionId);
+    if(!dimension||dimension.familyId!==familyId){
+      const wanted=clean(r.dimensions,240).toLowerCase().replace(/\s+/g,'');
+      if(wanted)dimension=Array.from(dimensionMap.values()).find((d:any)=>d.familyId===familyId&&String(d.label||'').toLowerCase().replace(/\s+/g,'')===wanted);
+    }
     if(!dimension||dimension.familyId!==familyId)continue;
-    valid.push({label:family.name,quantity,quantityMode,notes,familyId,dimensionOptionId,dimensions:dimension.label,sizeProfileId:dimension.sizeProfileId,dimensionsStructured:{width_mm:dimension.width_mm??null,height_mm:dimension.height_mm??null,gusset_mm:dimension.gusset_mm??null},sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}});
+    valid.push({label:family.name,quantity,quantityMode,notes,familyId,dimensionOptionId:String(dimension.id),dimensions:dimension.label,sizeProfileId:dimension.sizeProfileId,dimensionsStructured:{width_mm:dimension.width_mm??null,height_mm:dimension.height_mm??null,gusset_mm:dimension.gusset_mm??null},sourceContext:r.sourceContext&&typeof r.sourceContext==='object'?r.sourceContext:{}});
   }
   if(incoming.length&&valid.length!==incoming.length)return NextResponse.json({error:'Each requirement needs a valid service family, dimensions, and quantity. Custom dimensions require numeric width and height.'},{status:400});
   await db.from('lead_product_interests').delete().eq('organization_id',org).eq('lead_id',params.id).in('interest_type',['captured_requirement','manual_requirement']);
