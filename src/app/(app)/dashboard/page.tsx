@@ -1,5 +1,6 @@
 // persistence key format anchor: dashboard:${workspace.organization.id}:${workspace.membership.id}:all
 import { Suspense } from 'react';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { DashboardSectionTabs } from '@/components/dashboard/dashboard-section-tabs';
@@ -11,6 +12,7 @@ import {
 import { parseWorkspaceMode } from '@/features/workspace/mode';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
 import { getPrimaryWorkspaceRole } from '@/lib/workspace/roles';
+import { isMobileAppV1Enabled } from '@/features/mobile/lib/mobile-feature-flag';
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { renderDashboardPage } from './_lib/render-dashboard-page';
@@ -48,6 +50,14 @@ export default async function DashboardPage({
       if (verticals.packagingEnabled) {
         redirect(primaryRole === 'design' ? '/design-queue' : '/dispatch-board');
       }
+    }
+
+    // Mobile 3.0 is the actual phone home, not the legacy /dashboard renderer.
+    // Keep desktop, explicit mode=all and invitation-confirmation flows intact.
+    // Auth and organization membership are resolved above before redirecting.
+    if (isMobileAppV1Enabled() && !searchParams?.notice) {
+      const userAgent = headers().get('user-agent') ?? '';
+      if (/iPhone|iPod|Android|Mobile/i.test(userAgent)) redirect('/mobile');
     }
   }
 

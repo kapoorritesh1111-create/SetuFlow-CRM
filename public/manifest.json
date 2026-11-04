@@ -3,7 +3,7 @@
   "name": "SETU Flow CRM",
   "short_name": "SETU Flow",
   "description": "Mobile-ready trade execution CRM alerts, leads, quotes, approvals, orders and tasks.",
-  "start_url": "/dashboard?source=pwa",
+  "start_url": "/mobile?source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "browser"],
@@ -30,14 +30,14 @@
       "name": "Notifications",
       "short_name": "Alerts",
       "description": "Open SETU Flow alerts and reminders.",
-      "url": "/dashboard?panel=notifications",
+      "url": "/mobile/notifications",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Quick Lead",
       "short_name": "Lead",
       "description": "Capture a new trade lead.",
-      "url": "/leads/new?source=pwa-shortcut",
+      "url": "/leads?quickLead=1",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {

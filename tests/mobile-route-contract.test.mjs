@@ -104,3 +104,22 @@ test('mobile docs preserve signed-in identity and Share vCard without reference 
   assert.equal(existsSync('public/internal-dcc/index.html'), false);
   assert.equal(existsSync('public/setuflow-architecture.html'), false);
 });
+
+test('Mobile 3.0 is the phone landing page while desktop and specialist flows stay intact', () => {
+  const dashboard = readFileSync('src/app/(app)/dashboard/page.tsx', 'utf8');
+  const nav = readFileSync('src/lib/navigation/nav-items.ts', 'utf8');
+  const manifest = JSON.parse(readFileSync('public/manifest.json', 'utf8'));
+  const sw = readFileSync('public/sw.js', 'utf8');
+  assert.match(dashboard, /isMobileAppV1Enabled\(\)/);
+  assert.match(dashboard, /\/iPhone\|iPod\|Android\|Mobile\/i\.test\(userAgent\)/);
+  assert.match(dashboard, /redirect\('\/mobile'\)/);
+  assert.match(dashboard, /if \(!explicitAll && workspace\.membership && workspace\.organization\)/);
+  assert.match(dashboard, /!searchParams\?\.notice/);
+  assert.match(dashboard, /primaryRole === 'design' \|\| primaryRole === 'operations'/);
+  assert.match(nav, /mobileHref:'\/mobile',mobileLabel:'Home'/);
+  assert.match(nav, /href:'\/mobile',label:'Home'/);
+  assert.equal(manifest.start_url, '/mobile?source=pwa');
+  assert.equal(manifest.id, '/dashboard', 'keep PWA installation identity stable');
+  assert.match(sw, /const DEFAULT_NOTIFICATION_URL = '\/mobile\/notifications'/);
+  assert.match(sw, /setuflow-offline-v7-mobile-3/);
+});
