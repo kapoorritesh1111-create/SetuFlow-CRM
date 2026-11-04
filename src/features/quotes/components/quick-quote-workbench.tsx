@@ -231,12 +231,15 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
       <div className="grid gap-2 sm:hidden" aria-label="Mobile quantity price comparison">
         {rows.map(r=>{
           const requested=rows.find(item=>item.quantity===Number(qty));
-          const saving=requested&&r.quantity>requested.quantity&&requested.unit>r.unit
-            ?Math.round((1-r.unit/requested.unit)*1000)/10:null;
+          const isRoll=chosen?.kind==='frame'&&String(frameTemplate?.supply_form??'').endsWith('_roll');
+          const displayPrice=isRoll&&r.perKg?r.perKg:r.unit;
+          const requestedPrice=isRoll&&requested?.perKg?requested.perKg:requested?.unit;
+          const saving=requestedPrice&&r.quantity>requested!.quantity&&requestedPrice>displayPrice
+            ?Math.round((1-displayPrice/requestedPrice)*1000)/10:null;
           return <button type="button" key={r.quantity} onClick={()=>setSelected(r.quantity)} aria-pressed={selected===r.quantity} className={'w-full rounded-2xl border p-3 text-left transition '+(selected===r.quantity?'border-blue-600 bg-blue-50 text-blue-950':'border-slate-200 bg-white text-slate-800')}>
             <span className="flex items-center justify-between gap-2"><span className="text-sm font-bold">{r.quantity.toLocaleString('en-IN')} pcs{r.quantity===Number(qty)?' · Requested':''}</span><span className="text-xs font-semibold">{selected===r.quantity?'✓ Selected':'Select'}</span></span>
-            <span className="mt-2 flex items-baseline justify-between gap-2"><span className="text-lg font-bold">{money(r.unit,r.currency)} <span className="text-xs font-normal">/pc</span></span>{saving!==null?<span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800">{saving}% lower unit price</span>:null}</span>
-            <span className="mt-1 block text-xs">Total {money(r.total,r.currency)}{r.perKg?' · '+money(r.perKg,r.currency)+'/kg':''}</span>
+            <span className="mt-2 flex items-baseline justify-between gap-2"><span className="text-lg font-bold">{money(displayPrice,r.currency)} <span className="text-xs font-normal">{isRoll&&r.perKg?'/kg':'/unit'}</span></span>{saving!==null?<span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800">{saving}% lower unit price</span>:null}</span>
+            <span className="mt-1 block text-xs">Total {money(r.total,r.currency)}{r.perKg&&!isRoll?' · '+money(r.perKg,r.currency)+'/kg':''}</span>
           </button>;
         })}
       </div>
