@@ -61,4 +61,7 @@ test('coordinator sees only explicitly delegated leads while unrelated records s
   assert.deepEqual(ids, ['L-MOB-001']);
   const mapper = readFileSync('src/features/mobile/lib/app-mobile-leads.ts', 'utf8');
   assert.match(mapper, /coordinatorUserId: asString\(lead\.coordinator_user_id\)/);
+  const leadPage = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
+  assert.match(leadPage, /coordinatorUserId: coordinatorAssignments\[lead\.id\]/);
+  assert.match(leadPage, /exposedLeadIds\.has\(row\.id\)/);
 });
