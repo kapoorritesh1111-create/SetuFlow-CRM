@@ -62,3 +62,11 @@ test('media permissions remain denied publicly but allow user consent on authent
   assert.match(middleware, /return applySecurityHeaders\(response, nonce, permitsAuthenticatedMobileMedia\(pathname\)\)/);
   assert.doesNotMatch(middleware.split('function permitsAuthenticatedMobileMedia')[1]?.split('function applyPackagingAcademyHeaders')[0] ?? '', /\/admin|\/api/);
 });
+
+test('mobile Tasks route uses its real create sheet, not a dead quickTask query', () => {
+  const shell = readFileSync('src/features/mobile/components/mobile-shell.tsx', 'utf8');
+  const tasks = readFileSync('src/features/tasks/components/mobile-tasks-workspace.tsx', 'utf8');
+  assert.doesNotMatch(shell, /href: '\/tasks\?quickTask=1'/);
+  assert.match(tasks, /Create new task/);
+  assert.match(tasks, /TaskFormSheet/);
+});
