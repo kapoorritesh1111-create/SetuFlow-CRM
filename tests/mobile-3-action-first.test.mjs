@@ -132,3 +132,9 @@ test('standalone vCard shares the saved public slug and never a generic login pa
   assert.match(layout, /downloadVcfHref: shareSlug \? `\/api\/public\/card-vcf\?share=\$\{shareSlug\}` : undefined/);
   assert.match(bar, /topModules\.has\('vcard'\) && Boolean\(signedIn\?\.shareHref\)/);
 });
+
+test('legacy pipeline bookmarks never show fake zero values from a missing API', () => {
+  const pipeline = readFileSync('src/app/(mobile)/mobile/pipeline/page.tsx', 'utf8');
+  assert.match(pipeline, /redirect\('\/leads'\)/);
+  assert.doesNotMatch(pipeline, /fetch\('\/api\/mobile\/pipeline-summary'\)/);
+});
