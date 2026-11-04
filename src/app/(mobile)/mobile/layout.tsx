@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { MobileShell } from '@/features/mobile/components/mobile-shell';
 import { isMobileAppV1Enabled } from '@/features/mobile/lib/mobile-feature-flag';
 import { getInitials } from '@/lib/utils';
@@ -12,6 +12,9 @@ export default async function MobileLayout({ children }: { children: ReactNode }
   if (!isMobileAppV1Enabled()) notFound();
 
   const workspace = await getWorkspaceAccess();
+  // Never render anonymous preview pages as though they were a CRM workspace.
+  if (!workspace.user) redirect('/client-login?next=%2Fmobile');
+  if (!workspace.organization || !workspace.membership) redirect('/dashboard');
   const displayName = workspace.profile?.full_name ?? workspace.profile?.username ?? 'SETU Flow user';
   const normalizedRoles = normalizeWorkspaceRoles(workspace.currentRoles);
   const currentRole = getPrimaryWorkspaceRole(normalizedRoles) ?? 'member';

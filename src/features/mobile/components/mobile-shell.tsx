@@ -28,7 +28,7 @@ export type MobileSignedInIdentity = {
 // each route gets its own correct label + destination.
 function createBarConfig(pathname: string): { label: string; href: string } | null {
   if (pathname === '/leads' || pathname === '/mobile/leads') return { label: '+ Create lead', href: '/leads?quickLead=1' };
-  if (pathname === '/tasks') return { label: '+ Add task', href: '/tasks?quickTask=1' };
+  // /tasks already has its own real task form. Do not link to an unsupported quickTask query.
   // Quotes and Orders don't have a verified quick-create entry point yet —
   // omit the bar rather than guess at a destination.
   return null;

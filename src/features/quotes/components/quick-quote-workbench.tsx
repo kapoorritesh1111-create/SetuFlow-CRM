@@ -228,7 +228,22 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     {rows.length>0?<section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <h2 className="text-lg font-bold">3. Compare all valid quantity prices</h2>
       <p className="mb-3 text-xs text-slate-600">Only valid engine-calculated quantity breaks appear. Select the price to discuss on the call.</p>
-      <div className="overflow-x-auto"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b text-left"><th className="p-2">Qty</th><th className="p-2">Unit price</th><th className="p-2">Total</th><th className="p-2">Per kg (if available)</th><th className="p-2">Pick</th></tr></thead><tbody>{rows.map(r=><tr key={r.quantity} className={'border-b '+(selected===r.quantity?'bg-blue-50 text-blue-900':'')}><td className="p-2 font-semibold">{r.quantity.toLocaleString('en-IN')}{r.quantity===Number(qty)?' · Requested':''}</td><td className="p-2">{money(r.unit,r.currency)}</td><td className="p-2">{money(r.total,r.currency)}</td><td className="p-2">{r.perKg?money(r.perKg,r.currency):'—'}</td><td className="p-2"><input aria-label={'Select '+r.quantity} type="radio" checked={selected===r.quantity} onChange={()=>setSelected(r.quantity)}/></td></tr>)}</tbody></table></div>
+      <div className="grid gap-2 sm:hidden" aria-label="Mobile quantity price comparison">
+        {rows.map(r=>{
+          const requested=rows.find(item=>item.quantity===Number(qty));
+          const isRoll=chosen?.kind==='frame'&&String(frameTemplate?.supply_form??'').endsWith('_roll');
+          const displayPrice=isRoll&&r.perKg?r.perKg:r.unit;
+          const requestedPrice=isRoll&&requested?.perKg?requested.perKg:requested?.unit;
+          const saving=requestedPrice&&r.quantity>requested!.quantity&&requestedPrice>displayPrice
+            ?Math.round((1-displayPrice/requestedPrice)*1000)/10:null;
+          return <button type="button" key={r.quantity} onClick={()=>setSelected(r.quantity)} aria-pressed={selected===r.quantity} className={'w-full rounded-2xl border p-3 text-left transition '+(selected===r.quantity?'border-blue-600 bg-blue-50 text-blue-950':'border-slate-200 bg-white text-slate-800')}>
+            <span className="flex items-center justify-between gap-2"><span className="text-sm font-bold">{r.quantity.toLocaleString('en-IN')} pcs{r.quantity===Number(qty)?' · Requested':''}</span><span className="text-xs font-semibold">{selected===r.quantity?'✓ Selected':'Select'}</span></span>
+            <span className="mt-2 flex items-baseline justify-between gap-2"><span className="text-lg font-bold">{money(displayPrice,r.currency)} <span className="text-xs font-normal">{isRoll&&r.perKg?'/kg':'/unit'}</span></span>{saving!==null?<span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800">{saving}% lower unit price</span>:null}</span>
+            <span className="mt-1 block text-xs">Total {money(r.total,r.currency)}{r.perKg&&!isRoll?' · '+money(r.perKg,r.currency)+'/kg':''}</span>
+          </button>;
+        })}
+      </div>
+      <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b text-left"><th className="p-2">Qty</th><th className="p-2">Unit price</th><th className="p-2">Total</th><th className="p-2">Per kg (if available)</th><th className="p-2">Pick</th></tr></thead><tbody>{rows.map(r=><tr key={r.quantity} className={'border-b '+(selected===r.quantity?'bg-blue-50 text-blue-900':'')}><td className="p-2 font-semibold">{r.quantity.toLocaleString('en-IN')}{r.quantity===Number(qty)?' · Requested':''}</td><td className="p-2">{money(r.unit,r.currency)}</td><td className="p-2">{money(r.total,r.currency)}</td><td className="p-2">{r.perKg?money(r.perKg,r.currency):'—'}</td><td className="p-2"><input aria-label={'Select '+r.quantity} type="radio" checked={selected===r.quantity} onChange={()=>setSelected(r.quantity)}/></td></tr>)}</tbody></table></div>
       <button onClick={addLine} className="mt-4 min-h-12 w-full rounded-xl bg-emerald-700 px-4 py-3 font-bold text-white">Add Selected Price to Internal Basket</button>
     </section>:null}
     <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">

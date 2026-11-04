@@ -131,7 +131,12 @@ export default async function LeadsPage({
   }
   // Never send assignment metadata for unrelated leads to a sales browser.
 
-  const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any);
+  // The shared lead query omits coordinator_user_id. Attach only assignments
+  // for records already exposed by RLS; never widen the lead result set.
+  const mobileLeadCards = buildMobileLeadCardsFromAppData(data as any).map((lead) => ({
+    ...lead,
+    coordinatorUserId: coordinatorAssignments[lead.id] ?? null,
+  }));
   const mobileUser = buildMobileUserContextFromWorkspace(workspace as any);
   const mobileSignedIn = await buildMobileSignedInSummary(workspace as any);
 

@@ -201,15 +201,23 @@ function createRequestHeaders(request: NextRequest, nonce: string) {
   return requestHeaders;
 }
 
-function applySecurityHeaders(response: NextResponse, nonce: string) {
+function applySecurityHeaders(response: NextResponse, nonce: string, allowMedia = false) {
   response.headers.set('Content-Security-Policy', createContentSecurityPolicy(nonce));
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set('Permissions-Policy', allowMedia
+    ? 'camera=(self), microphone=(self), geolocation=()'
+    : 'camera=(), microphone=(), geolocation=()');
   return response;
+}
+
+function permitsAuthenticatedMobileMedia(pathname: string) {
+  return ['/mobile', '/leads', '/trade-events', '/contact-exchange', '/quick-quote'].some(
+    route => pathname === route || pathname.startsWith(route + '/'),
+  );
 }
 
 function applyPackagingAcademyHeaders(response: NextResponse) {
@@ -387,7 +395,7 @@ export async function middleware(request: NextRequest) {
     applyRateLimitHeaders(response, quota.limit, quota.remaining, quota.resetAt);
   }
 
-  return applySecurityHeaders(response, nonce);
+  return applySecurityHeaders(response, nonce, permitsAuthenticatedMobileMedia(pathname));
 }
 
 export const config = {

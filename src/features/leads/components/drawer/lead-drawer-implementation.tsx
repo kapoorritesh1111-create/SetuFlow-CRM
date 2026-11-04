@@ -254,6 +254,8 @@ export function LeadDrawer({
   const [selectedStarkServiceFamilyId, setSelectedStarkServiceFamilyId] = useState("");
 
   const [isDictatingNote, setIsDictatingNote] = useState(false);
+  const noteRecognitionRef = useRef<{ stop: () => void } | null>(null);
+  useEffect(() => () => { noteRecognitionRef.current?.stop(); noteRecognitionRef.current = null; }, []);
   const [dictationStatus, setDictationStatus] = useState("");
   const [quickScanStatus, setQuickScanStatus] = useState<{
     tone: "idle" | "loading" | "success" | "error";
@@ -835,50 +837,53 @@ export function LeadDrawer({
 
   const handleDictateNote = () => {
     if (typeof window === "undefined") return;
+    if (noteRecognitionRef.current) {
+      noteRecognitionRef.current.stop();
+      noteRecognitionRef.current = null;
+      setIsDictatingNote(false);
+      setDictationStatus("Dictation stopped. Review your note before saving.");
+      return;
+    }
     const Ctor =
-      (
-        window as unknown as {
-          SpeechRecognition?: SpeechRecognitionCtor;
-          webkitSpeechRecognition?: SpeechRecognitionCtor;
-        }
-      ).SpeechRecognition ??
-      (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionCtor })
-        .webkitSpeechRecognition;
+      (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor }).SpeechRecognition ??
+      (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionCtor }).webkitSpeechRecognition;
     if (!Ctor) {
-      setDictationStatus(
-        "Voice notes are not available in this browser. You can type the note below.",
-      );
+      setDictationStatus("Voice transcription is unavailable. Use your keyboard microphone or type your note.");
       return;
     }
     const recognition = new Ctor();
-    recognition.lang = "en-US";
+    recognition.lang = navigator.language || "en-US";
     recognition.continuous = true;
     recognition.interimResults = false;
-    setIsDictatingNote(true);
-    setDictationStatus("Listening…");
+    // Each onresult reports only new results; re-reading previous results
+    // duplicated the user's dictated notes during long sessions.
     recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0]?.transcript ?? "")
-        .join(" ")
-        .trim();
+      const current = event as typeof event & { resultIndex?: number };
+      const results = Array.from(event.results).slice(current.resultIndex ?? 0);
+      const transcript = results.map((result) => result[0]?.transcript ?? "").join(" ").trim();
       if (transcript) {
-        setNotes((current) =>
-          [String(current ?? "").trim(), transcript].filter(Boolean).join("\n"),
-        );
-        setDictationStatus("Note added.");
+        setNotes((previous) => [String(previous ?? "").trim(), transcript].filter(Boolean).join("\n"));
+        setDictationStatus("Transcript added. Review the note before saving.");
       }
     };
     recognition.onerror = () => {
-      // This project's SpeechRecognition type declares a zero-argument callback.
-      // Avoid a non-portable event parameter; keep a clear permissions fallback.
-      setDictationStatus("Dictation stopped. Check microphone permission, or type your note below. No card data was added to notes.");
+      noteRecognitionRef.current = null;
       setIsDictatingNote(false);
+      setDictationStatus("Dictation stopped. Check microphone permissions or type your note. Nothing was saved automatically.");
     };
     recognition.onend = () => {
+      noteRecognitionRef.current = null;
       setIsDictatingNote(false);
     };
-    try { recognition.start(); }
-    catch { setIsDictatingNote(false); setDictationStatus("Microphone could not start. Type your note below or use your keyboard microphone."); }
+    try {
+      recognition.start();
+      noteRecognitionRef.current = { stop: () => recognition.stop?.() };
+      setIsDictatingNote(true);
+      setDictationStatus("Listening. Tap again to stop; review before saving.");
+    } catch {
+      setIsDictatingNote(false);
+      setDictationStatus("Microphone could not start. Type your note or use your keyboard microphone.");
+    }
   };
 
   const categoryTree = useMemo(() => {
