@@ -877,7 +877,7 @@ export function LeadDrawer({
     };
     try {
       recognition.start();
-      noteRecognitionRef.current = recognition;
+      noteRecognitionRef.current = { stop: () => recognition.stop?.() };
       setIsDictatingNote(true);
       setDictationStatus("Listening. Tap again to stop; review before saving.");
     } catch {
