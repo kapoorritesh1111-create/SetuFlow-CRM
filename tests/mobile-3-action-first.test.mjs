@@ -70,3 +70,25 @@ test('mobile Tasks route uses its real create sheet, not a dead quickTask query'
   assert.match(tasks, /Create new task/);
   assert.match(tasks, /TaskFormSheet/);
 });
+
+test('anonymous mobile preview must ask for real sign-in before rendering workspace', () => {
+  const layout = readFileSync('src/app/(mobile)/mobile/layout.tsx', 'utf8');
+  assert.match(layout, /if \(!workspace\.user\) redirect\('\/client-login\?next=%2Fmobile'\)/);
+  assert.match(layout, /if \(!workspace\.organization \|\| !workspace\.membership\) redirect\('\/dashboard'\)/);
+});
+
+test('module grant API errors do not misleadingly claim that licensed modules are disabled', () => {
+  const home = readFileSync('src/app/(mobile)/mobile/page.tsx', 'utf8');
+  assert.match(home, /setGrantsError\(true\)/);
+  assert.match(home, /Workspace permissions could not load/);
+  assert.match(home, /!grantsError && actions\.length === 0/);
+});
+
+test('device settings do not show fake universal Ready statuses', () => {
+  const cards = readFileSync('src/features/mobile/components/mobile-cards.tsx', 'utf8');
+  assert.match(cards, /Notification\.permission/);
+  assert.match(cards, /countOfflineTradeCaptures/);
+  assert.match(cards, /display-mode: standalone/);
+  const settings = cards.slice(cards.indexOf('export function SettingsList()'));
+  assert.doesNotMatch(settings, />Ready</);
+});
