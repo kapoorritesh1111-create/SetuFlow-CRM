@@ -21,6 +21,7 @@ export default async function MobileLayout({ children }: { children: ReactNode }
 
   return (
     <MobileShell
+      organizationId={workspace.organization.id}
       signedIn={{
         name: displayName,
         initials: getInitials(displayName),
