@@ -1,38 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
+import { useMobilePermissions } from '@/features/mobile/components/mobile-permissions';
 
 // Mobile 3.0 action-first workspace. Existing authenticated routes own all data
 // mutations, pricing, ownership validation, and permission enforcement.
 export default function MobileHomePage() {
-  const [grants, setGrants] = useState<OrgModuleGrant[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [grantsError, setGrantsError] = useState(false);
-  const [canAccessAdmin, setCanAccessAdmin] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-    fetch('/api/modules/grants', { cache: 'no-store', signal: controller.signal })
-      .then(async response => {
-        if (!response.ok) throw new Error('Module permissions unavailable');
-        return response.json() as Promise<{ grants?: OrgModuleGrant[]; canAccessAdmin?: boolean }>;
-      })
-      .then(data => {
-        if (active) {
-          setGrants(Array.isArray(data.grants) ? data.grants : []);
-          setCanAccessAdmin(data.canAccessAdmin === true);
-          setGrantsError(false);
-          setLoaded(true);
-        }
-      })
-      .catch(() => { if (active) { setGrants([]); setCanAccessAdmin(false); setGrantsError(true); setLoaded(true); } });
-    return () => { active = false; controller.abort(); };
-  }, []);
-
-  const enabled = getEnabledModuleSet(grants);
+  const { enabled, canAccessAdmin, loaded, error: grantsError, refresh } = useMobilePermissions();
   const crm = enabled.has('full_crm');
   const tradeShow = enabled.has('trade_show');
   const guru = enabled.has('setu_guru');
@@ -70,8 +44,8 @@ export default function MobileHomePage() {
         {!loaded ? <p role="status" className="rounded-2xl border border-line bg-surface-1 p-4 text-xs text-content-muted">Loading your permitted workspace…</p> : null}
         {loaded && grantsError ? <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
           <p className="font-semibold">Workspace permissions could not load.</p>
-          <p className="mt-1">This is not confirmation that your modules are disabled. Sign in to the preview with your SETU Flow account, or refresh the page.</p>
-          <div className="mt-3 flex flex-wrap gap-3"><Link className="font-bold underline" href="/client-login?next=%2Fmobile">Sign in</Link><button type="button" onClick={() => window.location.reload()} className="font-bold underline">Retry</button></div>
+          <p className="mt-1">This is not confirmation that your modules are disabled. Check your connection and retry. Your previous actions may remain visible, but changes still require server permission.</p>
+          <div className="mt-3"><button type="button" onClick={refresh} className="font-bold underline">Retry permissions</button></div>
         </div> : null}
         {loaded && !grantsError && actions.length === 0 ? <div role="status" className="rounded-2xl border border-line bg-surface-1 p-4 text-xs text-content-muted">No modules were returned for your current organization. Switch to the licensed customer workspace or ask your administrator to review module grants.</div> : null}
         {actions.map(action => (

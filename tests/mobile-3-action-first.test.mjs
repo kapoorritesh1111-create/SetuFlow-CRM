@@ -7,8 +7,10 @@ const capture = readFileSync('src/features/mobile/components/quick-capture-sheet
 const nav = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
 
 test('mobile home reads grants and only links to real authenticated workflows', () => {
-  assert.match(home, /fetch\('\/api\/modules\/grants'/);
-  assert.match(home, /getEnabledModuleSet\(grants\)/);
+  assert.match(home, /useMobilePermissions\(\)/);
+  const shared = readFileSync('src/features/mobile/components/mobile-permissions.tsx', 'utf8');
+  assert.match(shared, /fetch\('\/api\/modules\/grants'/);
+  assert.match(shared, /getEnabledModuleSet\(grants\)/);
   for (const route of ['/leads', '/quick-quote', '/tasks', '/trade-events', '/mobile/guru', '/contact-exchange/vcard', '/mail']) {
     assert.ok(home.includes(route), 'missing real destination: ' + route);
   }
@@ -46,7 +48,8 @@ test('existing lead note dictation can be stopped and appends only new transcrip
 
 test('owner dashboard shortcuts require authenticated admin and module grants', () => {
   const home = readFileSync('src/app/(mobile)/mobile/page.tsx', 'utf8');
-  assert.match(home, /setCanAccessAdmin\(data\.canAccessAdmin === true\)/);
+  const shared = readFileSync('src/features/mobile/components/mobile-permissions.tsx', 'utf8');
+  assert.match(shared, /setCanAccessAdmin\(payload\.canAccessAdmin === true\)/);
   assert.match(home, /canAccessAdmin && crm \?/);
   assert.match(home, /canAccessAdmin \?/);
   assert.match(home, /analytics \?/);
@@ -79,7 +82,8 @@ test('anonymous mobile preview must ask for real sign-in before rendering worksp
 
 test('module grant API errors do not misleadingly claim that licensed modules are disabled', () => {
   const home = readFileSync('src/app/(mobile)/mobile/page.tsx', 'utf8');
-  assert.match(home, /setGrantsError\(true\)/);
+  const shared = readFileSync('src/features/mobile/components/mobile-permissions.tsx', 'utf8');
+  assert.match(shared, /setError\(true\)/);
   assert.match(home, /Workspace permissions could not load/);
   assert.match(home, /!grantsError && actions\.length === 0/);
 });
@@ -91,4 +95,46 @@ test('device settings do not show fake universal Ready statuses', () => {
   assert.match(cards, /display-mode: standalone/);
   const settings = cards.slice(cards.indexOf('export function SettingsList()'));
   assert.doesNotMatch(settings, />Ready</);
+});
+
+test('production mobile screens cannot accidentally restore mock prices or fake saves', () => {
+  const components = readFileSync('src/features/mobile/components/mobile-cards.tsx', 'utf8');
+  assert.doesNotMatch(components, /qty \* 3\.1|Template pricing, freight basis/);
+  assert.doesNotMatch(components, /export function QuickQuoteWidget|export function TradeCaptureForm/);
+  assert.doesNotMatch(components, /<button[^>]*>Save \{entity\}/);
+});
+
+test('legacy standalone lead list cannot show demo customer records in production', () => {
+  const oldRoute = readFileSync('src/app/(mobile)/mobile/leads/page.tsx', 'utf8');
+  const leadList = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
+  assert.match(oldRoute, /redirect\('\/leads'\)/);
+  assert.doesNotMatch(oldRoute, /RoleAwareLeadList|mobileLeadDemoData/);
+  assert.match(leadList, /buildMobileLeadCardsFromAppData/);
+});
+
+test('mobile notification close returns to the new home', () => {
+  const notifications = readFileSync('src/app/(mobile)/mobile/notifications/page.tsx', 'utf8');
+  assert.match(notifications, /href="\/mobile" aria-label="Close notifications"/);
+});
+
+test('Guru is a real navigation action, not an event without a listener in standalone shell', () => {
+  const topBar = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
+  assert.match(topBar, /canUseGuru \? <Link href="\/mobile\/guru"/);
+  assert.doesNotMatch(topBar, /setu-guru:open/);
+});
+
+test('standalone vCard shares the saved public slug and never a generic login page', () => {
+  const layout = readFileSync('src/app/(mobile)/mobile/layout.tsx', 'utf8');
+  const bar = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
+  assert.match(layout, /getMyCardSettingsForUser\(workspace\.user\.id\)/);
+  assert.match(layout, /myCard\?\.is_public && myCard\?\.share_slug/);
+  assert.match(layout, /shareHref: shareSlug \? `\/card\?share=\$\{shareSlug\}` : undefined/);
+  assert.match(layout, /downloadVcfHref: shareSlug \? `\/api\/public\/card-vcf\?share=\$\{shareSlug\}` : undefined/);
+  assert.match(bar, /topModules\.has\('vcard'\) && Boolean\(signedIn\?\.shareHref\)/);
+});
+
+test('legacy pipeline bookmarks never show fake zero values from a missing API', () => {
+  const pipeline = readFileSync('src/app/(mobile)/mobile/pipeline/page.tsx', 'utf8');
+  assert.match(pipeline, /redirect\('\/leads'\)/);
+  assert.doesNotMatch(pipeline, /fetch\('\/api\/mobile\/pipeline-summary'\)/);
 });

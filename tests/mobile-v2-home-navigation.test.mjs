@@ -37,7 +37,7 @@ test('mobile Guru dictation is user-reviewed and does not auto-submit', () => {
 test('mobile standalone home does not claim a live KPI pulse without dashboard data', () => {
   const home = readFileSync('src/app/(mobile)/mobile/page.tsx', 'utf8');
   assert.doesNotMatch(home, /<MobileHomeHero\s*\/>/);
-  assert.match(home, /getEnabledModuleSet\(grants\)/);
+  assert.match(home, /useMobilePermissions\(\)/);
 });
 
 test('mobile Quick Quote shows usable price cards without overriding the pricing engine', () => {

@@ -3,18 +3,17 @@
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { SetuIcon, type SetuIconName } from '@/components/ui/setu-icon';
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { RecentActivityItem } from '@/features/dashboard/types';
 import type { DashboardData } from '@/lib/queries/dashboard';
-import { canonicalMobileNavItems, standaloneMobileNavItems } from '@/lib/navigation/nav-items';
 import { MobileVCardShareSheet } from "./mobile-vcard-share-sheet";
 import { ThemeToggle } from "./theme-toggle";
 import { QuickCaptureSheet } from "./quick-capture-sheet";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 import { MetricGrid, MetricTile, SegmentedControl } from './primitives';
-import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
+import { useMobilePermissions } from './mobile-permissions';
 
 type MobileScope = 'all' | 'buyer' | 'supplier';
 
@@ -83,33 +82,8 @@ function scopedHref(baseHref: string, scope: MobileScope) {
 }
 
 export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
-  const pathname = usePathname();
-  const [visibleModules, setVisibleModules] = useState<OrgModuleGrant[]>([]);
-  useEffect(() => {
-    let active = true;
-    let requestVersion = 0;
-    const refreshGrants = () => {
-      const version = ++requestVersion;
-      setVisibleModules([]);
-      fetch('/api/modules/grants', { cache: 'no-store' })
-        .then(async response => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
-        .then(data => { if (active && version === requestVersion) setVisibleModules(Array.isArray(data.grants) ? data.grants : []); })
-        .catch(() => { if (active && version === requestVersion) setVisibleModules([]); });
-    };
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') refreshGrants();
-    };
-    refreshGrants();
-    window.addEventListener('focus', refreshGrants);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      active = false;
-      window.removeEventListener('focus', refreshGrants);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [pathname]);
-  const topModules = getEnabledModuleSet(visibleModules);
-  const canShareVCard = topModules.has('vcard');
+  const { enabled: topModules } = useMobilePermissions();
+  const canShareVCard = topModules.has('vcard') && Boolean(signedIn?.shareHref);
   const canUseGuru = topModules.has('setu_guru');
   const canCapture = topModules.has('full_crm') || topModules.has('trade_show');
   const [open, setOpen] = useState(false);
@@ -136,7 +110,7 @@ export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIde
             <p className="mt-0.5 truncate text-xs font-semibold text-white/60">{dateLabel || "Today"}</p>
           </div>
           {canCapture ? <button type="button" onClick={() => setCaptureOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-teal-500 text-lg font-bold text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Quick capture" title="Quick capture">+</button> : null}
-          {canUseGuru ? <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></button> : null}
+          {canUseGuru ? <Link href="/mobile/guru" className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></Link> : null}
           {canShareVCard ? <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button> : null}
           <Link href="/mobile/notifications" className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15" aria-label="Open notifications" title="Notifications"><SetuIcon name="bell" className="h-5 w-5" /></Link>
           <button type="button" onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-full" title={`Signed in as ${displayName}`} aria-label="Open profile settings"><UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" /></button>
@@ -184,24 +158,6 @@ export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard, canS
   );
 }
 
-export function MobileBottomTabs({ canonical = false }: { canonical?: boolean }) {
-  const pathname = usePathname();
-  const tabs = canonical ? canonicalMobileNavItems : standaloneMobileNavItems;
-  return (
-    <nav className="fixed bottom-0 left-1/2 z-[420] grid h-[86px] w-full max-w-[430px] -translate-x-1/2 grid-cols-5 gap-1 rounded-t-panel border border-slate-200/80 border-b-0 bg-white/95 px-2 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_44px_rgba(15,23,42,.16)] backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-950/95" aria-label="Mobile navigation">
-      {tabs.map((tab) => {
-        const active = tab.match.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-        return (
-          <Link key={tab.href} href={tab.href} aria-current={active ? 'page' : undefined} className={`relative z-[421] flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${active ? "bg-blue-500/10 text-blue-600 dark:text-sky-300" : "text-slate-500 dark:text-slate-400"}`}>
-            {tab.label === 'Guru' ? <GuruAvatar size="sm" className="mb-0.5" /> : <SetuIcon name={tab.icon} className="mb-0.5 h-5 w-5" />}
-            {tab.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
 export function MobileHomeHero({ data }: { data?: DashboardData }) {
   const openLeads = data ? getKpiValue(data, 'open-leads') : '—';
   const overdueFollowUps = data ? getKpiValue(data, 'overdue-followups') : '—';
@@ -226,16 +182,7 @@ export function MobileHomeHero({ data }: { data?: DashboardData }) {
 }
 
 export function MobileDashboardHome({ data }: { data: DashboardData }) {
-  const [moduleGrants, setModuleGrants] = useState<OrgModuleGrant[]>([]);
-  useEffect(() => {
-    let active = true;
-    fetch('/api/modules/grants', { cache: 'no-store' })
-      .then(async (response) => { if (!response.ok) throw new Error('Module grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
-      .then((payload) => { if (active) setModuleGrants(Array.isArray(payload.grants) ? payload.grants : []); })
-      .catch(() => { if (active) setModuleGrants([]); });
-    return () => { active = false; };
-  }, []);
-  const enabledModules = getEnabledModuleSet(moduleGrants);
+  const { enabled: enabledModules } = useMobilePermissions();
   const hasCrm = enabledModules.has('full_crm');
   const hasOrders = enabledModules.has('orders_compliance');
   const hasTradeShow = enabledModules.has('trade_show');

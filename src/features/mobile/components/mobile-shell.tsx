@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { BrandedMobileTopBar } from './mobile-navigation';
 import { MobileBottomTabs } from './mobile-bottom-tabs';
+import { MobilePermissionsProvider, useMobilePermissions } from './mobile-permissions';
 
 export type MobileSignedInIdentity = {
   name: string;
@@ -38,21 +39,25 @@ export function MobileShell({
   children,
   signedIn,
   canonical = false,
+  organizationId,
 }: {
   children: ReactNode;
   signedIn?: MobileSignedInIdentity;
   canonical?: boolean;
+  organizationId: string;
 }) {
   const pathname = usePathname();
   const createBar = createBarConfig(pathname);
 
   return (
+    <MobilePermissionsProvider key={organizationId} organizationId={organizationId}>
     <div
       className="sfm-app min-h-screen min-w-0 overflow-x-clip bg-surface-2 text-slate-950 dark:bg-slate-950 dark:text-white"
       data-feature-flag="feature/mobile_app_v1"
       data-mobile-shell={canonical ? 'canonical' : 'standalone'}
     >
       <BrandedMobileTopBar signedIn={signedIn} canonical={canonical} />
+      <MobileWorkspaceConnectivity />
       <main className="mx-auto w-full min-w-0 max-w-[460px] space-y-4 px-3 py-4 pb-[calc(170px+env(safe-area-inset-bottom))] sm:px-4">
         {children}
       </main>
@@ -68,5 +73,15 @@ export function MobileShell({
       ) : null}
       <MobileBottomTabs canonical={canonical} />
     </div>
+    </MobilePermissionsProvider>
   );
+}
+
+function MobileWorkspaceConnectivity() {
+  const { error, loaded, refresh } = useMobilePermissions();
+  if (!loaded || !error) return null;
+  return <div role="alert" className="mx-auto max-w-[460px] border-b border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950">
+    <strong>Workspace connection interrupted.</strong> Actions already shown remain subject to server permissions.
+    <button type="button" onClick={refresh} className="ml-2 font-bold underline">Retry</button>
+  </div>;
 }

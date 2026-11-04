@@ -1,5 +1,7 @@
-import { RoleAwareLeadList } from '@/features/mobile/components/role-aware-lead-list';
+import { redirect } from 'next/navigation';
 
+// All lead lists must use the authenticated, RLS-scoped canonical CRM data
+// source. The previous standalone version could display bundled demo leads.
 export default function MobileLeadsPage() {
-  return <RoleAwareLeadList allowRolePreview={false} />;
+  redirect('/leads');
 }

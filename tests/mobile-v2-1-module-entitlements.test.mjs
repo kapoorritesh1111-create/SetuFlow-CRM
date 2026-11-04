@@ -21,7 +21,9 @@ test('module grant API never advertises paid modules on missing workspace or que
 
 test('mobile primary tabs and More derive destinations from explicit grants', () => {
   const source = read('src/features/mobile/components/mobile-bottom-tabs.tsx');
-  assert.match(source, /fetch\('\/api\/modules\/grants'/);
+  const shared = read('src/features/mobile/components/mobile-permissions.tsx');
+  assert.match(shared, /fetch\('\/api\/modules\/grants'/);
+  assert.match(source, /useMobilePermissions\(\)/);
   assert.match(source, /configuredTabs.*filter\(\(tab\) => allowed\(tab\.href\)\)/);
   assert.match(source, /permittedMoreItems = mobileMoreNavItems\.filter/);
   assert.match(source, /permittedMoreItems\.map/);
