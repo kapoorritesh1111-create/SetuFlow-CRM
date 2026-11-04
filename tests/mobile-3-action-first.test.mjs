@@ -96,3 +96,10 @@ test('device settings do not show fake universal Ready statuses', () => {
   const settings = cards.slice(cards.indexOf('export function SettingsList()'));
   assert.doesNotMatch(settings, />Ready</);
 });
+
+test('production mobile screens cannot accidentally restore mock prices or fake saves', () => {
+  const components = readFileSync('src/features/mobile/components/mobile-cards.tsx', 'utf8');
+  assert.doesNotMatch(components, /qty \* 3\.1|Template pricing, freight basis/);
+  assert.doesNotMatch(components, /export function QuickQuoteWidget|export function TradeCaptureForm/);
+  assert.doesNotMatch(components, /<button[^>]*>Save \{entity\}/);
+});
