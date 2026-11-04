@@ -9,6 +9,7 @@ import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-g
 export default function MobileHomePage() {
   const [grants, setGrants] = useState<OrgModuleGrant[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [grantsError, setGrantsError] = useState(false);
   const [canAccessAdmin, setCanAccessAdmin] = useState(false);
 
   useEffect(() => {
@@ -23,10 +24,11 @@ export default function MobileHomePage() {
         if (active) {
           setGrants(Array.isArray(data.grants) ? data.grants : []);
           setCanAccessAdmin(data.canAccessAdmin === true);
+          setGrantsError(false);
           setLoaded(true);
         }
       })
-      .catch(() => { if (active) { setGrants([]); setCanAccessAdmin(false); setLoaded(true); } });
+      .catch(() => { if (active) { setGrants([]); setCanAccessAdmin(false); setGrantsError(true); setLoaded(true); } });
     return () => { active = false; controller.abort(); };
   }, []);
 
@@ -66,7 +68,12 @@ export default function MobileHomePage() {
           {crm ? <Link href="/leads" className="text-xs font-semibold text-brand-700 dark:text-sky-300">View customers ›</Link> : null}
         </div>
         {!loaded ? <p role="status" className="rounded-2xl border border-line bg-surface-1 p-4 text-xs text-content-muted">Loading your permitted workspace…</p> : null}
-        {loaded && actions.length === 0 ? <p role="status" className="rounded-2xl border border-line bg-surface-1 p-4 text-xs text-content-muted">No mobile actions are enabled for this workspace. Contact your administrator if you need access.</p> : null}
+        {loaded && grantsError ? <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">Workspace permissions could not load.</p>
+          <p className="mt-1">This is not confirmation that your modules are disabled. Sign in to the preview with your SETU Flow account, or refresh the page.</p>
+          <div className="mt-3 flex flex-wrap gap-3"><Link className="font-bold underline" href="/client-login?next=%2Fmobile">Sign in</Link><button type="button" onClick={() => window.location.reload()} className="font-bold underline">Retry</button></div>
+        </div> : null}
+        {loaded && !grantsError && actions.length === 0 ? <div role="status" className="rounded-2xl border border-line bg-surface-1 p-4 text-xs text-content-muted">No modules were returned for your current organization. Switch to the licensed customer workspace or ask your administrator to review module grants.</div> : null}
         {actions.map(action => (
           <Link key={action.href} href={action.href} className="flex min-h-[78px] items-center gap-3 rounded-2xl border border-line bg-surface-1 p-4 shadow-sm transition active:scale-[.99]">
             <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-2 text-xl font-semibold text-content-primary">{action.icon}</span>
