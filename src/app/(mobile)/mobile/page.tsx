@@ -1,47 +1,77 @@
-import Link from "next/link";
-import { MobileHomeHero } from "@/features/mobile/components/mobile-navigation";
-import { ThreeDIconOrb } from "@/features/mobile/components/icon-3d-orb";
+'use client';
 
-// SF-18-120: Upgraded action tiles with Leads as primary full-width tile
-const primaryAction = { href: "/mobile/leads", title: "Follow-up Queue", icon: "◎", subtitle: "Review and action leads", tone: "blue" as const };
-const secondaryActions = [
-  { href: "/mobile/pipeline", title: "Pipeline", icon: "⊞", tone: "blue" as const },
-  { href: "/mobile/dashboard", title: "Dashboard", icon: "◈", tone: "teal" as const },
-  { href: "/mobile/capture", title: "Capture", icon: "+", tone: "violet" as const },
-  { href: "/mobile/guru", title: "Guru", icon: "🧠", tone: "gold" as const },
-];
-// Keep original for backward compat
-const actions = secondaryActions;
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { MobileHomeHero } from '@/features/mobile/components/mobile-navigation';
+import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
 
+// Mobile 3.0 action-first workspace. Existing authenticated routes own all data
+// mutations, pricing, ownership validation, and permission enforcement.
 export default function MobileHomePage() {
+  const [grants, setGrants] = useState<OrgModuleGrant[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    fetch('/api/modules/grants', { cache: 'no-store', signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('Module permissions unavailable');
+        return response.json() as Promise<{ grants?: OrgModuleGrant[] }>;
+      })
+      .then(data => {
+        if (active) {
+          setGrants(Array.isArray(data.grants) ? data.grants : []);
+          setLoaded(true);
+        }
+      })
+      .catch(() => { if (active) { setGrants([]); setLoaded(true); } });
+    return () => { active = false; controller.abort(); };
+  }, []);
+
+  const enabled = getEnabledModuleSet(grants);
+  const crm = enabled.has('full_crm');
+  const tradeShow = enabled.has('trade_show');
+  const guru = enabled.has('setu_guru');
+  const vcard = enabled.has('vcard');
+
+  const actions = [
+    ...(crm ? [
+      { href: '/leads', title: 'Continue with customers', description: 'Review customer history, notes and next actions', icon: '◎' },
+      { href: '/quick-quote', title: 'Prepare a Quick Quote', description: 'Use verified prices, constructions and quantities', icon: '▤' },
+      { href: '/tasks', title: 'Follow-ups and meetings', description: 'Review assigned work and overdue actions', icon: '✓' },
+    ] : []),
+    ...(tradeShow ? [{ href: '/trade-events', title: 'Trade Show Mode', description: 'Capture visitors and track event synchronization', icon: '▣' }] : []),
+    ...(guru ? [{ href: '/mobile/guru', title: 'Ask Setu Guru', description: 'Get help with your next sales activity', icon: '✦' }] : []),
+    ...(vcard ? [{ href: '/contact-exchange/vcard', title: 'My digital business card', description: 'Share your verified contact details', icon: '▦' }] : []),
+  ];
+
   return (
-    <>
+    <div className="space-y-4">
+      <section className="rounded-hero border border-line bg-surface-1 p-4 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-content-muted">My workspace</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-content-primary">Your day, in focus.</h1>
+        <p className="mt-2 text-sm leading-5 text-content-muted">Pick up where you left off, without losing customer context.</p>
+      </section>
       <MobileHomeHero />
-      {/* SF-18-120: Primary full-width Leads tile */}
-      <Link href={primaryAction.href}
-        className="flex items-center gap-4 rounded-hero bg-blue-600 p-5 text-white shadow-xl shadow-blue-600/20 active:scale-[.98] transition">
-        <span className="text-4xl">◎</span>
-        <div>
-          <p className="font-black text-lg leading-none">{primaryAction.title}</p>
-          <p className="text-xs text-blue-200 mt-1">{primaryAction.subtitle}</p>
+      <section aria-label="Mobile next actions" className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-content-primary">Get things done</h2>
+          {crm ? <Link href="/leads" className="text-xs font-semibold text-brand-700 dark:text-sky-300">View customers ›</Link> : null}
         </div>
-        <span className="ml-auto text-2xl opacity-60">›</span>
-      </Link>
-      <section className="grid grid-cols-2 gap-3">
-        {actions.map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            aria-label={action.title}
-            className="rounded-hero bg-white/90 p-4 shadow-xl shadow-blue-950/5 dark:bg-slate-900/90"
-          >
-            <ThreeDIconOrb icon={action.icon} tone={action.tone} />
-            <h2 className="mt-3 text-base font-black text-slate-950 dark:text-white">
-              {action.title}
-            </h2>
+        {!loaded ? <p role="status" className="rounded-2xl border border-line bg-surface-1 p-4 text-xs text-content-muted">Loading your permitted workspace…</p> : null}
+        {loaded && actions.length === 0 ? <p role="status" className="rounded-2xl border border-line bg-surface-1 p-4 text-xs text-content-muted">No mobile actions are enabled for this workspace. Contact your administrator if you need access.</p> : null}
+        {actions.map(action => (
+          <Link key={action.href} href={action.href} className="flex min-h-[78px] items-center gap-3 rounded-2xl border border-line bg-surface-1 p-4 shadow-sm transition active:scale-[.99]">
+            <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-2 text-xl font-semibold text-content-primary">{action.icon}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-content-primary">{action.title}</span>
+              <span className="mt-1 block text-xs leading-4 text-content-muted">{action.description}</span>
+            </span>
+            <span aria-hidden="true" className="text-content-muted">›</span>
           </Link>
         ))}
       </section>
-    </>
+    </div>
   );
 }
