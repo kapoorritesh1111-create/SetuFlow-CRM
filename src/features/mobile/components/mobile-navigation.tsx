@@ -3,11 +3,10 @@
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 import { SetuIcon, type SetuIconName } from '@/components/ui/setu-icon';
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { RecentActivityItem } from '@/features/dashboard/types';
 import type { DashboardData } from '@/lib/queries/dashboard';
-import { canonicalMobileNavItems, standaloneMobileNavItems } from '@/lib/navigation/nav-items';
 import { MobileVCardShareSheet } from "./mobile-vcard-share-sheet";
 import { ThemeToggle } from "./theme-toggle";
 import { QuickCaptureSheet } from "./quick-capture-sheet";
@@ -15,7 +14,6 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 import { MetricGrid, MetricTile, SegmentedControl } from './primitives';
 import { useMobilePermissions } from './mobile-permissions';
-import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
 
 type MobileScope = 'all' | 'buyer' | 'supplier';
 
@@ -84,7 +82,6 @@ function scopedHref(baseHref: string, scope: MobileScope) {
 }
 
 export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
-  const pathname = usePathname();
   const { enabled: topModules } = useMobilePermissions();
   const canShareVCard = topModules.has('vcard');
   const canUseGuru = topModules.has('setu_guru');
@@ -161,24 +158,6 @@ export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard, canS
   );
 }
 
-export function MobileBottomTabs({ canonical = false }: { canonical?: boolean }) {
-  const pathname = usePathname();
-  const tabs = canonical ? canonicalMobileNavItems : standaloneMobileNavItems;
-  return (
-    <nav className="fixed bottom-0 left-1/2 z-[420] grid h-[86px] w-full max-w-[430px] -translate-x-1/2 grid-cols-5 gap-1 rounded-t-panel border border-slate-200/80 border-b-0 bg-white/95 px-2 pb-[calc(12px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-18px_44px_rgba(15,23,42,.16)] backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-950/95" aria-label="Mobile navigation">
-      {tabs.map((tab) => {
-        const active = tab.match.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-        return (
-          <Link key={tab.href} href={tab.href} aria-current={active ? 'page' : undefined} className={`relative z-[421] flex flex-col items-center justify-center rounded-2xl text-[10px] font-black ${active ? "bg-blue-500/10 text-blue-600 dark:text-sky-300" : "text-slate-500 dark:text-slate-400"}`}>
-            {tab.label === 'Guru' ? <GuruAvatar size="sm" className="mb-0.5" /> : <SetuIcon name={tab.icon} className="mb-0.5 h-5 w-5" />}
-            {tab.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
 export function MobileHomeHero({ data }: { data?: DashboardData }) {
   const openLeads = data ? getKpiValue(data, 'open-leads') : '—';
   const overdueFollowUps = data ? getKpiValue(data, 'overdue-followups') : '—';
@@ -203,16 +182,7 @@ export function MobileHomeHero({ data }: { data?: DashboardData }) {
 }
 
 export function MobileDashboardHome({ data }: { data: DashboardData }) {
-  const [moduleGrants, setModuleGrants] = useState<OrgModuleGrant[]>([]);
-  useEffect(() => {
-    let active = true;
-    fetch('/api/modules/grants', { cache: 'no-store' })
-      .then(async (response) => { if (!response.ok) throw new Error('Module grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
-      .then((payload) => { if (active) setModuleGrants(Array.isArray(payload.grants) ? payload.grants : []); })
-      .catch(() => { if (active) setModuleGrants([]); });
-    return () => { active = false; };
-  }, []);
-  const enabledModules = getEnabledModuleSet(moduleGrants);
+  const { enabled: enabledModules } = useMobilePermissions();
   const hasCrm = enabledModules.has('full_crm');
   const hasOrders = enabledModules.has('orders_compliance');
   const hasTradeShow = enabledModules.has('trade_show');
