@@ -62,7 +62,7 @@ test('canonical dashboard and leads use the blueprint-grade mobile shell on phon
 
   assert.match(appShell, /shouldUseCanonicalMobileShell/);
   assert.match(appShell, /canonicalMobileRoutes = \['\/dashboard', '\/leads', '\/quotes', '\/orders'/);
-  assert.match(appShell, /<MobileShell signedIn=\{signedInForMobile\} canonical>/);
+  assert.match(appShell, /<MobileShell signedIn=\{signedInForMobile\} organizationId=\{organization\?\.id \?\? ''\} canonical>/);
   assert.match(appShell, /hidden md:block/);
   assert.match(dashboardPage, /MobileDashboardHome/);
   assert.match(dashboardPage, /<div className="md:hidden">/);
