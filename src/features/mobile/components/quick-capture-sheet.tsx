@@ -52,7 +52,7 @@ export function QuickCaptureSheet({
         </div>
         <div className="mt-5 grid gap-2">
           {actions.map((action) => (
-            <Link key={action.href} href={action.href} onClick={onClose} className="flex min-h-[70px] items-center gap-3 rounded-2xl border border-line bg-surface-1 px-3 py-3 transition active:scale-[.99]">
+            <Link key={action.href} href={action.href} onClick={() => onClose()} className="flex min-h-[70px] items-center gap-3 rounded-2xl border border-line bg-surface-1 px-3 py-3 transition active:scale-[.99]">
               <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-2 text-lg font-semibold text-content-primary">{action.icon}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[14px] font-semibold text-content-primary">{action.title}</span>
