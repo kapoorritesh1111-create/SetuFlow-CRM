@@ -83,7 +83,7 @@ function scopedHref(baseHref: string, scope: MobileScope) {
 
 export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
   const { enabled: topModules } = useMobilePermissions();
-  const canShareVCard = topModules.has('vcard');
+  const canShareVCard = topModules.has('vcard') && Boolean(signedIn?.shareHref);
   const canUseGuru = topModules.has('setu_guru');
   const canCapture = topModules.has('full_crm') || topModules.has('trade_show');
   const [open, setOpen] = useState(false);
@@ -110,7 +110,7 @@ export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIde
             <p className="mt-0.5 truncate text-xs font-semibold text-white/60">{dateLabel || "Today"}</p>
           </div>
           {canCapture ? <button type="button" onClick={() => setCaptureOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-teal-500 text-lg font-bold text-white shadow-[0_12px_30px_rgba(53,159,145,.35)]" aria-label="Quick capture" title="Quick capture">+</button> : null}
-          {canUseGuru ? <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('setu-guru:open'))} className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></button> : null}
+          {canUseGuru ? <Link href="/mobile/guru" className="grid h-11 w-11 place-items-center rounded-2xl border border-teal-300/30 bg-white/10" aria-label="Ask Setu Guru" title="Setu Guru"><GuruAvatar size="lg" showOnlineDot /></Link> : null}
           {canShareVCard ? <button type="button" onClick={() => setShareOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-amber-300/30 bg-amber-300 text-lg text-slate-950 shadow-[0_12px_30px_rgba(245,158,11,.35)] transition hover:bg-amber-200" aria-label="Share my vCard" title="Share vCard">📇</button> : null}
           <Link href="/mobile/notifications" className="relative grid h-11 w-11 place-items-center rounded-2xl border border-white/10 bg-white/10 text-white transition hover:bg-white/15" aria-label="Open notifications" title="Notifications"><SetuIcon name="bell" className="h-5 w-5" /></Link>
           <button type="button" onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-full" title={`Signed in as ${displayName}`} aria-label="Open profile settings"><UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="md" className="ring-1 ring-white/20" /></button>
