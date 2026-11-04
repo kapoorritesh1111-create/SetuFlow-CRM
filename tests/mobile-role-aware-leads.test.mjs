@@ -47,3 +47,18 @@ test('mobile lead search covers company contact owner team status and next actio
   `);
   for (const [field, count] of Object.entries(result)) assert.ok(count > 0, `${field} search should match`);
 });
+
+test('coordinator sees only explicitly delegated leads while unrelated records stay hidden', () => {
+  const ids = runRoleAssertion(`
+    import { filterLeadsForRole, mobileLeadDemoData } from './src/features/mobile/lib/role-aware-leads.ts';
+    const leads = mobileLeadDemoData.map((lead, index) => ({
+      ...lead,
+      coordinatorUserId: index === 0 ? 'u-geeta' : null
+    }));
+    const user = { id: 'u-geeta', name: 'Coordinator', role: 'member' };
+    console.log(JSON.stringify(filterLeadsForRole(leads, user).map((lead) => lead.id)));
+  `);
+  assert.deepEqual(ids, ['L-MOB-001']);
+  const mapper = readFileSync('src/features/mobile/lib/app-mobile-leads.ts', 'utf8');
+  assert.match(mapper, /coordinatorUserId: asString\(lead\.coordinator_user_id\)/);
+});
