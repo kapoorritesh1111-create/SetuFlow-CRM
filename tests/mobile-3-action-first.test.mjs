@@ -116,3 +116,19 @@ test('mobile notification close returns to the new home', () => {
   const notifications = readFileSync('src/app/(mobile)/mobile/notifications/page.tsx', 'utf8');
   assert.match(notifications, /href="\/mobile" aria-label="Close notifications"/);
 });
+
+test('Guru is a real navigation action, not an event without a listener in standalone shell', () => {
+  const topBar = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
+  assert.match(topBar, /canUseGuru \? <Link href="\/mobile\/guru"/);
+  assert.doesNotMatch(topBar, /setu-guru:open/);
+});
+
+test('standalone vCard shares the saved public slug and never a generic login page', () => {
+  const layout = readFileSync('src/app/(mobile)/mobile/layout.tsx', 'utf8');
+  const bar = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
+  assert.match(layout, /getMyCardSettingsForUser\(workspace\.user\.id\)/);
+  assert.match(layout, /myCard\?\.is_public && myCard\?\.share_slug/);
+  assert.match(layout, /shareHref: shareSlug \? `\/card\?share=\$\{shareSlug\}` : undefined/);
+  assert.match(layout, /downloadVcfHref: shareSlug \? `\/api\/public\/card-vcf\?share=\$\{shareSlug\}` : undefined/);
+  assert.match(bar, /topModules\.has\('vcard'\) && Boolean\(signedIn\?\.shareHref\)/);
+});
