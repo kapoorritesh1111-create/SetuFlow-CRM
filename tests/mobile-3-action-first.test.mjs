@@ -43,3 +43,13 @@ test('existing lead note dictation can be stopped and appends only new transcrip
   assert.match(drawer, /Review the note before saving/);
   assert.match(drawer, /Nothing was saved automatically/);
 });
+
+test('owner dashboard shortcuts require authenticated admin and module grants', () => {
+  const home = readFileSync('src/app/(mobile)/mobile/page.tsx', 'utf8');
+  assert.match(home, /setCanAccessAdmin\(data\.canAccessAdmin === true\)/);
+  assert.match(home, /canAccessAdmin && crm \?/);
+  assert.match(home, /canAccessAdmin \?/);
+  assert.match(home, /analytics \?/);
+  assert.match(home, /communications \?/);
+  assert.doesNotMatch(home, /\broleLabel === 'owner'/);
+});
