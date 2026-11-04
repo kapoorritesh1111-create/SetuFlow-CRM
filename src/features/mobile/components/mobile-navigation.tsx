@@ -15,6 +15,7 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 import { MetricGrid, MetricTile, SegmentedControl } from './primitives';
 import { useMobilePermissions } from './mobile-permissions';
+import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
 
 type MobileScope = 'all' | 'buyer' | 'supplier';
 
