@@ -144,7 +144,7 @@ export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIde
       </header>
       <MobileActionDrawer open={open} onClose={() => setOpen(false)} signedIn={signedIn} canShareVCard={canShareVCard} canUseDocuments={topModules.has('orders_compliance')} onShareVCard={() => setShareOpen(true)} />
       <MobileVCardShareSheet open={shareOpen} onClose={() => setShareOpen(false)} signedIn={signedIn} />
-      <QuickCaptureSheet open={captureOpen} onClose={() => setCaptureOpen(false)} />
+      <QuickCaptureSheet open={captureOpen} onClose={() => setCaptureOpen(false)} canCreateLeads={topModules.has('full_crm')} canUseTradeShow={topModules.has('trade_show')} />
     </>
   );
 }
