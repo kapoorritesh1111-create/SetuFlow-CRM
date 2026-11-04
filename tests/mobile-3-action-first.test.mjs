@@ -103,3 +103,16 @@ test('production mobile screens cannot accidentally restore mock prices or fake 
   assert.doesNotMatch(components, /export function QuickQuoteWidget|export function TradeCaptureForm/);
   assert.doesNotMatch(components, /<button[^>]*>Save \{entity\}/);
 });
+
+test('legacy standalone lead list cannot show demo customer records in production', () => {
+  const oldRoute = readFileSync('src/app/(mobile)/mobile/leads/page.tsx', 'utf8');
+  const leadList = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
+  assert.match(oldRoute, /redirect\('\/leads'\)/);
+  assert.doesNotMatch(oldRoute, /RoleAwareLeadList|mobileLeadDemoData/);
+  assert.match(leadList, /buildMobileLeadCardsFromAppData/);
+});
+
+test('mobile notification close returns to the new home', () => {
+  const notifications = readFileSync('src/app/(mobile)/mobile/notifications/page.tsx', 'utf8');
+  assert.match(notifications, /href="\/mobile" aria-label="Close notifications"/);
+});
