@@ -68,8 +68,10 @@ test('canonical dashboard and leads use the blueprint-grade mobile shell on phon
   assert.match(dashboardPage, /<div className="md:hidden">/);
   assert.match(mobileShell, /data-mobile-shell=\{canonical \? 'canonical' : 'standalone'\}/);
   assert.match(mobileShell, /MobileBottomTabs/);
-  assert.match(mobileNav, /canonicalMobileNavItems/);
-  assert.match(mobileNav, /standaloneMobileNavItems/);
+  const bottomTabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
+  assert.match(bottomTabs, /canonicalMobileNavItems/);
+  assert.match(bottomTabs, /standaloneMobileNavItems/);
+  assert.doesNotMatch(mobileNav, /export function MobileBottomTabs/);
   assert.match(mobileNav, /Share vCard/);
 });
 
