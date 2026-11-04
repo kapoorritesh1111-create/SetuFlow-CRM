@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { GuruAvatar } from '@/components/ui/guru-avatar';
 
 interface Message { role: 'user' | 'assistant'; content: string; }
@@ -10,6 +10,28 @@ export default function MobileGuruPage() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [voiceState, setVoiceState] = useState<'idle' | 'listening' | 'unavailable'>('idle');
+  const voiceRef = useRef<{ stop: () => void } | null>(null);
+  useEffect(() => () => { voiceRef.current?.stop(); }, []);
+
+  function toggleVoice() {
+    if (voiceState === 'listening') { voiceRef.current?.stop(); setVoiceState('idle'); return; }
+    const browser = window as typeof window & { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any };
+    const SpeechRecognition = browser.SpeechRecognition ?? browser.webkitSpeechRecognition;
+    if (!SpeechRecognition) { setVoiceState('unavailable'); return; }
+    const recognition = new SpeechRecognition();
+    recognition.lang = navigator.language || 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => {
+      const transcript = Array.from(event.results).map((result) => result[0]?.transcript ?? '').join(' ').trim();
+      if (transcript) setInput((previous) => [previous.trim(), transcript].filter(Boolean).join(' '));
+    };
+    recognition.onerror = () => setVoiceState('unavailable');
+    recognition.onend = () => { voiceRef.current = null; setVoiceState((value) => value === 'listening' ? 'idle' : value); };
+    try { recognition.start(); voiceRef.current = recognition; setVoiceState('listening'); }
+    catch { setVoiceState('unavailable'); }
+  }
   const bottomRef = useRef<HTMLDivElement>(null);
 
   async function send() {
@@ -23,8 +45,9 @@ export default function MobileGuruPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, route: '/mobile/guru', pageText: '', mode: 'page_help' }),
       });
+      if (!res.ok) throw new Error('Guru request failed');
       const data = await res.json();
-      setMessages(m => [...m, { role: 'assistant', content: data.answer ?? 'I could not find an answer right now. Try asking about your leads or pipeline.' }]);
+      setMessages(m => [...m, { role: 'assistant', content: typeof data.answer === 'string' && data.answer.trim() ? data.answer : 'I could not find an answer right now. Try asking about your leads or pipeline.' }]);
     } catch {
       setMessages(m => [...m, { role: 'assistant', content: 'Connection error. Please try again.' }]);
     } finally {
@@ -84,12 +107,14 @@ export default function MobileGuruPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* Review dictated text before sending; voice never submits autonomously. */}
+      {voiceState === 'unavailable' ? <p role="status" className="mb-2 text-xs text-slate-600 dark:text-slate-300">Microphone transcription is unavailable. Use your phone keyboard microphone or type your question.</p> : null}
       <div className="flex gap-2 sticky bottom-0 bg-transparent pb-2">
         <input value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
           placeholder="Ask Setu Guru anything…"
           className="flex-1 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100" />
+        <button type="button" onClick={toggleVoice} aria-pressed={voiceState === 'listening'} aria-label={voiceState === 'listening' ? 'Stop dictation' : 'Dictate question'} className="h-12 w-12 shrink-0 rounded-2xl border border-slate-200 bg-white text-slate-800 dark:bg-slate-900 dark:text-white">{voiceState === 'listening' ? '■' : '🎙'}</button>
         <button type="button" onClick={send} disabled={loading || !input.trim()}
           className="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-lg font-black disabled:opacity-50 shadow-lg active:scale-[.95] transition">
           →
