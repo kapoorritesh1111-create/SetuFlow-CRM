@@ -49,7 +49,7 @@ export default function MobileHomePage() {
     ...(canAccessAdmin && crm ? [{ href: '/leads/inbound/assignments', title: 'Review inbound assignments', description: 'Check workload and routing without changing existing lead ownership', icon: '◇' }] : []),
     ...(canAccessAdmin ? [{ href: '/admin/overview', title: 'Owner command center', description: 'Workspace controls and team administration', icon: '▥' }] : []),
     ...(analytics ? [{ href: '/reports', title: 'Performance and reporting', description: 'Open your existing reports and analytics', icon: '◫' }] : []),
-    ...(communications ? [{ href: '/calendar', title: 'Meetings and calendar', description: 'View scheduled calls and meetings', icon: '▦' }] : []),
+    ...(communications ? [{ href: '/mail', title: 'Mail workspace', description: 'Open your licensed inbox', icon: '✉' }, { href: '/calendar', title: 'Meetings and calendar', description: 'View scheduled calls and meetings', icon: '▦' }] : []),
     ...(tradeShow ? [{ href: '/trade-events', title: 'Trade Show Mode', description: 'Capture visitors and track event synchronization', icon: '▣' }] : []),
     ...(guru ? [{ href: '/mobile/guru', title: 'Ask Setu Guru', description: 'Get help with your next sales activity', icon: '✦' }] : []),
     ...(vcard ? [{ href: '/contact-exchange/vcard', title: 'My digital business card', description: 'Share your verified contact details', icon: '▦' }] : []),
