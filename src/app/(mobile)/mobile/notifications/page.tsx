@@ -8,7 +8,7 @@ export default async function MobileNotificationsPage() {
   const userId = workspace.user?.id;
 
   const closeButton = (
-    <Link href="/dashboard" aria-label="Close notifications" className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 text-content-secondary">✕</Link>
+    <Link href="/mobile" aria-label="Close notifications" className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 text-content-secondary">✕</Link>
   );
 
   if (!organizationId || !userId) {
