@@ -9,6 +9,7 @@ import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-g
 export default function MobileHomePage() {
   const [grants, setGrants] = useState<OrgModuleGrant[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [canAccessAdmin, setCanAccessAdmin] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -16,15 +17,16 @@ export default function MobileHomePage() {
     fetch('/api/modules/grants', { cache: 'no-store', signal: controller.signal })
       .then(async response => {
         if (!response.ok) throw new Error('Module permissions unavailable');
-        return response.json() as Promise<{ grants?: OrgModuleGrant[] }>;
+        return response.json() as Promise<{ grants?: OrgModuleGrant[]; canAccessAdmin?: boolean }>;
       })
       .then(data => {
         if (active) {
           setGrants(Array.isArray(data.grants) ? data.grants : []);
+          setCanAccessAdmin(data.canAccessAdmin === true);
           setLoaded(true);
         }
       })
-      .catch(() => { if (active) { setGrants([]); setLoaded(true); } });
+      .catch(() => { if (active) { setGrants([]); setCanAccessAdmin(false); setLoaded(true); } });
     return () => { active = false; controller.abort(); };
   }, []);
 
@@ -33,6 +35,8 @@ export default function MobileHomePage() {
   const tradeShow = enabled.has('trade_show');
   const guru = enabled.has('setu_guru');
   const vcard = enabled.has('vcard');
+  const analytics = enabled.has('analytics');
+  const communications = enabled.has('setu_mail');
 
   const actions = [
     ...(crm ? [
@@ -40,6 +44,10 @@ export default function MobileHomePage() {
       { href: '/quick-quote', title: 'Prepare a Quick Quote', description: 'Use verified prices, constructions and quantities', icon: '▤' },
       { href: '/tasks', title: 'Follow-ups and meetings', description: 'Review assigned work and overdue actions', icon: '✓' },
     ] : []),
+    ...(canAccessAdmin && crm ? [{ href: '/leads/inbound/assignments', title: 'Review inbound assignments', description: 'Check workload and routing without changing existing lead ownership', icon: '◇' }] : []),
+    ...(canAccessAdmin ? [{ href: '/admin/overview', title: 'Owner command center', description: 'Workspace controls and team administration', icon: '▥' }] : []),
+    ...(analytics ? [{ href: '/reports', title: 'Performance and reporting', description: 'Open your existing reports and analytics', icon: '◫' }] : []),
+    ...(communications ? [{ href: '/calendar', title: 'Meetings and calendar', description: 'View scheduled calls and meetings', icon: '▦' }] : []),
     ...(tradeShow ? [{ href: '/trade-events', title: 'Trade Show Mode', description: 'Capture visitors and track event synchronization', icon: '▣' }] : []),
     ...(guru ? [{ href: '/mobile/guru', title: 'Ask Setu Guru', description: 'Get help with your next sales activity', icon: '✦' }] : []),
     ...(vcard ? [{ href: '/contact-exchange/vcard', title: 'My digital business card', description: 'Share your verified contact details', icon: '▦' }] : []),
