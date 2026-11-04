@@ -4,6 +4,7 @@ import { MobileShell } from '@/features/mobile/components/mobile-shell';
 import { isMobileAppV1Enabled } from '@/features/mobile/lib/mobile-feature-flag';
 import { getInitials } from '@/lib/utils';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { getMyCardSettingsForUser } from '@/lib/contact-exchange/my-card-settings';
 import { getPrimaryWorkspaceRole, getWorkspaceRoleDisplayName, normalizeWorkspaceRoles } from '@/lib/workspace/roles';
 
 export const metadata = { title: 'SETU Flow Mobile' };
@@ -18,6 +19,8 @@ export default async function MobileLayout({ children }: { children: ReactNode }
   const displayName = workspace.profile?.full_name ?? workspace.profile?.username ?? 'SETU Flow user';
   const normalizedRoles = normalizeWorkspaceRoles(workspace.currentRoles);
   const currentRole = getPrimaryWorkspaceRole(normalizedRoles) ?? 'member';
+  const myCard = await getMyCardSettingsForUser(workspace.user.id);
+  const shareSlug = myCard?.is_public && myCard?.share_slug ? encodeURIComponent(myCard.share_slug) : null;
 
   return (
     <MobileShell
@@ -29,7 +32,12 @@ export default async function MobileLayout({ children }: { children: ReactNode }
         organizationName: workspace.organization?.name ?? 'SETU Flow',
         roleLabel: getWorkspaceRoleDisplayName(currentRole),
         avatarUrl: workspace.profile?.avatar_url ?? null,
-        shareHref: '/card',
+        primaryPhone: myCard?.primary_phone ?? null,
+        secondaryPhone: myCard?.secondary_phone ?? null,
+        website: myCard?.website ?? null,
+        address: myCard?.address ?? null,
+        shareHref: shareSlug ? `/card?share=${shareSlug}` : undefined,
+        downloadVcfHref: shareSlug ? `/api/public/card-vcf?share=${shareSlug}` : undefined,
       }}
     >
       {children}
