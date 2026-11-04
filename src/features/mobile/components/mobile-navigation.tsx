@@ -14,7 +14,7 @@ import { QuickCaptureSheet } from "./quick-capture-sheet";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { MobileSignedInIdentity } from "./mobile-shell";
 import { MetricGrid, MetricTile, SegmentedControl } from './primitives';
-import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
+import { useMobilePermissions } from './mobile-permissions';
 
 type MobileScope = 'all' | 'buyer' | 'supplier';
 
@@ -84,31 +84,7 @@ function scopedHref(baseHref: string, scope: MobileScope) {
 
 export function BrandedMobileTopBar({ signedIn }: { signedIn?: MobileSignedInIdentity; canonical?: boolean }) {
   const pathname = usePathname();
-  const [visibleModules, setVisibleModules] = useState<OrgModuleGrant[]>([]);
-  useEffect(() => {
-    let active = true;
-    let requestVersion = 0;
-    const refreshGrants = () => {
-      const version = ++requestVersion;
-      setVisibleModules([]);
-      fetch('/api/modules/grants', { cache: 'no-store' })
-        .then(async response => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[] }>; })
-        .then(data => { if (active && version === requestVersion) setVisibleModules(Array.isArray(data.grants) ? data.grants : []); })
-        .catch(() => { if (active && version === requestVersion) setVisibleModules([]); });
-    };
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') refreshGrants();
-    };
-    refreshGrants();
-    window.addEventListener('focus', refreshGrants);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      active = false;
-      window.removeEventListener('focus', refreshGrants);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [pathname]);
-  const topModules = getEnabledModuleSet(visibleModules);
+  const { enabled: topModules } = useMobilePermissions();
   const canShareVCard = topModules.has('vcard');
   const canUseGuru = topModules.has('setu_guru');
   const canCapture = topModules.has('full_crm') || topModules.has('trade_show');
