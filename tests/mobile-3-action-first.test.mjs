@@ -9,7 +9,7 @@ const nav = readFileSync('src/features/mobile/components/mobile-navigation.tsx',
 test('mobile home reads grants and only links to real authenticated workflows', () => {
   assert.match(home, /fetch\('\/api\/modules\/grants'/);
   assert.match(home, /getEnabledModuleSet\(grants\)/);
-  for (const route of ['/leads', '/quick-quote', '/tasks', '/trade-events', '/mobile/guru', '/contact-exchange/vcard']) {
+  for (const route of ['/leads', '/quick-quote', '/tasks', '/trade-events', '/mobile/guru', '/contact-exchange/vcard', '/mail']) {
     assert.ok(home.includes(route), 'missing real destination: ' + route);
   }
   assert.doesNotMatch(home, /Mehta Foods|Rahul Sharma|Demo captured|CRM sync queued/);
