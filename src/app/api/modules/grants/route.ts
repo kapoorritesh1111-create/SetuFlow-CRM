@@ -44,5 +44,5 @@ export async function GET() {
   const effectiveGrants = platformSupport ? MODULE_KEYS.map((module_key) => ({ module_key, enabled: true })) : grants;
   const enabledModules = effectiveGrants.filter((grant) => grant.enabled).map((grant) => grant.module_key);
 
-  return NextResponse.json({ enabledModules, grants: effectiveGrants, canAccessAdmin: workspace.canAccessAdmin || platformSupport, isPlatformSupport: platformSupport });
+  return NextResponse.json({ organizationId: workspace.organization.id, enabledModules, grants: effectiveGrants, canAccessAdmin: workspace.canAccessAdmin || platformSupport, isPlatformSupport: platformSupport });
 }
