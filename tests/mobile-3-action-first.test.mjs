@@ -53,3 +53,12 @@ test('owner dashboard shortcuts require authenticated admin and module grants', 
   assert.match(home, /communications \?/);
   assert.doesNotMatch(home, /\broleLabel === 'owner'/);
 });
+
+test('media permissions remain denied publicly but allow user consent on authenticated mobile capture routes', () => {
+  const middleware = readFileSync('middleware.ts', 'utf8');
+  assert.match(middleware, /function permitsAuthenticatedMobileMedia\(pathname: string\)/);
+  assert.match(middleware, /'camera=\(self\), microphone=\(self\), geolocation=\(\)'/);
+  assert.match(middleware, /'camera=\(\), microphone=\(\), geolocation=\(\)'/);
+  assert.match(middleware, /return applySecurityHeaders\(response, nonce, permitsAuthenticatedMobileMedia\(pathname\)\)/);
+  assert.doesNotMatch(middleware.split('function permitsAuthenticatedMobileMedia')[1]?.split('function applyPackagingAcademyHeaders')[0] ?? '', /\/admin|\/api/);
+});
