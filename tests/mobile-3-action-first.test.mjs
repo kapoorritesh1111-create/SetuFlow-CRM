@@ -27,3 +27,19 @@ test('capture shortcuts do not bypass module grants or simulate writes', () => {
   assert.match(capture, /aria-label="Close quick capture"/);
   assert.doesNotMatch(capture, /Works offline — syncs automatically|CRM sync and WhatsApp queued/);
 });
+
+test('offline trade capture queue never reports queued visitors as delivered', () => {
+  const sync = readFileSync('src/features/trade-events/components/trade-event-offline-sync.tsx', 'utf8');
+  assert.match(sync, /listOfflineTradeCaptures/);
+  assert.match(sync, /retryOfflineTradeCapture/);
+  assert.match(sync, /Queued is not delivered/);
+  assert.match(sync, /aria-live="polite"/);
+});
+
+test('existing lead note dictation can be stopped and appends only new transcript results', () => {
+  const drawer = readFileSync('src/features/leads/components/drawer/lead-drawer-implementation.tsx', 'utf8');
+  assert.match(drawer, /noteRecognitionRef\.current\.stop\(\)/);
+  assert.match(drawer, /results\)\.slice\(current\.resultIndex \?\? 0\)/);
+  assert.match(drawer, /Review the note before saving/);
+  assert.match(drawer, /Nothing was saved automatically/);
+});
