@@ -29,7 +29,7 @@ test('entitlements match server resolved organization, with abortable requests',
   assert.match(grantsApi, /organizationId: workspace\.organization\.id/);
   assert.match(provider, /payload\.organizationId !== organizationId/);
   assert.match(provider, /controller\.abort\(\)/);
-  assert.match(provider, /key=\{organizationId\}/);
+  assert.match(shell, /key=\{organizationId\}/);
 });
 
 test('temporary mobile offline failures retain last verified grants without unlicensed escalation', () => {
