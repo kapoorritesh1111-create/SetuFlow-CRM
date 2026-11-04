@@ -9,6 +9,7 @@ export type MobileLead = {
   contact: string;
   ownerName: string;
   assignedUserId: string;
+  coordinatorUserId?: string | null;
   managerUserId?: string | null;
   teamId: string;
   teamName: string;
@@ -61,7 +62,8 @@ export function canViewLead(lead: MobileLead, user: MobileUserContext) {
   if (user.role === 'manager') {
     return lead.managerUserId === user.id || lead.assignedUserId === user.id || Boolean(user.managedTeamIds?.includes(lead.teamId)) || Boolean(user.directReportIds?.includes(lead.assignedUserId));
   }
-  return lead.assignedUserId === user.id;
+  // Coordinator access is explicit per lead, never implied for an entire team.
+  return lead.assignedUserId === user.id || lead.coordinatorUserId === user.id;
 }
 
 export function filterLeadsForRole(leads: MobileLead[], user: MobileUserContext, filter: LeadFilter = {}) {
