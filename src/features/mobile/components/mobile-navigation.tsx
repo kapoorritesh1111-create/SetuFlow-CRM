@@ -271,7 +271,7 @@ export function MobileDashboardHome({ data }: { data: DashboardData }) {
       />
       <section aria-label="Mobile quick actions" className="grid grid-cols-2 gap-2">
         {[
-          ...(hasCrm ? [{ href: '/mobile/capture', label: 'Scan card', icon: 'lead' as SetuIconName }, { href: '/leads?quickLead=1', label: 'New lead', icon: 'lead' as SetuIconName }] : []),
+          ...(hasCrm ? [{ href: '/mobile/capture', label: 'Scan card', icon: 'lead' as SetuIconName }, { href: '/leads?quickLead=1', label: 'New lead', icon: 'lead' as SetuIconName }, { href: '/quick-quote', label: 'Quick Quote', icon: 'quote' as SetuIconName }] : []),
           ...(hasTradeShow ? [{ href: '/trade-events', label: 'Trade show', icon: 'calendar' as SetuIconName }] : []),
         ].map((action) => (
           <Link key={action.href} href={action.href} className="flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-2xl border border-line bg-surface-1 px-2 py-3 text-center text-content-primary shadow-soft transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-700">
