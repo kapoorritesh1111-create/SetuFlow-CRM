@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { MobileHomeHero } from '@/features/mobile/components/mobile-navigation';
 import { getEnabledModuleSet, type OrgModuleGrant } from '@/lib/modules/module-grants';
 
 // Mobile 3.0 action-first workspace. Existing authenticated routes own all data
@@ -53,7 +52,6 @@ export default function MobileHomePage() {
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-content-primary">Your day, in focus.</h1>
         <p className="mt-2 text-sm leading-5 text-content-muted">Pick up where you left off, without losing customer context.</p>
       </section>
-      <MobileHomeHero />
       <section aria-label="Mobile next actions" className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-content-primary">Get things done</h2>
