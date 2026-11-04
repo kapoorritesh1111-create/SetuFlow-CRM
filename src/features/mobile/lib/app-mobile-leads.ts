@@ -77,6 +77,7 @@ export function buildMobileLeadCardsFromAppData(data: {
       contact: asString(lead.contact_name, 'No contact yet'),
       ownerName: profileById.get(ownerId) ?? 'Unassigned',
       assignedUserId: ownerId,
+      coordinatorUserId: asString(lead.coordinator_user_id) || null,
       managerUserId: asString(lead.manager_user_id) || null,
       teamId: asString(lead.team_id, asString(lead.pipeline_id, 'workspace')),
       teamName: asString(lead.team_name, asString(lead.lead_type, 'Workspace')),
