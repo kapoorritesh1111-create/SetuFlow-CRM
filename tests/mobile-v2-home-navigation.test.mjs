@@ -31,7 +31,7 @@ test('mobile Guru dictation is user-reviewed and does not auto-submit', () => {
   assert.match(guru, /setInput\(\(previous\)/);
   assert.match(guru, /aria-label=\{voiceState === 'listening' \? 'Stop dictation' : 'Dictate question'\}/);
   assert.match(guru, /if \(!res.ok\) throw/);
-  assert.doesNotMatch(guru, /recognition\.onresult\s*=.*send\(/s);
+  assert.doesNotMatch(guru.split('recognition.onresult =')[1]?.split('recognition.onerror =')[0] ?? '', /send\(/);
 });
 
 test('mobile standalone home does not claim a live KPI pulse without dashboard data', () => {
