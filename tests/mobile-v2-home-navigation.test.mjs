@@ -39,3 +39,14 @@ test('mobile standalone home does not claim a live KPI pulse without dashboard d
   assert.doesNotMatch(home, /<MobileHomeHero\s*\/>/);
   assert.match(home, /getEnabledModuleSet\(grants\)/);
 });
+
+test('mobile Quick Quote shows usable price cards without overriding the pricing engine', () => {
+  const quote = readFileSync('src/features/quotes/components/quick-quote-workbench.tsx', 'utf8');
+  assert.match(quote, /Mobile quantity price comparison/);
+  assert.match(quote, /sm:hidden/);
+  assert.match(quote, /hidden overflow-x-auto sm:block/);
+  assert.match(quote, /requested\.unit>r\.unit/);
+  assert.match(quote, /previewPackagingPricingV5/);
+  assert.match(quote, /previewPackagingFramePricingV5/);
+  assert.match(quote, /previewStarkLabelQuote/);
+});
