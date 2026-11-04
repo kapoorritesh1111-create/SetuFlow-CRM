@@ -19,3 +19,23 @@ test('mobile nav retains its established five-tab structure',()=>{
   assert.match(nav,/primaryTabs\.map/);
   assert.match(nav,/\bMore\b/);
 });
+
+test('Mobile 3.0 primary sales dashboard links to the real approved pricing route', () => {
+  assert.match(source, /href: '\/quick-quote', label: 'Quick Quote'/);
+  assert.match(source, /hasCrm \?/);
+});
+
+test('mobile Guru dictation is user-reviewed and does not auto-submit', () => {
+  const guru = readFileSync('src/app/(mobile)/mobile/guru/page.tsx', 'utf8');
+  assert.match(guru, /SpeechRecognition/);
+  assert.match(guru, /setInput\(\(previous\)/);
+  assert.match(guru, /aria-label=\{voiceState === 'listening' \? 'Stop dictation' : 'Dictate question'\}/);
+  assert.match(guru, /if \(!res.ok\) throw/);
+  assert.doesNotMatch(guru, /recognition\.onresult\s*=.*send\(/s);
+});
+
+test('mobile standalone home does not claim a live KPI pulse without dashboard data', () => {
+  const home = readFileSync('src/app/(mobile)/mobile/page.tsx', 'utf8');
+  assert.doesNotMatch(home, /<MobileHomeHero\s*\/>/);
+  assert.match(home, /getEnabledModuleSet\(grants\)/);
+});
