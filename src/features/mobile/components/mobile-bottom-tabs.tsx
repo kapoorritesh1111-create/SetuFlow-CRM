@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { SetuIcon } from '@/components/ui/setu-icon';
 import { TradeEventOfflineSync } from '@/features/trade-events/components/trade-event-offline-sync';
 import { canonicalMobileNavItems, mobileMoreNavItems, standaloneMobileNavItems } from '@/lib/navigation/nav-items';
-import { getEnabledModuleSet, getModuleForNavHref, type OrgModuleGrant, type ModuleKey } from '@/lib/modules/module-grants';
+import { getModuleForNavHref } from '@/lib/modules/module-grants';
+import { useMobilePermissions } from './mobile-permissions';
 
 function matchesPath(pathname: string, match: readonly string[]) {
   return match.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
@@ -15,43 +16,7 @@ function matchesPath(pathname: string, match: readonly string[]) {
 export function MobileBottomTabs({ canonical = false }: { canonical?: boolean }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
-  const [grants, setGrants] = useState<OrgModuleGrant[]>([]);
-  const [canAccessAdmin, setCanAccessAdmin] = useState(false);
-  useEffect(() => {
-    let active = true;
-    let requestVersion = 0;
-    const refreshGrants = () => {
-      const version = ++requestVersion;
-      setGrants([]);
-      setCanAccessAdmin(false);
-      fetch('/api/modules/grants', { cache: 'no-store' })
-        .then(async (response) => { if (!response.ok) throw new Error('Grants unavailable'); return response.json() as Promise<{ grants?: OrgModuleGrant[]; enabledModules?: ModuleKey[]; canAccessAdmin?: boolean }>; })
-        .then((payload) => {
-          if (active && version === requestVersion) {
-            setGrants(Array.isArray(payload.grants) ? payload.grants : []);
-            setCanAccessAdmin(payload.canAccessAdmin === true);
-          }
-        })
-        .catch(() => {
-          if (active && version === requestVersion) {
-            setGrants([]);
-            setCanAccessAdmin(false);
-          }
-        });
-    };
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') refreshGrants();
-    };
-    refreshGrants();
-    window.addEventListener('focus', refreshGrants);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      active = false;
-      window.removeEventListener('focus', refreshGrants);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [pathname]);
-  const enabledModules = getEnabledModuleSet(grants);
+  const { enabled: enabledModules, canAccessAdmin, loaded, error, refresh } = useMobilePermissions();
   const allowed = (href: string) => { const moduleDef = getModuleForNavHref(href); return !moduleDef || enabledModules.has(moduleDef.key); };
   const configuredTabs = (canonical ? canonicalMobileNavItems : standaloneMobileNavItems).filter((tab) => allowed(tab.href));
   const primaryTabs = configuredTabs.filter((tab) => tab.href !== '/tasks').slice(0, 4);
@@ -91,6 +56,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
                 ×
               </button>
             </div>
+            {error ? <div role="status" className="my-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Permissions refresh failed. <button type="button" onClick={refresh} className="font-bold underline">Retry</button></div> : null}
             <div className="mt-4 grid grid-cols-2 gap-3">
               {canAccessAdmin ? <Link href="/admin/overview" onClick={() => setMoreOpen(false)} className="col-span-2 flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-white"><SetuIcon name="users" className="h-5 w-5" /> Admin Command Center</Link> : null}
               {permittedMoreItems.map((item) => {
@@ -142,6 +108,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
         })}
         <button
           type="button"
+          disabled={!loaded}
           onClick={() => setMoreOpen((current) => !current)}
           aria-expanded={moreOpen}
           aria-controls="mobile-more-menu"
