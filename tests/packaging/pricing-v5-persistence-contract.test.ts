@@ -99,7 +99,16 @@ test('S52-PKG-V5: published templates are immutable and can be cloned into a new
   assert.match(adminActions,/export async function clonePackagingTemplateRevisionV5/);
   assert.match(adminActions,/supersedes_template_id:source\.id/);
   assert.match(adminActions,/status:'draft'/);
-  assert.match(adminActions,/status:'archived',is_active:false/);
+  // Cloning a draft must not retire the currently published template:
+  // customers keep using the published revision until a new one is approved.
+  const cloneStart=adminActions.indexOf('export async function clonePackagingTemplateRevisionV5');
+  const cloneEnd=adminActions.indexOf('export async function validatePackagingTemplateV5',cloneStart);
+  const cloneBody=adminActions.slice(cloneStart,cloneEnd);
+  assert.match(cloneBody,/is_active:false,calculation_version:5/);
+  assert.match(cloneBody,/status:'draft'/);
+  assert.match(cloneBody,/supersedes_template_id:source\.id/);
+  assert.doesNotMatch(cloneBody,/status:'archived'/);
+  assert.doesNotMatch(cloneBody,/\.update\(\{[^}]*is_active:false[^}]*\}\)/);
   assert.match(adminWorkspace,/Create new revision/);
 });
 
