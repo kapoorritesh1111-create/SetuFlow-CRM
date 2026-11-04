@@ -45,7 +45,8 @@ test('mobile Quick Quote shows usable price cards without overriding the pricing
   assert.match(quote, /Mobile quantity price comparison/);
   assert.match(quote, /sm:hidden/);
   assert.match(quote, /hidden overflow-x-auto sm:block/);
-  assert.match(quote, /requested\.unit>r\.unit/);
+  assert.match(quote, /requestedPrice>displayPrice/);
+  assert.match(quote, /r\.perKg\?r\.perKg:r\.unit/);
   assert.match(quote, /previewPackagingPricingV5/);
   assert.match(quote, /previewPackagingFramePricingV5/);
   assert.match(quote, /previewStarkLabelQuote/);
