@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   filterLeadsForRole,
   mobileLeadDemoData,
@@ -118,9 +119,12 @@ export function RoleAwareLeadList({
 
   return (
     <section className="sf-mobile-lead-queue space-y-3.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <h1 className="text-lg font-semibold tracking-tight text-content-primary">{leadTypeLabel(initialLeadType)} leads</h1>
-        <p className="shrink-0 text-xs font-medium text-content-muted">{leads.length} shown</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold tracking-tight text-content-primary">{leadTypeLabel(initialLeadType)} leads</h1>
+          <p className="mt-1 text-xs font-medium text-content-muted">{leads.length} shown</p>
+        </div>
+        <Link href="/quick-quote" className="inline-flex min-h-11 shrink-0 items-center rounded-xl bg-brand-800 px-3 text-xs font-bold text-white shadow-sm">+ Quick Quote</Link>
       </div>
       <SegmentedControl
         options={[
@@ -190,7 +194,7 @@ export function RoleAwareLeadList({
                     }
                   />
                 );
-                if (!call && !whatsapp) return <div key={lead.id}>{row}</div>;
+                if (!call && !whatsapp) return <div key={lead.id} className="mb-2">{row}</div>;
                 return (
                   <SwipeRow
                     key={lead.id}
