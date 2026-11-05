@@ -7,15 +7,17 @@ export const dynamic = 'force-dynamic';
 function CountCard({
   label, value, href, detail,
 }: {
-  label: string; value: number | null; href: string; detail: string;
+  label: string; value: number | null; href?: string; detail: string;
 }) {
-  return (
-    <Link href={href} className="rounded-2xl border border-line bg-surface-1 p-4 shadow-sm transition active:scale-[.98]">
-      <p className="text-xs font-semibold text-content-muted">{label}</p>
-      <p className="mt-2 text-3xl font-bold tabular-nums text-content-primary">{value === null ? '—' : value.toLocaleString()}</p>
-      <p className="mt-2 text-[11px] leading-4 text-content-muted">{value === null ? 'Data unavailable · open workspace' : detail}</p>
-    </Link>
-  );
+  const content = <>
+    <p className="text-xs font-semibold text-content-muted">{label}</p>
+    <p className="mt-2 text-3xl font-bold tabular-nums text-content-primary">{value === null ? '—' : value.toLocaleString()}</p>
+    <p className="mt-2 text-[11px] leading-4 text-content-muted">{value === null ? 'Data unavailable' : detail}</p>
+  </>;
+  const css = "rounded-2xl border border-line bg-surface-1 p-4 shadow-sm";
+  return href
+    ? <Link href={href} className={css + " transition active:scale-[.98]"}>{content}</Link>
+    : <div className={css}>{content}</div>;
 }
 
 const STARK_PACKMATE_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
@@ -26,8 +28,9 @@ export default async function MobileOwnerPage() {
   if (!workspace.organization || !workspace.membership) return null;
   const organization = workspace.organization;
   const supabase = await createClient();
-  const [leadsResult, quotesResult, teamResult] = await Promise.all([
+  const [leadsResult, unassignedResult, quotesResult, teamResult] = await Promise.all([
     supabase.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
+    supabase.from('leads').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id).is('owner_user_id', null),
     supabase.from('quotes').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id),
     supabase.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id).eq('is_active', true),
   ]);
@@ -50,9 +53,9 @@ export default async function MobileOwnerPage() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <CountCard label="Leads" value={leadsResult.error ? null : leadsResult.count ?? null} href="/leads" detail="Total organization records" />
+          <CountCard label="Unassigned leads" value={unassignedResult.error ? null : unassignedResult.count ?? null} href={isStark ? "/leads/inbound/assignments" : "/leads"} detail="Needs an owner review" />
           <CountCard label="Quotations" value={quotesResult.error ? null : quotesResult.count ?? null} href="/quotes" detail="Review commercial activity" />
-          <CountCard label="Active team" value={teamResult.error ? null : teamResult.count ?? null} href="/tasks" detail="Active organization members" />
-          <Link href="/tasks" className="flex flex-col justify-center rounded-2xl border border-line bg-surface-1 p-4 shadow-sm"><span className="text-xs font-semibold text-content-muted">Follow-ups</span><span className="mt-2 text-base font-bold text-content-primary">Open task queue →</span><span className="mt-2 text-[11px] leading-4 text-content-muted">Review scheduled work</span></Link>
+          <CountCard label="Active team" value={teamResult.error ? null : teamResult.count ?? null} detail="Active organization members" />
         </div>
       </section>
 
