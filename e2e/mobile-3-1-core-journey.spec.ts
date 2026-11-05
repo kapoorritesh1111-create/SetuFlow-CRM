@@ -19,7 +19,7 @@ test('signed-in mobile sales account can reach real customer and pricing workflo
   await signInToWorkspace(page, '/mobile');
   await page.waitForURL((url) => url.pathname === '/mobile', { timeout: 30_000 });
   await expect(page.getByRole('navigation', { name: 'Mobile navigation' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Your day, in focus.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your next move, made simple.' })).toBeVisible();
 
   const permissions = await page.request.get('/api/modules/grants');
   expect(permissions.ok(), 'signed-in mobile permissions endpoint must respond successfully').toBe(true);

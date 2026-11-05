@@ -58,7 +58,7 @@ export function MobileBottomTabs({ canonical = false }: { canonical?: boolean })
             </div>
             {error ? <div role="status" className="my-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Permissions refresh failed. <button type="button" onClick={refresh} className="font-bold underline">Retry</button></div> : null}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              {canAccessAdmin ? <Link href="/admin/overview" onClick={() => setMoreOpen(false)} className="col-span-2 flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-white"><SetuIcon name="users" className="h-5 w-5" /> Admin Command Center</Link> : null}
+              {canAccessAdmin ? <Link href="/mobile/owner" onClick={() => setMoreOpen(false)} className="col-span-2 flex min-h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-white"><SetuIcon name="users" className="h-5 w-5" /> Admin Command Center</Link> : null}
               {permittedMoreItems.map((item) => {
                 const active = matchesPath(pathname, item.match);
                 return (

@@ -52,7 +52,7 @@ test('owner dashboard shortcuts require authenticated admin and module grants', 
   assert.match(shared, /setCanAccessAdmin\(payload\.canAccessAdmin === true\)/);
   assert.match(home, /canAccessAdmin && crm \?/);
   assert.match(home, /canAccessAdmin \?/);
-  assert.match(home, /analytics \?/);
+  assert.doesNotMatch(home, /href: '\/reports'.*Performance and reporting/);
   assert.match(home, /communications \?/);
   assert.doesNotMatch(home, /\broleLabel === 'owner'/);
 });
@@ -85,7 +85,7 @@ test('module grant API errors do not misleadingly claim that licensed modules ar
   const shared = readFileSync('src/features/mobile/components/mobile-permissions.tsx', 'utf8');
   assert.match(shared, /setError\(true\)/);
   assert.match(home, /Workspace permissions could not load/);
-  assert.match(home, /!grantsError && actions\.length === 0/);
+  assert.match(home, /!grantsError && !primaryActions\.length && !secondaryActions\.length/);
 });
 
 test('device settings do not show fake universal Ready statuses', () => {
@@ -137,4 +137,44 @@ test('legacy pipeline bookmarks never show fake zero values from a missing API',
   const pipeline = readFileSync('src/app/(mobile)/mobile/pipeline/page.tsx', 'utf8');
   assert.match(pipeline, /redirect\('\/leads'\)/);
   assert.doesNotMatch(pipeline, /fetch\('\/api\/mobile\/pipeline-summary'\)/);
+});
+
+test('owner mobile command center is a real authorized workspace, not a desktop blocker', () => {
+  const owner = readFileSync('src/app/(mobile)/mobile/owner/page.tsx', 'utf8');
+  const home = readFileSync('src/app/(mobile)/mobile/page.tsx', 'utf8');
+  const tabs = readFileSync('src/features/mobile/components/mobile-bottom-tabs.tsx', 'utf8');
+  assert.match(owner, /requireAdminWorkspace\(\)/);
+  assert.match(owner, /\.eq\('organization_id', organization\.id\)/);
+  assert.match(owner, /Unassigned leads/);
+  assert.match(home, /<Link href="\/mobile\/owner".*Open owner command center/);
+  assert.match(tabs, /href="\/mobile\/owner"/);
+  assert.doesNotMatch(home, /href: '\/admin\/overview', title: 'Owner command center'/);
+});
+
+test('mobile home shows live organization-scoped counts instead of generic link-only cards', () => {
+  const home = readFileSync('src/app/(mobile)/mobile/page.tsx', 'utf8');
+  const api = readFileSync('src/app/api/mobile/workspace-summary/route.ts', 'utf8');
+  assert.match(home, /Workspace at a glance/);
+  assert.match(home, /fetch\('\/api\/mobile\/workspace-summary'/);
+  assert.match(api, /getWorkspaceAccess\(\)/);
+  assert.match(api, /\.eq\('organization_id', orgId\)/);
+  assert.match(api, /'Cache-Control': 'private, no-store'/);
+  assert.doesNotMatch(home, /12 leads due|34 overdue|Mehta Foods/);
+});
+
+test('mobile Leads keeps a compact Quick Quote action and no colored swipe bar bleed', () => {
+  const leads = readFileSync('src/features/mobile/components/role-aware-lead-list.tsx', 'utf8');
+  const page = readFileSync('src/app/(app)/leads/page.tsx', 'utf8');
+  const primitives = readFileSync('src/features/mobile/components/primitives.tsx', 'utf8');
+  assert.match(leads, /<Link href="\/quick-quote"/);
+  assert.doesNotMatch(page, /flex justify-end px-3 md:hidden.*Quick Quote/);
+  assert.match(primitives, /rounded-card bg-surface-1/);
+  assert.doesNotMatch(primitives, /mb-2 flex cursor-pointer gap-2\.5 rounded-card/);
+});
+
+test('mobile header preserves greeting and hides secondary icons in a reachable drawer', () => {
+  const nav = readFileSync('src/features/mobile/components/mobile-navigation.tsx', 'utf8');
+  assert.match(nav, /\{greeting\}<\/p>/);
+  assert.match(nav, /\{firstName\} · \{dateLabel/);
+  assert.match(nav, /canUseGuru \? <Link href="\/mobile\/guru"/);
 });
