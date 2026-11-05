@@ -71,7 +71,6 @@ export default function MobileHomePage() {
     ...(tradeShow ? [{ href: '/mobile/capture', title: 'Scan a business card', description: 'Review before saving', icon: '▣' }] : []),
   ];
   const secondaryActions = [
-    ...(canAccessAdmin ? [{ href: '/mobile/owner', title: 'Owner command center', description: 'Live workspace and team oversight', icon: '▥' }] : []),
     ...(canAccessAdmin && crm ? [{ href: '/leads/inbound/assignments', title: 'Review inbound assignments', description: 'Manage existing routing deliberately', icon: '◇' }] : []),
     ...(communications ? [{ href: '/mail', title: 'Mail workspace', description: 'Open your licensed inbox', icon: '✉' }, { href: '/calendar', title: 'Meetings and calendar', description: 'View scheduled calls', icon: '▦' }] : []),
     ...(tradeShow ? [{ href: '/trade-events', title: 'Trade Show Mode', description: 'Event capture and sync status', icon: '▣' }] : []),
