@@ -274,7 +274,7 @@ export function LeadRow({
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
-      className="mb-2 flex cursor-pointer gap-2.5 rounded-card border border-line bg-surface-1 p-3"
+      className="flex cursor-pointer gap-2.5 rounded-card border border-line bg-surface-1 p-3"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white" style={{ background: avatarGradientFor(id) }}>
         {initials}
@@ -288,9 +288,9 @@ export function LeadRow({
             {statusLabel}
           </span>
           <div className="flex shrink-0 gap-1.5">
-            {onCall ? <button type="button" onClick={(e) => { e.stopPropagation(); onCall(); }} aria-label="Call" className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-success-bg text-[12px]">📞</button> : null}
-            {onWhatsApp ? <button type="button" onClick={(e) => { e.stopPropagation(); onWhatsApp(); }} aria-label="WhatsApp" className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] bg-stage-won-bg text-[12px]">💬</button> : null}
-            <button type="button" onClick={(e) => { e.stopPropagation(); thirdAction.onClick(); }} aria-label={thirdAction.label} title={thirdAction.label} className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px] text-[12px] text-white" style={{ background: PILL_TONE_SOLID_VAR[thirdAction.tone] }}>
+            {onCall ? <button type="button" onClick={(e) => { e.stopPropagation(); onCall(); }} aria-label="Call" className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-success-bg text-[12px]">📞</button> : null}
+            {onWhatsApp ? <button type="button" onClick={(e) => { e.stopPropagation(); onWhatsApp(); }} aria-label="WhatsApp" className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-stage-won-bg text-[12px]">💬</button> : null}
+            <button type="button" onClick={(e) => { e.stopPropagation(); thirdAction.onClick(); }} aria-label={thirdAction.label} title={thirdAction.label} className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[12px] text-white" style={{ background: PILL_TONE_SOLID_VAR[thirdAction.tone] }}>
               {thirdAction.icon}
             </button>
           </div>
@@ -355,7 +355,7 @@ export function SwipeRow({
   }
 
   return (
-    <div className="relative mb-2 overflow-hidden rounded-card">
+    <div className="relative mb-2 overflow-hidden rounded-card bg-surface-1">
       {leftAction || rightAction ? (
         <div className="absolute inset-0 flex items-stretch justify-between">
           {rightAction ? (
