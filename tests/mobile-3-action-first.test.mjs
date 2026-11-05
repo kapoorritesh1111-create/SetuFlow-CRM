@@ -52,7 +52,7 @@ test('owner dashboard shortcuts require authenticated admin and module grants', 
   assert.match(shared, /setCanAccessAdmin\(payload\.canAccessAdmin === true\)/);
   assert.match(home, /canAccessAdmin && crm \?/);
   assert.match(home, /canAccessAdmin \?/);
-  assert.match(home, /analytics \?/);
+  assert.doesNotMatch(home, /href: '\/reports'.*Performance and reporting/);
   assert.match(home, /communications \?/);
   assert.doesNotMatch(home, /\broleLabel === 'owner'/);
 });
