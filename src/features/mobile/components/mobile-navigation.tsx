@@ -127,7 +127,7 @@ export function MobileActionDrawer({ open, onClose, signedIn, onShareVCard, canS
   const initials = signedIn?.initials ?? initialsFrom(displayName);
   return (
     <div className="fixed inset-0 z-[90] bg-slate-950/55 backdrop-blur-sm" onClick={onClose}>
-      <div className="absolute bottom-0 left-1/2 w-full max-w-[430px] -translate-x-1/2 rounded-t-hero bg-white p-5 pb-[calc(100px+env(safe-area-inset-bottom))] shadow-2xl dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute bottom-0 left-1/2 max-h-[calc(100dvh-72px)] w-full max-w-[430px] -translate-x-1/2 overflow-y-auto overscroll-contain rounded-t-hero bg-white p-5 pb-[calc(100px+env(safe-area-inset-bottom))] shadow-2xl dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700" />
         <div className="flex items-start gap-3 rounded-panel bg-slate-50 p-3 dark:bg-slate-800/70">
           <UserAvatar name={displayName} email={signedIn?.email} avatarUrl={signedIn?.avatarUrl} initials={initials} size="lg" />
