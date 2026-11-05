@@ -49,7 +49,7 @@ export default async function MobileOwnerPage() {
       <section aria-label="Live workspace overview" className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-content-primary">Workspace overview</h2>
-          <span className="text-[10px] font-semibold text-content-muted">Live</span>
+          <span className="text-[10px] font-semibold text-content-muted">{leadsResult.error || unassignedResult.error || quotesResult.error || teamResult.error ? 'Partial data' : 'Live'}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <CountCard label="Leads" value={leadsResult.error ? null : leadsResult.count ?? null} href="/leads" detail="Total organization records" />
