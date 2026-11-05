@@ -51,8 +51,8 @@ export default async function MobileOwnerPage() {
         <div className="grid grid-cols-2 gap-3">
           <CountCard label="Leads" value={leadsResult.error ? null : leadsResult.count ?? null} href="/leads" detail="Total organization records" />
           <CountCard label="Quotations" value={quotesResult.error ? null : quotesResult.count ?? null} href="/quotes" detail="Review commercial activity" />
-          <CountCard label="Active team" value={teamResult.error ? null : teamResult.count ?? null} href="/mobile/owner" detail="Active organization members" />
-          <CountCard label="Next actions" value={null} href="/tasks" detail="Open follow-ups and meetings" />
+          <CountCard label="Active team" value={teamResult.error ? null : teamResult.count ?? null} href="/tasks" detail="Active organization members" />
+          <Link href="/tasks" className="flex flex-col justify-center rounded-2xl border border-line bg-surface-1 p-4 shadow-sm"><span className="text-xs font-semibold text-content-muted">Follow-ups</span><span className="mt-2 text-base font-bold text-content-primary">Open task queue →</span><span className="mt-2 text-[11px] leading-4 text-content-muted">Review scheduled work</span></Link>
         </div>
       </section>
 
