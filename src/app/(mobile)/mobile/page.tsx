@@ -41,7 +41,6 @@ export default function MobileHomePage() {
   const tradeShow = enabled.has('trade_show');
   const guru = enabled.has('setu_guru');
   const vcard = enabled.has('vcard');
-  const analytics = enabled.has('analytics');
   const communications = enabled.has('setu_mail');
 
   const [pulse, setPulse] = useState<WorkspacePulse | null>(null);
@@ -74,7 +73,6 @@ export default function MobileHomePage() {
   const secondaryActions = [
     ...(canAccessAdmin ? [{ href: '/mobile/owner', title: 'Owner command center', description: 'Live workspace and team oversight', icon: '▥' }] : []),
     ...(canAccessAdmin && crm ? [{ href: '/leads/inbound/assignments', title: 'Review inbound assignments', description: 'Manage existing routing deliberately', icon: '◇' }] : []),
-    ...(analytics ? [{ href: canAccessAdmin ? '/mobile/owner' : '/leads', title: 'Performance and reporting', description: 'Review your permitted workspace', icon: '◫' }] : []),
     ...(communications ? [{ href: '/mail', title: 'Mail workspace', description: 'Open your licensed inbox', icon: '✉' }, { href: '/calendar', title: 'Meetings and calendar', description: 'View scheduled calls', icon: '▦' }] : []),
     ...(tradeShow ? [{ href: '/trade-events', title: 'Trade Show Mode', description: 'Event capture and sync status', icon: '▣' }] : []),
     ...(guru ? [{ href: '/mobile/guru', title: 'Ask Setu Guru', description: 'Get help with your next action', icon: '✦' }] : []),
