@@ -417,8 +417,12 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   if (textIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(textIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   if (imageIntelligence) companyEvidence = mergeEvidence(companyEvidence, evidenceEntry(imageIntelligence, { messageId, mediaUrl, at: receivedAt ?? now }));
   const attribution = mergeAttribution(intake, attributionFromPayload(data));
-  const initialOwner = !intake.setu_assigned_user_id && assignee
-    ? await initialSetuOwnerFromInterakt(db, assignee)
+  // Stark Packmate policy: all NEW Interakt enquiries enter SETU Flow under Anita.
+  // Never overwrite established SETU ownership (including explicit Owner/Admin changes).
+  const initialOwner = !intake.setu_assigned_user_id
+    && !intake.setu_assigned_invitation_id
+    && !intake.setu_assigned_email
+    ? await initialSetuOwnerFromInterakt(db, 'Anita Singh')
     : null;
   const ownerPatch = initialOwner ? {
     setu_assigned_user_id: initialOwner.userId,
