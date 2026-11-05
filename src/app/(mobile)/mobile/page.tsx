@@ -97,7 +97,7 @@ export default function MobileHomePage() {
       {crm && loaded ? <section className="space-y-2" aria-label="Live workspace summary">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-bold text-content-primary">Workspace at a glance</h2>
-          <span className="text-[10px] font-medium text-content-muted">{pulseError ? 'Partial data' : 'Live CRM data'}</span>
+          <span className="text-[10px] font-medium text-content-muted">{pulseError ? 'Data unavailable' : pulse ? 'Live CRM data' : 'Loading…'}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <PulseValue value={pulse?.leads ?? null} label="Visible leads" href="/leads" />
