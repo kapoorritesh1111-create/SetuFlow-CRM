@@ -146,7 +146,7 @@ test('owner mobile command center is a real authorized workspace, not a desktop 
   assert.match(owner, /requireAdminWorkspace\(\)/);
   assert.match(owner, /\.eq\('organization_id', organization\.id\)/);
   assert.match(owner, /Unassigned leads/);
-  assert.match(home, /href: '\/mobile\/owner', title: 'Owner command center'/);
+  assert.match(home, /<Link href="\/mobile\/owner".*Open owner command center/);
   assert.match(tabs, /href="\/mobile\/owner"/);
   assert.doesNotMatch(home, /href: '\/admin\/overview', title: 'Owner command center'/);
 });
