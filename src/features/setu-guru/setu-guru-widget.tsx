@@ -303,7 +303,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: question, route: ctx.route || pathname, context: { routeTitle }, history }),
       });
-      const data = await response.json() as { answer?: string; error?: string; confidence?: string; actions?: string[]; sources?: Array<{ title?: string; url?: string }> };
+      const data = await response.json() as { answer?: string; error?: string; confidence?: string; mode?: string; actions?: string[]; sources?: Array<{ title?: string; url?: string }> };
       const sourceLinks = Array.isArray(data.sources) ? data.sources.filter((item) => typeof item.url === 'string' && /^https?:\/\//.test(item.url)).slice(0, 4) : [];
       const answer = (data.answer ?? data.error ?? 'Guru could not answer this question.').trim();
       const supplement = sourceLinks.length ? '\n\nSources: ' + sourceLinks.map((source) => source.title || source.url).join('; ') : '';
@@ -312,7 +312,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
         content: answer + supplement, sourceQuestion: question,
         tone: response.ok ? 'normal' : 'error',
         actions: data.actions,
-        sourceLabel: response.ok ? (data.confidence === 'source_backed' ? 'AI + external sources' : data.confidence === 'ai_guidance' ? 'AI guidance — not verified CRM data' : 'Approved organization knowledge') : undefined,
+        sourceLabel: response.ok ? (data.mode === 'organization_knowledge' ? 'Approved organization knowledge' : data.confidence === 'source_backed' ? 'AI + external sources' : data.confidence === 'ai_guidance' ? 'AI guidance — not verified CRM data' : undefined) : undefined,
       }));
     } catch {
       setMessages((current) => current.filter((message) => message.id !== loadingId).concat({
