@@ -381,11 +381,6 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
     if (isSetuGuruOrganizationPolicyQuestion(question)) { void runOrgSearch(question, 'organization_knowledge'); return; }
-    if (isPackagingPricingRoute(pathname) && isPackagingPricingQuestion(question)) {
-      setMessages((current) => [...current, packagingPricingMessage(question)]);
-      requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
-      return;
-    }
     if (isSetuGuruPricingDefaultQuestion(question)) { void runPricingDefaults(question); return; }
     if (isSetuGuruOrgSearchQuestion(question)) { void runOrgSearch(question); return; }
     if (isPageHelpQuestion(question)) { void runOrgSearch(question, 'page_help'); return; }
