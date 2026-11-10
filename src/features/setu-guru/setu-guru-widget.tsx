@@ -464,7 +464,10 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
                   <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-slate-500"><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{routeHelp.routeTitle || routeTitle}</span><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{roleLabel}</span><span className="rounded-full bg-slate-100 px-2 py-1 font-medium">{organizationName ?? 'Setu Flow'}</span></div>
                 </div>
               </div>
-              <button type="button" onClick={closeDrawer} className="rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50">Hide</button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setTeachingQuestion(''); setKnowledgeOpen((open) => !open); }} className="rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 transition hover:bg-sky-100" aria-label="Open Guru knowledge and teaching">{knowledgeOpen ? 'Close learning' : 'Teach / Learn'}</button>
+                <button type="button" onClick={closeDrawer} className="rounded-full border border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 transition hover:bg-slate-50">Hide</button>
+              </div>
             </div>
           </header>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
