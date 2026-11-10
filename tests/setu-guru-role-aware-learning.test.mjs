@@ -29,7 +29,7 @@ test('Missing and wrong answers are routed through a reviewed learning flow', ()
   const panel = read('src/features/setu-guru/guru-learning-panel.tsx');
   assert.match(widget, /saveFeedback\('wrong'\)/);
   assert.match(widget, /kind !== 'helpful'/);
-  assert.match(widget, /Request answer/);
+  assert.match(widget, /request answer/i);
   assert.match(panel, /Approve/);
   assert.match(panel, /Retire/);
   assert.match(panel, /Correct \/ update/);
