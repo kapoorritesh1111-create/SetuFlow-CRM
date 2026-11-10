@@ -64,7 +64,7 @@ export function matchApprovedLesson(question: string, lessons: GuruLesson[]): Gu
 
 // Reuse the deployed Guru ingestion/review queue; no second AI engine or embeddings service.
 export async function listGuruLessons(organizationId: string, includePending = false): Promise<GuruLesson[]> {
-  const db = await createClient();
+  const db = (await createClient()) as any;
   let query = db.from('guru_ingestion_review_queue')
     .select('id, organization_id, source_type, content, status, created_at, reviewed_at')
     .eq('organization_id', organizationId)
@@ -73,7 +73,7 @@ export async function listGuruLessons(organizationId: string, includePending = f
   if (!includePending) query = query.eq('status', 'approved');
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map((row) => parseLesson(row as QueueRow)).filter((row): row is GuruLesson => Boolean(row));
+  return (data ?? []).map((row: unknown) => parseLesson(row as QueueRow)).filter((row): row is GuruLesson => Boolean(row));
 }
 
 export async function answerFromApprovedLessons(organizationId: string, question: string) {
@@ -89,14 +89,14 @@ export async function answerFromApprovedLessons(organizationId: string, question
 export async function submitGuruLesson(input: {
   organizationId: string; actorId: string; question: string; answer?: string; category?: string;
 }) {
-  const db = createAdminSupabaseClient();
+  const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Guru review service is unavailable.');
   const sourceType = input.answer ? KNOWLEDGE_TYPE : QUESTION_TYPE;
   const { data: existing, error: readError } = await db.from('guru_ingestion_review_queue')
     .select('id, content').eq('organization_id', input.organizationId)
     .eq('source_type', sourceType).eq('status', 'pending').limit(100);
   if (readError) throw readError;
-  const duplicate = (existing ?? []).find((row) => {
+  const duplicate = (existing ?? []).find((row: { id: string; content: string }) => {
     try {
       const saved = JSON.parse(row.content) as StoredLesson;
       return String(saved.question ?? '').trim().toLowerCase() === input.question.trim().toLowerCase();
@@ -118,7 +118,7 @@ export async function reviewGuruLesson(input: {
   organizationId: string; reviewerId: string; id: string;
   decision: 'approved' | 'rejected'; answer?: string;
 }) {
-  const db = createAdminSupabaseClient();
+  const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Guru review service is unavailable.');
   const { data: row, error: readError } = await db.from('guru_ingestion_review_queue')
     .select('id, source_type, content, status')
