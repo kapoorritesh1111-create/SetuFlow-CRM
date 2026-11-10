@@ -47,7 +47,7 @@ function tokens(value: string) {
 }
 
 export function isOrganizationPolicyQuestion(question: string): boolean {
-  return /\b(our policy|company policy|our process|our procedure|we normally|we usually|do we allow|are we allowed|how do we handle|what is our rule|what do we do when|at stark packmate|at starkpackmate)\b/i.test(question);
+  return /\b(our policy|company policy|our process|our procedure|our standard rule|what is our rule|according to our policy|according to stark packmate policy)\b/i.test(question);
 }
 
 export function matchApprovedLesson(question: string, lessons: GuruLesson[]): GuruLesson | null {
