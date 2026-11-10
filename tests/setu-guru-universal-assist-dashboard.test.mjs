@@ -17,6 +17,9 @@ test('general user question goes to existing AI route instead of a dashboard top
   assert.match(widget, /void runGeneralQuestion\(question\);/);
   assert.doesNotMatch(widget, /setMessages\(\(current\) => \[\.\.\.current, topicMessage\(getBestSetuGuruHelpTopic\(question, pathname\)/);
   assert.match(widget, /Ask Guru anything/);
+  const askHandler = widget.slice(widget.indexOf('function handleAsk('), widget.indexOf('function handleAction('));
+  assert.doesNotMatch(askHandler, /packagingPricingMessage\(question\)/);
+  assert.match(askHandler, /void runGeneralQuestion\(question\)/);
 });
 
 test('only explicit page-help requests use page help', () => {
