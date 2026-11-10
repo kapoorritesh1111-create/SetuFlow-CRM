@@ -399,6 +399,12 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
       });
       const data = await response.json() as { persisted?: boolean };
       if (!response.ok || !data.persisted) throw new Error('Feedback not saved.');
+      if (kind !== 'helpful' && lastQuestion.trim().length >= 5) {
+        const reviewResponse = await fetch('/api/setu-guru/knowledge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: lastQuestion }) });
+        if (!reviewResponse.ok) throw new Error('Knowledge review request not saved.');
+        setTeachingQuestion(lastQuestion);
+        setKnowledgeOpen(true);
+      }
       setFeedbackSaved(true);
       window.setTimeout(() => setFeedbackSaved(false), 2200);
     } catch {
