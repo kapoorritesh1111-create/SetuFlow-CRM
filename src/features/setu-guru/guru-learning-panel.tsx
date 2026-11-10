@@ -49,7 +49,7 @@ export function SetuGuruLearningPanel({ initialQuestion, onClose }: { initialQue
     finally { setBusy(false); }
   }
 
-  async function review(item: Lesson, decision: 'approved' | 'rejected') {
+  async function review(item: Lesson, decision: 'approved' | 'rejected' | 'retired') {
     if (busy) return;
     setBusy(true); setError(''); setNotice('');
     try {
@@ -59,7 +59,7 @@ export function SetuGuruLearningPanel({ initialQuestion, onClose }: { initialQue
       });
       const data = await response.json() as { error?: string };
       if (!response.ok) throw new Error(data.error || 'Review failed.');
-      setNotice(decision === 'approved' ? 'Approved lesson can now answer future questions.' : 'Item rejected.');
+      setNotice(decision === 'approved' ? 'Approved lesson can now answer future questions.' : decision === 'retired' ? 'Lesson retired and removed from active answers.' : 'Item rejected.');
       await reload();
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Review failed.'); }
     finally { setBusy(false); }
@@ -109,9 +109,10 @@ export function SetuGuruLearningPanel({ initialQuestion, onClose }: { initialQue
       <div className="mt-4 border-t pt-3">
         <h4 className="text-xs font-bold text-slate-900">Approved knowledge ({approved.length})</h4>
         <div className="mt-2 max-h-40 space-y-2 overflow-y-auto">
-          {approved.length ? approved.slice(0, 20).map((item) => <div key={item.id} className="rounded-lg bg-slate-50 p-2"><p className="text-xs font-semibold text-slate-800">{item.question}</p><p className="mt-1 text-xs text-slate-600">{item.answer}</p></div>) : <p className="text-xs text-slate-500">No approved organization answers yet.</p>}
+          {approved.length ? approved.slice(0, 20).map((item) => <div key={item.id} className="rounded-lg bg-slate-50 p-2"><p className="text-xs font-semibold text-slate-800">{item.question}</p><p className="mt-1 text-xs text-slate-600">{item.answer}</p>{canManage && <div className="mt-2 flex gap-2"><button type="button" onClick={() => { setQuestion(item.question); setAnswer(item.answer); setCategory(item.category); setNotice('Edit the answer above, then submit it for approval. The current version stays active until approved.'); }} className="rounded-lg border px-2 py-1 text-[11px]">Correct / update</button><button type="button" disabled={busy} onClick={() => void review(item, 'retired')} className="rounded-lg border border-rose-200 px-2 py-1 text-[11px] text-rose-700">Retire</button></div>}</div>) : <p className="text-xs text-slate-500">No approved organization answers yet.</p>}
         </div>
       </div>
+      {canManage && lessons.some((item) => item.status === 'rejected') && <details className="mt-3 border-t pt-2"><summary className="cursor-pointer text-xs font-semibold">Review history</summary><div className="mt-2 max-h-28 space-y-1 overflow-y-auto">{lessons.filter((item) => item.status === 'rejected').map((item) => <p key={item.id} className="text-xs text-slate-500">{item.question} — retired, superseded, or rejected</p>)}</div></details>}
       <p className="mt-3 text-[11px] text-slate-500">Only company-wide guidance belongs here. Do not enter customer-sensitive details or live prices. Pricing and operational actions still use their existing approval workflows.</p>
     </section>
   );
