@@ -13,7 +13,7 @@ const Proposal = z.object({
 });
 const Decision = z.object({
   id: z.string().uuid(),
-  decision: z.enum(['approved', 'rejected']),
+  decision: z.enum(['approved', 'rejected', 'retired']),
   answer: z.string().trim().max(6000).optional(),
 });
 const canManage = (roles: readonly string[]) => roles.includes('owner') || roles.includes('admin');
@@ -68,7 +68,7 @@ export async function PATCH(request: Request) {
     });
     await writeAuditLog({
       organizationId: workspace.organization.id, actorUserId: workspace.user.id,
-      action: parsed.data.decision === 'approved' ? 'guru_knowledge_approved' : 'guru_knowledge_rejected',
+      action: parsed.data.decision === 'approved' ? 'guru_knowledge_approved' : parsed.data.decision === 'retired' ? 'guru_knowledge_retired' : 'guru_knowledge_rejected',
       entityType: 'guru_ingestion_review_queue', entityId: parsed.data.id,
       payload: { decision: parsed.data.decision },
     });
