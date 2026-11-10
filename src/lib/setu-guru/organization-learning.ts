@@ -116,7 +116,7 @@ export async function submitGuruLesson(input: {
 
 export async function reviewGuruLesson(input: {
   organizationId: string; reviewerId: string; id: string;
-  decision: 'approved' | 'rejected'; answer?: string;
+  decision: 'approved' | 'rejected' | 'retired'; answer?: string;
 }) {
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Guru review service is unavailable.');
@@ -124,16 +124,37 @@ export async function reviewGuruLesson(input: {
     .select('id, source_type, content, status')
     .eq('organization_id', input.organizationId).eq('id', input.id).single();
   if (readError || !row) throw new Error('Review item not found.');
-  if (row.status !== 'pending') throw new Error('This item has already been reviewed.');
   if (row.source_type !== KNOWLEDGE_TYPE && row.source_type !== QUESTION_TYPE) throw new Error('Not an organization knowledge item.');
+  if (input.decision === 'retired' && row.status !== 'approved') throw new Error('Only approved lessons can be retired.');
+  if (input.decision !== 'retired' && row.status !== 'pending') throw new Error('This item has already been reviewed.');
   const parsed = JSON.parse(row.content) as StoredLesson;
   const answer = input.answer?.trim() || String(parsed.answer ?? '').trim();
   if (input.decision === 'approved' && !answer) throw new Error('Add the correct answer before approval.');
-  const { error } = await db.from('guru_ingestion_review_queue').update({
+  const now = new Date().toISOString();
+  const { data: changed, error } = await db.from('guru_ingestion_review_queue').update({
     source_type: KNOWLEDGE_TYPE,
     content: JSON.stringify({ ...parsed, answer }),
-    status: input.decision, reviewed_by: input.reviewerId, reviewed_at: new Date().toISOString(),
-  }).eq('id', input.id).eq('organization_id', input.organizationId).eq('status', 'pending');
-  if (error) throw error;
+    status: input.decision === 'retired' ? 'rejected' : input.decision,
+    reviewed_by: input.reviewerId, reviewed_at: now,
+  }).eq('id', input.id).eq('organization_id', input.organizationId)
+    .eq('status', input.decision === 'retired' ? 'approved' : 'pending').select('id').single();
+  if (error || !changed) throw new Error('Knowledge changed during review; reload and try again.');
+  if (input.decision === 'approved') {
+    // Supersede older approved versions of the same canonical question, never overwrite history.
+    const { data: previous } = await db.from('guru_ingestion_review_queue')
+      .select('id, content').eq('organization_id', input.organizationId)
+      .eq('source_type', KNOWLEDGE_TYPE).eq('status', 'approved').limit(200);
+    for (const old of previous ?? []) {
+      if (old.id === input.id) continue;
+      try {
+        const earlier = JSON.parse(old.content) as StoredLesson;
+        if (String(earlier.question ?? '').trim().toLowerCase() !== String(parsed.question ?? '').trim().toLowerCase()) continue;
+        await db.from('guru_ingestion_review_queue').update({
+          status: 'rejected', reviewed_by: input.reviewerId, reviewed_at: now,
+          content: JSON.stringify({ ...earlier, supersededBy: input.id }),
+        }).eq('organization_id', input.organizationId).eq('id', old.id).eq('status', 'approved');
+      } catch { /* Older non-JSON ingestion rows are ignored. */ }
+    }
+  }
   return { ok: true };
 }
