@@ -73,7 +73,7 @@ export async function listGuruLessons(organizationId: string, includePending = f
   if (!includePending) query = query.eq('status', 'approved');
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map((row: unknown) => parseLesson(row as QueueRow)).filter((row): row is GuruLesson => Boolean(row));
+  return (data ?? []).map((row: unknown) => parseLesson(row as QueueRow)).filter((row: GuruLesson | null): row is GuruLesson => Boolean(row));
 }
 
 export async function answerFromApprovedLessons(organizationId: string, question: string) {
