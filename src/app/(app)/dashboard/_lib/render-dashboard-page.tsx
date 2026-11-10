@@ -5,6 +5,7 @@ import type { WorkspaceMode } from '@/features/workspace/types';
 import DashboardInteractive from '@/features/dashboard/components/dashboard-interactive';
 import { FirstLoginGuide } from '@/features/dashboard/components/first-login-guide';
 import { MobileDashboardHome } from '@/features/mobile/components/mobile-navigation';
+import { MobilePermissionsProvider } from '@/features/mobile/components/mobile-permissions';
 import { getDashboardData } from '@/lib/queries/dashboard';
 import { createClient } from '@/lib/supabase/server';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
@@ -195,7 +196,9 @@ export async function renderDashboardPage(mode: WorkspaceMode, explicitAll = fal
     <>
       {firstLoginGuide}
       <div className="md:hidden">
-        <MobileDashboardHome data={data} />
+        <MobilePermissionsProvider organizationId={workspace.organization.id}>
+          <MobileDashboardHome data={data} />
+        </MobilePermissionsProvider>
       </div>
       <div className="hidden md:block">
       {activeTradeEvent ? (
