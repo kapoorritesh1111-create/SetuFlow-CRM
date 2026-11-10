@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { answerFromApprovedLessons, isOrganizationPolicyQuestion } from '@/lib/setu-guru/organization-learning';
 
 const ResearchRequestSchema = z.object({
   message: z.string().min(2).max(4000),
@@ -12,36 +14,20 @@ const ResearchRequestSchema = z.object({
     })
     .optional(),
   context: z.record(z.unknown()).optional(),
+  history: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(1200) })).max(6).optional(),
 });
 
 function wantsLiveResearch(message: string) {
-  const query = message.toLowerCase();
-  return [
-    'margin',
-    'markup',
-    'benchmark',
-    'industry standard',
-    'hsn',
-    'hs code',
-    'commodity code',
-    'htariff',
-    'tariff',
-    'duty',
-    'vat',
-    'compliance',
-    'document',
-    'ship',
-    'export',
-    'import',
-    'uk',
-    'ireland',
-    'eu',
-  ].some((term) => query.includes(term));
+  // Whole terms only: 'eu' within 'quantity' or 'uk' within 'bulk' must not trigger paid web search.
+  return /\b(benchmark|industry standard|hsn|hs code|commodity code|tariff|customs|import duty|export duty|vat rate|latest regulation|current regulation|trade law)\b/i.test(message);
 }
 
 function buildSystemPrompt(liveSearch: boolean) {
   return [
-    'You are Setu Guru, the embedded help chatbot for Setu Flow CRM.',
+    'You are Setu Guru, the existing AI assistant inside Setu Flow CRM. Answer the user\'s actual question from anywhere in the application; the current page is context, NOT the topic unless they ask about that page.',
+    'Be conversational and useful for general questions too. Distinguish general guidance from live organization facts. You have NOT looked up a CRM record unless an authorized data source is supplied.',
+    'When a user asks about a company-specific policy without approved knowledge, say you do not know and ask them to request an owner-approved answer. Never make up Stark Packmate policy.',
+    'For packaging MOQ or quantities distinguish a production minimum measured in meters from a piece/kg quantity; never calculate a precise MOQ without verified geometry, construction and active production rule.',
     'Help users with CRM workflows, onboarding, troubleshooting, pricing guidance, product classification research, and export/import compliance research.',
     'For CRM workflow questions, answer from Setu Flow knowledge and give exact app routes when possible.',
     liveSearch
@@ -52,7 +38,7 @@ function buildSystemPrompt(liveSearch: boolean) {
     'For requests to fill missing HS/HSN codes, prepare a review table with candidates, confidence, and sources. Do not claim master data has been changed unless a separate approved write-back action confirms it.',
     'For margin questions, provide a benchmark range, explain margin vs markup if relevant, and tell the user how to enter it in Setu Flow as a draft or approval-backed assumption.',
     'For compliance document questions, provide likely documents/checks and confidence, but do not say a shipment is legally cleared.',
-    'Answer with: What I checked, Recommendation, How to use it in Setu Flow, Confidence/Sources if live research was used, and one next action.',
+    'Answer the question directly first. When business data or operational evidence is relevant, identify what was verified, what remains unknown, and one concrete next step. Do not force page-help boilerplate onto every response.',
   ].join('\n');
 }
 
@@ -83,6 +69,8 @@ function extractSources(output: unknown) {
 }
 
 export async function POST(request: NextRequest) {
+  const workspace = await getWorkspaceAccess();
+  if (!workspace.user || !workspace.organization) return NextResponse.json({ answer: 'Please sign in to ask Guru.', error: 'Authentication required' }, { status: 401 });
   const parsed = ResearchRequestSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {
@@ -90,6 +78,17 @@ export async function POST(request: NextRequest) {
       { error: 'Invalid Setu Guru research request.', details: parsed.error.flatten() },
       { status: 422 }
     );
+  }
+
+  const body = parsed.data;
+  // Approved organization knowledge takes precedence over generic model guesses.
+  const approved = await answerFromApprovedLessons(workspace.organization.id, body.message).catch(() => null);
+  if (approved) return NextResponse.json(approved);
+  if (isOrganizationPolicyQuestion(body.message)) {
+    return NextResponse.json({
+      answer: 'I do not have an approved procedure for this organization yet. Ask your owner or authorized admin to teach Guru, or use Request answer.',
+      confidence: 'low', mode: 'unanswered_company_policy', unresolved: true, actions: ['Request answer'], sources: [],
+    });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -106,16 +105,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = parsed.data;
   const shouldUseLiveSearch = process.env.SETU_GURU_LIVE_SEARCH !== 'false' && wantsLiveResearch(body.message);
   const model = process.env.SETU_GURU_MODEL || 'gpt-4.1-mini';
+  const isCenterSealQuestion = /\b(center[ -]?seal|centre[ -]?seal|3ss|three[ -]?side[ -]?seal)\b/i.test(body.message)
+    && /\b(moq|minimum|pouch|quantity|production run|pieces|pcs)\b/i.test(body.message);
   const crmContext = {
     route: body.route,
-    role: body.role,
-    organization: body.organization,
-    context: body.context,
-    writeBackAllowed: process.env.SETU_GURU_ALLOW_WRITEBACK === 'true',
-    adminApprovalRequired: process.env.SETU_GURU_REQUIRE_ADMIN_APPROVAL !== 'false',
+    role: workspace.currentRoles.join(', '),
+    organization: { name: workspace.organization.name, slug: workspace.organization.slug },
+    // Client page context is an untrusted navigation hint, not verified CRM evidence.
+    pageHint: typeof body.context?.routeTitle === 'string' ? body.context.routeTitle.slice(0, 120) : undefined,
+    previousConversation: body.history ?? [],
+    verifiedPricingCodeReference: isCenterSealQuestion
+      ? 'The existing Pricing V5 Center Seal/3SS frame-family costing core checks minimum_run_length_m from the active template; its fallback minimum is 250 meters. Exact MOQ in PCS/KG must be computed using the active construction, open width, repeat/units per frame and run length. This is code-level guidance, NOT a live quote calculation and NOT confirmation that the current template has the fallback value.'
+      : undefined,
+    writeBackAllowed: false,
+    adminApprovalRequired: true,
   };
 
   const openAiBody = {
@@ -130,14 +135,18 @@ export async function POST(request: NextRequest) {
     tools: shouldUseLiveSearch ? [{ type: 'web_search_preview' }] : [],
   };
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  let response: Response;
+  try { response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(openAiBody),
-  });
+    signal: AbortSignal.timeout(25000),
+  }); } catch {
+    return NextResponse.json({ answer: 'Guru could not reach the AI provider. Please retry; I have not changed any CRM data.', confidence: 'unavailable', sources: [] }, { status: 503 });
+  }
 
   const result = (await response.json().catch(() => ({}))) as Record<string, unknown>;
 
@@ -145,19 +154,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Setu Guru live research failed.',
-        details: result,
+        answer: 'The AI provider could not answer right now. Please retry or request an owner-approved answer.',
       },
-      { status: response.status }
+      { status: 502 }
     );
   }
 
-  const answer = typeof result.output_text === 'string' ? result.output_text : 'Setu Guru could not produce a readable answer.';
+  const answer = typeof result.output_text === 'string' && result.output_text.trim()
+    ? result.output_text.trim()
+    : (Array.isArray(result.output) ? result.output.flatMap((item) => {
+        if (!item || typeof item !== 'object') return [];
+        const parts = (item as { content?: unknown }).content;
+        return Array.isArray(parts) ? parts.flatMap((part) => {
+          return part && typeof part === 'object' && typeof (part as { text?: unknown }).text === 'string'
+            ? [String((part as { text: string }).text)] : [];
+        }) : [];
+      }).join('\n').trim() : '');
+  if (!answer) return NextResponse.json({ answer: 'The AI provider returned no readable answer. Please retry.', sources: [], confidence: 'unavailable' }, { status: 502 });
   const sources = extractSources(result.output);
 
   return NextResponse.json({
     answer,
     sources,
-    confidence: shouldUseLiveSearch ? 'source_backed' : 'crm_context_only',
+    confidence: shouldUseLiveSearch ? 'source_backed' : 'ai_guidance',
+    mode: 'ai_assistant',
+    source: 'ai_provider',
     recommendedNextAction: shouldUseLiveSearch
       ? 'Review the answer and sources before saving CRM values or acting commercially.'
       : 'Use the suggested CRM route/action, then reopen Setu Guru if you remain blocked.',
