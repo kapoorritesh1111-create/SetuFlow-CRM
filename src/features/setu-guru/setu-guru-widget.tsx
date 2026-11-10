@@ -8,8 +8,9 @@ import { cn } from '@/lib/utils';
 import { collectSetuGuruPageContext } from '@/lib/setu-guru/page-context';
 import { useTrialTour } from '@/features/trial/tour-provider';
 import { getBestSetuGuruHelpTopic, getRouteHelpSummary, getSetuGuruActionHref, getSetuGuruRouteTopics, type SetuGuruHelpTopic } from '@/lib/setu-guru/help-registry';
-import { isSetuGuruComplianceQuestion, isSetuGuruOrgSearchQuestion, isSetuGuruPricingDefaultQuestion } from '@/lib/setu-guru/guru-response-policy';
+import { isSetuGuruComplianceQuestion, isSetuGuruOrgSearchQuestion, isSetuGuruPricingDefaultQuestion, isSetuGuruOrganizationPolicyQuestion } from '@/lib/setu-guru/guru-response-policy';
 import { SetuGuruFab } from '@/features/setu-guru/setu-guru-fab';
+import { SetuGuruLearningPanel } from '@/features/setu-guru/guru-learning-panel';
 
 type HsnCatalogReview = {
   productId?: string;
@@ -221,6 +222,8 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
 
   const [inputValue, setInputValue] = useState('');
   const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [teachingQuestion, setTeachingQuestion] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [guruOnline, setGuruOnline] = useState(false);
@@ -342,6 +345,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     if (!question || isThinking) return;
     setInputValue('');
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: 'user', content: question }]);
+    if (isSetuGuruOrganizationPolicyQuestion(question)) { void runOrgSearch(question, 'organization_knowledge'); return; }
     if (isPackagingPricingRoute(pathname) && isPackagingPricingQuestion(question)) {
       setMessages((current) => [...current, packagingPricingMessage(question)]);
       requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
@@ -356,6 +360,16 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
 
   function handleAction(message: ChatMessage, action: string) {
     const key = actionKey(action);
+    if (key.includes('request answer')) {
+      const question = message.sourceQuestion ?? messages.filter((item) => item.role === 'user').slice(-1)[0]?.content ?? '';
+      if (!question) return;
+      void fetch('/api/setu-guru/knowledge', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) }).then(async (response) => {
+        const data = await response.json() as { error?: string };
+        appendAssistant(response.ok ? 'Your question has been added to Guru’s review queue.' : data.error ?? 'The request could not be saved.', response.ok ? 'success' : 'error');
+      }).catch(() => appendAssistant('The request could not be saved. Please try again.', 'error'));
+      return;
+    }
+    if (key.includes('teach guru')) { setTeachingQuestion(message.sourceQuestion ?? ''); setKnowledgeOpen(true); return; }
     if (key.includes('check the live preview')) { appendAssistant('Use “Test your price” on the right. Enter the same dimensions, material, colors and quantity as a known manual quote, then tick each priced finish/add-on. The preview uses the same engine as Quote Builder.'); return; }
     if (key.includes('review template blockers')) { appendAssistant('Use Template check above the preview. Fix the listed items before activation: material rates, quantity tiers, setup/pre-press handling, rush pricing and standard lead time as applicable.'); return; }
     if (key.includes('approve catalog hsn update')) { void applyHsnUpdate(message); return; }
@@ -373,13 +387,23 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
   }
 
-  function saveFeedback(label: 'helpful' | 'missing') {
-    const feedback = { label, lastMessage: messages[messages.length - 1]?.content ?? '', pathname, routeTitle, helpFile: routeHelp.helpFile, createdAt: new Date().toISOString() };
-    const existingRaw = localStorage.getItem('setu-guru-feedback-log');
-    const existing = existingRaw ? (JSON.parse(existingRaw) as unknown[]) : [];
-    localStorage.setItem('setu-guru-feedback-log', JSON.stringify([feedback, ...existing].slice(0, 50)));
-    setFeedbackSaved(true);
-    window.setTimeout(() => setFeedbackSaved(false), 2200);
+  async function saveFeedback(kind: 'helpful' | 'missing' | 'wrong') {
+    setFeedbackSaved(false);
+    const lastAnswer = [...messages].reverse().find((message) => message.role === 'assistant' && message.tone !== 'loading');
+    const lastQuestion = lastAnswer?.sourceQuestion ?? [...messages].reverse().find((message) => message.role === 'user')?.content ?? '';
+    const lastMessage = `Feedback: ${kind}\nQuestion: ${lastQuestion}\nGuru answer: ${lastAnswer?.content ?? ''}`.slice(0, 8000);
+    try {
+      const response = await fetch('/api/setu-guru/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: kind === 'helpful' ? 'helpful' : 'missing', lastMessage, pathname, routeTitle, helpFile: routeHelp.helpFile, createdAt: new Date().toISOString() }),
+      });
+      const data = await response.json() as { persisted?: boolean };
+      if (!response.ok || !data.persisted) throw new Error('Feedback not saved.');
+      setFeedbackSaved(true);
+      window.setTimeout(() => setFeedbackSaved(false), 2200);
+    } catch {
+      appendAssistant('Could not save the feedback. Please try again.', 'error');
+    }
   }
 
   const launcher = (
@@ -414,6 +438,8 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
               <p className="mt-1 text-xs leading-5 text-slate-500">{routeHelp.summary}</p>
               <div className="mt-3 grid grid-cols-2 gap-2">{quickPrompts.map((topic) => <button key={topic.id} type="button" onClick={() => askTopic(topic)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900">{topic.title}</button>)}</div>
             </div>
+            <div className="mt-3 flex items-center gap-2"><button type="button" onClick={() => { setTeachingQuestion(''); setKnowledgeOpen((current) => !current); }} className="rounded-full border border-sky-200 bg-white px-3 py-1.5 text-xs font-semibold text-sky-800">{knowledgeOpen ? 'Close knowledge' : 'Guru Knowledge / Teach'}</button></div>
+            {knowledgeOpen && <SetuGuruLearningPanel key={teachingQuestion} initialQuestion={teachingQuestion} onClose={() => setKnowledgeOpen(false)} />}
             <div className="mt-4 space-y-3 pb-2">
               {messages.map((message) => (
                 <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
@@ -431,7 +457,7 @@ export function SetuGuruWidget({ pathname, routeTitle, organizationName, roleLab
             </div>
           </div>
           <footer className="shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3">
-            <div className="mb-3 flex items-center justify-between gap-2"><div className="flex gap-2"><button type="button" onClick={() => saveFeedback('helpful')} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">Helpful</button><button type="button" onClick={() => saveFeedback('missing')} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">Missing detail</button></div><span className="text-[11px] text-slate-400">{feedbackSaved ? 'Saved' : 'Live org search ready'}</span></div>
+            <div className="mb-3 flex items-center justify-between gap-2"><div className="flex gap-2"><button type="button" onClick={() => void saveFeedback('helpful')} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">Helpful</button><button type="button" onClick={() => void saveFeedback('missing')} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">Missing detail</button><button type="button" onClick={() => void saveFeedback('wrong')} className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-800">Wrong answer</button></div><span className="text-[11px] text-slate-400">{feedbackSaved ? 'Saved' : 'Live org search ready'}</span></div>
             <form onSubmit={handleAsk} className="flex items-end gap-2 rounded-panel border border-slate-200 bg-brand-50 p-2 focus-within:border-sky-300 focus-within:ring-4 focus-within:ring-sky-100"><textarea ref={inputRef} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} rows={1} placeholder={isPackagingPricingRoute(pathname) ? 'Ask how material, add-ons, MOQ or the pouch price is calculated…' : 'Ask about this page, products, pricing defaults, buyers, HSN codes…'} className="max-h-28 min-h-11 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400" /><button type="submit" disabled={isThinking} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-sky-600 text-white shadow-[0_10px_24px_rgba(2,132,199,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Send message"><FaIcon icon={isThinking ? 'circle-o-notch' : 'send'} className={isThinking ? 'animate-spin' : undefined} /></button></form>
             <p className="mt-2 px-1 text-center text-[11px] text-slate-400">Setu Guru checks page context, the help registry, and live organization data. Humans approve prices, compliance, sends, and write-backs.</p>
           </footer>
