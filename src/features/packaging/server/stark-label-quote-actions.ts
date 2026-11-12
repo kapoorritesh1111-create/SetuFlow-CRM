@@ -7,6 +7,20 @@ import {createServiceRoleClient} from '@/lib/supabase/service-role';
 import {calculateStarkLabelPrice,STARK_LABEL_WORKBOOK_SEED} from '@/lib/packaging-pricing-v5/stark-label-workbook';
 
 const STARK_ORG='b97913cb-3b95-4247-8ced-ffdc0d392d2a';
+// Bound read-only operations so degraded upstream services cannot leave pricing spinning.
+async function boundedLabelRead<T>(operation: Promise<T>, description: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(description + ' timed out. Please retry.')), 12000);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 function service(){const client:any=createServiceRoleClient();if(!client)throw new Error('Pricing service unavailable.');return client;}
 async function labelWorkspace(){
   const workspace=await requireWorkspace();
@@ -18,19 +32,19 @@ async function overrides(){
   if(error)throw new Error(error.message);return data?.rates??{};
 }
 export async function previewStarkLabelQuote(input:{code:string;width_mm:number;height_mm:number;quantity:number}){
-  try{await labelWorkspace();return {ok:true,result:calculateStarkLabelPrice({...input,rate_overrides:await overrides()})};}
+  try{await boundedLabelRead(labelWorkspace(),'Workspace verification');return {ok:true,result:calculateStarkLabelPrice({...input,rate_overrides:await boundedLabelRead(overrides(),'Label rate lookup')})};}
   catch(e){return {ok:false,error:e instanceof Error?e.message:'Label pricing failed.'};}
 }
 export async function saveStarkLabelQuoteLine(input:{quoteId:string;leadId:string;code:string;width_mm:number;height_mm:number;quantity:number;lineId?:string|null}){
   try{
-    const workspace=await labelWorkspace();const supabase:any=await createClient();
+    await boundedLabelRead(labelWorkspace(),'Workspace verification');const supabase:any=await createClient();
     const {data:quote,error:qe}=await supabase.from('quotes').select('id,lead_id,status,current_version_id').eq('organization_id',STARK_ORG).eq('id',input.quoteId).maybeSingle();
     if(qe||!quote||quote.lead_id!==input.leadId)throw new Error('Quote was not found for this lead.');
     if(['sent','accepted','rejected','expired','cancelled','declined','approval_pending'].includes(String(quote.status).toLowerCase()))throw new Error('Create a draft revision before repricing a sent quote.');
     if(!quote.current_version_id)throw new Error('A draft quotation version is required.');
     const {data:family,error:fe}=await supabase.from('packaging_service_families').select('id,is_quoteable').eq('organization_id',STARK_ORG).eq('slug','labels').eq('is_active',true).maybeSingle();
     if(fe||!family?.is_quoteable)throw new Error('Label pricing is not yet enabled for Sales.');
-    const result=calculateStarkLabelPrice({code:input.code,width_mm:input.width_mm,height_mm:input.height_mm,quantity:input.quantity,rate_overrides:await overrides()});
+    const result=calculateStarkLabelPrice({code:input.code,width_mm:input.width_mm,height_mm:input.height_mm,quantity:input.quantity,rate_overrides:await boundedLabelRead(overrides(),'Label rate lookup')});
     const snapshot={engine_version:5,calculation_engine_key:'label_workbook_v5',source:'stark_label_workbook_v1',input:{code:input.code,width_mm:input.width_mm,height_mm:input.height_mm,quantity:input.quantity},result};
     const hash=createHash('sha256').update(JSON.stringify(snapshot)).digest('hex');
     const desc='Labels · '+result.specification+' · '+result.width_mm+' × '+result.height_mm+' mm · '+result.code;

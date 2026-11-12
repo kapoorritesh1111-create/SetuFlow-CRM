@@ -9,8 +9,8 @@ export default function StarkLabelQuickQuote({quoteId,leadId,onSaved,savedLines=
  const editLine=savedLines.find((line:any)=>String(line.lineId)===focusLineId);
  useEffect(()=>{const line=savedLines.find((line:any)=>String(line.lineId)===String(focusLineId||duplicateLineId));if(!line)return;const input=line.input??{};setCode(String(input.code??'SPPL1'));setWidth(Number(input.width_mm??100));setHeight(Number(input.height_mm??75));setQuantity(Number(input.quantity??10000));setPreview(null);},[focusLineId,duplicateLineId]);
  const selected=useMemo(()=>STARK_LABEL_WORKBOOK_SEED.find(x=>x.code===code),[code]);
- function calculate(){setError('');run(async()=>{const r:any=await previewStarkLabelQuote({code,width_mm:width,height_mm:height,quantity});setPreview(r.ok?r.result:null);if(!r.ok)setError(r.error);});}
- function save(){setError('');run(async()=>{const r:any=await saveStarkLabelQuoteLine({quoteId,leadId,code,width_mm:width,height_mm:height,quantity,lineId:focusLineId||null});if(r.ok&&r.lineId)onSaved(r.lineId);else setError(r.error??'Label quote was not saved.');});}
+ function calculate(){setError('');setPreview(null);run(async()=>{try{const r:any=await previewStarkLabelQuote({code,width_mm:width,height_mm:height,quantity});setPreview(r.ok?r.result:null);if(!r.ok)setError(r.error??'Unable to calculate label price. Please retry.');}catch{setError('Pricing could not connect. Please retry when the service responds.');}});}
+ function save(){setError('');run(async()=>{try{const r:any=await saveStarkLabelQuoteLine({quoteId,leadId,code,width_mm:width,height_mm:height,quantity,lineId:focusLineId||null});if(r.ok&&r.lineId)onSaved(r.lineId);else setError(r.error??'Label quote was not saved.');}catch{setError('Save result could not be confirmed. Check the quote basket before retrying to prevent duplicate lines.');}});}
  return <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
   <h3 className="text-lg font-black text-slate-900">Label quotation · Pricing V5</h3>
   <p className="text-xs text-slate-500">Akshay's workbook · 320 × 980 mm frame · 3 mm bleed · minimum 100 frames</p>

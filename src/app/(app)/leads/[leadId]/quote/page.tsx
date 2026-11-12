@@ -20,6 +20,21 @@ import { listPricingV5FrameSavedLineSummaries } from '@/lib/packaging-pricing-v5
 import ManualPackagingQuoteSection from '@/features/packaging/components/manual-packaging-quote-section';
 import QuoteDesignRequestLauncher from '@/features/packaging/components/quote-design-request-launcher';
 
+// A temporary database outage should return a recoverable page, not a 300s Vercel timeout.
+async function boundedQuoteRead<T>(operation: Promise<T>, description: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(description + ' timed out')), 15000);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 function readParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
@@ -43,7 +58,7 @@ export default async function QuotePage({
 }) {
   let workspace: Awaited<ReturnType<typeof getWorkspaceAccess>> | null = null;
   try {
-    workspace = await getWorkspaceAccess();
+    workspace = await boundedQuoteRead(getWorkspaceAccess(), 'Quote workspace');
   } catch {
     return <EmptyState title="Workspace unavailable" description="We were unable to load your workspace. Please refresh or try again later." />;
   }
@@ -56,7 +71,12 @@ export default async function QuotePage({
     return <EmptyState title="Workspace membership needed" description="Your account is signed in, but no active organization membership could be loaded." />;
   }
 
-  const data = await getLeadProfileData(workspace.organization.id, params.leadId);
+  let data: Awaited<ReturnType<typeof getLeadProfileData>>;
+  try {
+    data = await boundedQuoteRead(getLeadProfileData(workspace.organization.id, params.leadId), 'Lead profile');
+  } catch {
+    return <EmptyState title="Quotation temporarily unavailable" description="The pricing database is taking too long to respond. Your saved quote remains unchanged. Please reload shortly." />;
+  }
   if (!data?.lead) {
     return <EmptyState title="Lead not found" description="The requested lead could not be loaded from the active workspace." />;
   }
@@ -83,24 +103,24 @@ export default async function QuotePage({
   let pricingV4Options: any | null = null;
   try {
     const supabase = await createClient();
-    const verticals = await getOrganizationVerticals(workspace.organization.id, supabase);
+    const verticals = await boundedQuoteRead(getOrganizationVerticals(workspace.organization.id, supabase), 'Packaging capability');
     if (verticals.packagingEnabled) {
-      const [families, templates, charges, savedSpecs] = await Promise.all([
+      const [families, templates, charges, savedSpecs] = await boundedQuoteRead(Promise.all([
         getPackagingFamilies(workspace.organization.id, supabase),
         getPackagingTemplates(workspace.organization.id, supabase),
         activeQuote ? getQuoteOptionalCharges(workspace.organization.id, activeQuote.id, supabase) : Promise.resolve([]),
         getPackagingSavedSpecs(workspace.organization.id, params.leadId, supabase),
-      ]);
+      ]), 'Packaging options');
       packaging = { enabled: true, families, templates, charges, savedSpecs };
 
       const editableQuote = Boolean(activeQuote && !['sent','accepted','rejected','expired','cancelled','declined'].includes(String(activeQuote.status ?? '').toLowerCase()));
       if (editableQuote) {
-        const v5Enabled = await isPackagingPricingV5EnabledForOrg(workspace.organization.id);
+        const v5Enabled = await boundedQuoteRead(isPackagingPricingV5EnabledForOrg(workspace.organization.id), 'Pricing V5 availability');
         if (v5Enabled) {
-          const [options,frameOptions] = await Promise.all([
+          const [options,frameOptions] = await boundedQuoteRead(Promise.all([
             listSalesPackagingPricingV5Options(workspace.organization.id),
             listSalesPackagingFramePricingV5Options(workspace.organization.id),
-          ]);
+          ]), 'Published pricing options');
           if (options.families.length && options.templates.length && options.sizes.length && options.constructions.length) pricingV5Options = options;
           if (frameOptions.families.length && frameOptions.templates.length) pricingV5FrameOptions = frameOptions;
         }
