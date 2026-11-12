@@ -59,7 +59,7 @@ function newestSourceWatermark(rows: ExistingIntakeRow[]) {
 
 async function readExistingIntakeSnapshot(admin: any, organizationId: string) {
   const { data, error } = await admin.from('lead_intake_staging')
-    .select('external_contact_id, intake_status, source_created_at, source_modified_at')
+    .select('external_contact_id, intake_status, source_created_at, source_modified_at, interakt_assignee_name')
     .eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).limit(5000);
   if (error) {
     if (String(error.code ?? '') === '42P01') return { rows: [] as ExistingIntakeRow[], tableReady: false };
@@ -82,6 +82,7 @@ export async function refreshStarkInteraktStaging(): Promise<void> {
   if (!snapshot.tableReady) throw new Error('The lead_intake_staging migration has not been applied.');
 
   const existingStatus = new Map(snapshot.rows.map((row) => [row.external_contact_id, row.intake_status || 'new']));
+  const existingAssignee = new Map(snapshot.rows.map((row) => [row.external_contact_id, row.interakt_assignee_name ?? null]));
   const watermark = newestSourceWatermark(snapshot.rows);
   const recoveryModifiedAfter = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const contactsById = new Map<string, Awaited<ReturnType<typeof fetchInteraktContacts>>['contacts'][number]>();
@@ -119,6 +120,15 @@ export async function refreshStarkInteraktStaging(): Promise<void> {
     source_modified_at: contact.sourceModifiedAt,
     source_created_via: contact.sourceCreatedVia,
     traits: contact.traits,
+    // Keep provider ownership current during contact refresh, not only message webhooks.
+    // A missing assignee in a sparse provider payload must not erase a known owner.
+    interakt_assignee_name: (() => {
+      const actor = contact.traits?.chat_assignee;
+      if (!actor || typeof actor !== 'object' || Array.isArray(actor)) return existingAssignee.get(contact.externalContactId) ?? null;
+      const fields = actor as Record<string, unknown>;
+      const fullName = [fields.first_name, fields.last_name].map((value) => typeof value === 'string' ? value.trim() : '').filter(Boolean).join(' ');
+      return fullName || (typeof fields.email === 'string' ? fields.email.trim() : '') || existingAssignee.get(contact.externalContactId) || null;
+    })(),
     raw_payload: contact.rawPayload,
     intake_status: existingStatus.get(contact.externalContactId) ?? 'new',
     sync_batch_id: batchId,
