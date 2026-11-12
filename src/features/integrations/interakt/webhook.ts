@@ -423,9 +423,13 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   const eligibleForInitialAssignment = !intake.setu_assigned_user_id
     && !intake.setu_assigned_invitation_id
     && !intake.setu_assigned_email;
-  const eligibleForProviderSync = intake.setu_assignment_origin === 'setu_auto';
+  // Provider ownership may change after the first sync. A previous Interakt owner
+  // must not permanently lock the staging assignment to that salesperson.
+  // Do not change qualified CRM leads or override an explicit SETU reassignment.
+  const eligibleForProviderSync = !intake.qualified_lead_id
+    && ['setu_auto', 'interakt'].includes(intake.setu_assignment_origin);
   let hasManualAssignment = false;
-  if (eligibleForProviderSync && assignee) {
+  if ((eligibleForInitialAssignment || eligibleForProviderSync) && assignee) {
     const { data: manualHistory, error: auditError } = await db
       .from('audit_logs')
       .select('id')
@@ -436,8 +440,13 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     if (auditError) throw new Error(`Unable to verify inbound assignment history: ${auditError.message}`);
     hasManualAssignment = (manualHistory?.length ?? 0) > 0;
   }
-  const initialOwner = assignee && (eligibleForInitialAssignment || (eligibleForProviderSync && !hasManualAssignment))
+  const resolvedOwner = assignee && !hasManualAssignment
+    && (eligibleForInitialAssignment || eligibleForProviderSync)
     ? await initialSetuOwnerFromInterakt(db, assignee)
+    : null;
+  // Avoid rewriting assignment timestamps for duplicate/delivery/read events.
+  const initialOwner = resolvedOwner && resolvedOwner.userId !== intake.setu_assigned_user_id
+    ? resolvedOwner
     : null;
   const ownerPatch = initialOwner ? {
     setu_assigned_user_id: initialOwner.userId,
