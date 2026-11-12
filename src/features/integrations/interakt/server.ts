@@ -29,6 +29,7 @@ type ExistingIntakeRow = {
   intake_status: string | null;
   source_created_at: string | null;
   source_modified_at: string | null;
+  interakt_assignee_name: string | null;
 };
 
 function clean(value: unknown) { return String(value ?? '').trim(); }
