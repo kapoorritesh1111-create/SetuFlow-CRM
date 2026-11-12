@@ -159,3 +159,22 @@ test('Interakt and image intelligence secrets stay server-only', () => {
   assert.doesNotMatch(combinedRuntime, /NEXT_PUBLIC_INTERAKT/);
   assert.doesNotMatch(combinedRuntime, /NEXT_PUBLIC_OPENAI/);
 });
+
+
+test('provider owner changes reconcile without overriding manual SETU assignments', () => {
+  const assignmentManagement = fs.readFileSync('src/features/integrations/interakt/assignment-management.ts', 'utf8');
+  const migration = fs.readFileSync('supabase/migrations/20261112160000_stark_interakt_owner_resync_manual_guard.sql', 'utf8');
+  assert.match(webhook, /\['setu_auto', 'interakt'\]\.includes\(intake\.setu_assignment_origin\)/);
+  assert.match(webhook, /\.eq\('action', 'inbound_lead_reassigned'\)/);
+  assert.match(webhook, /resolvedOwner\.userId !== intake\.setu_assigned_user_id/);
+  assert.match(assignmentManagement, /setu_assignment_origin: 'manual'/);
+  assert.match(migration, /before update of interakt_assignee_name/);
+  assert.match(migration, /inbound_lead_reassigned/);
+  assert.match(migration, /new\.qualified_lead_id is not null/);
+});
+
+test('contact refresh carries the current provider assignee', () => {
+  assert.match(server, /existingAssignee/);
+  assert.match(server, /interakt_assignee_name: \(\(\) =>/);
+  assert.match(server, /contact\.traits\?\.chat_assignee/);
+});

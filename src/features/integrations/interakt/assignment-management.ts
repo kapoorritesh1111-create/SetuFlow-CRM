@@ -219,6 +219,7 @@ export async function reassignStarkInboundLead(formData: FormData): Promise<void
       setu_assigned_email: target.email,
       setu_assigned_name: target.name,
       setu_assigned_at: assignedAt,
+      setu_assignment_origin: 'manual',
       updated_at: assignedAt,
     })
     .eq('id', rowId)
