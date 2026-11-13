@@ -199,6 +199,47 @@ async function assertNotRecentDuplicate(db: any, organizationId: string, intakeI
   if (data?.id) throw new Error('This same WhatsApp message was already sent in the last 5 minutes. Refresh the conversation before sending it again.');
 }
 
+
+// Check the live owner again immediately before contacting Interakt. Preparing
+// brochures/attachments can take time while provider ownership is changing.
+async function assertCurrentOutboundOwner(
+  db: any, workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>,
+  rowId: string, leadId?: string,
+) {
+  const current = await loadInboundRow(db, workspace.organization!.id, rowId);
+  assertInboundOwner(workspace, current);
+  if (leadId) {
+    if (clean(current.qualified_lead_id) !== leadId) {
+      throw new Error('This conversation is no longer linked to the selected lead. Refresh before sending.');
+    }
+    await assertLeadOwner(db, workspace, leadId);
+  }
+}
+
+// Prevent a second salesperson sending essentially the same sales reply under
+// another signature and brochure share URL. Historical messages are read-only.
+async function assertNotRepeatedCustomerReply(
+  db: any, organizationId: string, intakeId: string, originalMessage: string,
+) {
+  const normalized = originalMessage.replace(/\s+/g, ' ').trim().toLowerCase();
+  if (normalized.length < 40) return; // Short acknowledgements may legitimately repeat.
+  const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  const { data, error } = await db.from('lead_intake_messages')
+    .select('id,message_text,sent_at')
+    .eq('organization_id', organizationId)
+    .eq('intake_id', intakeId)
+    .eq('direction', 'outbound')
+    .gte('sent_at', cutoff)
+    .order('sent_at', { ascending: false })
+    .limit(30);
+  if (error) throw new Error('Unable to verify recent customer replies. Please retry.');
+  if ((data ?? []).some((item: any) =>
+    clean(item.message_text).replace(/\s+/g, ' ').trim().toLowerCase().startsWith(normalized)
+  )) {
+    throw new Error('This customer already received the same sales reply in the last 30 minutes. Review the conversation before sending another message.');
+  }
+}
+
 async function loadAttachmentShare(db: any, organizationId: string, attachmentId: string, context: { intakeId?: string; leadId?: string }): Promise<AttachmentShare | null> {
   if (!attachmentId) return null;
   const { data: row, error } = await db.from('whatsapp_attachment_shares')
@@ -298,6 +339,7 @@ async function performStarkInteraktSalesText(formData: FormData) {
   const senderSignature = await loadSenderSignature(db, workspace);
   const dedupeKey = outboundDedupeKey({ intakeId: row.id, actorUserId: workspace.user!.id, message: originalMessage, brochureId, attachmentId, mode: 'inbound_free_text' });
   await assertNotRecentDuplicate(db, organizationId, row.id, dedupeKey);
+  await assertNotRepeatedCustomerReply(db, organizationId, row.id, originalMessage);
   let brochureShare: { id: string; url: string; brochureName: string } | null = null;
   const parts = [originalMessage].filter(Boolean);
   if (brochureId) {
@@ -315,6 +357,7 @@ async function performStarkInteraktSalesText(formData: FormData) {
   const callbackData = JSON.stringify({ source: 'setu_flow_inbound_sales', intake_id: row.id, actor_user_id: workspace.user!.id, mode, brochure_share_id: brochureShare?.id ?? null, attachment_id: attachment?.id ?? null });
   let result: { id: string; message: string | null };
   try {
+    await assertCurrentOutboundOwner(db, workspace, row.id);
     result = await sendInteraktText({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, message, callbackData });
   } catch (error) {
     await discardUnsentBrochureShare(db, organizationId, brochureShare?.id);
@@ -359,6 +402,7 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
     const senderSignature = await loadSenderSignature(db, workspace);
     const dedupeKey = outboundDedupeKey({ intakeId: row.id, actorUserId: workspace.user!.id, message: originalMessage, brochureId, attachmentId, mode: 'lead_free_text' });
     await assertNotRecentDuplicate(db, workspace.organization!.id, row.id, dedupeKey);
+  await assertNotRepeatedCustomerReply(db, workspace.organization!.id, row.id, originalMessage);
     let brochureShare: { id: string; url: string; brochureName: string } | null = null;
     const parts = [originalMessage].filter(Boolean);
     if (brochureId) {
@@ -376,6 +420,7 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
     const callbackData = JSON.stringify({ source: 'setu_flow_lead_detail', intake_id: row.id, lead_id: leadId, actor_user_id: workspace.user!.id, mode, brochure_share_id: brochureShare?.id ?? null, attachment_id: attachment?.id ?? null });
     let result: { id: string; message: string | null };
     try {
+      await assertCurrentOutboundOwner(db, workspace, row.id, leadId);
       result = await sendInteraktText({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, message, callbackData });
     } catch (error) {
       await discardUnsentBrochureShare(db, workspace.organization!.id, brochureShare?.id);
@@ -408,7 +453,9 @@ export async function sendStarkLeadWhatsAppTemplate(formData: FormData): Promise
     const context = `${salesFollowUpContext(row)}\n\n${profileSignatureText(senderSignature)}`;
     const callbackData = JSON.stringify({ source: 'setu_flow_lead_detail', intake_id: row.id, lead_id: leadId, actor_user_id: workspace.user!.id, mode: 'template_restart' });
     const bodyValues = approvedFollowUpBodyValues(preset.templateName, customerName, context);
-    const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues, callbackData });
+    await assertCurrentOutboundOwner(db, workspace, row.id, leadId);
+    await assertCurrentOutboundOwner(db, workspace, row.id);
+  const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues, callbackData });
     await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { mode: 'template_restart', lead_id: leadId, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues } });
     revalidatePath(`/leads/${leadId}`);
     return { ok: true, message: 'Approved WhatsApp follow-up sent with profile signature. Free-text messaging will reopen after the customer replies.' };
