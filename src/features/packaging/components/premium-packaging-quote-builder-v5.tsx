@@ -205,7 +205,7 @@ export default function PremiumPackagingQuoteBuilderV5({
       router.refresh();
     });
   }
-  const supSizeById=new Map((supOptions?.sizes??[]).map((x:any)=>[String(x.id),x]));
+  const supSizeById=new Map<string,any>((supOptions?.sizes??[]).map((x:any):[string,any]=>[String(x.id),x]));
   const supConstructionById=new Map((supOptions?.constructions??[]).map((x:any)=>[String(x.id),x]));
 
   return <section id="packaging-quote-studio" className="mb-5 overflow-hidden rounded-[30px] border border-slate-200 bg-slate-100 shadow-[0_24px_70px_rgba(15,23,42,0.10)]">
