@@ -22,6 +22,21 @@ function familyMeta(key:FamilyKey){
   if(key==='3ss') return {label:'3 Side Seal Pouch',sub:'Pouch or roll form',badge:'3SS',tone:'from-violet-500 to-fuchsia-600',image:'/packaging/quote-stock/stark-three-side-seal.png'};
   return {label:'Stand Up Pouch',sub:'Gusset, zipper, premium finish',badge:'SUP',tone:'from-teal-500 to-cyan-600',image:'/packaging/quote-stock/stark-stand-up.png'};
 }
+// Preserve the saved custom dimensions throughout the quote workflow. A custom
+// SUP line may retain a standard sizeProfileId for pricing/reference purposes.
+function savedSizeLabel(line:any,family:FamilyKey,supSizeById:Map<string,any>):string{
+  if(family==='sup'){
+    const custom=line.customSize;
+    const width=Number(custom?.width_mm);
+    const height=Number(custom?.height_mm);
+    if(custom&&Number.isFinite(width)&&width>0&&Number.isFinite(height)&&height>0){
+      const gusset=Number(custom.bottom_gusset_each_mm);
+      return `${width} × ${height} mm${Number.isFinite(gusset)&&gusset>0?` · BG ${gusset}+${gusset}`:''} · Custom`;
+    }
+    return String(supSizeById.get(String(line.sizeProfileId))?.name??'Saved size');
+  }
+  return String(line.sizeLabel??(Number(line.widthMm)>0&&Number(line.heightMm)>0?`${line.widthMm} × ${line.heightMm} mm`:null)??line.sizeName??line.dimensions??'Dimensions not specified');
+}
 function Shape({kind,compact=false}:{kind:FamilyKey|'flat'|'labels'|'sleeves';compact?:boolean}){
   const src=kind==='sup'?'/packaging/quote-stock/stark-stand-up.png':kind==='center-seal'?'/packaging/quote-stock/stark-center-seal.png':kind==='3ss'?'/packaging/quote-stock/stark-three-side-seal.png':'/packaging/quote-stock/stark-roll-stock.png';
   return <div className={compact?"flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-50 to-blue-50":"flex h-36 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50"}><img src={src} alt="" className={compact?"h-14 w-auto object-contain":"h-32 w-auto object-contain"}/></div>;
@@ -222,7 +237,7 @@ export default function PremiumPackagingQuoteBuilderV5({
             const family:FamilyKey=labelSavedLines.some((saved:any)=>String(saved.lineId)===id)?'labels':supSavedLines.some((saved:any)=>String(saved.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal';
             return <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-white p-3">
               <div><p className="text-sm font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p>
-                <p className="text-xs font-semibold text-slate-600">{family==='sup'?(line.customSize?`${Number(line.customSize.width_mm)} × ${Number(line.customSize.height_mm)} mm · BG ${Number(line.customSize.bottom_gusset_each_mm)}+${Number(line.customSize.bottom_gusset_each_mm)} · Custom`:String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size')):String(line.sizeLabel??'Dimensions not specified')} · {line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString()} kg · ${money(Number(line.displayUnitPrice),currency)}/kg`:`Qty ${Number(line.quantity??0).toLocaleString()} · ${money(Number(line.unitPrice??0),currency)}/pc`}</p></div>
+                <p className="text-xs font-semibold text-slate-600">{savedSizeLabel(line,family,supSizeById)} · {line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString()} kg · ${money(Number(line.displayUnitPrice),currency)}/kg`:`Qty ${Number(line.quantity??0).toLocaleString()} · ${money(Number(line.unitPrice??0),currency)}/pc`}</p></div>
               {family!=='sup'&&family!=='labels'?<label className="text-xs font-bold text-slate-700">Customer quotation price
                 <select aria-label="Customer quotation price unit" disabled={pending} value={line.customerQuoteUnit??(String(line.supplyForm).endsWith('_roll')?'kg':'pcs')} onChange={e=>updateQuoteUnit(id,e.target.value as 'kg'|'pcs')} className="ml-2 rounded-lg border border-blue-200 bg-white p-2">
                   <option value="pcs">Per piece</option><option value="kg" disabled={!(Number(line.finishedWeightKg)>0)}>Per kg</option>
@@ -278,7 +293,7 @@ export default function PremiumPackagingQuoteBuilderV5({
             {[...supSavedLines,...frameSavedLines,...labelSavedLines].map((line:any)=>{
               const id=String(line.lineId??'');
               const family:FamilyKey=supSavedLines.some((l:any)=>String(l.lineId)===id)?'sup':String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal';
-              const size=family==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??(Number(line.widthMm)>0&&Number(line.heightMm)>0?`${line.widthMm} × ${line.heightMm} mm`:null)??line.sizeName??line.dimensions??'Dimensions not specified');
+              const size=savedSizeLabel(line,family,supSizeById);
               const isEditing=intent?.lineId===id;
               return <div key={id} className={'rounded-xl border p-3 '+(isEditing?'border-blue-500 bg-blue-50':'border-slate-200 bg-slate-50')}>
                 <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-xs font-black text-slate-900">{String(line.label??familyMeta(family).label)}</p><p className="text-xs font-semibold text-slate-600">{size}</p></div>{isEditing?<span className="rounded-full bg-blue-700 px-2 py-1 text-[10px] font-bold text-white">{intent?.mode==='duplicate'?'Duplicating':'Editing'}</span>:null}</div>
@@ -345,7 +360,7 @@ export default function PremiumPackagingQuoteBuilderV5({
           const lineFamily:FamilyKey = labelSavedLines.some((item:any)=>String(item.lineId)===lineId)?'labels':supSavedLines.some((item:any)=>String(item.lineId)===lineId) ? 'sup' : (String(line.familySlug??line.family_slug??'').includes('3') || String(line.supplyForm??'').includes('three_side')?'3ss':'center-seal');
           return <div key={lineId} className="rounded-2xl border border-slate-200 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><p className="text-sm font-black text-slate-950">{String(line.label??familyMeta(lineFamily).label)}</p><p className="mt-1 text-xs font-semibold text-slate-500">{lineFamily==='sup'?String((supSizeById.get(String(line.sizeProfileId)) as any)?.name??'Saved size'):String(line.sizeLabel??'Dimensions not specified')} · {lineFamily!=='sup'&&line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString('en-IN',{maximumFractionDigits:2})} kg · ${money(Number(line.displayUnitPrice),currency)} / kg`:`Qty ${quantity>0?quantity.toLocaleString():'—'} · ${basePrice>0?money(Number(line.unitPrice??basePrice),currency)+' / pc':'Approved pricing'}`}</p></div>
+              <div><p className="text-sm font-black text-slate-950">{String(line.label??familyMeta(lineFamily).label)}</p><p className="mt-1 text-xs font-semibold text-slate-500">{savedSizeLabel(line,lineFamily,supSizeById)} · {lineFamily!=='sup'&&line.customerQuoteUnit==='kg'&&Number(line.finishedWeightKg)>0?`${Number(line.finishedWeightKg).toLocaleString('en-IN',{maximumFractionDigits:2})} kg · ${money(Number(line.displayUnitPrice),currency)} / kg`:`Qty ${quantity>0?quantity.toLocaleString():'—'} · ${basePrice>0?money(Number(line.unitPrice??basePrice),currency)+' / pc':'Approved pricing'}`}</p></div>
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={()=>manageLine(lineId,lineFamily,'edit')} className="min-h-11 rounded-xl border border-blue-200 px-3 text-xs font-bold text-blue-700">Edit qty / spec</button>
                 <button type="button" onClick={()=>manageLine(lineId,lineFamily,'duplicate')} className="min-h-11 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-700">Duplicate</button>
