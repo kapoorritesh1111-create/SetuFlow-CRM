@@ -9,14 +9,16 @@ import { buildLiveResearchExecutionAnswer, type SetuGuruHsnCatalogReview, type S
 import { buildConversationalWorkflowStatusAnswer } from '@/lib/setu-guru/workflow-status-answer';
 import { buildTrialCoachAnswer, isTrialJourneyQuestion, resolveTrialCoachContext } from '@/lib/setu-guru/trial-coach';
 import { writeTelemetry } from '@/lib/setu-guru/telemetry';
+import { answerFromApprovedLessons } from '@/lib/setu-guru/organization-learning';
 
-type SetuGuruOrgSearchMode = 'catalog_search' | 'buyer_search' | 'supplier_search' | 'lead_search' | 'quote_compliance' | 'workflow_status' | 'pricing_defaults' | 'hsn_enrichment' | 'document_requirements' | 'margin_benchmark' | 'page_help';
+type SetuGuruOrgSearchMode = 'catalog_search' | 'buyer_search' | 'supplier_search' | 'lead_search' | 'quote_compliance' | 'workflow_status' | 'pricing_defaults' | 'hsn_enrichment' | 'document_requirements' | 'margin_benchmark' | 'page_help' | 'organization_knowledge';
 type TableRow = Record<string, unknown>;
 type QueryResult = { data: TableRow | TableRow[] | null; count?: number | null; error?: Error | null };
 type QueryBuilder = PromiseLike<QueryResult> & { select: (columns: string, options?: { count?: 'exact'; head?: boolean }) => QueryBuilder; eq: (column: string, value: unknown) => QueryBuilder; in: (column: string, values: unknown[]) => QueryBuilder; ilike: (column: string, pattern: string) => QueryBuilder; or: (filters: string) => QueryBuilder; order: (column: string, options?: { ascending?: boolean }) => QueryBuilder; limit: (count: number) => QueryBuilder; maybeSingle: () => Promise<{ data: TableRow | null; error?: Error | null }>; };
 type SupabaseReader = { from: (table: string) => QueryBuilder };
 
 const MODE_ALIASES: Record<string, SetuGuruOrgSearchMode> = {
+  organization_knowledge: 'organization_knowledge', org_policy: 'organization_knowledge',
   catalog: 'catalog_search', products: 'catalog_search', product: 'catalog_search', categories: 'catalog_search', category: 'catalog_search', catalog_search: 'catalog_search',
   buyers: 'buyer_search', buyer: 'buyer_search', buyer_search: 'buyer_search', suppliers: 'supplier_search', supplier: 'supplier_search', supplier_search: 'supplier_search',
   leads: 'lead_search', lead: 'lead_search', lead_search: 'lead_search', quote_compliance: 'quote_compliance', compliance: 'quote_compliance', quote: 'quote_compliance',
@@ -343,6 +345,17 @@ export async function POST(request: Request) {
     const organizationName = workspace.organization.name ?? 'this organization';
     const term = asText(body.term) || extractSearchTerm(question, mode);
     const db = await createClient() as unknown as SupabaseReader;
+
+    if (mode === 'organization_knowledge') {
+      const learned = await answerFromApprovedLessons(organizationId, question).catch(() => null);
+      if (learned) return NextResponse.json(learned);
+      const manager = workspace.currentRoles.includes('owner') || workspace.currentRoles.includes('admin');
+      return NextResponse.json({
+        answer: 'I do not have an approved company procedure for this question yet. Please request an answer so an authorized owner or admin can teach me. I will not invent a policy.',
+        confidence: 'low', mode, rows: [], unresolved: true,
+        actions: manager ? ['Teach Guru', 'Request answer'] : ['Request answer'],
+      });
+    }
 
     // S24-TRIAL-205 Pass C: guided-trial orgs get the journey coach for
     // "what do I do next"-style questions. resolveTrialCoachContext returns

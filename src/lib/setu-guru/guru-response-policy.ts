@@ -1,3 +1,7 @@
+export function isSetuGuruOrganizationPolicyQuestion(question: string) {
+  return /\b(our policy|company policy|our process|our procedure|our standard rule|what is our rule|according to our policy|according to stark packmate policy)\b/i.test(question);
+}
+
 export type SetuGuruAnswerSource = 'page_context' | 'live_organization_data' | 'route_help_registry' | 'live_research' | 'generic_guidance';
 
 export type SetuGuruIntent = 'quote_blockers' | 'quote_lifecycle' | 'order_lifecycle' | 'dispatch_docs' | 'hs_code' | 'compliance' | 'catalog' | 'general';
