@@ -173,7 +173,7 @@ export default async function QuotePage({
   const quoteCurrency = String(activeQuote?.currency || data.lead?.deal_currency || 'INR').toUpperCase();
   const pricingLineTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+(Number(line.quantity||0)*Number(line.unit_price||line.catalog_price_amount||0)),0) : 0;
   const optionalChargeTotal = (packaging?.charges ?? []).reduce((sum:number,item:any)=>sum+Math.max(0,Number(item.amount??0)),0);
-  const v5TaxTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+quoteLineGst(line,workspace.organization.id),0) : 0;
+  const v5TaxTotal = activeQuote ? (activeQuote.lineItems as any[]).reduce((sum:number,line:any)=>sum+quoteLineGst(line,workspace.organization?.id),0) : 0;
   const liveQuoteTotal = pricingLineTotal + optionalChargeTotal + v5TaxTotal;
   const commercialQuoteLines = activeQuote ? (activeQuote.lineItems as any[]).filter((line:any)=>
     !(line.input_snapshot_json?.source==='lead_requirement' && Number(line.unit_price??0)<=0)
