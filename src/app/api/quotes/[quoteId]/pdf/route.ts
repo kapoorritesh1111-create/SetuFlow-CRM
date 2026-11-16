@@ -1,3 +1,4 @@
+import { quoteLineGst } from '@/lib/quotes/stark-label-gst';
 import QRCode from 'qrcode';
 import { parsePdfImage } from '@/lib/pdf/organization-logo';
 import {resolveFrameQuotePresentation} from '@/lib/packaging-pricing-v5/customer-quote-unit';
@@ -725,9 +726,7 @@ export async function GET(request: Request, { params }: { params: { quoteId: str
   }
   const { data: optionalCharges } = await db.from('quote_optional_charges').select('label, amount, currency').eq('organization_id', resolvedOrganizationId).eq('quote_id', quote.id);
 
-  const v5TaxTotal = lines.reduce((sum, line) => line.line_type === 'packaging' && Number(line.calculation_version) === 5
-    ? sum + Math.max(0, num(line.pricing_breakdown_json?.selling_price?.gst))
-    : sum, 0);
+  const v5TaxTotal = lines.reduce((sum, line) => sum + quoteLineGst(line,resolvedOrganizationId), 0);
 
   const rows: PdfRow[] = lines.map((line) => {
     if (line.line_type === 'packaging') {
