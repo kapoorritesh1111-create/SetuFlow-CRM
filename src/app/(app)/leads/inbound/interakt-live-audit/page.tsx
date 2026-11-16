@@ -12,7 +12,7 @@ export default async function Page() {
   if (user.organization?.id !== ORG || !user.membership ||
       !user.currentRoles.some(role => ['owner', 'admin'].includes(String(role).toLowerCase()))) notFound();
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
-  const db = createAdminSupabaseClient();
+  const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database unavailable');
   const rows: Array<{ external_contact_id: string | null; setu_assigned_email: string | null }> = [];
   for (let offset = 0; ; offset += 1000) {
