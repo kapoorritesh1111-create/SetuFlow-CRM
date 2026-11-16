@@ -45,13 +45,27 @@ export async function saveStarkLabelQuoteLine(input:{quoteId:string;leadId:strin
     const {data:family,error:fe}=await supabase.from('packaging_service_families').select('id,is_quoteable').eq('organization_id',STARK_ORG).eq('slug','labels').eq('is_active',true).maybeSingle();
     if(fe||!family?.is_quoteable)throw new Error('Label pricing is not yet enabled for Sales.');
     const result=calculateStarkLabelPrice({code:input.code,width_mm:input.width_mm,height_mm:input.height_mm,quantity:input.quantity,rate_overrides:await boundedLabelRead(overrides(),'Label rate lookup')});
+    // Stark Packmate domestic label prices are exclusive of 18% GST.
+    // Persist GST in the same selling_price shape consumed by review, PDF and approval.
+    const gstAmount = Math.round(result.product_total * 18) / 100;
+    const salesPricing = {
+      ...result,
+      calculation_engine_key:'label_workbook_v5',
+      selling_price:{
+        unit_price:result.unit_price,
+        product_total:result.product_total,
+        gst_pct:18,
+        gst:gstAmount,
+        grand_total_before_freight:Math.round((result.product_total + gstAmount)*100)/100,
+      },
+    };
     const snapshot={engine_version:5,calculation_engine_key:'label_workbook_v5',source:'stark_label_workbook_v1',input:{code:input.code,width_mm:input.width_mm,height_mm:input.height_mm,quantity:input.quantity},result};
     const hash=createHash('sha256').update(JSON.stringify(snapshot)).digest('hex');
     const desc='Labels · '+result.specification+' · '+result.width_mm+' × '+result.height_mm+' mm · '+result.code;
     const {data,error}=await service().rpc('app_save_stark_label_quote_line_tx',{
       p_organization_id:STARK_ORG,p_quote_id:quote.id,p_lead_id:input.leadId,p_line_id:input.lineId??null,
       p_family_id:family.id,p_quantity:result.produced_quantity,p_unit_price:result.unit_price,p_currency:'INR',
-      p_description:desc,p_input_snapshot:snapshot,p_sales_pricing:{...result,calculation_engine_key:'label_workbook_v5'},
+      p_description:desc,p_input_snapshot:snapshot,p_sales_pricing:salesPricing,
       p_internal_pricing:snapshot,p_source_hash:hash,
     });
     if(error)throw new Error(error.message);
