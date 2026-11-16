@@ -59,14 +59,24 @@ function newestSourceWatermark(rows: ExistingIntakeRow[]) {
 }
 
 async function readExistingIntakeSnapshot(admin: any, organizationId: string) {
-  const { data, error } = await admin.from('lead_intake_staging')
-    .select('external_contact_id, intake_status, source_created_at, source_modified_at, interakt_assignee_name')
-    .eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER).limit(5000);
-  if (error) {
-    if (String(error.code ?? '') === '42P01') return { rows: [] as ExistingIntakeRow[], tableReady: false };
-    throw new Error(`Unable to read Interakt staging state: ${String(error.message ?? 'unknown database error')}`);
+  // Supabase caps responses. A single limit(5000) silently omits older contacts,
+  // corrupting the owner cache and the incremental recovery watermark.
+  const rows: ExistingIntakeRow[] = [];
+  const pageSize = 1000;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await admin.from('lead_intake_staging')
+      .select('external_contact_id, intake_status, source_created_at, source_modified_at, interakt_assignee_name')
+      .eq('organization_id', organizationId).eq('source_provider', SOURCE_PROVIDER)
+      .order('external_contact_id', { ascending: true }).range(offset, offset + pageSize - 1);
+    if (error) {
+      if (offset === 0 && String(error.code ?? '') === '42P01') return { rows: [] as ExistingIntakeRow[], tableReady: false };
+      throw new Error(`Unable to read complete Interakt staging state at offset ${offset}: ${String(error.message ?? 'unknown database error')}`);
+    }
+    const batch = (data ?? []) as ExistingIntakeRow[];
+    rows.push(...batch);
+    if (batch.length < pageSize) break;
   }
-  return { rows: (data ?? []) as ExistingIntakeRow[], tableReady: true };
+  return { rows, tableReady: true };
 }
 
 export async function previewStarkInteraktContacts(input?: { createdAfter?: string | null; limit?: number }) {
@@ -88,18 +98,40 @@ export async function refreshStarkInteraktStaging(): Promise<void> {
   const recoveryModifiedAfter = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const contactsById = new Map<string, Awaited<ReturnType<typeof fetchInteraktContacts>>['contacts'][number]>();
 
-  const collectModifiedContacts = async (modifiedAfter: string) => {
+  // Fetch a complete, bounded time window. If Interakt has >1000 modified
+  // contacts in a window, split it rather than silently dropping later pages.
+  const collectWindow = async (from: Date, to: Date, depth = 0): Promise<void> => {
+    const windowContacts: Awaited<ReturnType<typeof fetchInteraktContacts>>['contacts'] = [];
     let offset = 0;
+    let overflow = false;
     for (let page = 0; page < 10; page += 1) {
-      const result = await fetchInteraktContacts({ offset, limit: 100, modifiedAfter });
-      for (const contact of result.contacts) contactsById.set(contact.externalContactId, contact);
-      if (!result.hasNextPage || result.contacts.length === 0) break;
+      const result = await fetchInteraktContacts({
+        offset, limit: 100, modifiedAfter: from.toISOString(), modifiedBefore: to.toISOString(),
+      });
+      windowContacts.push(...result.contacts);
+      if (!result.hasNextPage || !result.contacts.length) break;
+      if (page === 9) { overflow = true; break; }
       offset += result.contacts.length;
     }
+    if (overflow) {
+      const midpoint = Math.floor((from.getTime() + to.getTime()) / 2);
+      if (depth >= 16 || midpoint <= from.getTime() || midpoint >= to.getTime()) {
+        throw new Error('Interakt contact refresh exceeded the safe pagination limit. No partial refresh was committed.');
+      }
+      await collectWindow(from, new Date(midpoint), depth + 1);
+      await collectWindow(new Date(midpoint), to, depth + 1);
+      return;
+    }
+    for (const contact of windowContacts) contactsById.set(contact.externalContactId, contact);
   };
-
-  if (watermark) await collectModifiedContacts(watermark);
-  await collectModifiedContacts(recoveryModifiedAfter);
+  const refreshUntil = new Date();
+  const refreshFrom = new Date(Math.min(
+    watermark ? new Date(watermark).getTime() - 60 * 60 * 1000 : refreshUntil.getTime(),
+    new Date(recoveryModifiedAfter).getTime(),
+  ));
+  // The 90-day recovery window is deliberate: do not use a single incomplete
+  // latest-source timestamp as the sole cursor.
+  await collectWindow(refreshFrom, refreshUntil);
   const contacts = Array.from(contactsById.values());
   if (!contacts.length) { revalidatePath(INBOUND_PATH); return; }
 
