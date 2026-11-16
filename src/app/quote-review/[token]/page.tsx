@@ -1,3 +1,4 @@
+import { quoteLineGst } from '@/lib/quotes/stark-label-gst';
 import {resolveFrameQuotePresentation} from '@/lib/packaging-pricing-v5/customer-quote-unit';
 import { notFound } from 'next/navigation';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
@@ -105,7 +106,7 @@ export default async function PublicQuoteReviewPage({ params }: { params: { toke
     !(line.input_snapshot_json?.source==='lead_requirement' && Number(line.unit_price??0)<=0)
   );
   const subtotal = displayLines.reduce((sum:number,line:any)=>sum+Number(line.quantity||0)*Number(line.unit_price||0),0);
-  const taxTotal = displayLines.reduce((sum:number,line:any)=>Number(line.calculation_version)===5?sum+Math.max(0,Number(line.pricing_breakdown_json?.selling_price?.gst??0)):sum,0);
+  const taxTotal = displayLines.reduce((sum:number,line:any)=>sum+quoteLineGst(line,quote.organization_id),0);
   const total = subtotal + taxTotal;
   const meta = quote.industry_metadata ?? {};
   const artworkAttachments = (attachments ?? []).filter((a: any) => ['artwork', 'customer_artwork', 'design_in_progress', 'design', 'proof'].includes(String(a.attachment_type || '').toLowerCase()));

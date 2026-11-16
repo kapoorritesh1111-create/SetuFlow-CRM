@@ -1,3 +1,4 @@
+import { quoteLineGst } from '@/lib/quotes/stark-label-gst';
 import Link from 'next/link';
 import type { LeadProfileData } from '@/lib/queries/leads';
 import { createLeadQuoteDraftFromLead } from '@/features/quotes/server/lead-draft-actions';
@@ -43,7 +44,7 @@ function lineItems(quote: any | null, data: LeadProfileData) {
   return data.linkedProducts.slice(0, 4).map((product: any) => ({ id: `seed-${product.id}`, product_id: product.id, quantity: 1, unit_price: null, currency: quoteCurrency(data, quote), notes: '', pack_label: 'Case' }));
 }
 function optionalChargeTotal(quote: any | null) { return (quote?.optionalCharges ?? []).reduce((sum: number, item: any) => sum + Math.max(0, Number(item.amount ?? 0)), 0); }
-function pricingV5TaxTotal(quote: any | null) { return packagingLineItems(quote).reduce((sum: number, item: any) => Number(item.calculation_version) === 5 ? sum + Math.max(0, Number(item.pricing_breakdown_json?.selling_price?.gst ?? 0)) : sum, 0); }
+function pricingV5TaxTotal(quote: any | null) { return packagingLineItems(quote).reduce((sum: number, item: any) => sum + quoteLineGst(item, quote?.organization_id), 0); }
 function quoteSubtotal(quote: any | null, data: LeadProfileData) { return lineItems(quote, data).reduce((sum: number, item: any) => sum + defaultMoq(item) * finalPrice(item), 0) + packagingLineItems(quote).reduce((sum: number, item: any) => sum + defaultMoq(item) * finalPrice(item), 0) + optionalChargeTotal(quote); }
 function quoteTotal(quote: any | null, data: LeadProfileData) { return quoteSubtotal(quote, data) + pricingV5TaxTotal(quote); }
 function lineApprovalRequired(item: any) { const price = finalPrice(item); const meta = item.calculation_meta || {}; return price <= 0 || item.override_status === 'approval_required' || meta.approval_required === true || Boolean(item.is_price_overridden || item.is_overridden); }
