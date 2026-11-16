@@ -216,6 +216,15 @@ function mergeEvidence(existing: unknown, next: Record<string, unknown>) {
   return { latest: next, history: [...history, next] };
 }
 
+
+// Supabase builders resolve to { data, error }; awaiting them without inspecting
+// error can acknowledge a webhook whose mandatory writes were silently rejected.
+async function requiredWrite(promise: PromiseLike<{ error?: { message?: string; code?: string } | null }>, operation: string) {
+  const result = await promise;
+  if (result.error) throw new Error(`Interakt ${operation} failed: ${String(result.error.message ?? result.error.code ?? 'database error')}`);
+  return result;
+}
+
 async function findOrCreateIntake(db: any, input: { customerId?: string | null; phone?: string | null; name?: string | null; email?: string | null; sourcePayload?: Record<string, unknown> }) {
   let row: any = null;
   if (input.customerId) { const result = await db.from('lead_intake_staging').select('*').eq('organization_id', STARK_PACKMATE_ORG_ID).eq('source_provider', SOURCE_PROVIDER).eq('external_contact_id', input.customerId).maybeSingle(); row = result.data; }
@@ -245,11 +254,11 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
     const row = safeObject(item); const question = safeObject(row.question); const answer = safeObject(row.answer);
     const questionText = clean(question.message) ?? 'Workflow question'; const answerText = clean(answer.message); const answeredAt = iso(answer.received_at_utc ?? answer.created_at_utc);
     const evidenceKey = clean(answer.id) || `${clean(data.id) ?? 'workflow'}:${clean(question.id) ?? questionText}:${answerText ?? ''}`; const now = new Date().toISOString();
-    await db.from('lead_intake_workflow_answers').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, workflow_id: clean(data.workflow_id), workflow_run_id: clean(data.id), question_id: clean(question.id), question_text: questionText, answer_text: answerText, response_type: clean(answer.message_content_type), answered_at: answeredAt, evidence_key: evidenceKey, raw_payload: row, updated_at: now }, { onConflict: 'organization_id,provider,intake_id,evidence_key' });
+    await requiredWrite(db.from('lead_intake_workflow_answers').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, workflow_id: clean(data.workflow_id), workflow_run_id: clean(data.id), question_id: clean(question.id), question_text: questionText, answer_text: answerText, response_type: clean(answer.message_content_type), answered_at: answeredAt, evidence_key: evidenceKey, raw_payload: row, updated_at: now }, { onConflict: 'organization_id,provider,intake_id,evidence_key' }), 'workflow answer');
     const questionId = clean(question.id);
     const questionAt = iso(question.created_at_utc);
     if (questionId && questionText && questionText !== 'Workflow question') {
-      await db.from('lead_intake_messages').upsert({
+      await requiredWrite(db.from('lead_intake_messages').upsert({
         organization_id: STARK_PACKMATE_ORG_ID,
         intake_id: intake.id,
         provider: SOURCE_PROVIDER,
@@ -264,12 +273,12 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
         sent_at: questionAt ?? now,
         status: 'sent',
         updated_at: now,
-      }, { onConflict: 'organization_id,provider,external_message_id' });
-      await db.from('lead_intake_messages')
+      }, { onConflict: 'organization_id,provider,external_message_id' }), 'workflow prompt');
+      await requiredWrite(db.from('lead_intake_messages')
         .delete()
         .eq('organization_id', STARK_PACKMATE_ORG_ID)
         .eq('provider', SOURCE_PROVIDER)
-        .eq('external_message_id', `interakt-context-gap:${questionId}`);
+        .eq('external_message_id', `interakt-context-gap:${questionId}`), 'workflow gap cleanup');
     }
     if (answerText) {
       const identityKind = identityQuestion(questionText);
@@ -308,7 +317,7 @@ async function processWorkflowResponse(db: any, payload: InteraktWebhookPayload)
   }
 
   const attribution = mergeAttribution(intake, attributionFromPayload(data));
-  await db.from('lead_intake_staging').update({ ...patch, person_name: intake.person_name ?? customerName, first_inquiry_at: intake.first_inquiry_at ?? latestInboundAt, last_inbound_at: latestInboundAt, source_modified_at: iso(data.modified_at_utc) ?? new Date().toISOString(), company_evidence: companyEvidence, company_intelligence_updated_at: companyIntelligenceUpdatedAt, updated_at: new Date().toISOString(), ...attribution }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
+  await requiredWrite(db.from('lead_intake_staging').update({ ...patch, person_name: intake.person_name ?? customerName, first_inquiry_at: intake.first_inquiry_at ?? latestInboundAt, last_inbound_at: latestInboundAt, source_modified_at: iso(data.modified_at_utc) ?? intake.source_modified_at ?? new Date().toISOString(), company_evidence: companyEvidence, company_intelligence_updated_at: companyIntelligenceUpdatedAt, updated_at: new Date().toISOString(), ...attribution }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID), 'workflow staging');
 }
 
 function messageText(message: Record<string, unknown>) { if (typeof message.message === 'string') return message.message; return recursiveFindString(message.message, ['text', 'caption', 'message']) ?? ''; }
@@ -341,7 +350,7 @@ async function preserveUnknownInteraktReplyContext(db: any, input: { intakeId: s
 
   const base = input.receivedAt ? new Date(input.receivedAt).getTime() : Date.now();
   const sentAt = new Date(Math.max(0, base - 1)).toISOString();
-  await db.from('lead_intake_messages').upsert({
+  await requiredWrite(db.from('lead_intake_messages').upsert({
     organization_id: STARK_PACKMATE_ORG_ID,
     intake_id: input.intakeId,
     provider: SOURCE_PROVIDER,
@@ -356,7 +365,7 @@ async function preserveUnknownInteraktReplyContext(db: any, input: { intakeId: s
     sent_at: sentAt,
     status: 'sent',
     updated_at: new Date().toISOString(),
-  }, { onConflict: 'organization_id,provider,external_message_id' });
+  }, { onConflict: 'organization_id,provider,external_message_id' }), 'context gap');
 }
 
 async function notifyInboundLeadRecipients(db: any, input: { intake: any; messageId: string; customerName: string | null; visibleText: string; mediaUrl: string | null }) {
@@ -400,7 +409,7 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
   const assignee = assigneeFromTraits(traits) || intake.interakt_assignee_name || null;
   if (incoming) await preserveUnknownInteraktReplyContext(db, { intakeId: intake.id, message, receivedAt, assignee });
   const textIntelligence = incoming ? extractExplicitCompanyFromText(visibleText) : null; const imageIntelligence = incoming && isImageMessage(message, mediaUrl) ? await analyzeInteraktCustomerImage(mediaUrl, visibleText) : null; const intelligence = textIntelligence ?? imageIntelligence;
-  await db.from('lead_intake_messages').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, external_message_id: messageId, event_type: eventType, direction: incoming ? 'inbound' : 'outbound', actor_type: incoming ? 'customer' : 'agent', actor_name: incoming ? name : null, message_type: clean(message.message_content_type ?? message.chat_message_type), message_text: text || (mediaUrl ? '[Customer media]' : ''), message_payload: message, media_url: mediaUrl, intelligence: intelligence ?? {}, received_at: incoming ? receivedAt : null, sent_at: incoming ? null : receivedAt, delivered_at: deliveredAt, read_at: readAt, failed_at: status === 'failed' ? now : null, status, callback_data: callbackData, updated_at: now }, { onConflict: 'organization_id,provider,external_message_id' });
+  await requiredWrite(db.from('lead_intake_messages').upsert({ organization_id: STARK_PACKMATE_ORG_ID, intake_id: intake.id, provider: SOURCE_PROVIDER, external_message_id: messageId, event_type: eventType, direction: incoming ? 'inbound' : 'outbound', actor_type: incoming ? 'customer' : 'agent', actor_name: incoming ? name : null, message_type: clean(message.message_content_type ?? message.chat_message_type), message_text: text || (mediaUrl ? '[Customer media]' : ''), message_payload: message, media_url: mediaUrl, intelligence: intelligence ?? {}, received_at: incoming ? receivedAt : null, sent_at: incoming ? null : receivedAt, delivered_at: deliveredAt, read_at: readAt, failed_at: status === 'failed' ? now : null, status, callback_data: callbackData, updated_at: now }, { onConflict: 'organization_id,provider,external_message_id' }), 'message');
 
   const identityPatch: Record<string, unknown> = {};
   if (textIntelligence?.companyName && !intake.company_name) identityPatch.company_name = textIntelligence.companyName;
@@ -457,14 +466,14 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     setu_assignment_origin: 'interakt',
   } : {};
 
-  await db.from('lead_intake_staging').update({
+  await requiredWrite(db.from('lead_intake_staging').update({
     contact_name: intake.contact_name ?? name,
     person_name: intake.person_name ?? name,
     email: intake.email ?? email,
     full_phone_number: intake.full_phone_number ?? phone,
     first_inquiry_at: incoming ? (intake.first_inquiry_at ?? receivedAt) : intake.first_inquiry_at,
-    last_inbound_at: incoming ? receivedAt : intake.last_inbound_at,
-    source_modified_at: now,
+    last_inbound_at: incoming && receivedAt && (!intake.last_inbound_at || receivedAt > intake.last_inbound_at) ? receivedAt : intake.last_inbound_at,
+    source_modified_at: iso(data.modified_at_utc) ?? intake.source_modified_at ?? now,
     raw_payload: data,
     company_evidence: companyEvidence,
     company_intelligence_updated_at: intelligence ? now : intake.company_intelligence_updated_at,
@@ -473,7 +482,7 @@ async function processMessageEvent(db: any, payload: InteraktWebhookPayload) {
     ...ownerPatch,
     ...identityPatch,
     ...attribution,
-  }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID);
+  }).eq('id', intake.id).eq('organization_id', STARK_PACKMATE_ORG_ID), 'message staging');
 
   if (incoming) {
     try {
@@ -492,8 +501,8 @@ export async function processInteraktWebhook(rawBody: string, signature: string 
   let payload: InteraktWebhookPayload; try { payload = JSON.parse(rawBody) as InteraktWebhookPayload; } catch { return { ok: false as const, status: 400, error: 'Invalid JSON.' }; }
   const db = createAdminSupabaseClient() as any; if (!db) return { ok: false as const, status: 503, error: 'Database admin client unavailable.' };
   const eventType = clean(payload.type) ?? 'unknown'; const data = safeObject(payload.data); const eventKey = webhookEventKey(eventType, data, rawBody);
-  const { data: existing } = await db.from('lead_intake_webhook_events').select('id, processed_at').eq('organization_id', STARK_PACKMATE_ORG_ID).eq('provider', SOURCE_PROVIDER).eq('event_key', eventKey).maybeSingle(); if (existing?.processed_at) return { ok: true as const, duplicate: true };
-  await db.from('lead_intake_webhook_events').upsert({ organization_id: STARK_PACKMATE_ORG_ID, provider: SOURCE_PROVIDER, event_key: eventKey, event_type: eventType, signature_valid: true, payload }, { onConflict: 'organization_id,provider,event_key' });
-  try { if (eventType === 'workflow_response_update') await processWorkflowResponse(db, payload); else if (eventType === 'message_received' || eventType.startsWith('message_api_') || eventType.startsWith('message_campaign_')) await processMessageEvent(db, payload); await db.from('lead_intake_webhook_events').update({ processed_at: new Date().toISOString(), processing_error: null }).eq('organization_id', STARK_PACKMATE_ORG_ID).eq('provider', SOURCE_PROVIDER).eq('event_key', eventKey); return { ok: true as const, duplicate: false }; }
+  const { data: existing, error: previousEventError } = await db.from('lead_intake_webhook_events').select('id, processed_at').eq('organization_id', STARK_PACKMATE_ORG_ID).eq('provider', SOURCE_PROVIDER).eq('event_key', eventKey).maybeSingle(); if (previousEventError) throw new Error(`Unable to read Interakt webhook ledger: ${previousEventError.message}`); if (existing?.processed_at) return { ok: true as const, duplicate: true };
+  await requiredWrite(db.from('lead_intake_webhook_events').upsert({ organization_id: STARK_PACKMATE_ORG_ID, provider: SOURCE_PROVIDER, event_key: eventKey, event_type: eventType, signature_valid: true, payload }, { onConflict: 'organization_id,provider,event_key' }), 'webhook ledger');
+  try { if (eventType === 'workflow_response_update') await processWorkflowResponse(db, payload); else if (eventType === 'message_received' || eventType.startsWith('message_api_') || eventType.startsWith('message_campaign_')) await processMessageEvent(db, payload); await requiredWrite(db.from('lead_intake_webhook_events').update({ processed_at: new Date().toISOString(), processing_error: null }).eq('organization_id', STARK_PACKMATE_ORG_ID).eq('provider', SOURCE_PROVIDER).eq('event_key', eventKey), 'webhook completion'); return { ok: true as const, duplicate: false }; }
   catch (error) { const errorMessage = error instanceof Error ? error.message : 'Webhook processing failed.'; await db.from('lead_intake_webhook_events').update({ processing_error: errorMessage }).eq('organization_id', STARK_PACKMATE_ORG_ID).eq('provider', SOURCE_PROVIDER).eq('event_key', eventKey); return { ok: false as const, status: 500, error: errorMessage }; }
 }
