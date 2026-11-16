@@ -2889,6 +2889,7 @@ export async function getLeadProfileData(organizationId: string, leadId: string)
     })) as LeadProfileData['rfqs'],
     quotes: quoteRows.map((quote) => ({
       ...quote,
+      organization_id: organizationId,
       lineItems: quoteLineItemsById.get(quote.id) ?? [],
     })) as LeadProfileData['quotes'],
     quoteVersions: quoteVersionRows as LeadProfileData['quoteVersions'],
