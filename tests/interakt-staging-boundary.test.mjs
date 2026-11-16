@@ -138,7 +138,8 @@ test('inbound workspace runtime is canonical and has no tsconfig redirect', () =
 
 test('active queue hides terminal statuses and incremental sync preserves status', () => {
   assert.match(server, /TERMINAL_INBOUND_STATUSES/);
-  assert.match(server, /modifiedAfter: watermark/);
+  assert.match(server, /collectWindow\(refreshFrom, refreshUntil\)/);
+  assert.match(server, /\.range\(offset, offset \+ pageSize - 1\)/);
   assert.match(server, /existingStatus\.get\(contact\.externalContactId\)/);
 });
 

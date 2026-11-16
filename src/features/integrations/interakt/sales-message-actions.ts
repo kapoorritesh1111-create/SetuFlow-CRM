@@ -240,6 +240,25 @@ async function assertNotRepeatedCustomerReply(
   }
 }
 
+
+async function reserveInboundSend(db: any, workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>, rowId: string, intent: string, windowSeconds: number): Promise<string> {
+  const fingerprint = crypto.createHash('sha256').update(intent.replace(/\s+/g, ' ').trim().toLowerCase()).digest('hex');
+  const { data, error } = await db.rpc('reserve_stark_inbound_send', {
+    p_organization_id: workspace.organization!.id, p_intake_id: rowId,
+    p_actor_user_id: workspace.user!.id, p_fingerprint: fingerprint,
+    p_window_seconds: windowSeconds, p_owner_override: canOverrideAssignment(workspace),
+  });
+  if (error || !data) throw new Error(String(error?.message ?? 'Unable to reserve WhatsApp send. Refresh before retrying.'));
+  return String(data);
+}
+async function finishInboundSend(db: any, workspace: Awaited<ReturnType<typeof requireStarkSalesAccess>>, reservationId: string, state: 'sent' | 'uncertain', providerMessageId?: string) {
+  const { error } = await db.rpc('finish_stark_inbound_send', {
+    p_organization_id: workspace.organization!.id, p_reservation_id: reservationId,
+    p_state: state, p_provider_message_id: providerMessageId ?? null,
+  });
+  if (error) throw new Error('Unable to confirm WhatsApp send state. Check Interakt before retrying.');
+}
+
 async function loadAttachmentShare(db: any, organizationId: string, attachmentId: string, context: { intakeId?: string; leadId?: string }): Promise<AttachmentShare | null> {
   if (!attachmentId) return null;
   const { data: row, error } = await db.from('whatsapp_attachment_shares')
@@ -356,10 +375,16 @@ async function performStarkInteraktSalesText(formData: FormData) {
   const mode = attachment ? (brochureShare ? 'attachment_brochure' : 'attachment') : (brochureShare ? 'brochure' : 'free_text');
   const callbackData = JSON.stringify({ source: 'setu_flow_inbound_sales', intake_id: row.id, actor_user_id: workspace.user!.id, mode, brochure_share_id: brochureShare?.id ?? null, attachment_id: attachment?.id ?? null });
   let result: { id: string; message: string | null };
+  let reservation: string | null = null;
   try {
     await assertCurrentOutboundOwner(db, workspace, row.id);
+    reservation = await reserveInboundSend(db, workspace, row.id,
+      originalMessage.length >= 40 ? `long:${originalMessage}` : `short:${workspace.user!.id}:${originalMessage}:${brochureId}:${attachmentId}`,
+      originalMessage.length >= 40 ? 1800 : 300);
     result = await sendInteraktText({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, message, callbackData });
+    await finishInboundSend(db, workspace, reservation, 'sent', result.id);
   } catch (error) {
+    if (reservation) await finishInboundSend(db, workspace, reservation, 'uncertain').catch(() => {});
     await discardUnsentBrochureShare(db, organizationId, brochureShare?.id);
     throw error;
   }
@@ -419,10 +444,16 @@ export async function sendStarkLeadWhatsApp(formData: FormData): Promise<SalesMe
     const mode = attachment ? (brochureShare ? 'attachment_brochure' : 'attachment') : (brochureShare ? 'brochure' : 'free_text');
     const callbackData = JSON.stringify({ source: 'setu_flow_lead_detail', intake_id: row.id, lead_id: leadId, actor_user_id: workspace.user!.id, mode, brochure_share_id: brochureShare?.id ?? null, attachment_id: attachment?.id ?? null });
     let result: { id: string; message: string | null };
-    try {
+    let reservation: string | null = null;
+  try {
       await assertCurrentOutboundOwner(db, workspace, row.id, leadId);
+      reservation = await reserveInboundSend(db, workspace, row.id,
+        originalMessage.length >= 40 ? `long:${originalMessage}` : `short:${workspace.user!.id}:${originalMessage}:${brochureId}:${attachmentId}`,
+        originalMessage.length >= 40 ? 1800 : 300);
       result = await sendInteraktText({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, message, callbackData });
+      await finishInboundSend(db, workspace, reservation, 'sent', result.id);
     } catch (error) {
+      if (reservation) await finishInboundSend(db, workspace, reservation, 'uncertain').catch(() => {});
       await discardUnsentBrochureShare(db, workspace.organization!.id, brochureShare?.id);
       throw error;
     }
@@ -454,8 +485,15 @@ export async function sendStarkLeadWhatsAppTemplate(formData: FormData): Promise
     const callbackData = JSON.stringify({ source: 'setu_flow_lead_detail', intake_id: row.id, lead_id: leadId, actor_user_id: workspace.user!.id, mode: 'template_restart' });
     const bodyValues = approvedFollowUpBodyValues(preset.templateName, customerName, context);
     await assertCurrentOutboundOwner(db, workspace, row.id, leadId);
-    await assertCurrentOutboundOwner(db, workspace, row.id);
-  const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues, callbackData });
+  const reservation = await reserveInboundSend(db, workspace, row.id, `template:${preset.templateName}:${bodyValues.join('|')}`, 300);
+    let result: { id: string; message: string | null };
+    try {
+      result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues, callbackData });
+      await finishInboundSend(db, workspace, reservation, 'sent', result.id);
+    } catch (error) {
+      await finishInboundSend(db, workspace, reservation, 'uncertain').catch(() => {});
+      throw error;
+    }
     await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { mode: 'template_restart', lead_id: leadId, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues } });
     revalidatePath(`/leads/${leadId}`);
     return { ok: true, message: 'Approved WhatsApp follow-up sent with profile signature. Free-text messaging will reopen after the customer replies.' };
@@ -505,7 +543,16 @@ async function performStarkInteraktSalesFollowUp(formData: FormData) {
   const context = `${salesFollowUpContext(row)}\n\n${profileSignatureText(senderSignature)}`;
   const callbackData = JSON.stringify({ source: 'setu_flow_inbound_sales', intake_id: row.id, actor_user_id: workspace.user!.id, mode: 'template_restart' });
   const bodyValues = approvedFollowUpBodyValues(preset.templateName, customerName, context);
-  const result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues, callbackData });
+  await assertCurrentOutboundOwner(db, workspace, row.id);
+  const reservation = await reserveInboundSend(db, workspace, row.id, `template:${preset.templateName}:${bodyValues.join('|')}`, 300);
+  let result: { id: string; message: string | null };
+  try {
+    result = await sendInteraktTemplate({ countryCode: recipient.countryCode, phoneNumber: recipient.phoneNumber, templateName: preset.templateName, languageCode: preset.languageCode, bodyValues, callbackData });
+    await finishInboundSend(db, workspace, reservation, 'sent', result.id);
+  } catch (error) {
+    await finishInboundSend(db, workspace, reservation, 'uncertain').catch(() => {});
+    throw error;
+  }
   await recordOutboundMessage({ db, workspace, row, result, messageType: 'Template', messageText: `WhatsApp approved follow-up\n\n${profileSignatureText(senderSignature)}`, callbackData, payload: { templateName: preset.templateName, languageCode: preset.languageCode, bodyValues } });
   revalidatePath(INBOUND_PATH);
 }
