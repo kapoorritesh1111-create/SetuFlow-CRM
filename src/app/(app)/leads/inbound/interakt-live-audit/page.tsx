@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { fetchInteraktContacts } from '@/features/integrations/interakt/client';
@@ -9,8 +9,24 @@ const ORG = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 
 export default async function Page() {
   const user = await requireWorkspace();
-  if (user.organization?.id !== ORG || !user.membership ||
-      !user.currentRoles.some(role => ['owner', 'admin'].includes(String(role).toLowerCase()))) notFound();
+  const starkAccess = user.organization?.id === ORG &&
+    Boolean(user.membership) &&
+    user.currentRoles.some(role => ['owner', 'admin'].includes(String(role).toLowerCase()));
+  if (!starkAccess) {
+    const isWrongWorkspace = Boolean(user.membership && user.organization?.id !== ORG);
+    return (
+      <main className="mx-auto max-w-xl space-y-4 p-8">
+        <h1 className="text-2xl font-bold text-slate-900">Interakt assignment audit</h1>
+        <p className="text-slate-700">
+          {isWrongWorkspace
+            ? 'You are signed in to a different SETU Flow workspace. Switch to Stark Packmate using the organization selector, then open this audit again.'
+            : 'This report is limited to Stark Packmate Owner/Admin accounts. Sign in with the correct account or ask your organization owner for access.'}
+        </p>
+        <p className="text-sm text-slate-500">Current workspace: {user.organization?.name ?? 'None'}. No records have been modified.</p>
+        <Link href="/dashboard" className="inline-block rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white">Return to dashboard</Link>
+      </main>
+    );
+  }
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
   const db = createAdminSupabaseClient() as any;
   if (!db) throw new Error('Database unavailable');
