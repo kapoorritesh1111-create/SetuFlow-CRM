@@ -11,15 +11,21 @@ test('Center Seal roll uses entered open width and repeat', () => {
   assert.equal(g.apply_pouching, false);
 });
 
-// Center Seal pouch retains the existing open-width inputs.
-test('Center Seal pouch uses entered open laminate width', () => {
-  const g = resolveFrameFamilyGeometryV5('center_seal_pouch', 140, 200);
-  assert.equal(g.open_laminate_width_mm, 140);
-  assert.equal(g.repeat_length_mm, 200);
-  assert.equal(g.across, 5);
-  assert.equal(g.along, 5);
-  assert.equal(g.units_per_frame, 25);
+// Akshay: Center Seal pouch takes finished width and height; adds 20 mm for the fin seal.
+test('Center Seal pouch 200 x 300 converts to 420 open web and three ups', () => {
+  const g = resolveFrameFamilyGeometryV5('center_seal_pouch', 200, 300);
+  assert.equal(g.open_laminate_width_mm, 420);
+  assert.equal(g.repeat_length_mm, 300);
+  assert.equal(g.across, 1);
+  assert.equal(g.along, 3);
+  assert.equal(g.units_per_frame, 3);
   assert.equal(g.apply_pouching, true);
+});
+test('Center Seal pouch over-capacity width cannot return a valid frame yield', () => {
+  const g = resolveFrameFamilyGeometryV5('center_seal_pouch', 370, 200);
+  assert.equal(g.open_laminate_width_mm, 760);
+  assert.equal(g.across, 0);
+  assert.equal(g.units_per_frame, 0);
 });
 
 test('3SS pouch converts finished 210 x 270 dimensions into approved production geometry', () => {
@@ -50,8 +56,8 @@ test('3SS roll uses entered open width and repeat length', () => {
   assert.equal(g.apply_pouching, false);
 });
 
-test('all unaffected frame forms preserve entered open width', () => {
-  for (const form of ['center_seal_roll', 'center_seal_pouch', 'three_side_seal_roll'] as const) {
+test('both roll forms preserve entered open width', () => {
+  for (const form of ['center_seal_roll', 'three_side_seal_roll'] as const) {
     const g = resolveFrameFamilyGeometryV5(form, 300, 200);
     assert.equal(g.open_laminate_width_mm, 300, form);
     assert.equal(g.repeat_length_mm, 200, form);

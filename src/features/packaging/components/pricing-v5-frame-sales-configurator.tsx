@@ -27,10 +27,11 @@ export default function PricingV5FrameSalesConfigurator({
   const isCenterPouch=template?.supply_form==='center_seal_pouch';
   const isThreeRoll=template?.supply_form==='three_side_seal_roll';
   const isThreePouch=template?.supply_form==='three_side_seal_pouch';
-  const widthLabel=isThreePouch?'Finished pouch width (mm)':'Open web width (mm)';
-  const heightLabel=isThreePouch?'Finished pouch height (mm)':'Repeat length (mm)';
-  const inputDimensionLabel=isThreePouch?'Finished pouch width × height':'Open width × repeat length';
-  const expectedOpenWidth=isThreePouch?(2*Number(height))+12:Number(width);
+  const isFinishedPouchForm=isThreePouch||isCenterPouch;
+  const widthLabel=isFinishedPouchForm?'Finished pouch width (mm)':'Open web width (mm)';
+  const heightLabel=isFinishedPouchForm?'Finished pouch height (mm)':'Repeat length (mm)';
+  const inputDimensionLabel=isFinishedPouchForm?'Finished pouch width × height':'Open width × repeat length';
+  const expectedOpenWidth=isThreePouch?(2*Number(height))+12:isCenterPouch?(2*Number(width))+20:Number(width);
   const expectedRepeat=isThreePouch?Number(width):Number(height);
   const [preview,setPreview]=useState<any>(null);
   const [previewInputKey,setPreviewInputKey]=useState('');
@@ -201,7 +202,9 @@ export default function PricingV5FrameSalesConfigurator({
       <div className="md:col-span-2 xl:col-span-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <span className="font-black text-slate-800">{inputDimensionLabel}.</span>{' '}
         {isThreePouch
-          ? 'Enter the finished pouch width and height. SETU calculates laminate open width = 2 × finished height + 12 mm, and repeat length = finished width.'
+          ? 'Enter finished pouch width and height. SETU calculates open width = 2 × finished height + 12 mm and repeat = finished width.'
+          : isCenterPouch
+          ? 'Enter finished pouch width and height. SETU calculates open width = 2 × finished width + 20 mm fin-seal allowance and repeat = finished height.'
           : 'Enter the actual OPEN web width and repeat length from the production layout. Do not enter finished pouch width here.'}
         {Number(width)>0&&Number(height)>0?<span className="ml-2 font-bold text-teal-800">Laminate layout: {preview?.geometry?.open_laminate_width_mm??expectedOpenWidth} mm open × {preview?.geometry?.repeat_length_mm??expectedRepeat} mm repeat</span>:null}
       </div>

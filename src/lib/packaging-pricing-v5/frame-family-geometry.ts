@@ -35,8 +35,9 @@ function n(value: unknown): number {
  *   dimensions to improve yield.
  * - 3SS Pouch Form accepts FINISHED pouch width and height. Its open laminate
  *   width is (2 * finished height) + 12 mm, and repeat length is finished width.
- * - The three other forms continue to accept entered open web width and repeat
- *   length directly; do not apply the 3SS Pouch conversion to them.
+ * - Center Seal Pouch accepts finished pouch width / height and calculates
+ *   open laminate width = (2 * finished width) + 20 mm for the fin seal.
+ * - Center Seal Roll and 3SS Roll retain the existing direct open-web inputs.
  * - The frame costing footprint remains the full machine web (740 x 1120) per frame.
  *   This is the migration basis only; owner review must confirm any family-specific
  *   trim/edge allowances before publication.
@@ -53,10 +54,13 @@ export function resolveFrameFamilyGeometryV5(
   const machineWidth = n(machineWidthMm) || 740;
   const machineLength = n(machineLengthMm) || 1120;
 
-  // Akshay-approved 3SS Pouch rule: sales enters FINISHED pouch dimensions.
-  // Center Seal and 3SS Roll retain their existing open-width / repeat inputs.
+  // Finished-pouch geometry is specific to the two pouch forms.
+  // Roll forms continue to receive production open width and repeat directly.
   const isThreeSideSealPouch = supplyForm === 'three_side_seal_pouch';
-  const openLaminateWidth = isThreeSideSealPouch ? (2 * height) + 12 : width;
+  const isCenterSealPouch = supplyForm === 'center_seal_pouch';
+  const openLaminateWidth = isThreeSideSealPouch
+    ? (2 * height) + 12
+    : isCenterSealPouch ? (2 * width) + 20 : width;
   const repeatLength = isThreeSideSealPouch ? width : height;
 
   const across = width > 0 && height > 0 ? Math.floor(machineWidth / openLaminateWidth) : 0;
