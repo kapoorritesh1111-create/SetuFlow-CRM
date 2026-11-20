@@ -39,7 +39,7 @@ async function allRows(query: () => any): Promise<{rows:any[]; capped:boolean}> 
   return {rows,capped:true};
 }
 
-export default async function StarkSalesActivityPage({searchParams = {}}: {searchParams?:{period?:string;from?:string;to?:string;user?:string;tab?:string;metric?:string}}) {
+export default async function StarkSalesActivityPage({searchParams = {}}: {searchParams?:{period?:string;from?:string;to?:string;user?:string;tab?:string;metric?:string;queue?:string;review?:string}}) {
   const workspace = await requireWorkspace();
   if (workspace.organization?.id !== STARK || !workspace.user) redirect('/dashboard');
   if (!workspace.currentRoles.some(role=>OWNER_ROLES.has(String(role).toLowerCase()))) redirect('/leads');
@@ -148,7 +148,7 @@ export default async function StarkSalesActivityPage({searchParams = {}}: {searc
     drill.push({type:'Lead outcome',metric,actor:b.id,when:row.changed_at,record:row.lead_id,url:'/leads/'+encodeURIComponent(row.lead_id),outcome:stage.is_won?'Won':'Lost'});
   }
   const [activeInbound,activeCrm] = await Promise.all([
-    allRows(()=>db.from('lead_intake_staging').select('id,source_provider,setu_assigned_user_id,last_inbound_at,last_outbound_at,intake_status,qualified_lead_id,sales_queue_suppressed,browsing_only').eq('organization_id',STARK).in('source_provider',['interakt','indiamart']).order('created_at',{ascending:true})),
+    allRows(()=>db.from('lead_intake_staging').select('id,source_provider,contact_name,person_name,company_name,full_phone_number,setu_assigned_user_id,last_inbound_at,last_outbound_at,intake_status,qualified_lead_id,sales_queue_suppressed,browsing_only').eq('organization_id',STARK).in('source_provider',['interakt','indiamart']).order('created_at',{ascending:true})),
     allRows(()=>db.from('leads').select('id,owner_user_id').eq('organization_id',STARK).order('created_at',{ascending:true}))
   ]);
   type Workload={inbound:number;replyNow:number;reconnect:number;crm:number};
@@ -193,6 +193,19 @@ export default async function StarkSalesActivityPage({searchParams = {}}: {searc
     const leadId=quoteLead.get(event.quote_id);
     drill.push({type:'Quote sent',metric:'verifiedQuoteSends',actor:b.id,when:event.created_at,record:event.quote_id,url:leadId?'/leads/'+encodeURIComponent(leadId):'',outcome:'Sent'});
   }
+  const ownerQueueType=searchParams.queue==='reconnect'?'reconnect':'reply_now';
+  const matchingQueue=activeInbound.rows.filter((row:any)=>!row.qualified_lead_id&&!row.sales_queue_suppressed&&!row.browsing_only && classifyInboundNextAction(row)===ownerQueueType && (!searchParams.user||row.setu_assigned_user_id===searchParams.user)).sort((a:any,b:any)=>String(b.last_inbound_at||'').localeCompare(String(a.last_inbound_at||'')));
+  const ownerReviewRows=matchingQueue.slice(0,50).map((row:any)=>({...row,nextAction:ownerQueueType}));
+  const chosenRecord=ownerReviewRows.find((r:any)=>r.id===searchParams.review)||ownerReviewRows[0];
+  const recentMessages: Array<{id:string;direction:string;message_text:string|null;created_at:string;event_type:string}> = [];
+  if(searchParams.queue && chosenRecord){
+    const {data,error}=await db.from('lead_intake_messages').select('id,direction,message_text,created_at,event_type')
+      .eq('organization_id',STARK).eq('intake_id',chosenRecord.id)
+      .in('direction',['inbound','outbound']).order('created_at',{ascending:false}).limit(12);
+    if(error)throw error;
+    recentMessages.push(...(data||[]).reverse());
+  }
+
   const ids=[...buckets.keys()].filter(x=>x!=='unknown');
   if(ids.length){
     const {data:profiles,error}=await db.from('profiles').select('id,full_name,email').in('id',ids);
@@ -209,5 +222,5 @@ export default async function StarkSalesActivityPage({searchParams = {}}: {searc
   
   const capped=inbound.capped||crm.capped||meetings.capped||converted.capped||history.capped||crmFollows.capped||inboundFollowEvents.capped||quoteEvents.capped;
   const total=(key:keyof Bucket)=>selected.reduce((sum,row)=>sum+(typeof row[key]==='number'?row[key] as number:0),0);
-  return <SalesActivityView tab={tab} period={period} fromDate={fromDate} toDate={toDate} searchParams={searchParams} all={all} selected={selected} workload={workload} capped={capped} buckets={buckets} drillRows={drillRows} metric={metric} allowedMetric={allowedMetric} total={total} fmt={fmt} drillLink={drillLink} />;
+  return <SalesActivityView tab={tab} period={period} fromDate={fromDate} toDate={toDate} searchParams={searchParams} all={all} selected={selected} workload={workload} capped={capped} buckets={buckets} drillRows={drillRows} metric={metric} allowedMetric={allowedMetric} total={total} fmt={fmt} drillLink={drillLink} ownerReviewRows={ownerReviewRows} ownerQueueCount={matchingQueue.length} recentMessages={recentMessages} />;
 }

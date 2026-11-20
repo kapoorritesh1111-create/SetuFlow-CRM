@@ -42,6 +42,13 @@ export default async function DashboardPage({
   // view for packaging-enabled orgs, instead of the generic sales/exec
   // dashboard. ?mode=all always opts back into the generic dashboard.
   const workspace = await getWorkspaceAccess();
+  // Stark Packmate owners start from the approved two-part command center.
+  // Do not elevate support/coordinator users, change organizations, or override mode=all.
+  const ownerRole = workspace.currentRoles.some((role) => ['owner','admin'].includes(String(role).toLowerCase()));
+  if (!explicitAll && !searchParams?.notice && workspace.organization?.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' && ownerRole) {
+    redirect('/leads/sales-activity');
+  }
+
   if (!explicitAll && workspace.membership && workspace.organization) {
     const primaryRole = getPrimaryWorkspaceRole(workspace.currentRoles);
     if (primaryRole === 'design' || primaryRole === 'operations') {

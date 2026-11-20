@@ -215,7 +215,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   const rows = workspaceData.rows as any[];
 
   if (view === 'list') {
-    return <div className="space-y-3 pb-8"><Header canWorkInbound={canWorkInbound} canManageAssignments={canManageAssignments} /><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /><StarkSalesWorkQueueTabs surface="inbound" /><FilterBar searchParams={searchParams} canManageAssignments={canManageAssignments} /><ListView rows={rows} workspaceData={workspaceData} searchParams={searchParams} canWorkInbound={canWorkInbound} /></div>;
+    return <div className="space-y-3 pb-8"><div className="rounded-xl bg-[#092e46] p-4 text-white"><h1 className="text-lg font-bold">Inbound Sales · List View</h1><p className="text-xs text-slate-200">Use Review to return to the conversation workspace.</p></div><details className="rounded-xl border border-slate-200 bg-white p-3"><summary className="cursor-pointer text-xs font-bold">Filters & statistics</summary><FilterBar searchParams={searchParams} canManageAssignments={canManageAssignments}/><Kpis kpis={workspaceData.kpis} searchParams={searchParams}/></details><ListView rows={rows} workspaceData={workspaceData} searchParams={searchParams} canWorkInbound={canWorkInbound} /></div>;
   }
 
   const requestedId = String(searchParams.review ?? '').trim();
@@ -248,23 +248,22 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   ];
 
   return <div className="space-y-3 pb-8">
-    <Header canWorkInbound={canWorkInbound} canManageAssignments={canManageAssignments} />
+
     {assignmentChanged ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>Lead not created.</strong> This inquiry is assigned to {assignedName}. Only the assigned Sales owner, Admin, or Owner can convert it, so it stays visible in the correct queue.</div> : null}
     {convertedLeadId ? <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"><strong>Lead created successfully.</strong> It is assigned to {assignedName}. If it is not in your Leads list, it is visible to that owner and Stark managers/admins.</div> : null}
-    <nav aria-label="Customer actions" className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface-1 p-3 text-xs font-semibold">
-      <a href="#message-customer" className="rounded-ctl bg-brand-800 px-3 py-2 text-white">Reply / template</a>
-      <a href="#call-log" className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700">Call Done / log call</a>
-      <a href="#inbound-follow-up" className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700">Follow-up</a>
-      <a href="#qualification" className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700">Qualify / notes</a>
-      <Link href={selected.qualified_lead_id ? '/leads/'+encodeURIComponent(selected.qualified_lead_id) : '#create-lead'} className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700">{selected.qualified_lead_id ? 'Open CRM lead' : 'Convert to CRM lead'}</Link>
-      <Link href={selected.qualified_lead_id ? '/leads/'+encodeURIComponent(selected.qualified_lead_id)+'#tasks' : '#create-lead'} className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700" title="Meeting is managed under CRM; controlled conversion may be required.">Arrange meeting</Link>
-    </nav>
-    <details className="rounded-card border border-line bg-surface-1 px-3 py-2"><summary className="cursor-pointer text-xs font-semibold text-content-muted">Review inbound statistics</summary><Kpis kpis={workspaceData.kpis} searchParams={searchParams} /></details>
-    <StarkSalesWorkQueueTabs surface="inbound" />
-    <FilterBar searchParams={searchParams} canManageAssignments={canManageAssignments} />
-
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+      <div><p className="text-xs font-bold uppercase tracking-wider text-teal-700">Stark Packmate · Inbound Sales</p><h1 className="text-xl font-black text-slate-900">Inbound Sales Workspace</h1><p className="mt-1 text-xs text-slate-500">Select a work queue, respond in the conversation, and update the customer here.</p></div>
+      <div className="flex flex-wrap gap-2"><Link href="/leads/customer-search" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">⌕ Find customer</Link>{canManageAssignments?<Link href="/leads/sales-activity" className="rounded-xl bg-[#092e46] px-3 py-2 text-xs font-bold text-white">Owner Command Center</Link>:null}</div>
+    </div>
+    <details className="rounded-2xl border border-slate-200 bg-white px-3 py-2"><summary className="cursor-pointer text-xs font-bold text-slate-600">Advanced filters & inbound statistics</summary><div className="space-y-2 pt-3"><FilterBar searchParams={searchParams} canManageAssignments={canManageAssignments}/><Kpis kpis={workspaceData.kpis} searchParams={searchParams}/></div></details>
     <div className="grid items-start gap-3 xl:grid-cols-[300px_minmax(0,1fr)_310px]">
-      <aside className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <aside className="min-w-0 max-h-[420px] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-sm xl:sticky xl:top-[90px] xl:max-h-[calc(100vh-110px)]">
+        <div className="border-b border-slate-100 bg-slate-50 p-3">
+          <h2 className="mb-2 text-sm font-black text-[#092e46]">My Work Queues</h2>
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-1">{[
+             ['Reply Now','reply_now','●'],['Reconnect','reconnect','➤'],['Follow-ups','follow_up','▣'],['Meetings Today','meetings-today','◷'],['My Inbox','mine','◉'],['Review','review','☷']
+          ].map(([label,key,symbol])=><Link key={key} href={key==='meetings-today'?'/leads/meetings?view=today':paramsHref(searchParams,{status:key,page:undefined,review:undefined})} className={'flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold '+((searchParams.status||'all')===key?'bg-emerald-100 text-emerald-900':'bg-white text-slate-700 hover:bg-emerald-50')}><span className="text-base text-teal-700">{symbol}</span>{label}</Link>)}</div>
+        </div>
         <div className="border-b border-slate-100 px-4 py-3"><div className="flex items-center justify-between gap-2"><div><h2 className="text-sm font-bold text-slate-950">Inbound queue</h2><p className="mt-0.5 text-[11px] text-slate-500">{workspaceData.count.toLocaleString()} actionable records</p></div>{canWorkInbound && rows.length ? <form action={evaluateStarkInteraktPage}><input type="hidden" name="rowIds" value={rows.map((row) => row.id).join(',')} /><PendingSubmitButton idleLabel="✨ Evaluate page" pendingLabel="Evaluating…" pendingDetail={`Reviewing ${rows.length} inquiries on this page`} className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[10px] font-bold text-violet-700" /></form> : null}</div></div>
         <div className="divide-y divide-slate-100">
           {rows.map((row) => {
@@ -288,6 +287,14 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
         <header className={`sticky top-0 z-10 rounded-t-2xl border-b px-5 py-4 backdrop-blur ${selectedIsCtwa ? 'border-orange-100 bg-orange-50/95' : 'border-slate-100 bg-white/95'}`}>
           <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">{selected.person_name || selected.contact_name || 'Unnamed contact'}</h2><ProviderBadge row={selected} /><LeadTypeBadge row={selected} />{selectedIsCtwa ? <CtwaHotLeadBadge /> : null}<span className={`rounded-full border px-2.5 py-1 text-[10px] font-black ${scoreClass(Number(selected.computed_score ?? 0))}`}>{selected.computed_score ?? 0}/100 · {selected.computed_band}</span><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${currentGuru.className}`}>{currentGuru.icon} {currentGuru.label}</span></div><p className="mt-1 text-xs text-slate-500">{selectedIsIndiaMart ? 'IndiaMART enquiry' : selected.computed_source}{selected.company_name ? ` · ${selected.company_name}` : ''}{selected.first_inquiry_at ? <> · First inquiry <SystemTime timestamp={selected.first_inquiry_at} compact timeZone={STARK_TIME_ZONE} /></> : selectedIsIndiaMart ? null : ' · Historical chat backfill pending'}</p>{selected.setu_assigned_name ? <p className="mt-1 text-[11px] text-slate-500">Setu owner <strong className="text-slate-700">{selected.setu_assigned_name}</strong>{selected.interakt_assignee_name ? <span> · Interakt: {selected.interakt_assignee_name}</span> : null}</p> : selected.interakt_assignee_name ? <p className="mt-1 text-[11px] text-slate-500">Interakt assignee <strong className="text-slate-700">{selected.interakt_assignee_name}</strong></p> : null}{selected.full_phone_number ? <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-700"><span className="font-semibold">☎ {selected.full_phone_number}</span><CopyPhoneButton phone={selected.full_phone_number} compact /></div> : null}</div><div className="flex flex-wrap gap-2">{selected.full_phone_number ? <><a href={`tel:${selected.full_phone_number}`} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">☎ Call</a><CopyPhoneButton phone={selected.full_phone_number} /></> : null}<a href="#message-customer" className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700">💬 Message</a><InboundFollowUpTrigger /><a href="#create-lead" className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-bold text-white">＋ Create Lead</a><form action={markStarkInboundBadInquiry} className="flex flex-wrap items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-2 py-1.5"><input type="hidden" name="rowId" value={selected.id} /><label className="flex items-center gap-1.5 text-[11px] font-bold text-rose-800"><input type="checkbox" name="confirmBadInquiry" value="yes" required className="h-4 w-4 accent-rose-600" /> Mark as bad inquiry</label><button type="submit" className="rounded-lg bg-rose-700 px-2.5 py-1.5 text-[11px] font-bold text-white">Hide</button></form></div></div>
         </header>
+<nav aria-label="Customer actions" className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3 text-xs font-semibold">
+      <a href="#message-customer" className="rounded-ctl bg-brand-800 px-3 py-2 text-white">Reply / Template</a>
+      <a href="#call-log" className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700">Call / Log</a>
+      <a href="#inbound-follow-up" className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700">Follow-up</a>
+      <a href="#qualification" className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700">Add Note / Qualify</a>
+      <Link href={selected.qualified_lead_id ? '/leads/'+encodeURIComponent(selected.qualified_lead_id) : '#create-lead'} className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700">{selected.qualified_lead_id ? 'Open CRM lead' : 'Convert to CRM lead'}</Link>
+      <Link href={selected.qualified_lead_id ? '/leads/'+encodeURIComponent(selected.qualified_lead_id)+'#tasks' : '#create-lead'} className="rounded-ctl border border-line bg-white px-3 py-2 text-brand-700" title="Meeting is managed under CRM; controlled conversion may be required.">Meeting</Link>
+    </nav>
 
         <div className="space-y-4 px-5 py-5">
           {!selected.first_inquiry_at && !selectedIsIndiaMart ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><p className="text-xs font-bold text-amber-900">Historical conversation is not backfilled yet</p><p className="mt-1 text-[11px] leading-5 text-amber-800">This contact may have rich history in Interakt. Setu Flow is not treating missing historical evidence as a negative qualification decision.</p></div> : null}
