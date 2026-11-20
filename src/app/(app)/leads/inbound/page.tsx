@@ -27,6 +27,7 @@ import {
 } from '@/features/integrations/interakt/workspace-v2';
 import { markStarkInboundBadInquiry } from '@/features/integrations/interakt/inbound-actions';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { isVerifiedPlatformSupport } from '@/lib/workspace/platform-support';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
@@ -208,7 +209,7 @@ export default async function InboundLeadsPage({ searchParams = {} }: { searchPa
   const assignmentChanged = searchParams.assignmentChanged === '1';
   const convertedLeadId = String(searchParams.converted ?? '').trim();
   const assignedName = String(searchParams.assigned ?? '').trim() || 'the assigned Sales owner';
-  const canManageAssignments = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase()));
+  const canManageAssignments = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase())) || await isVerifiedPlatformSupport(workspace.user?.id);
   const view = searchParams.view === 'list' ? 'list' : 'review';
   const page = Math.max(1, Number(searchParams.page ?? '1') || 1);
   const workspaceData = await readInboundWorkspaceV2({ page, pageSize: view === 'list' ? 30 : 15, q: searchParams.q, status: searchParams.status, guru: searchParams.guru, source: searchParams.source, provider: searchParams.provider, owner: searchParams.owner, sort: searchParams.sort });
