@@ -1,35 +1,105 @@
 import Link from 'next/link';
-const ZONE = 'Asia/Kolkata';
-export function SalesActivityView(props: {
-  tab: string; period: string; fromDate: string; toDate: string;
-  searchParams: {user?: string; metric?:string}; all: any[]; selected: any[];
-  workload: Map<string,any>; capped: boolean; buckets: Map<string,any>;
-  drillRows: any[]; metric:string; allowedMetric: Set<string>;
-  total: (key: any) => number; fmt: (value:number)=>string; drillLink: (metric:string)=>string;
-}) {
-  const {tab,period,fromDate,toDate,searchParams,all,selected,workload,capped,buckets,drillRows,metric,allowedMetric,total,fmt,drillLink}=props;
-  return <main className="mx-auto max-w-[1500px] space-y-5 p-4 pb-20 md:p-6">
-    <header><p className="text-xs font-semibold text-brand-700">Stark Packmate · Owner reporting</p><h1 className="text-2xl font-bold text-content-primary">Sales activity command center</h1><p className="text-sm text-content-muted">Actual activity, attributed to the person who performed it. All dates use India time.</p><p className="mt-2 text-xs text-amber-700">Inquiries received, per-person WhatsApp activity and qualification rates are currently unverified where the source system does not record the performing agent. They are not counted as zero.</p></header>
-    <nav className="flex gap-2" aria-label="Sales reporting tabs"><Link className={'rounded-ctl border px-4 py-2 text-sm font-semibold '+(tab==='inbound'?'bg-brand-800 text-white':'bg-white')} href={'/leads/sales-activity?'+new URLSearchParams({period,from:fromDate,to:toDate,tab:'inbound'}).toString()}>Inbound Sales</Link><Link className={'rounded-ctl border px-4 py-2 text-sm font-semibold '+(tab==='crm'?'bg-brand-800 text-white':'bg-white')} href={'/leads/sales-activity?'+new URLSearchParams({period,from:fromDate,to:toDate,tab:'crm'}).toString()}>Sales / Field Sales</Link></nav>
-    <form className="flex flex-wrap items-end gap-3 rounded-card border border-line bg-surface-1 p-4" action="/leads/sales-activity">
-      <input type="hidden" name="tab" value={tab}/>
-      <label className="text-xs font-semibold">Reporting period<select name="period" defaultValue={period} className="mt-1 block rounded-ctl border border-line bg-white p-2"><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="custom">Custom dates</option></select></label>
-      <label className="text-xs font-semibold">From<input type="date" name="from" defaultValue={fromDate} className="mt-1 block rounded-ctl border border-line bg-white p-2"/></label>
-      <label className="text-xs font-semibold">To<input type="date" name="to" defaultValue={toDate} className="mt-1 block rounded-ctl border border-line bg-white p-2"/></label>
-      <label className="text-xs font-semibold">Salesperson<select name="user" defaultValue={searchParams.user||''} className="mt-1 block rounded-ctl border border-line bg-white p-2"><option value="">All salespeople</option>{all.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-      <button className="rounded-ctl bg-brand-800 px-4 py-2 text-sm font-semibold text-white">Apply filters</button>
-    </form>
-    {capped?<p role="alert" className="text-sm text-danger-fg">At least one data source exceeded the reporting limit. Totals may be incomplete; narrow the date range.</p>:null}
-    <div className="grid gap-3 sm:grid-cols-3">{(tab==='inbound'?[
-      ['Call attempts',total('inboundAttempted')],['Connected calls',total('inboundConnected')],['Unanswered calls',total('inboundUnanswered')]
-    ]:[
-      ['CRM call attempts',total('crmAttempted')],['Connected calls',total('crmConnected')],['Meetings Done',total('meetingsDone')]
-    ]).map(([label,value])=><section key={label} className="rounded-card border border-line bg-surface-1 p-4"><p className="text-sm text-content-muted">{label}</p><p className="mt-2 text-3xl font-bold">{fmt(Number(value))}</p></section>)}</div>
-    <section className="rounded-card border border-line bg-surface-1 p-4"><h2 className="text-lg font-semibold">Current assigned workload</h2><p className="mb-3 text-xs text-content-muted">Current assignments, separate from historical activity credited to the performing user. Reply classifications are preliminary Interakt candidates, not confirmed outstanding customers.</p><div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-line"><th className="p-2">Current owner</th><th className="p-2">Active inbound</th><th className="p-2">Reply now candidates</th><th className="p-2">Reconnect candidates</th><th className="p-2">CRM leads (all stages)</th></tr></thead><tbody>{selected.map(b=>{const w=workload.get(b.id)||{inbound:0,replyNow:0,reconnect:0,crm:0};return <tr key={b.id} className="border-b border-line"><td className="p-2 font-semibold">{b.name}</td><td className="p-2">{w.inbound}</td><td className="p-2">{w.replyNow}</td><td className="p-2">{w.reconnect}</td><td className="p-2">{w.crm}</td></tr>;})}</tbody></table></div></section>
-    <div className="flex flex-wrap gap-2 text-xs font-semibold">{(tab==='inbound'?[['inboundAttempted','All inbound calls'],['inboundConnected','Connected'],['inboundUnanswered','No answer'],['inboundFollowUps','Follow-ups completed']]:[['crmAttempted','All CRM calls'],['crmConnected','Connected'],['crmUnanswered','No answer'],['crmUnknown','Unknown disposition'],['crmFollowUps','Follow-ups completed'],['verifiedQuoteSends','Quotes actually sent'],['meetingsDone','Meetings Done'],['converted','Converted leads'],['won','Won'],['lost','Lost']]).map(([key,label])=><Link key={key} href={drillLink(key)} className={'rounded-ctl border px-3 py-2 '+(metric===key?'bg-brand-800 text-white':'bg-white text-brand-700')}>View {label} records</Link>)}</div>
-    <div className="overflow-x-auto rounded-card border border-line bg-surface-1"><table className="w-full text-left text-xs"><thead className="bg-surface-2"><tr>{(tab==='inbound'?['Salesperson','Calls attempted','Connected','No Answer','Follow-ups completed']:['Salesperson','CRM attempted','Connected','No Answer','Unknown outcome','Follow-ups completed','Verified quotes sent','Meetings scheduled','Meetings Done','Walk-ins','No Show','Cancelled','Rescheduled','Converted','Won','Lost']).map(x=><th key={x} scope="col" className="px-3 py-3 font-semibold">{x}</th>)}</tr></thead><tbody>{selected.map(b=><tr key={b.id} className="border-t border-line"><td className="px-3 py-3 font-semibold"><Link href={'/leads/sales-activity?'+new URLSearchParams({period,from:fromDate,to:toDate,tab,user:b.id}).toString()} className="text-brand-700 underline">{b.name}</Link></td>{(tab==='inbound'?[b.inboundAttempted,b.inboundConnected,b.inboundUnanswered,b.inboundFollowUps]:[b.crmAttempted,b.crmConnected,b.crmUnanswered,b.crmUnknown,b.crmFollowUps,b.verifiedQuoteSends,b.meetingsScheduled,b.meetingsDone,b.walkIns,b.noShow,b.cancelled,b.rescheduled,b.converted,b.won,b.lost]).map((v,i)=><td key={i} className="px-3 py-3 tabular-nums">{fmt(v)}</td>)}</tr>)}{selected.length===0?<tr><td colSpan={11} className="p-5 text-content-muted">No verified activity in the selected period.</td></tr>:null}</tbody></table></div>
-    {allowedMetric.has(metric)?<section className="rounded-card border border-line bg-surface-1 p-4"><h2 className="mb-3 text-base font-semibold">Activity records ({drillRows.length})</h2><div className="max-h-[380px] space-y-2 overflow-y-auto">{drillRows.map((r,i)=><div key={r.type+r.record+i} className="flex flex-wrap items-center justify-between gap-3 border-b border-line py-2 text-xs"><div><p className="font-semibold">{r.type} · {r.outcome}</p><p className="text-content-muted">{new Date(r.when).toLocaleString('en-IN',{timeZone:ZONE,dateStyle:'medium',timeStyle:'short'})} · {buckets.get(r.actor)?.name||'Unattributed'} · Record: {r.record}</p></div>{r.url?<Link className="text-brand-700 underline" href={r.url}>Open record</Link>:null}</div>)}{drillRows.length===0?<p className="text-sm text-content-muted">No verified events for this filter.</p>:null}</div></section>:null}
-    <p className="text-xs text-content-muted">Inbound and CRM call events are separated by source context and matching duplicate events are excluded. Calls with unknown disposition are excluded from connected totals. Meetings Done is based on completion events, not scheduled dates. This view covers calls and meetings; additional sales KPIs and record-level drill-down are still under implementation.</p>
-  </main>;
-}
+import { OwnerReplyReview } from './OwnerReplyReview';
 
+const ZONE = 'Asia/Kolkata';
+
+type Person = {
+  id: string; name: string;
+  inboundAttempted:number; inboundConnected:number; inboundUnanswered:number; inboundFollowUps:number;
+  crmAttempted:number; crmConnected:number; crmUnknown:number; crmFollowUps:number;
+  verifiedQuoteSends:number; converted:number; won:number; lost:number;
+  meetingsDone:number; meetingsScheduled:number;
+};
+type Work = {inbound:number;replyNow:number;reconnect:number;crm:number;wonCurrent:number;lostCurrent:number;convertedWon:number};
+type Activity={type:string;metric:string;actor:string;when:string;record:string;url:string;outcome:string};
+
+export function SalesActivityView({
+ tab,period,fromDate,toDate,searchParams,all,selected,workload,capped,buckets,drillRows,metric,allowedMetric,total,fmt,drillLink,ownerReviewRows,ownerQueueCount,recentMessages,outcomeRows
+}:{
+ tab:string;period:string;fromDate:string;toDate:string;
+ searchParams:{user?:string;metric?:string;queue?:string;review?:string;outcome?:string};
+ all:Person[];selected:Person[];workload:Map<string,Work>;capped:boolean;ownerReviewRows:any[];ownerQueueCount:number;recentMessages:any[];outcomeRows:Array<{id:string;ownerId:string;outcome:string;convertedFromInbound:boolean}>;
+ buckets:Map<string,Person>;drillRows:Activity[];metric:string;
+ allowedMetric:Set<string>;total:(key:keyof Person)=>number;fmt:(n:number)=>string;drillLink:(metric:string)=>string;
+}){
+ const href=(tabName:string)=>'/dashboard?'+new URLSearchParams({tab:tabName,period,from:fromDate,to:toDate,...(searchParams.user?{user:searchParams.user}:{})}).toString();
+ const workloadTotal=(field:keyof Work)=>selected.reduce((n,u)=>n+(workload.get(u.id)?.[field]||0),0);
+ const card=(title:string,value:string,subtitle:string,link?:string,color='bg-white')=><div className={'rounded-2xl border border-slate-200 p-4 shadow-sm '+color}><p className="text-xs font-semibold text-slate-600">{title}</p><p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{value}</p><p className="mt-1 text-[11px] text-slate-500">{subtitle}</p>{link?<Link href={link} className="mt-2 inline-block text-xs font-bold text-teal-700 underline">Inspect records</Link>:null}</div>;
+ const personCols=tab==='inbound'?[['Assigned inquiries','inbound'],['Reply now','replyNow'],['Reconnect','reconnect'],['Calls attempted','inboundAttempted'],['Connected','inboundConnected'],['Follow-ups done','inboundFollowUps'],['Converted','converted'],['Linked Won now','convertedWon']]:[['CRM leads','crm'],['Calls attempted','crmAttempted'],['Connected','crmConnected'],['Meetings Done','meetingsDone'],['Quotes sent','verifiedQuoteSends'],['Won now','wonCurrent'],['Lost now','lostCurrent']];
+ const outcomeHref=(value:string)=>'/dashboard?'+new URLSearchParams({tab:'crm',period,from:fromDate,to:toDate,outcome:value,...(searchParams.user?{user:searchParams.user}:{})}).toString();
+ const visibleOutcomeRows=outcomeRows.filter(row=>
+    (searchParams.outcome==='converted_won'?(row.outcome==='won'&&row.convertedFromInbound):row.outcome===searchParams.outcome)
+    &&(!searchParams.user||row.ownerId===searchParams.user));
+ const actionLink=(title:string,detail:string,hrefValue:string,icon:string)=><Link href={hrefValue} className="flex min-h-[108px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-400 hover:shadow-md"><span className="rounded-xl bg-teal-50 p-2 text-2xl">{icon}</span><span><strong className="block text-sm text-slate-900">{title}</strong><span className="mt-1 block text-xs text-slate-500">{detail}</span><span className="mt-2 block text-xs font-bold text-teal-700">Open workspace ›</span></span></Link>;
+ return <main className="mx-auto max-w-[1580px] space-y-5 px-3 pb-16 pt-3 sm:px-6">
+  <div className="px-1 py-2 text-slate-900">
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div><p className="text-xs font-bold uppercase tracking-widest text-teal-700">STARK PACKMATE · OWNER WORKSPACE</p><h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Owner Command Center</h1><p className="mt-1 text-sm text-slate-500">Inbound and Field Sales in one view · Trace workload, identify issues, take action</p></div>
+      <div className="flex flex-wrap gap-2"><Link href="/leads/inbound?status=reply_now" className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-bold text-white">Open Inbound</Link></div>
+    </div>
+  </div>
+  <div className="grid gap-4 lg:grid-cols-2">
+   <Link href={href('inbound')} className={'rounded-2xl border p-5 transition '+(tab==='inbound'?'border-emerald-400 bg-emerald-50 shadow-md':'border-slate-200 bg-white hover:bg-emerald-50')}>
+    <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">01 · NEW INQUIRIES & CUSTOMER RESPONSE</p><h2 className="mt-1 text-2xl font-black text-slate-900">◉ Inbound Sales</h2><p className="mt-1 text-sm text-slate-600">Inquiry received → Assigned → Replied → Qualified → Linked to CRM</p>
+    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-lg bg-white px-3 py-2">Active {fmt(workloadTotal('inbound'))}</span><span className="rounded-lg bg-white px-3 py-2">Reply Now {fmt(workloadTotal('replyNow'))}</span><span className="rounded-lg bg-white px-3 py-2">Reconnect {fmt(workloadTotal('reconnect'))}</span></div>
+   </Link>
+   <Link href={href('crm')} className={'rounded-2xl border p-5 transition '+(tab==='crm'?'border-indigo-400 bg-indigo-50 shadow-md':'border-slate-200 bg-white hover:bg-indigo-50')}>
+    <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">02 · QUALIFIED LEADS & OUTCOMES</p><h2 className="mt-1 text-2xl font-black text-slate-900">▥ Sales / Field Sales</h2><p className="mt-1 text-sm text-slate-600">Requirements → Quotation → Follow-up → Won / Lost</p>
+    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-lg bg-white px-3 py-2">CRM Leads {fmt(workloadTotal('crm'))}</span><span className="rounded-lg bg-white px-3 py-2">Quotes Sent {fmt(total('verifiedQuoteSends'))}</span><span className="rounded-lg bg-white px-3 py-2">Won now {fmt(workloadTotal('wonCurrent'))}</span></div>
+   </Link>
+  </div>
+  <form action="/dashboard" className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <input type="hidden" name="tab" value={tab}/>
+    <label className="text-xs font-semibold text-slate-600">Date range<select name="period" defaultValue={period} className="mt-1 block rounded-lg border border-slate-300 p-2"><option value="today">Today</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="custom">Custom range</option></select></label>
+    <label className="text-xs font-semibold text-slate-600">From<input name="from" type="date" defaultValue={fromDate} className="mt-1 block rounded-lg border border-slate-300 p-2"/></label>
+    <label className="text-xs font-semibold text-slate-600">To<input name="to" type="date" defaultValue={toDate} className="mt-1 block rounded-lg border border-slate-300 p-2"/></label>
+    <label className="text-xs font-semibold text-slate-600">Salesperson<select name="user" defaultValue={searchParams.user||''} className="mt-1 block max-w-[220px] rounded-lg border border-slate-300 p-2"><option value="">Whole team</option>{all.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select></label>
+    <button className="rounded-xl bg-[#092e46] px-5 py-2.5 text-sm font-bold text-white">Apply</button>
+    <span className="text-xs text-slate-500">Events use India time. Assignment workload is current, not historical.</span>
+  </form>
+  {capped?<p role="alert" className="rounded-xl border border-orange-300 bg-orange-50 p-4 text-sm font-semibold text-orange-900">Data limit reached. Narrow the date range; figures may be incomplete.</p>:null}
+  {['won','lost','converted_won'].includes(searchParams.outcome||'')?<section className="rounded-2xl border border-line bg-surface-1 p-4"><h2 className="text-lg font-semibold">CRM outcome records · {searchParams.outcome==='converted_won'?'Converted from inbound and currently Won':searchParams.outcome==='won'?'Currently Won':'Currently Lost'}</h2><p className="text-xs text-content-muted">Current lead owner, not stage-change performer. No date filter applies to current pipeline status.</p><div className="mt-3 max-h-[370px] overflow-auto"><table className="w-full min-w-[480px] text-left text-xs"><thead><tr className="border-b border-line"><th className="p-2">Lead</th><th className="p-2">Current owner</th><th className="p-2">Linked from Inbound</th></tr></thead><tbody>{visibleOutcomeRows.map(row=><tr key={row.id} className="border-b border-line"><td className="p-2"><Link href={'/leads/'+encodeURIComponent(row.id)} className="font-semibold text-brand-700 underline">Open lead · {row.id.slice(0,8)}</Link></td><td className="p-2">{buckets.get(row.ownerId)?.name||'Unassigned'}</td><td className="p-2">{row.convertedFromInbound?'Yes':'No linked inbound inquiry'}</td></tr>)}</tbody></table>{!visibleOutcomeRows.length?<p className="p-3 text-sm text-content-muted">No matching CRM leads.</p>:null}</div></section>:null}
+  {searchParams.queue && <OwnerReplyReview rows={ownerReviewRows} recentMessages={recentMessages} selectedId={searchParams.review} queue={searchParams.queue} period={period} fromDate={fromDate} toDate={toDate} tab={tab} totalMatches={ownerQueueCount} ownerNames={Object.fromEntries(all.map(x=>[x.id,x.name]))}/>}
+  <section className="space-y-3">
+    <div><h2 className="text-xl font-bold text-slate-900">{tab==='inbound'?'Inbound Sales performance':'Sales / Field Sales performance'}</h2><p className="text-sm text-slate-500">{tab==='inbound'?'Current customer work and verified inbound activities':'Current CRM leads and recorded sales outcomes'}</p></div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {tab==='inbound'?<>
+       {card('Active inbound',fmt(workloadTotal('inbound')),'Current eligible inquiries', '/leads/inbound')}
+       {card('Reply Now',fmt(workloadTotal('replyNow')),'Recent inbound messages requiring review','/leads/inbound?status=reply_now','bg-emerald-50')}
+       {card('Reconnect',fmt(workloadTotal('reconnect')),'Outside standard reply window','/leads/inbound?status=reconnect','bg-amber-50')}
+       {card('Converted during period',fmt(total('converted')),'Conversion events in selected dates',drillLink('converted'))}
+       {card('Call attempts',fmt(total('inboundAttempted')),'Logged inbound attempts',drillLink('inboundAttempted'))}
+       {card('Connected calls',fmt(total('inboundConnected')),'Only confirmed connected outcomes',drillLink('inboundConnected'))}
+       {card('Follow-ups Done',fmt(total('inboundFollowUps')),'Actor-attributed completion events',drillLink('inboundFollowUps'))}
+       {card('Converted → Won',fmt(workloadTotal('convertedWon')),'Linked inbound leads currently Won, credited to current CRM owner',outcomeHref('converted_won'))}{card('WhatsApp messaging','Not verified','Per-user sending identity is incomplete')}
+      </>:<>
+       {card('CRM leads',fmt(workloadTotal('crm')),'Current assignment workload','/leads','bg-indigo-50')}
+       {card('Quotes sent',fmt(total('verifiedQuoteSends')),'Verified send events',drillLink('verifiedQuoteSends'))}
+       {card('Won now',fmt(workloadTotal('wonCurrent')),'Currently Won · credited to current lead owners',outcomeHref('won'),'bg-emerald-50')}
+       {card('Lost now',fmt(workloadTotal('lostCurrent')),'Currently Lost · credited to current lead owners',outcomeHref('lost'),'bg-rose-50')}
+       {card('CRM calls',fmt(total('crmAttempted')),'Logged call attempts',drillLink('crmAttempted'))}
+       {card('Meetings Done',fmt(total('meetingsDone')),'Completed and attributed',drillLink('meetingsDone'))}
+       {card('Follow-ups Done',fmt(total('crmFollowUps')),'Actor-attributed completion events',drillLink('crmFollowUps'))}
+       {card('Unknown call outcome',fmt(total('crmUnknown')),'Not counted as connected',drillLink('crmUnknown'))}
+      </>}
+    </div>
+  </section>
+  <section className="grid gap-3 lg:grid-cols-4">
+    {actionLink('Review workload balance','Check allocations and identify uneven inbound workloads','/leads/inbound/assignments','♙')}
+    {actionLink('Review customer replies','Inspect current reply candidates and take action','/dashboard?tab=inbound&queue=reply_now','☏')}
+    {actionLink('Overdue follow-ups','Find follow-ups past their due date','/leads/meetings?view=upcoming','▣')}
+    {actionLink('Review CRM progression','Inspect leads, requirements, and quotations','/leads','▤')}
+  </section>
+  <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <h2 className="text-lg font-black text-slate-900">Team performance & workload</h2><p className="mt-1 text-xs text-slate-500">Today's ownership is shown separately from completed activities. Selecting a person filters verified events.</p>
+    <div className="mt-4 overflow-x-auto"><table className="min-w-[750px] w-full text-left text-xs"><thead className="bg-slate-50"><tr><th className="px-3 py-3">Salesperson</th>{personCols.map(([label])=><th key={label} className="px-3 py-3">{label}</th>)}</tr></thead><tbody>{selected.map(u=><tr key={u.id} className="border-t border-slate-100"><td className="px-3 py-3 font-semibold"><Link href={'/dashboard?'+new URLSearchParams({tab,period,from:fromDate,to:toDate,user:u.id})} className="text-teal-700 underline">{u.name}</Link></td>{personCols.map(([name,key])=><td key={name} className="px-3 py-3 tabular-nums">{key in (workload.get(u.id)||{}) ? fmt((workload.get(u.id) as any)?.[key]||0):fmt((u as any)[key]||0)}</td>)}</tr>)}</tbody></table>{selected.length===0?<p className="p-5 text-sm text-slate-500">No activity for this filter.</p>:null}</div>
+  </section>
+  <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <h2 className="text-lg font-black text-slate-900">Activity review</h2><p className="mb-3 text-xs text-slate-500">Select a metric to inspect its underlying records, not just an aggregated score.</p>
+    <div className="flex flex-wrap gap-2">{(tab==='inbound'?[['inboundAttempted','Calls'],['inboundConnected','Connected'],['inboundFollowUps','Follow-ups'],['converted','Conversions']]:[['crmAttempted','CRM calls'],['meetingsDone','Meetings Done'],['crmFollowUps','Follow-ups'],['verifiedQuoteSends','Sent quotes'],['won','Won'],['lost','Lost']]).map(([key,name])=><Link key={key} href={drillLink(key)} className={'rounded-lg border px-3 py-2 text-xs font-semibold '+(metric===key?'bg-[#092e46] text-white':'bg-white text-teal-700')}>{name}</Link>)}</div>
+    {allowedMetric.has(metric)?<div className="mt-4 max-h-[380px] space-y-2 overflow-y-auto">{drillRows.map((r,i)=><div key={r.type+r.record+i} className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 py-2 text-xs"><div><p className="font-bold">{r.type} · {r.outcome}</p><p className="text-slate-500">{new Date(r.when).toLocaleString('en-IN',{timeZone:ZONE,dateStyle:'medium',timeStyle:'short'})} · {buckets.get(r.actor)?.name||'Unattributed'} · Record {r.record}</p></div>{r.url?<Link href={r.url} className="font-bold text-teal-700 underline">Open customer</Link>:null}</div>)}{drillRows.length===0?<p className="p-3 text-sm text-slate-500">No verified events matched.</p>:null}</div>:null}
+  </section>
+  <p className="text-xs text-slate-600">**Reporting definitions:** Current Won/Lost is attributed to the current CRM lead owner, independent of date range. The Won and Lost filters under Activity Review show stage-transition events in the selected period, attributed to the person who changed the stage. Converted → Won is a current linked-lead outcome, not a period conversion count.</p>
+  <p className="text-xs text-amber-800">Data quality: received and per-agent WhatsApp message counts are not shown as performance metrics until source-level agent attribution can be verified. This view does not reassign customers or send messages.</p>
+ </main>;
+}

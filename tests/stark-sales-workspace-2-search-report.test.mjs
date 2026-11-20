@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-const search=fs.readFileSync('src/app/(app)/leads/customer-search/page.tsx','utf8');
-const report=fs.readFileSync('src/app/(app)/leads/sales-activity/page.tsx','utf8');
+const search=fs.readFileSync('src/app/api/stark/customer-lookup/route.ts','utf8');
+const report=fs.readFileSync('src/app/(app)/leads/sales-activity/owner-activity-data.tsx','utf8');
 const inbound=fs.readFileSync('src/app/(app)/leads/inbound/page.tsx','utf8');
 test('customer lookup is scoped to Stark and preserves ownership',()=>{
  assert.match(search,/organization_id',STARK/);
- assert.match(search,/lead_assignment_history/);
- assert.match(search,/mayOpen/);
+ assert.match(search,/owner_user_id',workspace.user.id/);
+ assert.match(search,/setu_assigned_user_id',workspace.user.id/);
  assert.doesNotMatch(search,/.update\(/);
- assert.match(inbound,/Customer search/);
+ assert.match(inbound,/CrossModuleCustomerMatches/);
 });
 test('owner calls and meetings count actual events rather than stage labels',()=>{
  assert.match(report,/meeting_metadata/);

@@ -209,6 +209,7 @@ export default async function LeadsPage({
           canDelegateLeads={canDelegateLeads}
           canManageLeads={viewModel.canManageLeads}
           guidedTrialCoach={guidedTrialCoach}
+          isStarkPackmate={isStarkPackmate}
           readOnlyMessage={viewModel.readOnlyMessage}
           isWorkspaceEmpty={viewModel.isWorkspaceEmpty}
           leads={data.leads.map((lead) => ({ ...lead, whatsapp_number: (lead as any).whatsapp_number ?? null, intro_sent: lead.intro_sent ?? false }))}

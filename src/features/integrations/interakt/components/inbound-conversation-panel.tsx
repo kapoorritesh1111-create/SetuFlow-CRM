@@ -212,9 +212,9 @@ export function InboundConversationPanel({ messages, customerName, captured = {}
 
       {latestCustomerMessage ? <MessageBubble message={latestCustomerMessage} customerName={customerName} latest /> : <div className="rounded-card border border-line bg-surface-2 px-3 py-2 text-caption text-content-muted">No customer response is available in the imported history yet.</div>}
 
-      <details className="rounded-card border border-line bg-surface-1 px-3 py-2">
+      <details open className="rounded-card border border-line bg-surface-1 px-3 py-2">
         <summary className="cursor-pointer text-caption font-bold text-content-secondary">View full conversation · {display.messages.length} shown{display.collapsed ? ` · ${display.collapsed} repeated ${display.collapsed === 1 ? 'reply' : 'replies'} collapsed` : ''}</summary>
-        <div className="mt-3 space-y-3 border-t border-line pt-3">{display.messages.map((message) => <MessageBubble key={message.id} message={message} customerName={customerName} />)}</div>
+        <div className="mt-3 max-h-[430px] space-y-3 overflow-y-auto border-t border-line pt-3">{display.messages.map((message) => <MessageBubble key={message.id} message={message} customerName={customerName} />)}</div>
       </details>
     </div>
   </section>;

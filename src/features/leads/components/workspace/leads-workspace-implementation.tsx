@@ -7,6 +7,7 @@ import Link from 'next/link';
 import * as React from 'react';
 import { useEffect, useMemo, useRef, useState, useTransition, type KeyboardEvent, type SVGProps } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { CrossModuleCustomerMatches } from './CrossModuleCustomerMatches';
 import { LeadDrawer } from '@/features/leads/components/lead-drawer';
 import { subscribeQuickLeadDrawer } from '@/features/leads/lib/quick-lead-channel';
 import LeadsFiltersPanel from '@/features/leads/components/LeadsFiltersPanel';
@@ -241,6 +242,7 @@ export function LeadsWorkspace({
   initialEventId = null,
   initialFastField = false,
   guidedTrialCoach = false,
+  isStarkPackmate = false,
 }: LeadsWorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -1517,6 +1519,8 @@ export function LeadsWorkspace({
           ⊕ View in Pipeline →
         </a>
       </div>
+
+      {isStarkPackmate && activeView === 'list' && localSearch.trim().length >= 3 && <CrossModuleCustomerMatches query={localSearch} kind="inbound" />}
 
       {/* ═══ FILTER BAR — SF-18-092: redesigned with Tailwind, no inline styles ═══ */}
       <div className="sticky top-[88px] z-20 flex flex-wrap items-center gap-2 border-b border-slate-100 bg-white/95 px-3 py-2 shadow-sm backdrop-blur-sm" style={{ display: activeView === 'list' ? 'flex' : 'none' }}>

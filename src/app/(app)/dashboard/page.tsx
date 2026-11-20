@@ -16,6 +16,7 @@ import { isMobileAppV1Enabled } from '@/features/mobile/lib/mobile-feature-flag'
 import { createClient } from '@/lib/supabase/server';
 import { getOrganizationVerticals } from '@/lib/verticals/capability';
 import { renderDashboardPage } from './_lib/render-dashboard-page';
+import { StarkSalesActivityDashboard } from '../leads/sales-activity/owner-activity-data';
 
 function noticeMessage(notice?: string | string[]) {
   const value = Array.isArray(notice) ? notice[0] : notice;
@@ -32,7 +33,7 @@ function noticeMessage(notice?: string | string[]) {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: { mode?: string | string[]; notice?: string | string[] };
+  searchParams?: { mode?: string | string[]; notice?: string | string[]; tab?: string; period?: string; from?: string; to?: string; user?: string; metric?: string; queue?: string; review?: string; outcome?: string };
 }) {
   const rawMode = Array.isArray(searchParams?.mode) ? searchParams?.mode[0] : searchParams?.mode;
   const explicitAll = rawMode === 'all';
@@ -42,6 +43,13 @@ export default async function DashboardPage({
   // view for packaging-enabled orgs, instead of the generic sales/exec
   // dashboard. ?mode=all always opts back into the generic dashboard.
   const workspace = await getWorkspaceAccess();
+  // Stark Packmate owners start from the approved two-part command center.
+  // Do not elevate support/coordinator users, change organizations, or override mode=all.
+  const ownerRole = workspace.currentRoles.some((role) => ['owner','admin'].includes(String(role).toLowerCase()));
+  if (!explicitAll && !searchParams?.notice && workspace.organization?.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' && ownerRole) {
+    return <><div className="hidden md:block"><DashboardSectionTabs active="home" /></div><StarkSalesActivityDashboard searchParams={searchParams ?? {}} /></>;
+  }
+
   if (!explicitAll && workspace.membership && workspace.organization) {
     const primaryRole = getPrimaryWorkspaceRole(workspace.currentRoles);
     if (primaryRole === 'design' || primaryRole === 'operations') {
