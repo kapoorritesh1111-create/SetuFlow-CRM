@@ -34,18 +34,15 @@ export async function logStarkInteraktCall(formData: FormData): Promise<void> {
   if (!db) throw new Error('Database admin client unavailable.');
 
   const rowId = clean(formData.get('rowId'));
-  const disposition = clean(formData.get('disposition')) || 'Called';
+  const disposition = clean(formData.get('disposition'));
+  const allowedDispositions = new Set(['Connected', 'No answer', 'Call back requested', 'Wrong number']);
+  if (!allowedDispositions.has(disposition)) throw new Error('Select a valid call outcome.');
   const duration = clean(formData.get('duration'));
-  const notes = clean(formData.get('notes'));
+  if (duration.length > 80) throw new Error('Call duration is too long.');
+  const notes = clean(formData.get('notes')).slice(0, 2000);
   if (!rowId) throw new Error('Inbound inquiry is required.');
 
-  const { data: intake, error: intakeError } = await db.from('lead_intake_staging')
-    .select('id, full_phone_number, source_provider')
-    .eq('id', rowId)
-    .eq('organization_id', organization.id)
-    .in('source_provider', SUPPORTED_PROVIDERS)
-    .maybeSingle();
-  if (intakeError || !intake?.id) throw new Error('Inbound inquiry not found.');
+  const intake = await requireOwnedInboundRow(db, organization.id, user.id, workspace, rowId);
 
   const now = new Date().toISOString();
   const summary = [disposition, duration ? `Duration: ${duration}` : null, notes || null].filter(Boolean).join('\n');
@@ -65,6 +62,7 @@ export async function logStarkInteraktCall(formData: FormData): Promise<void> {
     message_text: summary,
     message_payload: {
       disposition,
+      is_connected: disposition === 'Connected',
       duration: duration || null,
       notes: notes || null,
       phone: intake.full_phone_number ?? null,

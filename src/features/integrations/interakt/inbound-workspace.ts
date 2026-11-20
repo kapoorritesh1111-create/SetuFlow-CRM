@@ -1,6 +1,7 @@
 import { unstable_cache } from 'next/cache';
 
 import { assessInteraktContact } from '@/features/integrations/interakt/qualification';
+import { classifyInboundNextAction, inboundActionLabel } from '@/features/integrations/interakt/inbound-action-classification';
 import type { InteraktInquiryEvidence, NormalizedInteraktContact } from '@/features/integrations/interakt/types';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { requireWorkspace } from '@/lib/workspace/auth';
@@ -151,17 +152,66 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
   const provider = ['interakt', 'indiamart'].includes(requestedProvider) ? requestedProvider : 'all';
   const owner = canSeeAll ? safeSearch(input.owner) : '';
   const sort = clean(input.sort) || 'recent';
+  const actionQueues = new Set(['reply_now','reconnect','review','waiting','mine','team','unassigned']);
+  const actionQueue = actionQueues.has(status) ? status : null;
   const rpcName = 'stark_inbound_workspace_page';
 
   let data: any;
   try {
-    data = await readInboundRpcCached(rpcName, organizationId, scopedUserId, q || null, status, guru, source, provider, owner || null, sort, pageSize, (page - 1) * pageSize);
+    data = await readInboundRpcCached(rpcName, organizationId, scopedUserId, q || null, actionQueue ? 'all' : status, guru, source, provider, owner || null, sort, pageSize, (page - 1) * pageSize);
   } catch (error: any) {
     throw new Error(`Unable to load inbound workspace: ${String(error?.message ?? 'unknown database error')}`);
   }
 
   const payload = (data ?? {}) as { rows?: any[]; stats?: Record<string, number> };
-  const payloadRows = payload.rows ?? [];
+  let payloadRows = payload.rows ?? [];
+  let actionQueueCount: number | null = null;
+  if (actionQueue) {
+    const db: any = createAdminSupabaseClient();
+    if (!db) throw new Error('Inbound queue database unavailable.');
+    if (actionQueue === 'unassigned' && !canSeeAll) {
+      payloadRows=[]; actionQueueCount=0;
+    } else {
+      const queueRows:any[]=[];
+      for(let batch=0;batch<20;batch++){
+        let builder=db.from('lead_intake_staging').select('id,source_provider,contact_name,person_name,company_name,brand_name,full_phone_number,phone_number,setu_assigned_user_id,setu_assigned_name,last_inbound_at,last_outbound_at,intake_status,qualified_lead_id,sales_queue_suppressed,browsing_only,acquisition_type,ad_platform,channel_source,guru_evaluation_status').eq('organization_id',organizationId).in('source_provider',['interakt','indiamart']);
+        if(scopedUserId)builder=builder.eq('setu_assigned_user_id',scopedUserId);
+        if(actionQueue==='mine')builder=builder.eq('setu_assigned_user_id',workspace.user.id);
+        if(actionQueue==='unassigned')builder=builder.is('setu_assigned_user_id',null);
+        if(provider!=='all')builder=builder.eq('source_provider',provider);
+        if(source==='ctwa')builder=builder.eq('acquisition_type','ctwa');
+        else if(source==='instagram')builder=builder.eq('ad_platform','instagram');
+        else if(source==='whatsapp')builder=builder.eq('channel_source','whatsapp');
+        if(guru!=='all')builder=builder.eq('guru_evaluation_status',guru);
+        if(owner&&canSeeAll)builder=builder.ilike('setu_assigned_name','%'+owner+'%');
+        if(q){
+          const terms=['contact_name','person_name','company_name','brand_name'].map(field=>field+'.ilike.%'+q+'%');
+          const digits=q.replace(/\D/g,'');
+          if(digits.length>=7)terms.push('full_phone_number.ilike.%'+digits.slice(-10)+'%','phone_number.ilike.%'+digits.slice(-10)+'%');
+          builder=builder.or(terms.join(','));
+        }
+        const result=await builder.order(actionQueue==='reply_now'||actionQueue==='reconnect'?'last_inbound_at':'created_at',{ascending:false,nullsFirst:false}).range(batch*1000,batch*1000+999);
+        if(result.error)throw new Error('Unable to load action queue: '+result.error.message);
+        const chunk=result.data||[];
+        queueRows.push(...chunk);
+        if(chunk.length<1000)break;
+        if(batch===19)throw new Error('Inbound queue exceeds 20,000 records. Narrow your filters before loading.');
+      }
+      const matches=queueRows.filter(row=>{
+        const action=classifyInboundNextAction(row);
+        if(actionQueue==='mine'||actionQueue==='team'||actionQueue==='unassigned')return !row.qualified_lead_id&&!row.sales_queue_suppressed&&!row.browsing_only&&!['qualified','duplicate','existing_customer','not_relevant','ignored'].includes(String(row.intake_status||''));
+        return action===actionQueue;
+      });
+      actionQueueCount=matches.length;
+      const ids=matches.slice((page-1)*pageSize,page*pageSize).map(row=>row.id);
+      if(ids.length){
+        const result=await db.from('lead_intake_staging').select('*').eq('organization_id',organizationId).in('id',ids);
+        if(result.error)throw new Error('Unable to load queue records: '+result.error.message);
+        const byId=new Map((result.data||[]).map((row:any)=>[row.id,row]));
+        payloadRows=ids.map(id=>byId.get(id)).filter(Boolean);
+      }else payloadRows=[];
+    }
+  }
   const priorConversationIds = new Set<string>();
   const latestNoteByIntake = new Map<string, any>();
 
@@ -207,6 +257,8 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
     const latestNote = latestNoteByIntake.get(String(row.id));
     return {
       ...row,
+      action_classification: classifyInboundNextAction(row),
+      action_label: inboundActionLabel(classifyInboundNextAction(row)),
       computed_score: row.qualification_score ?? assessment.score,
       computed_band: assessment.bandLabel,
       computed_source: `${providerName} · ${assessment.source.label} · Assigned to ${setuAssignee}`,
@@ -222,7 +274,7 @@ export async function readInboundWorkspace(input: InboundWorkspaceQuery = {}) {
   });
 
   const stats = payload.stats ?? {};
-  const filteredCount = Number(stats.filteredCount ?? 0);
+  const filteredCount = actionQueueCount ?? Number(stats.filteredCount ?? 0);
   return {
     rows, count: filteredCount, page, pageSize,
     totalPages: Math.max(1, Math.ceil(filteredCount / pageSize)),
