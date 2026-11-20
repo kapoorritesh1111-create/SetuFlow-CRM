@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireWorkspace } from '@/lib/workspace/auth';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { isVerifiedPlatformSupport } from '@/lib/workspace/platform-support';
 
 /** One checked action for single and bulk coordinator/owner assignment. */
 export async function assignLeadCoordination(input: {
@@ -18,7 +19,7 @@ export async function assignLeadCoordination(input: {
  const ids = [...new Set(input.leadIds)].filter(id => /^[a-f0-9-]{36}$/i.test(id)).slice(0,200);
  if (!ids.length || ids.length !== new Set(input.leadIds).size) return { error: 'Select valid leads (maximum 200).' };
  const roles = workspace.currentRoles;
- const isAdmin = roles.some(role => ['owner','admin','manager'].includes(role));
+ const isAdmin = roles.some(role => ['owner','admin','manager'].includes(role)) || (organizationId === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' && await isVerifiedPlatformSupport(userId));
  const canCoordinate = isAdmin || roles.some(role => ['sales','sales_coordinator'].includes(role));
  if (!canCoordinate) return { error: 'Not authorized to assign lead coordination.' };
  const db = createAdminSupabaseClient();
@@ -37,8 +38,8 @@ export async function assignLeadCoordination(input: {
  }
  if (input.changeOwner && !input.ownerUserId) return { error: 'Select a new owner.' };
  if (members.size) {
-  const { data: active } = await (db as any).from('organization_members').select('user_id')
-   .eq('organization_id', organizationId).eq('is_active', true).in('user_id', [...members]);
+  const { data: active } = await (db as any).from('organization_members').select('user_id,is_internal_support')
+   .eq('organization_id', organizationId).eq('is_active', true).eq('is_internal_support', false).in('user_id', [...members]);
   if (!active || active.length !== members.size) return { error: 'Select active members from this organization.' };
  }
  // A batch should never silently ignore an unsuccessful record.
