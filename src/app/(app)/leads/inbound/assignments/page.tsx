@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { PendingSubmitButton } from '@/features/integrations/interakt/components/pending-submit-button';
 import { readStarkInboundAssignmentManager, reassignStarkInboundLead } from '@/features/integrations/interakt/assignment-management';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { isVerifiedPlatformSupport } from '@/lib/workspace/platform-support';
 import { WorkspaceState } from '@/components/ui/workspace-state';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
@@ -25,9 +26,9 @@ export default async function InboundAssignmentsPage({ searchParams = {} }: { se
   }
 
   const isStark = workspace.organization.id === STARK_PACKMATE_ORG_ID || String(workspace.organization.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
-  const canManage = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase()));
+  const canManage = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase())) || await isVerifiedPlatformSupport(workspace.user?.id);
   if (!isStark || !canManage) {
-    return <WorkspaceState eyebrow="Inbound assignments" title="Manager access required" description="Only Stark Packmate Owners, Managers and Admins can change inbound lead assignments." primaryActionHref="/leads/inbound" primaryActionLabel="Back to Inbound" />;
+    return <WorkspaceState eyebrow="Inbound assignments" title="Manager access required" description="Only Stark Packmate Owners, Managers, Admins and verified SETU Support can change inbound lead assignments." primaryActionHref="/leads/inbound" primaryActionLabel="Back to Inbound" />;
   }
 
   const q = String(searchParams.q ?? '').trim();
