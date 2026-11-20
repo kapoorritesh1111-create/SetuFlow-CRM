@@ -8,6 +8,7 @@ import { LeadsMobileSurface } from '@/features/leads/components/leads-mobile-sur
 import { QuoteReviewInlineComplianceFix } from '@/features/leads/components/quote-review-inline-compliance-fix';
 import { getLeadsPageData } from '@/lib/queries/leads';
 import { getWorkspaceAccess } from '@/lib/workspace/auth';
+import { isVerifiedPlatformSupport } from '@/lib/workspace/platform-support';
 import { getTrialCapability } from '@/lib/trial/capability';
 import { TrialBlockedNotice } from '@/components/ui/trial-blocked-notice';
 import { PRODUCT_ROUTES } from '@/lib/product-contract';
