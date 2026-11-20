@@ -4,13 +4,14 @@ import { revalidatePath } from 'next/cache';
 
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { requireWorkspace } from '@/lib/workspace/auth';
+import { isVerifiedPlatformSupport } from '@/lib/workspace/platform-support';
 import { dispatchLeadNotification } from '@/lib/notifications/lead-notification-routing';
 
 const STARK_PACKMATE_ORG_ID = 'b97913cb-3b95-4247-8ced-ffdc0d392d2a';
 const STARK_PACKMATE_SLUG = 'starkpackmate';
 const SUPPORTED_PROVIDERS = ['interakt', 'indiamart'];
 const TERMINAL = ['qualified', 'duplicate', 'existing_customer', 'not_relevant', 'ignored'];
-const MANAGER_ROLES = new Set(['owner', 'admin']);
+const MANAGER_ROLES = new Set(['owner', 'admin', 'manager']);
 
 type SalesAssignee = {
   key: string;
@@ -43,10 +44,10 @@ async function requireStarkAssignmentManager() {
   const organization = workspace.organization;
   const user = workspace.user;
   const isStark = organization?.id === STARK_PACKMATE_ORG_ID || String(organization?.slug ?? '').toLowerCase() === STARK_PACKMATE_SLUG;
-  const canManage = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase()));
+  const canManage = workspace.currentRoles.some((role) => MANAGER_ROLES.has(String(role).toLowerCase())) || await isVerifiedPlatformSupport(user?.id);
 
   if (!isStark || !organization || !user) throw new Error('Inbound assignment management is restricted to Stark Packmate.');
-  if (!canManage) throw new Error('Owner or Admin permission is required to reassign inbound leads.');
+  if (!canManage) throw new Error('Owner, Manager or verified SETU Support permission is required to reassign inbound leads.');
 
   return { workspace, organization, user };
 }
@@ -77,12 +78,12 @@ async function loadEligibleSalesAssignees(organizationId: string): Promise<Sales
   if (membershipIds.length) {
     const { data, error } = await db
       .from('organization_members')
-      .select('id, user_id, is_active')
+      .select('id, user_id, is_active, is_internal_support')
       .eq('organization_id', organizationId)
       .eq('is_active', true)
       .in('id', membershipIds);
     if (error) throw new Error(`Unable to load active Sales users: ${String(error.message ?? 'unknown database error')}`);
-    activeMembers = data ?? [];
+    activeMembers = (data ?? []).filter((member: any) => member.is_internal_support !== true);
   }
 
   const userIds = [...new Set(activeMembers.map((member: any) => member.user_id).filter(Boolean))];
