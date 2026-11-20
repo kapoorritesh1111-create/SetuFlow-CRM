@@ -117,9 +117,10 @@ export default async function LeadsPage({
   const isStarkPackmate = workspace.organization.id === 'b97913cb-3b95-4247-8ced-ffdc0d392d2a' || String(workspace.organization.slug ?? '').toLowerCase() === 'starkpackmate';
   const normalizedRoles = workspace.currentRoles.map((role) => String(role).toLowerCase());
   const canAccessStarkInbound = workspace.canAccessAdmin || normalizedRoles.includes('sales');
-  const canManageStarkInboundAssignments = normalizedRoles.some((role) => ['owner', 'manager', 'admin'].includes(role));
+  const verifiedStarkSupport = isStarkPackmate && await isVerifiedPlatformSupport(workspace.user?.id);
+  const canManageStarkInboundAssignments = normalizedRoles.some((role) => ['owner', 'manager', 'admin'].includes(role)) || verifiedStarkSupport;
 
-  const canDelegateLeads = workspace.currentRoles.some(role => ['owner', 'admin', 'manager', 'sales', 'sales_coordinator'].includes(role));
+  const canDelegateLeads = workspace.currentRoles.some(role => ['owner', 'admin', 'manager', 'sales', 'sales_coordinator'].includes(role)) || verifiedStarkSupport;
   const coordinationClient = createAdminSupabaseClient();
   const { data: coordinationRows } = coordinationClient && canDelegateLeads
     ? await (coordinationClient as any).from('leads').select('id,coordinator_user_id').eq('organization_id', workspace.organization.id)
