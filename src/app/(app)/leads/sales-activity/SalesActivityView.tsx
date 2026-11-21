@@ -30,11 +30,11 @@ export function SalesActivityView({
  const visibleOutcomeRows=outcomeRows.filter(row=>
     (searchParams.outcome==='converted_won'?(row.outcome==='won'&&row.convertedFromInbound):row.outcome===searchParams.outcome)
     &&(!searchParams.user||row.ownerId===searchParams.user));
- const actionLink=(title:string,detail:string,hrefValue:string,icon:string)=><Link href={hrefValue} className="flex min-h-[108px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-400 hover:shadow-md"><span className="rounded-xl bg-teal-50 p-2 text-2xl">{icon}</span><span><strong className="block text-sm text-slate-900">{title}</strong><span className="mt-1 block text-xs text-slate-500">{detail}</span><span className="mt-2 block text-xs font-bold text-teal-700">Open workspace ›</span></span></Link>;
+ const actionLink=(title:string,detail:string,hrefValue:string,icon:string)=><Link href={hrefValue} className="flex min-h-[108px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-400 hover:shadow-md"><span className="rounded-xl bg-teal-50 p-2 text-2xl">{icon}</span><span><strong className="block text-sm text-slate-900">{title}</strong><span className="mt-1 block text-xs text-slate-500">{detail}</span><span className="mt-2 block text-xs font-bold text-teal-700">Review details ›</span></span></Link>;
  return <main className="mx-auto max-w-[1580px] space-y-5 px-3 pb-16 pt-3 sm:px-6">
   <div className="px-1 py-2 text-slate-900">
     <div className="flex flex-wrap items-center justify-between gap-4">
-      <div><p className="text-xs font-bold uppercase tracking-widest text-teal-700">STARK PACKMATE · OWNER WORKSPACE</p><h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Owner Command Center</h1><p className="mt-1 text-sm text-slate-500">Inbound and Field Sales in one view · Trace workload, identify issues, take action</p></div>
+      <div><p className="text-xs font-bold uppercase tracking-widest text-teal-700">STARK PACKMATE · SALES OVERVIEW</p><h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Owner Command Center</h1><p className="mt-1 text-sm text-slate-500">Inbound and Field Sales in one view · Trace workload, identify issues, take action</p></div>
       <div className="flex flex-wrap gap-2"><Link href="/leads/inbound?status=reply_now" className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-bold text-white">Open Inbound</Link></div>
     </div>
   </div>

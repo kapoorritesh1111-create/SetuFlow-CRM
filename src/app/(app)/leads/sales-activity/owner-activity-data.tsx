@@ -246,7 +246,7 @@ export async function StarkSalesActivityDashboard({searchParams = {}}: {searchPa
   const metric=String(searchParams.metric||'');
   const allowedMetric=new Set(['inboundAttempted','inboundConnected','inboundUnanswered','crmAttempted','crmConnected','crmUnanswered','crmUnknown','meetingsDone','converted','won','lost','inboundFollowUps','crmFollowUps','verifiedQuoteSends']);
   const drillRows=allowedMetric.has(metric)?drill.filter(r=>(!searchParams.user||r.actor===searchParams.user)&&(r.metric===metric||(metric==='inboundAttempted'&&r.type==='Inbound call')||(metric==='crmAttempted'&&r.type==='CRM call'))).sort((a,b)=>String(b.when).localeCompare(String(a.when))):[];
-  const drillLink=(which:string)=>'/leads/sales-activity?'+new URLSearchParams({period,from:fromDate,to:toDate,tab,metric:which,...(searchParams.user?{user:searchParams.user}:{})}).toString();
+  const drillLink=(which:string)=>'/dashboard?'+new URLSearchParams({period,from:fromDate,to:toDate,tab,metric:which,...(searchParams.user?{user:searchParams.user}:{})}).toString();
   const fmt=(n:number)=>n.toLocaleString('en-IN');
 
   const capped=inbound.capped||crm.capped||meetings.capped||converted.capped||history.capped||crmFollows.capped||inboundFollowEvents.capped||quoteEvents.capped;
