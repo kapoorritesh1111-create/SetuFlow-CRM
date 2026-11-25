@@ -53,6 +53,17 @@ export default function InstallPage() {
   }, []);
 
   async function install() {
+    if (platform === 'ios') {
+      if (typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ title: 'SETU Flow', url: window.location.href });
+        } catch {
+          // Cancellation or unavailable share target: keep manual installation guidance visible.
+        }
+      }
+      setShowInstructions(true);
+      return;
+    }
     if (!promptEvent) {
       setShowInstructions(true);
       return;
@@ -83,18 +94,18 @@ export default function InstallPage() {
           <a href="/dashboard" style={{ display: 'block', textAlign: 'center', padding: 16, borderRadius: 12, color: '#fff', background: '#087de3', fontWeight: 700, textDecoration: 'none' }}>Open SETU Flow</a>
         ) : (
           <>
-            {ios && !isSafari && <p role="status" style={{ borderRadius: 12, padding: 14, background: '#fff4dd', color: '#795200', lineHeight: 1.5 }}>For the most reliable iPhone installation, open this link in Safari first.</p>}
+            {ios && !isSafari && <p role="status" style={{ borderRadius: 12, padding: 14, background: '#fff4dd', color: '#795200', lineHeight: 1.5 }}>If Add to Home Screen is not available in this browser, open this link in Safari.</p>}
             <button type="button" onClick={install} style={{ width: '100%', padding: 16, border: 0, borderRadius: 12, background: '#087de3', color: '#fff', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>
-              {promptEvent ? 'Install app' : ios ? 'How to add to Home Screen' : 'Install SETU Flow'}
+              {promptEvent ? 'Install app' : ios ? 'Open iPhone Share Menu' : 'Install SETU Flow'}
             </button>
-            {(showInstructions || ios) && (
+            {showInstructions && (
               <div style={{ marginTop: 24, padding: 18, borderRadius: 14, background: '#edf5fc', lineHeight: 1.7, color: '#23435f' }}>
                 <strong>{ios ? 'On iPhone or iPad' : android ? 'On Android' : 'In your browser'}</strong>
                 {ios ? (
                   <ol style={{ paddingLeft: 22, margin: '8px 0 0' }}>
-                    <li>Open this page in Safari.</li>
-                    <li>Tap the Share icon (square with an upward arrow).</li>
-                    <li>Select <strong>Add to Home Screen</strong> (or choose it from the Share options).</li>
+                    <li>Use the browser Share button. If the opened system share sheet does not offer Add to Home Screen, close it and use the browser’s own Share menu.</li>
+                    <li>In Safari, tap the Share icon (square with an upward arrow). In Chrome, open its Share or browser menu.</li>
+                    <li>Scroll through the browser’s share options and select <strong>Add to Home Screen</strong>. If unavailable, open this page in Safari and repeat.</li>
                     <li>Tap <strong>Add</strong>.</li>
                   </ol>
                 ) : (
