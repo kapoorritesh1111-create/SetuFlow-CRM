@@ -114,11 +114,21 @@ async function sendPreparedInvitationEmail(input: {
     },
   });
 
-  await input.supabase
+  // The provider must accept the message before the invitation is shown as sent.
+  // Keep the token available for a retry, but never report a rejected email as sent.
+  const { error: deliveryUpdateError } = await input.supabase
     .from('organization_invitations')
-    .update({ metadata: nextMetadata })
+    .update({
+      status: emailResult.ok ? 'sent' : 'pending',
+      last_sent_at: emailResult.ok ? new Date().toISOString() : null,
+      metadata: nextMetadata,
+    })
     .eq('id', input.invitationId)
     .eq('organization_id', input.organizationId);
+
+  if (deliveryUpdateError) {
+    return { ok: false as const, provider: 'database', error: 'Invitation delivery result could not be persisted.' };
+  }
 
   return emailResult;
 }
