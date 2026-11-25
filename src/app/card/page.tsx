@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { ProfessionalDigitalCard } from '@/components/contact-exchange/professional-digital-card';
 import { PublicCardCaptureForm } from '@/components/contact-exchange/public-card-capture-form';
 import { getPublicCardByShareSlug } from '@/lib/contact-exchange/my-card-settings';
@@ -27,6 +28,7 @@ function buildTradeShowContext(tradeShowName?: string | null, boothNumber?: stri
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const share = getFirstParam(searchParams, 'share');
   const sharedCard = share ? await getPublicCardByShareSlug(share) : null;
+  if (share !== undefined && !sharedCard) notFound();
   const identity = sharedCard?.identity ?? parsePublicCardSearchParams(searchParams);
   const title = `${identity.fullName} · ${identity.organizationName}`;
   const eventContext = buildTradeShowContext(identity.tradeShowName, identity.boothNumber);
@@ -54,6 +56,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 export default async function PublicCardPage({ searchParams }: { searchParams: SearchParams }) {
   const share = getFirstParam(searchParams, 'share');
   const sharedCard = share ? await getPublicCardByShareSlug(share) : null;
+  if (share !== undefined && !sharedCard) notFound();
   const identity = sharedCard?.identity ?? parsePublicCardSearchParams(searchParams);
   const compactParams = buildPublicCardSearchParams(identity);
   const saveContactHref = share

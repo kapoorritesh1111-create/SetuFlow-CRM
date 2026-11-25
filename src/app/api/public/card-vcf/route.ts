@@ -6,6 +6,7 @@ import { parsePublicCardSearchParams } from '@/lib/contact-exchange/public-card'
 export async function GET(request: NextRequest) {
   const share = request.nextUrl.searchParams.get('share');
   const sharedCard = share ? await getPublicCardByShareSlug(share) : null;
+  if (share !== null && !sharedCard) return NextResponse.json({ error: 'Card unavailable' }, { status: 404 });
   const identity = sharedCard?.identity ?? parsePublicCardSearchParams(Object.fromEntries(request.nextUrl.searchParams.entries()));
   const avatarUrl = identity.avatarUrl?.startsWith('/') ? `${request.nextUrl.origin}${identity.avatarUrl}` : identity.avatarUrl;
   const vcard = buildVCard({
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     headers: {
       'Content-Type': 'text/vcard; charset=utf-8',
       'Content-Disposition': `attachment; filename="${getVCardFilename({ fullName: identity.fullName })}"`,
-      'Cache-Control': 'public, max-age=300',
+      'Cache-Control': 'no-store',
     },
   });
 }

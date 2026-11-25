@@ -74,6 +74,9 @@ export async function upsertMyCardSettingsForUser(args: {
     user_id: args.userId,
     organization_id: args.organizationId,
     share_slug: shareSlug,
+    display_name: args.input.displayName === undefined ? existing?.display_name ?? null : sanitizeText(args.input.displayName).slice(0, 160) || null,
+    professional_designation: args.input.professionalDesignation === undefined ? existing?.professional_designation ?? null : sanitizeText(args.input.professionalDesignation).slice(0, 160) || null,
+    business_email: args.input.businessEmail === undefined ? existing?.business_email ?? null : sanitizeText(args.input.businessEmail).slice(0, 254),
     primary_phone: sanitizeText(args.input.primaryPhone),
     secondary_phone: sanitizeText(args.input.secondaryPhone) || null,
     website: sanitizeUrl(args.input.website) || null,
@@ -84,7 +87,7 @@ export async function upsertMyCardSettingsForUser(args: {
     instagram_url: sanitizeUrl(args.input.instagram) || null,
     facebook_url: sanitizeUrl(args.input.facebook) || null,
     tiktok_url: sanitizeUrl(args.input.tiktok) || null,
-    is_public: true,
+    is_public: existing?.is_public ?? true,
     updated_at: new Date().toISOString(),
   };
 
@@ -117,10 +120,10 @@ export async function getPublicCardByShareSlug(shareSlug: string) {
   const context = settings as PublicCardContextFields;
 
   const identity: PublicCardIdentity = {
-    fullName: profile?.full_name?.trim() || profile?.email?.split('@')[0] || 'SETU Flow contact',
-    roleLabel: 'Global trade contact',
+    fullName: settings.display_name?.trim() || profile?.full_name?.trim() || profile?.email?.split('@')[0] || 'SETU Flow contact',
+    roleLabel: settings.professional_designation?.trim() || '',
     organizationName: organization?.name || 'SETU Flow',
-    email: profile?.email || 'hello@setuflow.com',
+    email: settings.business_email ?? profile?.email ?? '',
     primaryPhone: settings.primary_phone?.trim() || 'Phone shared after save',
     secondaryPhone: settings.secondary_phone?.trim() || null,
     website: settings.website?.trim() || null,

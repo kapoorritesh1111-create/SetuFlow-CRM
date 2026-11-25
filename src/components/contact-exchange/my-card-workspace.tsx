@@ -44,6 +44,9 @@ function fieldClassName() {
 function buildDefaults(identity: PublicCardIdentity) {
   return {
     ...EMPTY_CARD_SETTINGS,
+    displayName: identity.fullName,
+    professionalDesignation: '',
+    businessEmail: identity.email,
     primaryPhone: identity.primaryPhone,
     secondaryPhone: identity.secondaryPhone ?? '',
     website: identity.website ?? '',
@@ -94,6 +97,9 @@ function formatRecency(value: string | null) {
 }
 
 const quickFields: Array<{ key: keyof MyCardSettingsInput; label: string; placeholder?: string }> = [
+  { key: 'displayName', label: 'Display name' },
+  { key: 'professionalDesignation', label: 'Professional designation' },
+  { key: 'businessEmail', label: 'Business email' },
   { key: 'primaryPhone', label: 'Primary phone' },
   { key: 'secondaryPhone', label: 'Secondary phone' },
   { key: 'website', label: 'Website' },
@@ -102,6 +108,8 @@ const quickFields: Array<{ key: keyof MyCardSettingsInput; label: string; placeh
   { key: 'quoteUrl', label: 'Quote request link', placeholder: 'https://... or leave blank' },
   { key: 'linkedin', label: 'LinkedIn' },
   { key: 'instagram', label: 'Instagram' },
+  { key: 'facebook', label: 'Facebook' },
+  { key: 'tiktok', label: 'TikTok' },
 ];
 
 export function MyCardWorkspace({ identity, organizationId, initialSettings, insights }: MyCardWorkspaceProps) {
@@ -137,6 +145,9 @@ export function MyCardWorkspace({ identity, organizationId, initialSettings, ins
   const cardIdentity = useMemo<PublicCardIdentity>(
     () =>
       mergeIdentityWithCardSettings({ ...identity, avatarUrl: avatarUrl || identity.avatarUrl }, {
+        display_name: overrides.displayName,
+        professional_designation: overrides.professionalDesignation,
+        business_email: overrides.businessEmail,
         primary_phone: overrides.primaryPhone,
         secondary_phone: overrides.secondaryPhone,
         website: overrides.website,

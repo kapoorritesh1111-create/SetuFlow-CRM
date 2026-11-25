@@ -9,6 +9,9 @@ type MyCardContextFields = {
 };
 
 export type MyCardSettingsInput = {
+  displayName?: string;
+  professionalDesignation?: string;
+  businessEmail?: string;
   primaryPhone: string;
   secondaryPhone: string;
   website: string;
@@ -44,6 +47,9 @@ function sanitizeUrl(value?: string | null) {
 
 export function toCardSettingsInput(row?: Partial<MyCardSettingsRow> | null, defaults?: Partial<MyCardSettingsInput>): MyCardSettingsInput {
   return {
+    displayName: row?.display_name ?? defaults?.displayName,
+    professionalDesignation: row?.professional_designation ?? defaults?.professionalDesignation,
+    businessEmail: row?.business_email ?? defaults?.businessEmail,
     primaryPhone: sanitizeText(row?.primary_phone) || sanitizeText(defaults?.primaryPhone),
     secondaryPhone: sanitizeText(row?.secondary_phone) || sanitizeText(defaults?.secondaryPhone),
     website: sanitizeUrl(row?.website) || sanitizeUrl(defaults?.website),
@@ -61,6 +67,9 @@ export function mergeIdentityWithCardSettings(identity: PublicCardIdentity, sett
   if (!settings) return identity;
   return {
     ...identity,
+    fullName: settings.display_name?.trim() || identity.fullName,
+    roleLabel: settings.professional_designation ?? '',
+    email: settings.business_email ?? identity.email,
     primaryPhone: settings.primary_phone?.trim() || identity.primaryPhone,
     secondaryPhone: settings.secondary_phone?.trim() || identity.secondaryPhone || null,
     website: settings.website?.trim() || identity.website || null,

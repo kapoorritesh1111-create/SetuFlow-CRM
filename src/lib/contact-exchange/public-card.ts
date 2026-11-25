@@ -90,7 +90,7 @@ export function parsePublicCardSearchParams(searchParams: Record<string, string 
 
   return {
     fullName: get('name') || get('fullName') || 'SETU Flow contact',
-    roleLabel: get('role') || get('roleLabel') || 'Global trade contact',
+    roleLabel: get('role') || get('roleLabel') || '',
     organizationName: get('org') || get('organizationName') || 'SETU Flow',
     email: get('email') || 'hello@setuflow.com',
     primaryPhone: get('phone') || 'Phone shared after save',
