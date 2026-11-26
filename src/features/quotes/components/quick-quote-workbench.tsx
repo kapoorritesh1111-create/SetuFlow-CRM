@@ -129,35 +129,40 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         if(!Number.isFinite(kgPerPiece)||kgPerPiece<=0){setError(probe.error??'Cannot calculate finished laminate weight for KG input.');return;}
         requestedPieces=Math.ceil(Number(qty)/kgPerPiece);
       }
-      let belowMinimum=false;
-      let observedMinRun:number|null=null;
-      const pricingQuantities=isFrameRoll&&quantityUnit==='kg'
-        ?[...new Set([requestedPieces,...LADDER.filter(n=>n>requestedPieces)])].sort((a,b)=>a-b)
-        :quantities;
-      for(const n of pricingQuantities){
-        const response:any=chosen.kind==='sup'
-          ?await previewPackagingPricingV5({templateId,input:{
-            size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,
-            construction_id:construction.id,print,quantity:n,bottom_print_mode:resolvedBottom,selected_charge_codes:currentExtras,manual_quote_charges:manualQuoteCharges,
-          }})
-          :await previewPackagingFramePricingV5({templateId,input:{
-            supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),
-            construction_id:construction.id,print,quantity:n,commercial_bucket:null,selected_charge_codes:extras,
-          }});
-        if(chosen.kind==='frame'&&response.result?.smart_moq){
-          const moq=response.result.smart_moq;
-          observedMinRun=Number(moq.minimum_run_length_m??250);
-          if(moq.below_minimum)belowMinimum=true;
+      if(chosen.kind==='frame'){
+        const response:any=await previewPackagingFramePricingV5({templateId,input:{
+          supply_form:frameTemplate?.supply_form,width_mm:Number(width),height_mm:Number(height),
+          construction_id:construction.id,print,quantity:requestedPieces,commercial_bucket:null,selected_charge_codes:extras,
+        }});
+        const r=response.result;
+        setFrameMinRun(r?.smart_moq?.minimum_run_length_m??null);
+        if(!response.ok||!r?.selling_price){
+          setError(response.error??'No valid prices returned for these specifications.');
+          return;
         }
+        const base:Result={quantity:requestedPieces,unit:Number(r.selling_price.unit_price),total:Number(r.selling_price.product_total),
+          currency:String(r.selling_price.currency??'INR'),weight:r.roll_weight?.finished_weight_kg??null,perKg:r.roll_weight?.price_per_kg??null};
+        const alternatives:Result[]=(r.suggested_quantities??[]).map((s:any)=>({
+          quantity:Number(s.quantity),unit:Number(s.unit_price),total:Number(s.product_total),currency:base.currency,
+          weight:s.finished_weight_kg??null,perKg:s.price_per_kg??null,
+        }));
+        setRows([base,...alternatives]);setSelected(requestedPieces);
+        return;
+      }
+      for(const n of quantities){
+        const response:any=await previewPackagingPricingV5({templateId,input:{
+          size_profile_id:size?.id,custom_size:custom?{width_mm:Number(width),height_mm:Number(height),bottom_gusset_each_mm:Number(gusset)}:null,
+          construction_id:construction.id,print,quantity:n,bottom_print_mode:resolvedBottom,selected_charge_codes:currentExtras,manual_quote_charges:manualQuoteCharges,
+        }});
         if(response.ok&&response.result?.selling_price){
           const r=response.result;
           found.push({quantity:n,unit:Number(r.selling_price.unit_price),total:Number(r.selling_price.product_total),
             currency:String(r.selling_price.currency??'INR'),weight:r.roll_weight?.finished_weight_kg??null,perKg:r.roll_weight?.price_per_kg??null});
         }
       }
-      setFrameMinRun(observedMinRun);
       setRows(found);setSelected(found.findIndex(r=>r.quantity===requestedPieces)>=0?requestedPieces:found[0]?.quantity??0);
-      if(!found.length)setError(belowMinimum?'Minimum production run is '+(observedMinRun??250)+' m. Increase quantity until this run length is reached.':'No valid prices returned for these specifications. Check MOQ and published construction rules.');
+      if(!found.length)setError('No valid prices returned for these specifications. Check MOQ and published construction rules.');
+
     });
   }
   function addLine(){
@@ -249,7 +254,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     </section>:null}
     {rows.length>0?<section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <h2 className="text-lg font-bold">3. Compare all valid quantity prices</h2>
-      <p className="mb-3 text-xs text-slate-600">Only valid engine-calculated quantity breaks appear. Select the price to discuss on the call.</p>
+      <p className="mb-3 text-xs text-slate-600">Requested quantity and valid engine-calculated alternatives appear. Frame-family alternatives offer genuine savings.</p>
       <div className="grid gap-2 sm:hidden" aria-label="Mobile quantity price comparison">
         {rows.map(r=>{
           const requested=rows.find(item=>item.quantity===Number(qty));

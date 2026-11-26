@@ -10,7 +10,25 @@ import { calculateFrameFamilyPriceReviewV5, type FrameFamilyPricingInputV5 } fro
 import type { FrameFamilySupplyFormV5 } from '@/lib/packaging-pricing-v5/frame-family-geometry';
 import { customerVolumeSuggestions } from '@/lib/packaging-pricing-v5/volume-suggestions';
 
-const QTY_LADDER=[1000,2000,3000,5000,10000,20000,30000,50000];
+function bandQuantities(context:any,result:any){
+  const ups=Number(result.geometry?.units_per_frame??0);
+  const metres=Number(result.geometry?.material_run_mm_per_frame??0)/1000;
+  if(!(ups>0&&metres>0)) return [];
+  const limits=[...new Set<number>((context.bands??[])
+    .filter((b:any)=>Number(b.pricing_bucket)===Number(result.commercial_bucket))
+    .map((b:any)=>Number(b.run_length_max_m))
+    .filter((v:number)=>Number.isFinite(v)&&v>=0))].sort((a,b)=>a-b);
+  // The final band already applies above its upper limit.
+  return limits.slice(0,-1).map(m=>Math.floor(m*ups/metres)+1)
+    .filter(q=>Number.isSafeInteger(q)&&q>0);
+}
+
+function improves(candidate:any,baseline:any,input:FrameFamilyPricingInputV5){
+  const roll=input.supply_form.endsWith('_roll');
+  const rate=(r:any)=>Number(roll?r.roll_weight?.price_per_kg:r.selling_price?.unit_price);
+  return candidate.ok&&rate(candidate)>0&&rate(candidate)<rate(baseline)&&
+    candidate.selling_price.unit_price<baseline.selling_price.unit_price;
+}
 
 function roundCommercialQty(value:number){
   const qty=Math.max(1,Math.ceil(Number(value)||0));
@@ -26,37 +44,23 @@ function smartMoqRecommendation(context:any,result:any,input:FrameFamilyPricingI
 
   const exactMinimumQty=Math.ceil((minimumRunM*unitsPerFrame)/runPerFrameM);
   const recommendedMinimumQty=roundCommercialQty(exactMinimumQty);
-  const bucket=Number(result.commercial_bucket??context.template.production_rules_json?.default_commercial_bucket??0);
-  const bandLimits=(context.bands??[])
-    .filter((b:any)=>Number(b.pricing_bucket)===bucket)
-    .map((b:any)=>Number(b.run_length_max_m))
-    .filter((v:number)=>Number.isFinite(v)&&v>=minimumRunM)
-    .sort((a:number,b:number)=>a-b);
-
-  const candidateQuantities=[recommendedMinimumQty];
-  for(const runM of bandLimits){
-    const exact=Math.ceil(((runM+0.000001)*unitsPerFrame)/runPerFrameM);
-    const rounded=roundCommercialQty(exact);
-    if(rounded>recommendedMinimumQty&&!candidateQuantities.includes(rounded)) candidateQuantities.push(rounded);
-    if(candidateQuantities.length>=3) break;
-  }
-
-  const options=candidateQuantities.map((quantity,index)=>{
+  const minimum=calculateFrameFamilyPriceReviewV5(context,{...input,quantity:recommendedMinimumQty});
+  const options:any[]=[];
+  let best=minimum;
+  for(const quantity of [recommendedMinimumQty,...bandQuantities(context,result).filter(q=>q>recommendedMinimumQty)]){
     const candidate=calculateFrameFamilyPriceReviewV5(context,{...input,quantity});
-    return {
-      quantity,
-      label:index===0?'Minimum order':index===1?'Better value':'Best value',
-      run_length_m:Number(candidate.run_length_m??0),
-      unit_price:candidate.ok?candidate.selling_price.unit_price:null,
-      product_total:candidate.ok?candidate.selling_price.product_total:null,
-      finished_weight_kg:candidate.ok?candidate.roll_weight?.finished_weight_kg??null:null,
-      price_per_kg:candidate.ok?candidate.roll_weight?.price_per_kg??null:null,
-      savings_per_unit:null as number|null,
-    };
-  });
-  const base=Number(options[0]?.unit_price??0);
-  for(const option of options){
-    if(base>0&&Number(option.unit_price)>0) option.savings_per_unit=Math.max(0,base-Number(option.unit_price));
+    if(!candidate.ok||(options.length&&!improves(candidate,best,input))) continue;
+    options.push({
+      quantity,label:options.length===0?'Minimum order':options.length===1?'Better value':'Best value',
+      run_length_m:candidate.run_length_m,
+      unit_price:candidate.selling_price.unit_price,
+      product_total:candidate.selling_price.product_total,
+      finished_weight_kg:candidate.roll_weight?.finished_weight_kg??null,
+      price_per_kg:candidate.roll_weight?.price_per_kg??null,
+      savings_per_unit:Math.max(0,minimum.selling_price.unit_price-candidate.selling_price.unit_price),
+    });
+    best=candidate;
+    if(options.length>=3) break;
   }
 
   return {
@@ -122,17 +126,23 @@ async function calculate(params:{templateId:string;input:FrameFamilyPricingInput
   if(!constructionMatchesFrameForm(selectedConstruction,templateSupplyForm)) throw new Error('Selected construction does not match the selected pouch/roll form.');
   const result=calculateFrameFamilyPriceReviewV5(context,params.input);
   const smartMoq=smartMoqRecommendation(context,result,params.input);
-  const next=QTY_LADDER.filter((qty)=>qty>Number(params.input.quantity));
-  const suggestions=next.map((qty)=>{
-    const candidate=calculateFrameFamilyPriceReviewV5(context,{...params.input,quantity:qty});
-    return candidate.ok?{
-      quantity:qty,
-      unit_price:candidate.selling_price.unit_price,
-      product_total:candidate.selling_price.product_total,
-      finished_weight_kg:candidate.roll_weight?.finished_weight_kg??null,
-      price_per_kg:candidate.roll_weight?.price_per_kg??null,
-    }:null;
-  }).filter(Boolean);
+  const suggestions:any[]=[];
+  let best=result;
+  if(result.ok){
+    for(const quantity of bandQuantities(context,result)){
+      if(quantity<=result.quantity) continue;
+      const candidate=calculateFrameFamilyPriceReviewV5(context,{...params.input,quantity});
+      if(!improves(candidate,best,params.input)) continue;
+      suggestions.push({
+        quantity,unit_price:candidate.selling_price.unit_price,
+        product_total:candidate.selling_price.product_total,
+        finished_weight_kg:candidate.roll_weight?.finished_weight_kg??null,
+        price_per_kg:candidate.roll_weight?.price_per_kg??null,
+      });
+      best=candidate;
+      if(suggestions.length>=3) break;
+    }
+  }
   return {workspace,context,result,suggestions,smartMoq};
 }
 
