@@ -38,6 +38,11 @@ async function findAuthUserByEmail(admin: any, email: string) {
   }
 }
 
+function isWeakPassword(error: any) {
+  return error?.code === 'weak_password' || error?.name === 'AuthWeakPasswordError' ||
+    /password.*(?:weak|easy to guess|at least|characters|length|breach|compromised)/i.test(String(error?.message ?? ''));
+}
+
 async function getOrCreateInvitedAuthUser(input: { admin: any; email: string; password: string; fullName: string | null; username: string }) {
   const { admin, email, password, fullName, username } = input;
   const { data: profiles } = await admin
@@ -53,6 +58,7 @@ async function getOrCreateInvitedAuthUser(input: { admin: any; email: string; pa
       email_confirm: true,
       user_metadata: { full_name: fullName ?? existingProfile.full_name ?? undefined },
     });
+    if (isWeakPassword(updateResult.error)) return { weakPassword: true };
     if (!updateResult.error) {
       await admin.from('profiles').upsert({
         id: existingProfile.id,
@@ -83,6 +89,8 @@ async function getOrCreateInvitedAuthUser(input: { admin: any; email: string; pa
     return created.data.user;
   }
 
+  if (isWeakPassword(created.error)) return { weakPassword: true };
+
   const existingAuthUser = await findAuthUserByEmail(admin, email);
   if (existingAuthUser?.id) {
     const updateExisting = await admin.auth.admin.updateUserById(existingAuthUser.id, {
@@ -90,6 +98,7 @@ async function getOrCreateInvitedAuthUser(input: { admin: any; email: string; pa
       email_confirm: true,
       user_metadata: { full_name: fullName ?? undefined },
     });
+    if (isWeakPassword(updateExisting.error)) return { weakPassword: true };
     if (!updateExisting.error) {
       await admin.from('profiles').upsert({
         id: existingAuthUser.id,
@@ -195,6 +204,7 @@ export async function registerAndAcceptInvitation(formData: FormData): Promise<v
   if (usernameOwner?.email && normalizeEmail(usernameOwner.email) !== invitedEmail) inviteRedirect(token, 'username-taken');
 
   const authUser = await getOrCreateInvitedAuthUser({ admin, email: invitedEmail, password, fullName, username });
+  if (authUser?.weakPassword) inviteRedirect(token, 'weak-password');
   if (!authUser?.id) inviteRedirect(token, 'account-create-failed');
 
   const { error: finalizeError } = await admin.rpc('app_finalize_invitation_acceptance_tx', {
