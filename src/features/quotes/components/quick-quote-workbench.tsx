@@ -8,7 +8,7 @@ import { previewPackagingFramePricingV5 } from '@/features/packaging/server/pric
 import { previewStarkLabelQuote } from '@/features/packaging/server/stark-label-quote-actions';
 import { STARK_LABEL_WORKBOOK_SEED } from '@/lib/packaging-pricing-v5/stark-label-workbook';
 
-type Result = { quantity:number; unit:number; total:number; currency:string; weight:number|null; perKg:number|null };
+type Result = { quantity:number; unit:number; total:number; currency:string; weight:number|null; perKg:number|null; minimumOrder?:boolean };
 type Props = { sup:any; frame:any; manualFamilies:any[] };
 const LADDER=[1000,2000,3000,5000,10000,20000,30000,50000];
 const money=(n:number,c='INR')=>new Intl.NumberFormat('en-IN',{style:'currency',currency:c,maximumFractionDigits:2}).format(n);
@@ -27,7 +27,8 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
   const [extras,setExtras]=useState<string[]>([]);
   const [spotUvEnabled,setSpotUvEnabled]=useState(false);
   const [spotUvAmount,setSpotUvAmount]=useState('');
-  const [rows,setRows]=useState<Result[]>([]);
+  const [pricedRows,setRows]=useState<Result[]>([]);
+  const [pricedFrameKey,setPricedFrameKey]=useState('');
   const [selected,setSelected]=useState(0);
   const [error,setError]=useState('');
   const [pending,start]=useTransition();
@@ -64,6 +65,9 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     return allowed.includes(Number(c.pe_micron));
   });
   const construction=constructions.find((c:any)=>String(c.id)===constructionId)??constructions[0];
+  const frameKey=JSON.stringify([templateId,construction?.id,width,height,print,qty,quantityUnit,extras]);
+  const rows=chosen?.kind==='frame'&&pricedFrameKey!==frameKey?[]:pricedRows;
+  const minimumOrder=rows.some(r=>r.minimumOrder);
   // Mirror the canonical V5 Sales configurator: only conditional gusset routing
   // offers an actual choice. Required modes are resolved from size metadata.
   const askBottomPrint=chosen?.kind==='sup'
@@ -96,7 +100,7 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     setQuantityUnit(roll?'kg':'pcs');setQty(roll?'30':'5000');
   }
   function calculate(){
-    setError('');setRows([]);
+    setError('');setRows([]);setSelected(0);
     if(!chosen)return setError('Choose a service family.');
     if(chosen.kind==='manual')return setError('This family uses manual pricing. Enter an approved unit price instead.');
     if(chosen.kind==='label'){
@@ -136,7 +140,25 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
         }});
         const r=response.result;
         setFrameMinRun(r?.smart_moq?.minimum_run_length_m??null);
+        setPricedFrameKey(frameKey);
         if(!response.ok||!r?.selling_price){
+          const moq=r?.smart_moq;
+          if(!response.ok&&moq?.below_minimum===true&&Array.isArray(moq.options)){
+            const option=moq.options.find((item:any)=>item?.label==='Minimum order'
+              &&Number.isSafeInteger(item.quantity)&&item.quantity>requestedPieces
+              &&Number(item.run_length_m)>=Number(moq.minimum_run_length_m)
+              &&Number.isFinite(item.unit_price)&&item.unit_price>0
+              &&Number.isFinite(item.product_total)&&item.product_total>0
+              &&(!isFrameRoll||(Number.isFinite(item.finished_weight_kg)&&item.finished_weight_kg>0
+                &&Number.isFinite(item.price_per_kg)&&item.price_per_kg>0)));
+            if(option){
+              setRows([{quantity:option.quantity,unit:option.unit_price,total:option.product_total,
+                currency:String(r.selling_price?.currency??'INR'),weight:option.finished_weight_kg??null,
+                perKg:option.price_per_kg??null,minimumOrder:true}]);
+              setError(`Requested quantity is below the ${moq.minimum_run_length_m} m minimum run and cannot be quoted. Select the priced minimum order below to continue.`);
+              return;
+            }
+          }
           setError(response.error??'No valid prices returned for these specifications.');
           return;
         }
@@ -254,24 +276,24 @@ export default function QuickQuoteWorkbench({sup,frame,manualFamilies}:Props){
     </section>:null}
     {rows.length>0?<section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <h2 className="text-lg font-bold">3. Compare all valid quantity prices</h2>
-      <p className="mb-3 text-xs text-slate-600">Requested quantity and valid engine-calculated alternatives appear. Frame-family alternatives offer genuine savings.</p>
+      <p className="mb-3 text-xs text-slate-600">{minimumOrder?'Only the priced minimum order is shown. Your requested quantity has not been added.':'Requested quantity and valid engine-calculated alternatives appear. Frame-family alternatives offer genuine savings.'}</p>
       <div className="grid gap-2 sm:hidden" aria-label="Mobile quantity price comparison">
         {rows.map(r=>{
-          const requested=rows.find(item=>item.quantity===Number(qty));
+          const requested=rows.find(item=>!item.minimumOrder&&item.quantity===Number(qty));
           const isRoll=chosen?.kind==='frame'&&String(frameTemplate?.supply_form??'').endsWith('_roll');
           const displayPrice=isRoll&&r.perKg?r.perKg:r.unit;
           const requestedPrice=isRoll&&requested?.perKg?requested.perKg:requested?.unit;
           const saving=requestedPrice&&r.quantity>requested!.quantity&&requestedPrice>displayPrice
             ?Math.round((1-displayPrice/requestedPrice)*1000)/10:null;
           return <button type="button" key={r.quantity} onClick={()=>setSelected(r.quantity)} aria-pressed={selected===r.quantity} className={'w-full rounded-2xl border p-3 text-left transition '+(selected===r.quantity?'border-blue-600 bg-blue-50 text-blue-950':'border-slate-200 bg-white text-slate-800')}>
-            <span className="flex items-center justify-between gap-2"><span className="text-sm font-bold">{r.quantity.toLocaleString('en-IN')} pcs{r.quantity===Number(qty)?' · Requested':''}</span><span className="text-xs font-semibold">{selected===r.quantity?'✓ Selected':'Select'}</span></span>
+            <span className="flex items-center justify-between gap-2"><span className="text-sm font-bold">{r.quantity.toLocaleString('en-IN')} pcs{isRoll&&r.minimumOrder&&r.weight!=null?' · '+r.weight.toLocaleString('en-IN',{maximumFractionDigits:2})+' kg':''}{r.minimumOrder?' · Minimum order':r.quantity===Number(qty)?' · Requested':''}</span><span className="text-xs font-semibold">{selected===r.quantity?'✓ Selected':'Select'}</span></span>
             <span className="mt-2 flex items-baseline justify-between gap-2"><span className="text-lg font-bold">{money(displayPrice,r.currency)} <span className="text-xs font-normal">{isRoll&&r.perKg?'/kg':'/unit'}</span></span>{saving!==null?<span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800">{saving}% lower unit price</span>:null}</span>
             <span className="mt-1 block text-xs">Total {money(r.total,r.currency)}{r.perKg&&!isRoll?' · '+money(r.perKg,r.currency)+'/kg':''}</span>
           </button>;
         })}
       </div>
-      <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b text-left"><th className="p-2">Qty</th><th className="p-2">Unit price</th><th className="p-2">Total</th><th className="p-2">Per kg (if available)</th><th className="p-2">Pick</th></tr></thead><tbody>{rows.map(r=><tr key={r.quantity} className={'border-b '+(selected===r.quantity?'bg-blue-50 text-blue-900':'')}><td className="p-2 font-semibold">{r.quantity.toLocaleString('en-IN')}{r.quantity===Number(qty)?' · Requested':''}</td><td className="p-2">{money(r.unit,r.currency)}</td><td className="p-2">{money(r.total,r.currency)}</td><td className="p-2">{r.perKg?money(r.perKg,r.currency):'—'}</td><td className="p-2"><input aria-label={'Select '+r.quantity} type="radio" checked={selected===r.quantity} onChange={()=>setSelected(r.quantity)}/></td></tr>)}</tbody></table></div>
-      <button onClick={addLine} className="mt-4 min-h-12 w-full rounded-xl bg-emerald-700 px-4 py-3 font-bold text-white">Add Selected Price to Internal Basket</button>
+      <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px] text-sm"><thead><tr className="border-b text-left"><th className="p-2">Qty</th><th className="p-2">Unit price</th><th className="p-2">Total</th><th className="p-2">Per kg (if available)</th><th className="p-2">Pick</th></tr></thead><tbody>{rows.map(r=><tr key={r.quantity} className={'border-b '+(selected===r.quantity?'bg-blue-50 text-blue-900':'')}><td className="p-2 font-semibold">{r.quantity.toLocaleString('en-IN')}{r.minimumOrder?' · Minimum order':r.quantity===Number(qty)?' · Requested':''}{isFrameRoll&&r.minimumOrder&&r.weight!=null?<span className="block text-xs font-normal">{r.weight.toLocaleString('en-IN',{maximumFractionDigits:2})} kg finished roll</span>:null}</td><td className="p-2">{money(r.unit,r.currency)}</td><td className="p-2">{money(r.total,r.currency)}</td><td className="p-2">{r.perKg?money(r.perKg,r.currency):'—'}</td><td className="p-2"><input aria-label={'Select '+r.quantity} type="radio" checked={selected===r.quantity} onChange={()=>setSelected(r.quantity)}/></td></tr>)}</tbody></table></div>
+      <button disabled={pending||!rows.some(r=>r.quantity===selected)} onClick={addLine} className="mt-4 min-h-12 w-full rounded-xl bg-emerald-700 px-4 py-3 font-bold text-white disabled:opacity-50">Add Selected Price to Internal Basket</button>
     </section>:null}
     <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <h2 className="text-lg font-bold">4. Internal estimate basket ({basket.length})</h2>
